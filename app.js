@@ -140,9 +140,10 @@ publishForm.addEventListener('submit', async (e) => {
         
         const response = await fetch(n8nPublishWebhook, {
             method: 'POST',
-            mode: 'no-cors', // Solo para desarrollo local
             headers: {
                 'Content-Type': 'application/json',
+                'X-Webhook-Token': CONFIG.webhookToken || '',
+                'X-App-Origin': 'MSI-Social-Manager'
             },
             body: JSON.stringify(data)
         });
@@ -196,6 +197,8 @@ generateForm.addEventListener('submit', async (e) => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-Webhook-Token': CONFIG.webhookToken || '',
+                'X-App-Origin': 'MSI-Social-Manager'
             },
             body: JSON.stringify(data)
         });
@@ -381,6 +384,8 @@ async function publishPost(postId) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-Webhook-Token': CONFIG.webhookToken || '',
+                'X-App-Origin': 'MSI-Social-Manager'
             },
             body: JSON.stringify(publishData)
         });
