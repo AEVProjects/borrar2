@@ -21,26 +21,30 @@ Agrega un **nodo Code** inmediatamente después de cada webhook trigger:
 
 ```javascript
 // Validación de seguridad para webhook
-const token = $input.item.json.headers['x-webhook-token'];
-const origin = $input.item.json.headers['x-app-origin'];
-const referer = $input.item.json.headers['referer'];
+const token = $input.item.json.headers["x-webhook-token"];
+const origin = $input.item.json.headers["x-app-origin"];
+const referer = $input.item.json.headers["referer"];
 
 // Token esperado (debe coincidir con config.example.js)
-const EXPECTED_TOKEN = 'msi_2024_secure_e8f4a9c2b1d5';
+const EXPECTED_TOKEN = "msi_2024_secure_e8f4a9c2b1d5";
 
 // Validar token
 if (token !== EXPECTED_TOKEN) {
-  throw new Error('🚫 Acceso denegado: Token inválido');
+  throw new Error("🚫 Acceso denegado: Token inválido");
 }
 
 // Validar origen de la app
-if (origin !== 'MSI-Social-Manager') {
-  throw new Error('🚫 Acceso denegado: Origen no autorizado');
+if (origin !== "MSI-Social-Manager") {
+  throw new Error("🚫 Acceso denegado: Origen no autorizado");
 }
 
 // Validar que venga de dominio permitido (Vercel)
-if (referer && !referer.includes('borrar2.vercel.app') && !referer.includes('localhost')) {
-  throw new Error('🚫 Acceso denegado: Dominio no autorizado');
+if (
+  referer &&
+  !referer.includes("borrar2.vercel.app") &&
+  !referer.includes("localhost")
+) {
+  throw new Error("🚫 Acceso denegado: Dominio no autorizado");
 }
 
 // Si todo está bien, pasar los datos originales
@@ -68,7 +72,7 @@ Si no quieres agregar nodos de código:
 1. En cada workflow, haz clic en **⋮ (menú)** → **Settings**
 2. En la pestaña **Security**:
    - **Enable CORS**: ✅ Activar
-   - **Allowed Origins**: 
+   - **Allowed Origins**:
      ```
      https://borrar2.vercel.app
      ```
@@ -94,10 +98,12 @@ Si no quieres agregar nodos de código:
 Si necesitas cambiar el token de seguridad:
 
 1. **En GitHub** (archivo `config.example.js`):
+
    - Cambia el valor de `webhookToken`
    - Commit y push
 
 2. **En n8n** (en cada workflow):
+
    - Actualiza la constante `EXPECTED_TOKEN` en el nodo "Validate Security"
    - Guarda
 
@@ -139,27 +145,30 @@ curl -X POST https://n8nmsi.app.n8n.cloud/webhook/025d6de3-6b46-41c2-839d-58a8b1
 
 ## 🛡️ Niveles de Protección
 
-| Método | Protección | Complejidad | Recomendado |
-|--------|-----------|-------------|-------------|
-| **Solo CORS** | Baja (solo navegadores) | Muy Baja | ❌ No |
-| **Headers + CORS** | Media-Alta | Baja | ✅ **Sí** |
-| **HTTP Auth** | Alta | Media | ⚠️ Si tienes experiencia |
-| **Backend Proxy** | Muy Alta | Alta | ⚠️ Overkill para este proyecto |
+| Método             | Protección              | Complejidad | Recomendado                    |
+| ------------------ | ----------------------- | ----------- | ------------------------------ |
+| **Solo CORS**      | Baja (solo navegadores) | Muy Baja    | ❌ No                          |
+| **Headers + CORS** | Media-Alta              | Baja        | ✅ **Sí**                      |
+| **HTTP Auth**      | Alta                    | Media       | ⚠️ Si tienes experiencia       |
+| **Backend Proxy**  | Muy Alta                | Alta        | ⚠️ Overkill para este proyecto |
 
 ---
 
 ## 📝 Resumen de Cambios Realizados
 
 ### ✅ En `config.example.js`:
+
 - Agregado `webhookToken: 'msi_2024_secure_e8f4a9c2b1d5'`
 
 ### ✅ En `app.js`:
+
 - Todas las llamadas fetch ahora incluyen:
   - `'X-Webhook-Token': CONFIG.webhookToken`
   - `'X-App-Origin': 'MSI-Social-Manager'`
 - Removido `mode: 'no-cors'` para permitir headers personalizados
 
 ### ⏳ Pendiente en n8n:
+
 - Agregar nodo "Validate Security" en cada workflow (ver arriba)
 
 ---
@@ -180,7 +189,8 @@ curl -X POST https://n8nmsi.app.n8n.cloud/webhook/025d6de3-6b46-41c2-839d-58a8b1
 
 **Causa**: Headers personalizados requieren CORS configurado
 
-**Solución**: 
+**Solución**:
+
 1. Activa CORS en n8n
 2. Agrega tu dominio a Allowed Origins
 3. Verifica que no esté `mode: 'no-cors'` en app.js
