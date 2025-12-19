@@ -1,0 +1,25 @@
+# Vercel
+.vercel
+
+# Node modules (si los usas)
+node_modules/
+
+# Configuración con valores reales (NO subir a Git)
+config.js
+
+# Nota: .env NO se usa en esta app porque es frontend puro
+# Si alguien crea un .env por error, también ignorarlo:
+.env
+.env.local
+.env*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
