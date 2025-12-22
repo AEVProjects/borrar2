@@ -184,14 +184,48 @@ publishForm.addEventListener('submit', async (e) => {
             body: JSON.stringify(data)
         });
         
-        // Since no-cors doesn't let us read response, assume success after send
-        showToast('Post published successfully!', 'success');
-        publishForm.reset();
-        imagePreview.classList.remove('active');
-        imagePreview.innerHTML = '';
-        
-        // Reload posts after 3 seconds to show new post
-        setTimeout(() => loadPosts(), 3000);
+        // Wait for workflow to complete and verify in database
+        if (supabaseClient) {
+            // Get current post count
+            const { count: initialCount } = await supabaseClient
+                .from('social_posts')
+                .select('*', { count: 'exact', head: true });
+            
+            // Poll database for new post (check every 2 seconds, max 10 seconds)
+            let attempts = 0;
+            const maxAttempts = 5;
+            let postCreated = false;
+            
+            while (attempts < maxAttempts && !postCreated) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                attempts++;
+                
+                const { count: newCount } = await supabaseClient
+                    .from('social_posts')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (newCount > initialCount) {
+                    postCreated = true;
+                    showToast('Post published successfully!', 'success');
+                    publishForm.reset();
+                    imagePreview.classList.remove('active');
+                    imagePreview.innerHTML = '';
+                    loadPosts(); // Refresh immediately
+                    break;
+                }
+            }
+            
+            if (!postCreated) {
+                showToast('Post sent to workflow. Refresh posts in a moment to see it.', 'warning');
+            }
+        } else {
+            // No Supabase, just show success after delay
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            showToast('Post sent successfully!', 'success');
+            publishForm.reset();
+            imagePreview.classList.remove('active');
+            imagePreview.innerHTML = '';
+        }
         
     } catch (error) {
         console.error('Error:', error);
