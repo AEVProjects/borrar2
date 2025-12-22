@@ -263,6 +263,19 @@
     },
     {
       "parameters": {
+        "jsCode": "// Preparar binario de imagen para ImgBB\nconst item = $input.item;\n\nconsole.log('==== CHECK IMAGE BINARY ====');\nconsole.log('Item binary keys:', Object.keys(item.binary || {}));\nconsole.log('Item json keys:', Object.keys(item.json || {}));\n\n// Verificar si hay datos binarios\nif (item.binary && Object.keys(item.binary).length > 0) {\n  const binaryKey = Object.keys(item.binary)[0];\n  console.log('Found binary key:', binaryKey);\n  console.log('Binary data size:', item.binary[binaryKey]?.data?.length || 0);\n  \n  // Renombrar el binario a 'data' para ImgBB\n  return [{\n    json: item.json,\n    binary: {\n      data: item.binary[binaryKey]\n    }\n  }];\n} else {\n  console.log('ERROR: No binary data found in Gemini output');\n  throw new Error('No se generó imagen. Verifica que el modelo Gemini esté configurado correctamente.');\n}\n\nconsole.log('==== END CHECK IMAGE BINARY ====');"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2368,
+        32
+      ],
+      "id": "check-image-binary-001",
+      "name": "Check and Prepare Binary"
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "https://api.imgbb.com/1/upload",
         "authentication": "genericCredentialType",
@@ -1621,6 +1634,17 @@
       ]
     },
     "Generate Image": {
+      "main": [
+        [
+          {
+            "node": "Check and Prepare Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check and Prepare Binary": {
       "main": [
         [
           {
