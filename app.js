@@ -294,11 +294,7 @@ async function loadPosts() {
         // Debug: Check first post structure
         if (data && data.length > 0) {
             console.log('Sample post columns:', Object.keys(data[0]));
-            console.log('First post publish values:', {
-                linkedin: data[0].publish_linkedin,
-                facebook: data[0].publish_facebook,
-                instagram: data[0].publish_instagram
-            });
+            console.log('Sample post full data:', data[0]);
         }
         
         if (!data || data.length === 0) {
