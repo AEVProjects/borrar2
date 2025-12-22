@@ -85,19 +85,33 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
 });
 
-// Image Preview
+// Image Preview - Multiple Images
 imageInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const isVideo = file.type.startsWith('video/');
-            imagePreview.innerHTML = isVideo 
-                ? `<video src="${e.target.result}" controls></video>`
-                : `<img src="${e.target.result}" alt="Preview">`;
-            imagePreview.classList.add('active');
-        };
-        reader.readAsDataURL(file);
+    const files = Array.from(e.target.files);
+    
+    if (files.length > 10) {
+        showToast('Máximo 10 imágenes permitidas', 'error');
+        e.target.value = '';
+        return;
+    }
+    
+    if (files.length > 0) {
+        imagePreview.innerHTML = '';
+        imagePreview.classList.add('active');
+        
+        files.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'preview-item';
+                imgContainer.innerHTML = `
+                    <img src="${e.target.result}" alt="Preview ${index + 1}">
+                    <span class="preview-number">${index + 1}</span>
+                `;
+                imagePreview.appendChild(imgContainer);
+            };
+            reader.readAsDataURL(file);
+        });
     } else {
         imagePreview.classList.remove('active');
         imagePreview.innerHTML = '';
@@ -129,15 +143,30 @@ publishForm.addEventListener('submit', async (e) => {
         publish_instagram: hasInstagram ? 'Yes' : 'No',
     };
     
-    // Convert image to base64 if exists
-    // n8n subirá a ImgBB y guardará la URL en la BD
-    if (imageFile && imageFile.size > 0) {
-        const base64 = await fileToBase64(imageFile);
-        data.Image = {
-            data: base64,
-            mimeType: imageFile.type,
-            fileName: imageFile.name
-        };
+    // Convert multiple images to base64 array
+    const imageFiles = imageInput.files;
+    if (imageFiles && imageFiles.length > 0) {
+        const imagesArray = [];
+        
+        for (let i = 0; i < imageFiles.length; i++) {
+            const file = imageFiles[i];
+            if (file.size > 0) {
+                const base64 = await fileToBase64(file);
+                imagesArray.push({
+                    data: base64,
+                    mimeType: file.type,
+                    fileName: file.name
+                });
+            }
+        }
+        
+        // If only one image, send as single object for backward compatibility
+        // If multiple, send as array
+        if (imagesArray.length === 1) {
+            data.Image = imagesArray[0];
+        } else if (imagesArray.length > 1) {
+            data.Images = imagesArray; // Multiple images
+        }
     }
     
     try {
