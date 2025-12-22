@@ -330,11 +330,16 @@ function renderPost(post) {
         minute: '2-digit'
     });
     
-    const statusClass = post.status === 'completed' ? 'completed' : 'pending';
     const isCompleted = post.status === 'completed';
     
-    // Determine published platforms
+    // Determine published platforms - check actual data
     const platforms = [];
+    console.log('Post data:', { 
+        publish_linkedin: post.publish_linkedin, 
+        publish_facebook: post.publish_facebook, 
+        publish_instagram: post.publish_instagram 
+    });
+    
     if (post.publish_linkedin === 'Yes') platforms.push('linkedin');
     if (post.publish_facebook === 'Yes') platforms.push('facebook');
     if (post.publish_instagram === 'Yes') platforms.push('instagram');
@@ -375,7 +380,6 @@ function renderPost(post) {
                             ${platforms.includes('instagram') ? `<span class="platform-badge" style="background: #e4405f; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Instagram</span>` : ''}
                         </div>
                     ` : ''}
-                    <span class="post-status ${statusClass}">${post.status}</span>
                 </div>
             </div>
             

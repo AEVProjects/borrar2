@@ -25,6 +25,11 @@ CREATE TABLE public.social_posts (
   -- Generated content
   image_url text,
   
+  -- Publishing platforms
+  publish_linkedin text DEFAULT 'No',
+  publish_facebook text DEFAULT 'No',
+  publish_instagram text DEFAULT 'No',
+  
   -- Metadata
   status text DEFAULT 'pending' NOT NULL 
     CHECK (status IN ('pending', 'strategy_completed', 'copy_completed', 'prompt_completed', 'image_generated', 'completed', 'failed')),

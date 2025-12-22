@@ -1459,7 +1459,10 @@
           "value": {
             "post_type": "={{ $json.post_type }}",
             "image_url": "={{ $json.Image && Array.isArray($json.Image) && $json.Image.length > 0 ? JSON.stringify($json.Image.map(img => img.url)) : null }}",
-            "status": "={{ $json.Image && Array.isArray($json.Image) && $json.Image.length > 0 ? 'completed' : 'pending' }}"
+            "status": "={{ $json.Image && Array.isArray($json.Image) && $json.Image.length > 0 ? 'completed' : 'pending' }}",
+            "publish_linkedin": "={{ $json.publish_linkedin || 'No' }}",
+            "publish_facebook": "={{ $json.publish_facebook || 'No' }}",
+            "publish_instagram": "={{ $json.publish_instagram || 'No' }}"
           },
           "matchingColumns": [],
           "schema": [
