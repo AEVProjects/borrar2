@@ -647,7 +647,7 @@
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{ !$json.image_url || $json.image_url === null || $json.image_url === '' }}",
+                    "leftValue": "={{ !$json.Image || !Array.isArray($json.Image) || $json.Image.length === 0 }}",
                     "rightValue": true,
                     "operator": {
                       "type": "boolean",
@@ -673,17 +673,7 @@
                 "conditions": [
                   {
                     "id": "846b662b-95e3-4d61-8acb-ca77b5ac92ee",
-                    "leftValue": "={{ $json.image_url && $json.image_url !== null && $json.image_url !== '' }}",
-                    "rightValue": true,
-                    "operator": {
-                      "type": "boolean",
-                      "operation": "true",
-                      "singleValue": true
-                    }
-                  },
-                  {
-                    "id": "check-single-image-li",
-                    "leftValue": "={{ !$json.Image || $json.Image.length <= 1 }}",
+                    "leftValue": "={{ $json.Image && Array.isArray($json.Image) && $json.Image.length === 1 }}",
                     "rightValue": true,
                     "operator": {
                       "type": "boolean",
@@ -941,11 +931,11 @@
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{ $json.Image[0].filename }}",
-                    "rightValue": 0,
+                    "leftValue": "={{ !$json.Image || !Array.isArray($json.Image) || $json.Image.length === 0 }}",
+                    "rightValue": true,
                     "operator": {
-                      "type": "string",
-                      "operation": "notExists",
+                      "type": "boolean",
+                      "operation": "true",
                       "singleValue": true
                     },
                     "id": "fb41da3f81-ba14-4d48-bf39-971a5c91800c"
@@ -967,17 +957,7 @@
                 "conditions": [
                   {
                     "id": "fb846b662b-95e3-4d61-8acb-ca77b5ac92ee",
-                    "leftValue": "={{ $json.image_url && $json.image_url !== null && $json.image_url !== '' }}",
-                    "rightValue": true,
-                    "operator": {
-                      "type": "boolean",
-                      "operation": "true",
-                      "singleValue": true
-                    }
-                  },
-                  {
-                    "id": "check-single-image-fb",
-                    "leftValue": "={{ !$json.Image || $json.Image.length <= 1 }}",
+                    "leftValue": "={{ $json.Image && Array.isArray($json.Image) && $json.Image.length === 1 }}",
                     "rightValue": true,
                     "operator": {
                       "type": "boolean",
