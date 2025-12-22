@@ -510,26 +510,10 @@
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "merge-data-001",
-              "name": "post_type",
-              "value": "={{ $('Separar Binarios').item.json.post_type }}",
-              "type": "string"
-            },
-            {
-              "id": "merge-data-002",
-              "name": "data",
-              "value": "={{ $json }}",
-              "type": "object"
-            }
-          ]
-        },
-        "options": {}
+        "jsCode": "// Combinar datos del webhook con la respuesta de ImgBB\nconst imgbbResponse = $input.item.json; // Respuesta de ImgBB\nconst originalData = $('Separar Binarios').item.json; // Datos originales del webhook\n\n// Merge: todos los datos originales + respuesta de ImgBB\nreturn [{\n  json: {\n    ...originalData,\n    data: imgbbResponse // La URL de imagen está en imgbbResponse.data.url\n  }\n}];"
       },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.3,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         -4000,
         -784
