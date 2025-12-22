@@ -369,6 +369,36 @@
     },
     {
       "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Content generated successfully\", \"data\": $json } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -1584,
+        32
+      ],
+      "id": "respond-generate-001",
+      "name": "Respond to Webhook - Generate"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Post published successfully\" } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -4432,
+        -576
+      ],
+      "id": "respond-publish-001",
+      "name": "Respond to Webhook - Publish"
+    },
+    {
+      "parameters": {
         "model": {
           "__rl": true,
           "value": "chatgpt-4o-latest",
@@ -1581,6 +1611,17 @@
         ]
       ]
     },
+    "Format Success Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook - Generate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "OpenAI Chat Model": {
       "ai_languageModel": [
         [
@@ -1919,6 +1960,11 @@
             "node": "Separar Binarios",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Respond to Webhook - Publish",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -1943,6 +1989,12 @@
           }
         ]
       ]
+    },
+    "Respond to Webhook - Publish": {
+      "main": []
+    },
+    "Respond to Webhook - Generate": {
+      "main": []
     }
   },
   "pinData": {},
