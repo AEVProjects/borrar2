@@ -510,6 +510,35 @@
     },
     {
       "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "merge-data-001",
+              "name": "post_type",
+              "value": "={{ $('Separar Binarios').item.json.post_type }}",
+              "type": "string"
+            },
+            {
+              "id": "merge-data-002",
+              "name": "data",
+              "value": "={{ $json }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        -4000,
+        -784
+      ],
+      "id": "merge-imgbb-data-001",
+      "name": "Merge ImgBB Response"
+    },
+    {
+      "parameters": {
         "conditions": {
           "options": {
             "caseSensitive": true,
@@ -1465,7 +1494,7 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "post_type": "={{ $('Webhook - Publish Post').item.json.post_type }}",
+            "post_type": "={{ $json.post_type }}",
             "image_url": "={{ $json.data?.url || null }}",
             "status": "={{ $json.data?.url ? 'image_uploaded' : 'text_only' }}"
           },
@@ -1707,6 +1736,17 @@
       ]
     },
     "Generar URL (ImgBB)": {
+      "main": [
+        [
+          {
+            "node": "Merge ImgBB Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge ImgBB Response": {
       "main": [
         [
           {
