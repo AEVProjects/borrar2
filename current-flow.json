@@ -1169,7 +1169,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// 1. Agrupamos todas las respuestas de la BD en un solo array\nconst items = $input.all();\nconst images = [];\n\n// 2. Recuperamos el caption del primer item (que viene de Merge Webhook with DB)\nconst caption = items[0]?.json?.post_type || '';\n\n// 3. Extraemos las URLs limpias desde la base de datos\nfor (const item of items) {\n  // Leemos image_url que viene del INSERT en Postgres\n  if (item.json.image_url) {\n    images.push(item.json.image_url);\n  }\n}\n\n// 4. Devolvemos UN solo ítem con la lista y el conteo\nreturn [{\n  json: {\n    images_list: images,\n    total_count: images.length,\n    caption: caption\n  }\n}];"
+        "jsCode": "// Extrae las URLs del array Image[] para Instagram\nconst items = $input.all();\nconst firstItem = items[0]?.json || {};\n\n// Recuperamos el caption\nconst caption = firstItem.post_type || '';\n\n// Extraemos las URLs del array Image[]\nconst images = [];\nif (firstItem.Image && Array.isArray(firstItem.Image)) {\n  for (const img of firstItem.Image) {\n    if (img.url) {\n      images.push(img.url);\n    }\n  }\n}\n\nconsole.log('AGRUPAR IMGBB - Total imágenes:', images.length);\n\n// Devolvemos UN solo ítem con la lista y el conteo\nreturn [{\n  json: {\n    images_list: images,\n    total_count: images.length,\n    caption: caption\n  }\n}];"
       },
       "id": "299cbc39-4173-4312-b14a-ac334254de18",
       "name": "Agrupar Datos ImgBB",
