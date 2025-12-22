@@ -1458,7 +1458,7 @@
           "mappingMode": "defineBelow",
           "value": {
             "post_type": "={{ $json.post_type }}",
-            "image_url": "={{ $json.Image && Array.isArray($json.Image) && $json.Image.length > 0 ? $json.Image[0].url : null }}",
+            "image_url": "={{ $json.Image && Array.isArray($json.Image) && $json.Image.length > 0 ? JSON.stringify($json.Image.map(img => img.url)) : null }}",
             "status": "={{ $json.Image && Array.isArray($json.Image) && $json.Image.length > 0 ? 'completed' : 'pending' }}"
           },
           "matchingColumns": [],

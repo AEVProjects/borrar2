@@ -339,15 +339,25 @@ function renderPost(post) {
     if (post.publish_facebook === 'Yes') platforms.push('facebook');
     if (post.publish_instagram === 'Yes') platforms.push('instagram');
     
-    // Parse image_url - puede contener múltiples URLs
+    // Parse image_url - can be JSON array or single URL
     let imageUrls = [];
     if (post.image_url) {
-        // Extraer todas las URLs que coincidan con https://
-        const urlMatches = post.image_url.match(/https?:\/\/[^\s,\]]+/g);
-        if (urlMatches) {
-            imageUrls = urlMatches;
-        } else if (post.image_url.startsWith('http')) {
-            imageUrls = [post.image_url];
+        try {
+            // Try to parse as JSON array
+            const parsed = JSON.parse(post.image_url);
+            if (Array.isArray(parsed)) {
+                imageUrls = parsed;
+            } else {
+                imageUrls = [post.image_url];
+            }
+        } catch (e) {
+            // Not JSON, extract URLs from string
+            const urlMatches = post.image_url.match(/https?:\/\/[^\s,\]"]+/g);
+            if (urlMatches) {
+                imageUrls = urlMatches;
+            } else if (post.image_url.startsWith('http')) {
+                imageUrls = [post.image_url];
+            }
         }
     }
     
@@ -356,7 +366,6 @@ function renderPost(post) {
             <div class="post-header">
                 <div>
                     <span class="post-meta">${date}</span>
-                    ${post.post_type ? `<span class="post-meta"> • ${post.post_type.substring(0, 50)}${post.post_type.length > 50 ? '...' : ''}</span>` : ''}
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     ${platforms.length > 0 ? `
@@ -370,14 +379,14 @@ function renderPost(post) {
                 </div>
             </div>
             
-            ${post.post_copy ? `
-                <div class="post-copy">${escapeHtml(post.post_copy)}</div>
+            ${post.post_type ? `
+                <div class="post-content" style="margin: 16px 0; font-size: 15px; line-height: 1.6; color: #1d2129; white-space: pre-wrap; word-wrap: break-word;">${escapeHtml(post.post_type)}</div>
             ` : ''}
             
             ${imageUrls.length > 0 ? `
-                <div class="post-images-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 10px;">
+                <div class="post-images-grid" style="display: grid; grid-template-columns: ${imageUrls.length === 1 ? '1fr' : imageUrls.length === 2 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(250px, 1fr))'}; gap: 8px; margin-top: 12px;">
                     ${imageUrls.map(url => `
-                        <img src="${url}" alt="Post image" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px;" onerror="this.style.display='none'">
+                        <img src="${url.trim()}" alt="Post image" style="width: 100%; height: ${imageUrls.length === 1 ? 'auto' : '250px'}; max-height: 500px; object-fit: cover; border-radius: 8px; cursor: pointer;" onerror="this.style.display='none'" onclick="window.open('${url.trim()}', '_blank')">
                     `).join('')}
                 </div>
             ` : ''}
