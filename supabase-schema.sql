@@ -8,30 +8,30 @@ DROP TABLE IF EXISTS public.social_posts CASCADE;
 CREATE TABLE public.social_posts (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   
-  -- Post content (required)
-  post_type text NOT NULL,  -- Main post content/text
+  -- Form inputs
+  topic text NOT NULL,
+  post_type text NOT NULL,
+  visual_style text NOT NULL,
+  orientation text NOT NULL,
+  headline text NOT NULL,
+  data_points text,
+  context text,
   
-  -- Image storage
-  image_url text,  -- JSON array of image URLs or single URL
+  -- Agent outputs (PLAIN TEXT)
+  strategy_analysis text,      -- Full output from Agent 1
+  post_copy text,              -- Plain text from Agent 2
+  image_prompt text,           -- Plain text from Agent 3
+  
+  -- Generated content
+  image_url text,
   
   -- Publishing platforms
   publish_linkedin text DEFAULT 'No',
   publish_facebook text DEFAULT 'No',
   publish_instagram text DEFAULT 'No',
   
-  -- AI Generation fields (optional - for AI-generated content)
-  topic text,
-  visual_style text,
-  orientation text,
-  headline text,
-  data_points text,
-  context text,
-  strategy_analysis text,      -- Full output from Agent 1
-  post_copy text,              -- Plain text from Agent 2
-  image_prompt text,           -- Plain text from Agent 3
-  
   -- Metadata
-  status text DEFAULT 'completed' NOT NULL 
+  status text DEFAULT 'pending' NOT NULL 
     CHECK (status IN ('pending', 'strategy_completed', 'copy_completed', 'prompt_completed', 'image_generated', 'completed', 'failed')),
   
   -- Timestamps
@@ -118,3 +118,38 @@ COMMENT ON TABLE public.post_versions IS 'Version history for content iterations
 COMMENT ON COLUMN public.social_posts.strategy_analysis IS 'Plain text output from Agent 1: Strategy Analyzer';
 COMMENT ON COLUMN public.social_posts.post_copy IS 'Plain text output from Agent 2: Copy Writer';
 COMMENT ON COLUMN public.social_posts.image_prompt IS 'Plain text output from Agent 3: Image Prompt Engineer';
+
+-- Migration: Add publishing platform columns (if table already exists)
+-- Run these ALTER TABLE commands on existing databases:
+DO $$ 
+BEGIN
+    -- Add publish_linkedin column if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'social_posts' 
+        AND column_name = 'publish_linkedin'
+    ) THEN
+        ALTER TABLE public.social_posts ADD COLUMN publish_linkedin text DEFAULT 'No';
+    END IF;
+
+    -- Add publish_facebook column if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'social_posts' 
+        AND column_name = 'publish_facebook'
+    ) THEN
+        ALTER TABLE public.social_posts ADD COLUMN publish_facebook text DEFAULT 'No';
+    END IF;
+
+    -- Add publish_instagram column if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'social_posts' 
+        AND column_name = 'publish_instagram'
+    ) THEN
+        ALTER TABLE public.social_posts ADD COLUMN publish_instagram text DEFAULT 'No';
+    END IF;
+END $$;
