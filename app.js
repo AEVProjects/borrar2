@@ -22,15 +22,20 @@ const n8nGenerateWebhook = CONFIG.n8nGenerateWebhook || CONFIG.n8n?.generateWebh
 // Supabase Client
 let supabaseClient;
 if (typeof window !== 'undefined' && supabaseUrl && supabaseKey && 
-    supabaseUrl !== 'YOUR_SUPABASE_URL') {
+    supabaseUrl !== 'YOUR_SUPABASE_URL' && supabaseKey !== 'TU_ANON_KEY_AQUI') {
     // Load Supabase from CDN
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
     script.onload = () => {
         if (window.supabase && window.supabase.createClient) {
-            supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-            console.log('✅ Supabase conectado correctamente');
-            loadPosts(); // Load posts after Supabase is initialized
+            try {
+                supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+                console.log('✅ Supabase conectado correctamente');
+                loadPosts(); // Load posts after Supabase is initialized
+            } catch (error) {
+                console.error('❌ Error al inicializar Supabase:', error);
+                showToast('Error: Verifica tu clave de Supabase en config.example.js', 'error');
+            }
         } else {
             console.error('❌ Error: Supabase CDN no cargó correctamente');
         }
@@ -39,6 +44,11 @@ if (typeof window !== 'undefined' && supabaseUrl && supabaseKey &&
         console.error('❌ Error al cargar Supabase desde CDN');
     };
     document.head.appendChild(script);
+} else {
+    console.warn('⚠️ Supabase no configurado. Actualiza config.example.js con tu clave de Supabase.');
+    setTimeout(() => {
+        showToast('⚠️ Configura tu clave de Supabase en config.example.js para ver los posts guardados', 'warning');
+    }, 1000);
 }
 
 // State
