@@ -866,7 +866,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const itemsRegistro = $('Register Load').all();\nconst mediaItems = [];\n\nfor (const item of itemsRegistro) {\n    const urn = item.json.value.image;\n    if (urn) {\n        mediaItems.push({\n            \"id\": urn\n        });\n    }\n}\nreturn [{\n    json: {\n        contentEntities: mediaItems\n    }\n}];"
+        "jsCode": "// Obtenemos todos los ítems del nodo de registro\nconst itemsRegistro = $('Register Load').all();\n\nconst mediaItems = [];\n\n// Recorremos cada respuesta de LinkedIn\nfor (const item of itemsRegistro) {\n    // Obtenemos el URN (el identificador de la imagen)\n    const urn = item.json.value.image;\n    \n    if (urn) {\n        // CORRECCIÓN: LinkedIn exige que la llave se llame \"id\", no \"media\"\n        mediaItems.push({\n            \"id\": urn\n        });\n    }\n}\n\n// Recuperamos el post_type del nodo Merge Webhook with DB\nconst postText = $('Merge Webhook with DB').first().json.post_type;\n\n// Devolvemos la lista limpia y correcta CON el post_type\nreturn [{\n    json: {\n        contentEntities: mediaItems,\n        post_type: postText\n    }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -898,7 +898,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  \"author\": \"urn:li:organization:105834790\",\n  \"commentary\": $('Merge Webhook with DB').first().json.post_type,\n  \"visibility\": \"PUBLIC\",\n  \"distribution\": {\n    \"feedDistribution\": \"MAIN_FEED\",\n    \"targetEntities\": [],\n    \"thirdPartyDistributionChannels\": []\n  },\n  \"content\": {\n    \"multiImage\": {\n      \"images\": $json.contentEntities\n    }\n  },\n  \"lifecycleState\": \"PUBLISHED\",\n  \"isReshareDisabledByAuthor\": false\n} }}",
+        "jsonBody": "={{ {\n  \"author\": \"urn:li:organization:105834790\",\n  \"commentary\": $json.post_type,\n  \"visibility\": \"PUBLIC\",\n  \"distribution\": {\n    \"feedDistribution\": \"MAIN_FEED\",\n    \"targetEntities\": [],\n    \"thirdPartyDistributionChannels\": []\n  },\n  \"content\": {\n    \"multiImage\": {\n      \"images\": $json.contentEntities\n    }\n  },\n  \"lifecycleState\": \"PUBLISHED\",\n  \"isReshareDisabledByAuthor\": false\n} }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
