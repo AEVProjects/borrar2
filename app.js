@@ -264,7 +264,8 @@ generateForm.addEventListener('submit', async (e) => {
         btn.disabled = true;
         btn.textContent = 'Generando...';
         
-        const response = await fetch(n8nGenerateWebhook, {
+        // Send to n8n webhook
+        fetch(n8nGenerateWebhook, {
             method: 'POST',
             mode: 'no-cors',
             headers: {
@@ -273,21 +274,46 @@ generateForm.addEventListener('submit', async (e) => {
             body: JSON.stringify(data)
         });
         
-        if (response.ok) {
-            showToast('Contenido generado exitosamente. Revisa la base de datos.', 'success');
+        // Show message that content is being generated
+        showToast('Contenido en generación...', 'success');
+        
+        generatedResults.style.display = 'block';
+        document.getElementById('generated-copy').textContent = 
+            'El contenido se está generando. Por favor, actualiza la lista de posts en unos momentos para ver el resultado.';
+        document.getElementById('generated-image').innerHTML = 
+            '<p style="color: var(--text-secondary);">La imagen aparecerá en la base de datos cuando se complete la generación.</p>';
+        
+        // Wait for post to appear in database
+        if (supabaseClient) {
+            const { count: initialCount } = await supabaseClient
+                .from('social_posts')
+                .select('*', { count: 'exact', head: true });
             
-            // Show a message to check the database
-            generatedResults.style.display = 'block';
-            document.getElementById('generated-copy').textContent = 
-                'El contenido se está generando. Por favor, actualiza la lista de posts en unos momentos para ver el resultado.';
-            document.getElementById('generated-image').innerHTML = 
-                '<p style="color: var(--text-secondary);">La imagen aparecerá en la base de datos cuando se complete la generación.</p>';
+            let attempts = 0;
+            const maxAttempts = 10; // 20 seconds max for generation
+            let postCreated = false;
             
-            // Load posts after a delay
-            setTimeout(() => loadPosts(), 3000);
-        } else {
-            throw new Error('Error en la generación');
+            while (attempts < maxAttempts && !postCreated) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                attempts++;
+                
+                const { count: newCount } = await supabaseClient
+                    .from('social_posts')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (newCount > initialCount) {
+                    postCreated = true;
+                    showToast('Contenido generado exitosamente!', 'success');
+                    loadPosts(); // Refresh immediately
+                    break;
+                }
+            }
+            
+            if (!postCreated) {
+                showToast('La generación está tomando más tiempo. Refresca los posts en unos momentos.', 'warning');
+            }
         }
+        
     } catch (error) {
         console.error('Error:', error);
         showToast('Error al generar contenido. Verifica la configuración del webhook.', 'error');
