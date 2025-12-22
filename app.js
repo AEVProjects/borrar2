@@ -402,8 +402,6 @@ function renderPost(post) {
         
         console.log('Final imageUrls:', imageUrls);
     }
-        console.log('Final imageUrls array:', imageUrls);
-    }
     
     return `
         <div class="post-item" data-post-id="${post.id}">
