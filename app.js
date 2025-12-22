@@ -291,12 +291,6 @@ async function loadPosts() {
         
         if (error) throw error;
         
-        // Debug: Check first post structure
-        if (data && data.length > 0) {
-            console.log('Sample post columns:', Object.keys(data[0]));
-            console.log('Sample post full data:', data[0]);
-        }
-        
         if (!data || data.length === 0) {
             postsListEl.innerHTML = `
                 <div class="empty-state">
