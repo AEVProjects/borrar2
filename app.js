@@ -150,6 +150,7 @@ publishForm.addEventListener('submit', async (e) => {
         
         const response = await fetch(n8nPublishWebhook, {
             method: 'POST',
+            mode: 'no-cors',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -203,6 +204,7 @@ generateForm.addEventListener('submit', async (e) => {
         
         const response = await fetch(n8nGenerateWebhook, {
             method: 'POST',
+            mode: 'no-cors',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -388,6 +390,7 @@ async function publishPost(postId) {
         
         const response = await fetch(n8nPublishWebhook, {
             method: 'POST',
+            mode: 'no-cors',
             headers: {
                 'Content-Type': 'application/json'
             },
