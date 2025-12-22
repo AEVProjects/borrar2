@@ -309,20 +309,6 @@ async function loadPosts() {
         
         postsListEl.innerHTML = data.map(post => renderPost(post)).join('');
         
-        // Add event listeners to checkboxes
-        document.querySelectorAll('.post-checkbox').forEach(cb => {
-            cb.addEventListener('change', (e) => {
-                const postId = e.target.dataset.postId;
-                if (e.target.checked) {
-                    selectedPosts.add(postId);
-                    e.target.closest('.post-item').classList.add('selected');
-                } else {
-                    selectedPosts.delete(postId);
-                    e.target.closest('.post-item').classList.remove('selected');
-                }
-            });
-        });
-        
     } catch (error) {
         console.error('Error loading posts:', error);
         postsListEl.innerHTML = `
@@ -347,19 +333,22 @@ function renderPost(post) {
     const statusClass = post.status === 'completed' ? 'completed' : 'pending';
     const isCompleted = post.status === 'completed';
     
-    // Parse image_url - puede ser string simple o texto que contiene URL
-    let imageUrl = null;
+    // Parse image_url - puede contener múltiples URLs
+    let imageUrls = [];
     if (post.image_url) {
-        // Si contiene "https://", extraer la URL
-        const urlMatch = post.image_url.match(/https?:\/\/[^\s,]+/);
-        imageUrl = urlMatch ? urlMatch[0] : post.image_url;
+        // Extraer todas las URLs que coincidan con https://
+        const urlMatches = post.image_url.match(/https?:\/\/[^\s,\]]+/g);
+        if (urlMatches) {
+            imageUrls = urlMatches;
+        } else if (post.image_url.startsWith('http')) {
+            imageUrls = [post.image_url];
+        }
     }
     
     return `
         <div class="post-item" data-post-id="${post.id}">
             <div class="post-header">
                 <div>
-                    <input type="checkbox" class="post-checkbox" data-post-id="${post.id}">
                     <span class="post-meta">${date}</span>
                     ${post.post_type ? `<span class="post-meta"> • ${post.post_type.substring(0, 50)}${post.post_type.length > 50 ? '...' : ''}</span>` : ''}
                 </div>
@@ -370,9 +359,11 @@ function renderPost(post) {
                 <div class="post-copy">${escapeHtml(post.post_copy)}</div>
             ` : ''}
             
-            ${imageUrl ? `
-                <div class="post-image">
-                    <img src="${imageUrl}" alt="Post image" onerror="this.parentElement.style.display='none'">
+            ${imageUrls.length > 0 ? `
+                <div class="post-images-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 10px;">
+                    ${imageUrls.map(url => `
+                        <img src="${url}" alt="Post image" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px;" onerror="this.style.display='none'">
+                    `).join('')}
                 </div>
             ` : ''}
             
