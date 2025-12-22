@@ -333,6 +333,12 @@ function renderPost(post) {
     const statusClass = post.status === 'completed' ? 'completed' : 'pending';
     const isCompleted = post.status === 'completed';
     
+    // Determine published platforms
+    const platforms = [];
+    if (post.publish_linkedin === 'Yes') platforms.push('linkedin');
+    if (post.publish_facebook === 'Yes') platforms.push('facebook');
+    if (post.publish_instagram === 'Yes') platforms.push('instagram');
+    
     // Parse image_url - puede contener múltiples URLs
     let imageUrls = [];
     if (post.image_url) {
@@ -352,7 +358,16 @@ function renderPost(post) {
                     <span class="post-meta">${date}</span>
                     ${post.post_type ? `<span class="post-meta"> • ${post.post_type.substring(0, 50)}${post.post_type.length > 50 ? '...' : ''}</span>` : ''}
                 </div>
-                <span class="post-status ${statusClass}">${post.status}</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    ${platforms.length > 0 ? `
+                        <div style="display: flex; gap: 4px;">
+                            ${platforms.includes('linkedin') ? `<span class="platform-badge" style="background: #0077b5; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">LinkedIn</span>` : ''}
+                            ${platforms.includes('facebook') ? `<span class="platform-badge" style="background: #1877f2; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Facebook</span>` : ''}
+                            ${platforms.includes('instagram') ? `<span class="platform-badge" style="background: #e4405f; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Instagram</span>` : ''}
+                        </div>
+                    ` : ''}
+                    <span class="post-status ${statusClass}">${post.status}</span>
+                </div>
             </div>
             
             ${post.post_copy ? `
