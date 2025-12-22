@@ -510,7 +510,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Combinar datos del webhook con la respuesta de ImgBB\nconst imgbbResponse = $input.item.json; // Respuesta de ImgBB\nconst originalData = $('Separar Binarios').item.json; // Datos originales del webhook\n\n// Merge: todos los datos originales + respuesta de ImgBB\nreturn [{\n  json: {\n    ...originalData,\n    data: imgbbResponse // La URL de imagen está en imgbbResponse.data.url\n  }\n}];"
+        "jsCode": "// Combinar datos del webhook con la respuesta de ImgBB\nconst imgbbResponse = $input.item.json; // Respuesta de ImgBB\nconst webhookData = $('Webhook - Publish Post').item.json; // Datos originales del webhook\n\n// Merge: todos los datos originales + respuesta de ImgBB\nreturn [{\n  json: {\n    ...webhookData,\n    data: imgbbResponse // La URL de imagen está en imgbbResponse.data.url\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
