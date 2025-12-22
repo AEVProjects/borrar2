@@ -815,12 +815,27 @@
       ],
       "id": "75013151-c31a-49c3-ac6a-0a8ff73a21bc",
       "name": "Register Load",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
       "credentials": {
         "linkedInCommunityManagementOAuth2Api": {
           "id": "EM6TxDAmqBcNfWEy",
           "name": "n8n-post-msi"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combina la respuesta de Register Load con el binario de Separate Images LI\nconst uploadResponse = $input.item.json;\n\nconsole.log('==== MERGE BINARY START ====');\n\n// Obtener el binario desde Separate Images LI\nconst separateNode = $('Separate Images LI');\nif (!separateNode) {\n  console.log('MERGE BINARY - ERROR: No se encontró Separate Images LI');\n  return [{ json: uploadResponse }];\n}\n\nconst allSeparateItems = separateNode.all();\nconst currentIndex = $itemIndex;\n\nconsole.log('MERGE BINARY - Total items en Separate:', allSeparateItems.length);\nconsole.log('MERGE BINARY - Current index:', currentIndex);\n\nif (currentIndex >= allSeparateItems.length) {\n  console.log('MERGE BINARY - ERROR: Index fuera de rango');\n  return [{ json: uploadResponse }];\n}\n\nconst separateItem = allSeparateItems[currentIndex];\nconst binaryData = separateItem.binary;\n\nif (!binaryData || !binaryData.data) {\n  console.log('MERGE BINARY - ERROR: No hay binario en Separate item', currentIndex);\n  return [{ json: uploadResponse }];\n}\n\nconsole.log('MERGE BINARY - Binario recuperado para item', currentIndex);\nconsole.log('MERGE BINARY - Binary.data exists:', !!binaryData.data);\nconsole.log('==== MERGE BINARY END ====');\n\nreturn [{\n  json: uploadResponse,\n  binary: binaryData\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2528,
+        -976
+      ],
+      "id": "merge-binary-upload-001",
+      "name": "Merge Binary with Upload URL"
     },
     {
       "parameters": {
@@ -1812,6 +1827,17 @@
       ]
     },
     "Register Load": {
+      "main": [
+        [
+          {
+            "node": "Merge Binary with Upload URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Binary with Upload URL": {
       "main": [
         [
           {
