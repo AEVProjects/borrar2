@@ -647,7 +647,7 @@
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{ ($json.Image?.length || 0) }}",
+                    "leftValue": "={{ $json.Image && Array.isArray($json.Image) ? $json.Image.length : 0 }}",
                     "rightValue": 0,
                     "operator": {
                       "type": "number",
@@ -672,7 +672,7 @@
                 "conditions": [
                   {
                     "id": "846b662b-95e3-4d61-8acb-ca77b5ac92ee",
-                    "leftValue": "={{ ($json.Image?.length || 0) }}",
+                    "leftValue": "={{ $json.Image && Array.isArray($json.Image) ? $json.Image.length : 0 }}",
                     "rightValue": 1,
                     "operator": {
                       "type": "number",
@@ -696,7 +696,7 @@
                 "conditions": [
                   {
                     "id": "8a102074-89e6-4c87-9d9f-76fe9c0bc6d9",
-                    "leftValue": "={{ ($json.Image?.length || 0) }}",
+                    "leftValue": "={{ $json.Image && Array.isArray($json.Image) ? $json.Image.length : 0 }}",
                     "rightValue": 1,
                     "operator": {
                       "type": "number",
@@ -928,7 +928,7 @@
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{ ($json.Image?.length || 0) }}",
+                    "leftValue": "={{ $json.Image && Array.isArray($json.Image) ? $json.Image.length : 0 }}",
                     "rightValue": 0,
                     "operator": {
                       "type": "number",
@@ -953,7 +953,7 @@
                 "conditions": [
                   {
                     "id": "fb846b662b-95e3-4d61-8acb-ca77b5ac92ee",
-                    "leftValue": "={{ ($json.Image?.length || 0) }}",
+                    "leftValue": "={{ $json.Image && Array.isArray($json.Image) ? $json.Image.length : 0 }}",
                     "rightValue": 1,
                     "operator": {
                       "type": "number",
@@ -977,9 +977,9 @@
                 "conditions": [
                   {
                     "id": "fb8a102074-89e6-4c87-9d9f-76fe9c0bc6d9",
-                    "leftValue": "={{ ($json.Image?.length || 0) }}",
+                    "leftValue": "={{ $json.Image && Array.isArray($json.Image) ? $json.Image.length : 0 }}",
                     "rightValue": 1,
-  "operator": {
+                    "operator": {
                       "type": "number",
                       "operation": "gt"
                     }
