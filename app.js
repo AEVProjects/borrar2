@@ -340,23 +340,31 @@ function renderPost(post) {
     // Parse image_url - can be JSON array or single URL
     let imageUrls = [];
     if (post.image_url) {
+        console.log('Raw image_url:', post.image_url);
+        console.log('Type:', typeof post.image_url);
+        
         try {
             // Try to parse as JSON array
             const parsed = JSON.parse(post.image_url);
+            console.log('Parsed successfully:', parsed);
             if (Array.isArray(parsed)) {
                 imageUrls = parsed;
+                console.log('Array length:', imageUrls.length);
             } else {
                 imageUrls = [post.image_url];
             }
         } catch (e) {
+            console.log('Parse error, trying regex:', e.message);
             // Not JSON, extract URLs from string
             const urlMatches = post.image_url.match(/https?:\/\/[^\s,\]"]+/g);
             if (urlMatches) {
                 imageUrls = urlMatches;
+                console.log('Regex matched:', urlMatches.length, 'URLs');
             } else if (post.image_url.startsWith('http')) {
                 imageUrls = [post.image_url];
             }
         }
+        console.log('Final imageUrls array:', imageUrls);
     }
     
     return `
