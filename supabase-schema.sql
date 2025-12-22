@@ -8,30 +8,30 @@ DROP TABLE IF EXISTS public.social_posts CASCADE;
 CREATE TABLE public.social_posts (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   
-  -- Form inputs
-  topic text NOT NULL,
-  post_type text NOT NULL,
-  visual_style text NOT NULL,
-  orientation text NOT NULL,
-  headline text NOT NULL,
-  data_points text,
-  context text,
+  -- Post content (required)
+  post_type text NOT NULL,  -- Main post content/text
   
-  -- Agent outputs (PLAIN TEXT)
-  strategy_analysis text,      -- Full output from Agent 1
-  post_copy text,              -- Plain text from Agent 2
-  image_prompt text,           -- Plain text from Agent 3
-  
-  -- Generated content
-  image_url text,
+  -- Image storage
+  image_url text,  -- JSON array of image URLs or single URL
   
   -- Publishing platforms
   publish_linkedin text DEFAULT 'No',
   publish_facebook text DEFAULT 'No',
   publish_instagram text DEFAULT 'No',
   
+  -- AI Generation fields (optional - for AI-generated content)
+  topic text,
+  visual_style text,
+  orientation text,
+  headline text,
+  data_points text,
+  context text,
+  strategy_analysis text,      -- Full output from Agent 1
+  post_copy text,              -- Plain text from Agent 2
+  image_prompt text,           -- Plain text from Agent 3
+  
   -- Metadata
-  status text DEFAULT 'pending' NOT NULL 
+  status text DEFAULT 'completed' NOT NULL 
     CHECK (status IN ('pending', 'strategy_completed', 'copy_completed', 'prompt_completed', 'image_generated', 'completed', 'failed')),
   
   -- Timestamps
