@@ -104,25 +104,12 @@
       "type": "n8n-nodes-base.formTrigger",
       "typeVersion": 2.1,
       "position": [
-        -4856,
+        -4656,
         32
       ],
       "id": "c29dd752-5920-423b-8557-998afd0652e4",
       "name": "MSI Content Form",
       "webhookId": "70738d02-4bd8-4dac-853f-ba4836aafaf5"
-    },
-    {
-      "parameters": {
-        "jsCode": "// 🔒 Validación de Seguridad para Webhook\nconst token = $input.item.json.headers['x-webhook-token'];\nconst origin = $input.item.json.headers['x-app-origin'];\nconst referer = $input.item.json.headers['referer'] || $input.item.json.headers['origin'] || '';\n\n// Token esperado (debe coincidir con config.example.js)\nconst EXPECTED_TOKEN = 'msi_2024_secure_e8f4a9c2b1d5';\n\n// Validar token\nif (token !== EXPECTED_TOKEN) {\n  throw new Error('🚫 Acceso denegado: Token inválido');\n}\n\n// Validar origen de la app\nif (origin !== 'MSI-Social-Manager') {\n  throw new Error('🚫 Acceso denegado: Origen no autorizado');\n}\n\n// Validar que venga de dominio permitido (Vercel o localhost)\nconst allowedDomains = ['borrar2.vercel.app', 'localhost', '127.0.0.1'];\nconst isAllowedDomain = allowedDomains.some(domain => referer.includes(domain));\n\nif (!isAllowedDomain && referer) {\n  throw new Error('🚫 Acceso denegado: Dominio no autorizado');\n}\n\n// Si todo está bien, pasar los datos originales sin headers\nreturn $input.all();"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -4656,
-        32
-      ],
-      "id": "validate-security-gen",
-      "name": "Validate Security"
     },
     {
       "parameters": {
@@ -1554,19 +1541,6 @@
     },
     {
       "parameters": {
-        "jsCode": "// 🔒 Validación de Seguridad para Webhook de Publicación\nconst token = $input.item.json.headers['x-webhook-token'];\nconst origin = $input.item.json.headers['x-app-origin'];\nconst referer = $input.item.json.headers['referer'] || $input.item.json.headers['origin'] || '';\n\n// Token esperado (debe coincidir con config.example.js)\nconst EXPECTED_TOKEN = 'msi_2024_secure_e8f4a9c2b1d5';\n\n// Validar token\nif (token !== EXPECTED_TOKEN) {\n  throw new Error('🚫 Acceso denegado: Token inválido');\n}\n\n// Validar origen de la app\nif (origin !== 'MSI-Social-Manager') {\n  throw new Error('🚫 Acceso denegado: Origen no autorizado');\n}\n\n// Validar que venga de dominio permitido (Vercel o localhost)\nconst allowedDomains = ['borrar2.vercel.app', 'localhost', '127.0.0.1'];\nconst isAllowedDomain = allowedDomains.some(domain => referer.includes(domain));\n\nif (!isAllowedDomain && referer) {\n  throw new Error('🚫 Acceso denegado: Dominio no autorizado');\n}\n\n// Si todo está bien, pasar los datos originales sin headers\nreturn $input.all();"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -4456,
-        -784
-      ],
-      "id": "validate-security-pub",
-      "name": "Validate Security Publish"
-    },
-    {
-      "parameters": {
         "schema": {
           "__rl": true,
           "mode": "list",
@@ -1640,17 +1614,6 @@
   ],
   "connections": {
     "MSI Content Form": {
-      "main": [
-        [
-          {
-            "node": "Validate Security",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Validate Security": {
       "main": [
         [
           {
@@ -2103,17 +2066,6 @@
       ]
     },
     "On form submission1": {
-      "main": [
-        [
-          {
-            "node": "Validate Security Publish",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Validate Security Publish": {
       "main": [
         [
           {

@@ -141,9 +141,7 @@ publishForm.addEventListener('submit', async (e) => {
         const response = await fetch(n8nPublishWebhook, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-Webhook-Token': CONFIG.webhookToken || '',
-                'X-App-Origin': 'MSI-Social-Manager'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(data)
         });
@@ -196,9 +194,7 @@ generateForm.addEventListener('submit', async (e) => {
         const response = await fetch(n8nGenerateWebhook, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-Webhook-Token': CONFIG.webhookToken || '',
-                'X-App-Origin': 'MSI-Social-Manager'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(data)
         });
@@ -383,9 +379,7 @@ async function publishPost(postId) {
         const response = await fetch(n8nPublishWebhook, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-Webhook-Token': CONFIG.webhookToken || '',
-                'X-App-Origin': 'MSI-Social-Manager'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(publishData)
         });
