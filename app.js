@@ -377,13 +377,8 @@ function renderPost(post) {
         console.log('Raw image_url:', post.image_url);
         console.log('Type:', typeof post.image_url);
         
-        // Try comma-separated URLs first (simplest format from n8n)
-        if (post.image_url.includes(',')) {
-            imageUrls = post.image_url.split(',').map(url => url.trim()).filter(url => url);
-            console.log('Parsed as comma-separated, count:', imageUrls.length);
-        }
-        // Try JSON array format
-        else if (post.image_url.startsWith('[')) {
+        // Try JSON array format FIRST (because it might contain commas inside)
+        if (post.image_url.startsWith('[')) {
             try {
                 const parsed = JSON.parse(post.image_url);
                 if (Array.isArray(parsed)) {
@@ -393,6 +388,11 @@ function renderPost(post) {
             } catch (e) {
                 console.log('JSON parse failed:', e.message);
             }
+        }
+        // Try comma-separated URLs (simple format)
+        else if (post.image_url.includes(',')) {
+            imageUrls = post.image_url.split(',').map(url => url.trim()).filter(url => url);
+            console.log('Parsed as comma-separated, count:', imageUrls.length);
         }
         // Single URL
         else if (post.image_url.startsWith('http')) {
