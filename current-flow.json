@@ -2,113 +2,19 @@
   "nodes": [
     {
       "parameters": {
+        "httpMethod": "POST",
         "path": "70738d02-4bd8-4dac-853f-ba4836aafaf5",
-        "formTitle": "MSI Content Generator",
-        "formDescription": "Generate professional LinkedIn content and images for MSI Americas",
-        "formFields": {
-          "values": [
-            {
-              "fieldLabel": "topic",
-              "requiredField": true
-            },
-            {
-              "fieldLabel": "post_type",
-              "fieldType": "dropdown",
-              "fieldOptions": {
-                "values": [
-                  {
-                    "option": "Educational"
-                  },
-                  {
-                    "option": "Thought Leadership"
-                  },
-                  {
-                    "option": "Case Study/Storytelling"
-                  },
-                  {
-                    "option": "Company News"
-                  },
-                  {
-                    "option": "Standard Infographic"
-                  },
-                  {
-                    "option": "Carousel"
-                  }
-                ]
-              },
-              "requiredField": true
-            },
-            {
-              "fieldLabel": "visual_style",
-              "fieldType": "dropdown",
-              "fieldOptions": {
-                "values": [
-                  {
-                    "option": "Modern 3D"
-                  },
-                  {
-                    "option": "Isometric Architecture"
-                  },
-                  {
-                    "option": "Tech Close-up"
-                  },
-                  {
-                    "option": "Data Hero"
-                  },
-                  {
-                    "option": "Glassmorphism"
-                  }
-                ]
-              },
-              "requiredField": true
-            },
-            {
-              "fieldLabel": "orientation",
-              "fieldType": "dropdown",
-              "fieldOptions": {
-                "values": [
-                  {
-                    "option": "Square (1080x1080)"
-                  },
-                  {
-                    "option": "Vertical (1080x1350)"
-                  },
-                  {
-                    "option": "Horizontal (1200x627)"
-                  },
-                  {
-                    "option": "Story (1080x1920)"
-                  }
-                ]
-              },
-              "requiredField": true
-            },
-            {
-              "fieldLabel": "data_points",
-              "placeholder": "E.g., 75% faster deployment, $2M cost reduction"
-            },
-            {
-              "fieldLabel": "headline",
-              "placeholder": "Keep it short and bold (3-5 words max)",
-              "requiredField": true
-            },
-            {
-              "fieldLabel": "context",
-              "fieldType": "textarea",
-              "placeholder": "Any specific requirements or details..."
-            }
-          ]
-        },
+        "responseMode": "responseNode",
         "options": {}
       },
-      "type": "n8n-nodes-base.formTrigger",
-      "typeVersion": 2.1,
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
       "position": [
         -4656,
         32
       ],
       "id": "c29dd752-5920-423b-8557-998afd0652e4",
-      "name": "MSI Content Form",
+      "name": "Webhook - Generate Content",
       "webhookId": "70738d02-4bd8-4dac-853f-ba4836aafaf5"
     },
     {
@@ -550,7 +456,7 @@
           "conditions": [
             {
               "id": "18092288-7512-4299-81a1-3091917f8b2d",
-              "leftValue": "={{ $('On form submission1').item.json.publish_linkedin }}",
+              "leftValue": "={{ $('Webhook - Publish Post').item.json.publish_linkedin }}",
               "rightValue": "Yes",
               "operator": {
                 "type": "string",
@@ -583,7 +489,7 @@
           "conditions": [
             {
               "id": "50c8e378-687f-449e-b816-433b91349f21",
-              "leftValue": "={{ $('On form submission1').item.json.publish_facebook }}",
+              "leftValue": "={{ $('Webhook - Publish Post').item.json.publish_facebook }}",
               "rightValue": "Yes",
               "operator": {
                 "type": "string",
@@ -616,7 +522,7 @@
           "conditions": [
             {
               "id": "50c8e378-687f-449e-b816-433b91349f21",
-              "leftValue": "={{ $('On form submission1').item.json.publish_instagram }}",
+              "leftValue": "={{ $('Webhook - Publish Post').item.json.publish_instagram }}",
               "rightValue": "Yes",
               "operator": {
                 "type": "string",
@@ -766,7 +672,7 @@
         "authentication": "communityManagement",
         "postAs": "organization",
         "organization": "105834790",
-        "text": "={{ $('On form submission1').item.json.post_type }}",
+        "text": "={{ $('Webhook - Publish Post').item.json.post_type }}",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.linkedIn",
@@ -789,7 +695,7 @@
         "authentication": "communityManagement",
         "postAs": "organization",
         "organization": "105834790",
-        "text": "={{ $('On form submission1').item.json.post_type }}",
+        "text": "={{ $('Webhook - Publish Post').item.json.post_type }}",
         "shareMediaCategory": "IMAGE",
         "binaryPropertyName": "Image",
         "additionalFields": {}
@@ -922,7 +828,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{\n{\n  \"author\": \"urn:li:organization:105834790\",\n  \"commentary\": $('On form submission1').first().json.post_type,\n  \"visibility\": \"PUBLIC\",\n  \"distribution\": {\n    \"feedDistribution\": \"MAIN_FEED\",\n    \"targetEntities\": [],\n    \"thirdPartyDistributionChannels\": []\n  },\n  \"content\": {\n    \"multiImage\": {\n      \"images\": $json.contentEntities\n    }\n  },\n  \"lifecycleState\": \"PUBLISHED\",\n  \"isReshareDisabledByAuthor\": false\n}\n}}",
+        "jsonBody": "={{\n{\n  \"author\": \"urn:li:organization:105834790\",\n  \"commentary\": $('Webhook - Publish Post').first().json.post_type,\n  \"visibility\": \"PUBLIC\",\n  \"distribution\": {\n    \"feedDistribution\": \"MAIN_FEED\",\n    \"targetEntities\": [],\n    \"thirdPartyDistributionChannels\": []\n  },\n  \"content\": {\n    \"multiImage\": {\n      \"images\": $json.contentEntities\n    }\n  },\n  \"lifecycleState\": \"PUBLISHED\",\n  \"isReshareDisabledByAuthor\": false\n}\n}}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -1051,7 +957,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n   \"message\": \"{{ $('On form submission1').item.json.post_type }}\"\n}",
+        "jsonBody": "={\n   \"message\": \"{{ $('Webhook - Publish Post').item.json.post_type }}\"\n}",
         "options": {
           "response": {
             "response": {
@@ -1091,7 +997,7 @@
             },
             {
               "name": "message",
-              "value": "={{ $('On form submission1').item.json.post_type }}"
+              "value": "={{ $('Webhook - Publish Post').item.json.post_type }}"
             }
           ]
         },
@@ -1164,7 +1070,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const itemsUploaded = $('FB Upload URL (Hidden)').all();\nconst originalPost = $('On form submission1').first().json.post_type;\n\nconst mediaItems = [];\n\n// Recolectamos los IDs que nos devolvió Facebook\nfor (const item of itemsUploaded) {\n    const mediaId = item.json.id;\n    if (mediaId) {\n        mediaItems.push({\n            \"media_fbid\": mediaId\n        });\n    }\n}\n\nreturn [{\n    json: {\n        attached_media: mediaItems,\n        post_type: originalPost\n    }\n}];"
+        "jsCode": "const itemsUploaded = $('FB Upload URL (Hidden)').all();\nconst originalPost = $('Webhook - Publish Post').first().json.post_type;\n\nconst mediaItems = [];\n\n// Recolectamos los IDs que nos devolvió Facebook\nfor (const item of itemsUploaded) {\n    const mediaId = item.json.id;\n    if (mediaId) {\n        mediaItems.push({\n            \"media_fbid\": mediaId\n        });\n    }\n}\n\nreturn [{\n    json: {\n        attached_media: mediaItems,\n        post_type: originalPost\n    }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1203,7 +1109,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// 1. Agrupamos todas las respuestas de la BD en un solo array\nconst items = $input.all();\nconst images = [];\n\n// 2. Recuperamos el caption original\nconst caption = $('On form submission1').first().json.post_type;\n\n// 3. Extraemos las URLs limpias desde la base de datos\nfor (const item of items) {\n  // Leemos image_url que viene del INSERT en Postgres\n  if (item.json.image_url) {\n    images.push(item.json.image_url);\n  }\n}\n\n// 4. Devolvemos UN solo ítem con la lista y el conteo\nreturn [{\n  json: {\n    images_list: images,\n    total_count: images.length,\n    caption: caption\n  }\n}];"
+        "jsCode": "// 1. Agrupamos todas las respuestas de la BD en un solo array\nconst items = $input.all();\nconst images = [];\n\n// 2. Recuperamos el caption original\nconst caption = $('Webhook - Publish Post').first().json.post_type;\n\n// 3. Extraemos las URLs limpias desde la base de datos\nfor (const item of items) {\n  // Leemos image_url que viene del INSERT en Postgres\n  if (item.json.image_url) {\n    images.push(item.json.image_url);\n  }\n}\n\n// 4. Devolvemos UN solo ítem con la lista y el conteo\nreturn [{\n  json: {\n    images_list: images,\n    total_count: images.length,\n    caption: caption\n  }\n}];"
       },
       "id": "299cbc39-4173-4312-b14a-ac334254de18",
       "name": "Agrupar Datos ImgBB",
@@ -1465,78 +1371,19 @@
     },
     {
       "parameters": {
-        "formTitle": "Post Social Media (Router Mode)",
-        "formDescription": "Sube imagen, se genera URL y se distribuye según la red social.",
-        "formFields": {
-          "values": [
-            {
-              "fieldLabel": "post_type",
-              "fieldType": "textarea",
-              "requiredField": true
-            },
-            {
-              "fieldLabel": "Image",
-              "fieldType": "file",
-              "acceptFileTypes": ".jpg, .png, .mp4",
-              "requiredField": true
-            },
-            {
-              "fieldLabel": "publish_linkedin",
-              "fieldType": "dropdown",
-              "fieldOptions": {
-                "values": [
-                  {
-                    "option": "Yes"
-                  },
-                  {
-                    "option": "No"
-                  }
-                ]
-              },
-              "requiredField": true
-            },
-            {
-              "fieldLabel": "publish_facebook",
-              "fieldType": "dropdown",
-              "fieldOptions": {
-                "values": [
-                  {
-                    "option": "Yes"
-                  },
-                  {
-                    "option": "No"
-                  }
-                ]
-              },
-              "requiredField": true
-            },
-            {
-              "fieldLabel": "publish_instagram",
-              "fieldType": "dropdown",
-              "fieldOptions": {
-                "values": [
-                  {
-                    "option": "Yes"
-                  },
-                  {
-                    "option": "No"
-                  }
-                ]
-              },
-              "requiredField": true
-            }
-          ]
-        },
+        "httpMethod": "POST",
+        "path": "025d6de3-6b46-41c2-839d-58a8b18b649f",
+        "responseMode": "responseNode",
         "options": {}
       },
-      "type": "n8n-nodes-base.formTrigger",
-      "typeVersion": 2.3,
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
       "position": [
         -4656,
         -784
       ],
       "id": "c3eaaeb7-2d04-4385-b8ab-af3dbd32acf4",
-      "name": "On form submission1",
+      "name": "Webhook - Publish Post",
       "webhookId": "025d6de3-6b46-41c2-839d-58a8b18b649f"
     },
     {
@@ -1554,7 +1401,7 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "post_type": "={{ $('On form submission1').item.json.post_type }}",
+            "post_type": "={{ $('Webhook - Publish Post').item.json.post_type }}",
             "image_url": "={{ $json.data.url }}",
             "status": "image_uploaded"
           },
@@ -1613,7 +1460,7 @@
     }
   ],
   "connections": {
-    "MSI Content Form": {
+    "Webhook - Generate Content": {
       "main": [
         [
           {
@@ -2065,7 +1912,7 @@
         ]
       ]
     },
-    "On form submission1": {
+    "Webhook - Publish Post": {
       "main": [
         [
           {
