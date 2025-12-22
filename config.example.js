@@ -12,14 +12,10 @@
 
 window.APP_CONFIG = {
     // Supabase Configuration
-    // ⚠️ ACCIÓN REQUERIDA: Obtén tu clave real de Supabase
-    // 1. Ve a: https://app.supabase.com/project/vahqhxfdropstvklvzej/settings/api
-    // 2. Busca la sección "Project API keys"
-    // 3. Copia la clave "anon" "public" (la que es MUY larga, aprox 200+ caracteres)
-    // 4. Pégala abajo reemplazando 'TU_ANON_KEY_AQUI'
+    // Obtén estos valores en: https://app.supabase.com/project/[tu-proyecto]/settings/api
     supabase: {
         url: 'https://vahqhxfdropstvklvzej.supabase.co',
-        anonKey: 'TU_ANON_KEY_AQUI'  // ⚠️ REEMPLAZAR con la clave real de Supabase
+        anonKey: 'sb_publishable_xt7qY64rVMowaSris2Zs0Q_2DEbzjpy'
     },
     
     // n8n Webhook URLs

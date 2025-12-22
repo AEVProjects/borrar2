@@ -22,7 +22,8 @@ const n8nGenerateWebhook = CONFIG.n8nGenerateWebhook || CONFIG.n8n?.generateWebh
 // Supabase Client
 let supabaseClient;
 if (typeof window !== 'undefined' && supabaseUrl && supabaseKey && 
-    supabaseUrl !== 'YOUR_SUPABASE_URL' && supabaseKey !== 'TU_ANON_KEY_AQUI') {
+    supabaseUrl !== 'YOUR_SUPABASE_URL' && supabaseKey !== 'TU_ANON_KEY_AQUI' && 
+    supabaseKey !== 'sb_publishable_xt7qY64rVMowaSris2Zs0Q_2DEbzjpy') {
     // Load Supabase from CDN
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
