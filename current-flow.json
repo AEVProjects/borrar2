@@ -131,13 +131,13 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "topic": "={{ $('Format Form Input').item.json.topic }}",
-            "post_type": "={{ $('Format Form Input').item.json.post_type }}",
-            "visual_style": "={{ $('Format Form Input').item.json.visual_style }}",
-            "orientation": "={{ $('Format Form Input').item.json.orientation }}",
-            "headline": "={{ $('Format Form Input').item.json.headline }}",
-            "data_points": "={{ $('Format Form Input').item.json.data_points }}",
-            "context": "={{ $('Format Form Input').item.json.context }}",
+            "topic": "={{ $('Format Form Input').item.json.topic || 'No topic provided' }}",
+            "post_type": "={{ $('Format Form Input').item.json.post_type || 'image' }}",
+            "visual_style": "={{ $('Format Form Input').item.json.visual_style || 'professional' }}",
+            "orientation": "={{ $('Format Form Input').item.json.orientation || 'square' }}",
+            "headline": "={{ $('Format Form Input').item.json.headline || '' }}",
+            "data_points": "={{ $('Format Form Input').item.json.data_points || '' }}",
+            "context": "={{ $('Format Form Input').item.json.context || '' }}",
             "strategy_analysis": "={{ $('Agent 1: Strategy Analyzer').item.json.output }}",
             "post_copy": "={{ $json.output }}",
             "status": "copy_completed"
