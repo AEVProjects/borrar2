@@ -826,19 +826,6 @@
     },
     {
       "parameters": {
-        "jsCode": "// Combina la respuesta de Register Load con el binario de Separate Images LI\nconst allRegisterItems = $input.all();\nconst outputItems = [];\n\nconsole.log('==== MERGE BINARY START ====');\nconsole.log('MERGE BINARY - Total items de Register Load:', allRegisterItems.length);\n\n// Obtener el binario desde Separate Images LI\nconst separateNode = $('Separate Images LI');\nif (!separateNode) {\n  console.log('MERGE BINARY - ERROR: No se encontró Separate Images LI');\n  return allRegisterItems.map(item => ({ json: item.json }));\n}\n\nconst allSeparateItems = separateNode.all();\nconsole.log('MERGE BINARY - Total items en Separate:', allSeparateItems.length);\n\n// Procesar TODOS los items de Register Load\nfor (let i = 0; i < allRegisterItems.length; i++) {\n  const uploadResponse = allRegisterItems[i].json;\n  \n  console.log(`\\nMERGE BINARY - Procesando item ${i}`);\n  \n  if (i >= allSeparateItems.length) {\n    console.log('MERGE BINARY - ERROR: Index fuera de rango para item', i);\n    outputItems.push({ json: uploadResponse });\n    continue;\n  }\n  \n  const separateItem = allSeparateItems[i];\n  const binaryData = separateItem.binary;\n  \n  if (!binaryData || !binaryData.data) {\n    console.log('MERGE BINARY - ERROR: No hay binario en Separate item', i);\n    outputItems.push({ json: uploadResponse });\n    continue;\n  }\n  \n  console.log('MERGE BINARY - Binario recuperado para item', i);\n  console.log('MERGE BINARY - Binary.data exists:', !!binaryData.data);\n  \n  outputItems.push({\n    json: uploadResponse,\n    binary: binaryData,\n    pairedItem: { item: i }\n  });\n}\n\nconsole.log('\\nMERGE BINARY - Total items devueltos:', outputItems.length);\nconsole.log('==== MERGE BINARY END ====');\n\nreturn outputItems;"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -2528,
-        -976
-      ],
-      "id": "merge-binary-upload-001",
-      "name": "Merge Binary with Upload URL"
-    },
-    {
-      "parameters": {
         "method": "PUT",
         "url": "={{ $json.value.uploadUrl }}",
         "sendHeaders": true,
@@ -1827,17 +1814,6 @@
       ]
     },
     "Register Load": {
-      "main": [
-        [
-          {
-            "node": "Merge Binary with Upload URL",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge Binary with Upload URL": {
       "main": [
         [
           {
