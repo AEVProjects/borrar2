@@ -414,10 +414,15 @@ body {
 }
 
 .post-copy {
-    color: var(--text-primary);
+    color: #000000;
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
     margin: 12px 0;
     line-height: 1.6;
     white-space: pre-wrap;
+    font-size: 14px;
+    border-left: 3px solid var(--primary-color);
 }
 
 .post-image {

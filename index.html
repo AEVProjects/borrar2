@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,7 +20,7 @@
                         <polyline points="16 6 12 2 8 6"></polyline>
                         <line x1="12" y1="2" x2="12" y2="15"></line>
                     </svg>
-                    Publicar
+                    Publish
                 </button>
                 <button class="tab-btn" data-mode="generate">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -28,7 +28,7 @@
                         <line x1="12" y1="8" x2="12" y2="16"></line>
                         <line x1="8" y1="12" x2="16" y2="12"></line>
                     </svg>
-                    Generar Contenido
+                    Generate Content
                 </button>
             </div>
         </nav>
@@ -39,17 +39,17 @@
                 <!-- Left: Post Form -->
                 <div class="column form-column">
                     <div class="card">
-                        <h2>Crear Nueva Publicación</h2>
+                        <h2>Create New Post</h2>
                         <form id="publish-form">
                             <div class="form-group">
-                                <label for="post_type">Contenido del Post *</label>
-                                <textarea id="post_type" name="post_type" rows="6" required placeholder="Escribe el contenido de tu publicación..."></textarea>
+                                <label for="post_type">Post Content *</label>
+                                <textarea id="post_type" name="post_type" rows="6" required placeholder="Write your post content..."></textarea>
                             </div>
 
                             <div class="form-group">
-                                <label for="image">Imágenes (máx. 10)</label>
+                                <label for="image">Images (max 10)</label>
                                 <input type="file" id="image" name="image" accept=".jpg, .jpeg, .png" multiple>
-                                <small class="form-hint">Puedes seleccionar hasta 10 imágenes. Se subirán automáticamente y las URLs se guardarán en la BD</small>
+                                <small class="form-hint">You can select up to 10 images. They will be uploaded automatically and URLs saved to database</small>
                                 <div id="image-preview" class="image-preview"></div>
                             </div>
 
@@ -91,7 +91,7 @@
                                     <polyline points="16 6 12 2 8 6"></polyline>
                                     <line x1="12" y1="2" x2="12" y2="15"></line>
                                 </svg>
-                                Publicar en Redes
+                                Publish to Social Media
                             </button>
                         </form>
                     </div>
@@ -101,17 +101,17 @@
                 <div class="column posts-column">
                     <div class="card">
                         <div class="posts-header">
-                            <h2>Posts Guardados</h2>
+                            <h2>Saved Posts</h2>
                             <button id="refresh-posts" class="btn btn-secondary">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="23 4 23 10 17 10"></polyline>
                                     <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
                                 </svg>
-                                Actualizar
+                                Refresh
                             </button>
                         </div>
                         <div id="posts-list" class="posts-list">
-                            <div class="loading">Cargando posts...</div>
+                            <div class="loading">Loading posts...</div>
                         </div>
                     </div>
                 </div>
@@ -121,25 +121,25 @@
         <!-- Generate Mode -->
         <div id="generate-mode" class="mode-content">
             <div class="card form-card">
-                <h2>Generar Contenido con IA</h2>
+                <h2>Generate Content with AI</h2>
                 <form id="generate-form">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="topic">Tema *</label>
-                            <input type="text" id="topic" name="topic" required placeholder="Ej: 5G Network Infrastructure">
+                            <label for="topic">Topic *</label>
+                            <input type="text" id="topic" name="topic" required placeholder="e.g., 5G Network Infrastructure">
                         </div>
 
                         <div class="form-group">
-                            <label for="headline">Titular *</label>
-                            <input type="text" id="headline" name="headline" required placeholder="3-5 palabras máximo">
+                            <label for="headline">Headline *</label>
+                            <input type="text" id="headline" name="headline" required placeholder="3-5 words max">
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="post_type_gen">Tipo de Post *</label>
+                            <label for="post_type_gen">Post Type *</label>
                             <select id="post_type_gen" name="post_type" required>
-                                <option value="">Selecciona...</option>
+                                <option value="">Select...</option>
                                 <option value="Educational">Educational</option>
                                 <option value="Thought Leadership">Thought Leadership</option>
                                 <option value="Case Study/Storytelling">Case Study/Storytelling</option>
@@ -150,9 +150,9 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="visual_style">Estilo Visual *</label>
+                            <label for="visual_style">Visual Style *</label>
                             <select id="visual_style" name="visual_style" required>
-                                <option value="">Selecciona...</option>
+                                <option value="">Select...</option>
                                 <option value="Modern 3D">Modern 3D</option>
                                 <option value="Isometric Architecture">Isometric Architecture</option>
                                 <option value="Tech Close-up">Tech Close-up</option>
@@ -164,9 +164,9 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="orientation">Orientación *</label>
+                            <label for="orientation">Orientation *</label>
                             <select id="orientation" name="orientation" required>
-                                <option value="">Selecciona...</option>
+                                <option value="">Select...</option>
                                 <option value="Square (1080x1080)">Square (1080x1080)</option>
                                 <option value="Vertical (1080x1350)">Vertical (1080x1350)</option>
                                 <option value="Horizontal (1200x627)">Horizontal (1200x627)</option>
@@ -175,21 +175,21 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="data_points">Datos Clave</label>
-                            <input type="text" id="data_points" name="data_points" placeholder="Ej: 75% faster deployment, $2M cost reduction">
+                            <label for="data_points">Key Data Points</label>
+                            <input type="text" id="data_points" name="data_points" placeholder="e.g., 75% faster deployment, $2M cost reduction">
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="context">Contexto Adicional</label>
-                        <textarea id="context" name="context" rows="4" placeholder="Requisitos específicos o detalles adicionales..."></textarea>
+                        <label for="context">Additional Context</label>
+                        <textarea id="context" name="context" rows="4" placeholder="Specific requirements or additional details..."></textarea>
                     </div>
 
                     <button type="submit" class="btn btn-primary">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                         </svg>
-                        Generar Contenido
+                        Generate Content
                     </button>
                 </form>
             </div>
@@ -197,20 +197,20 @@
             <!-- Generated Results -->
             <div id="generated-results" class="generated-results" style="display: none;">
                 <div class="card">
-                    <h2>Contenido Generado</h2>
+                    <h2>Generated Content</h2>
                     <div class="result-grid">
                         <div class="result-section">
-                            <h3>Copy Generado</h3>
+                            <h3>Generated Copy</h3>
                             <div id="generated-copy" class="generated-copy"></div>
                         </div>
                         <div class="result-section">
-                            <h3>Imagen Generada</h3>
+                            <h3>Generated Image</h3>
                             <div id="generated-image" class="generated-image"></div>
                         </div>
                     </div>
                     <div class="result-actions">
-                        <button id="use-generated-content" class="btn btn-primary">Usar en Publicación</button>
-                        <button id="regenerate-content" class="btn btn-secondary">Regenerar</button>
+                        <button id="use-generated-content" class="btn btn-primary">Use in Post</button>
+                        <button id="regenerate-content" class="btn btn-secondary">Regenerate</button>
                     </div>
                 </div>
             </div>

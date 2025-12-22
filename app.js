@@ -33,21 +33,21 @@ if (typeof window !== 'undefined' && supabaseUrl && supabaseKey &&
                 console.log('✅ Supabase conectado correctamente');
                 loadPosts(); // Load posts after Supabase is initialized
             } catch (error) {
-                console.error('❌ Error al inicializar Supabase:', error);
-                showToast('Error: Verifica tu clave de Supabase en config.example.js', 'error');
+                console.error('❌ Error initializing Supabase:', error);
+                showToast('Error: Verify your Supabase key in config.example.js', 'error');
             }
         } else {
-            console.error('❌ Error: Supabase CDN no cargó correctamente');
+            console.error('❌ Error: Supabase CDN did not load correctly');
         }
     };
     script.onerror = () => {
-        console.error('❌ Error al cargar Supabase desde CDN');
+        console.error('❌ Error loading Supabase from CDN');
     };
     document.head.appendChild(script);
 } else {
-    console.warn('⚠️ Supabase no configurado. Actualiza config.example.js con tu clave de Supabase.');
+    console.warn('⚠️ Supabase not configured. Update config.example.js with your Supabase key.');
     setTimeout(() => {
-        showToast('⚠️ Configura tu clave de Supabase en config.example.js para ver los posts guardados', 'warning');
+        showToast('⚠️ Configure your Supabase key in config.example.js to view saved posts', 'warning');
     }, 1000);
 }
 
@@ -90,7 +90,7 @@ imageInput.addEventListener('change', (e) => {
     const files = Array.from(e.target.files);
     
     if (files.length > 10) {
-        showToast('Máximo 10 imágenes permitidas', 'error');
+        showToast('Maximum 10 images allowed', 'error');
         e.target.value = '';
         return;
     }
@@ -131,7 +131,7 @@ publishForm.addEventListener('submit', async (e) => {
     const hasInstagram = document.getElementById('publish_instagram').checked;
     
     if (!hasLinkedIn && !hasFacebook && !hasInstagram) {
-        showToast('Por favor selecciona al menos una plataforma', 'error');
+        showToast('Please select at least one platform', 'error');
         return;
     }
     
@@ -172,10 +172,10 @@ publishForm.addEventListener('submit', async (e) => {
     try {
         const btn = e.target.querySelector('button[type="submit"]');
         btn.disabled = true;
-        btn.textContent = 'Publicando...';
+        btn.textContent = 'Publishing...';
         
-        console.log('📤 Enviando a n8n:', n8nPublishWebhook);
-        console.log('📦 Datos:', data);
+        console.log('📤 Sending to n8n:', n8nPublishWebhook);
+        console.log('📦 Data:', data);
         
         const response = await fetch(n8nPublishWebhook, {
             method: 'POST',
@@ -187,16 +187,16 @@ publishForm.addEventListener('submit', async (e) => {
         });
         
         if (response.ok) {
-            showToast('¡Publicación enviada exitosamente!', 'success');
+            showToast('Post published successfully!', 'success');
             publishForm.reset();
             imagePreview.classList.remove('active');
             imagePreview.innerHTML = '';
         } else {
-            throw new Error('Error en la publicación');
+            throw new Error('Error publishing');
         }
     } catch (error) {
         console.error('Error:', error);
-        showToast('Error al publicar. Verifica la configuración del webhook.', 'error');
+        showToast('Error publishing. Check webhook configuration.', 'error');
     } finally {
         const btn = e.target.querySelector('button[type="submit"]');
         btn.disabled = false;
@@ -206,7 +206,7 @@ publishForm.addEventListener('submit', async (e) => {
                 <polyline points="16 6 12 2 8 6"></polyline>
                 <line x1="12" y1="2" x2="12" y2="15"></line>
             </svg>
-            Publicar en Redes
+            Publish to Social Media
         `;
     }
 });
@@ -275,15 +275,15 @@ async function loadPosts() {
     if (!supabaseClient) {
         postsListEl.innerHTML = `
             <div class="empty-state">
-                <h3>Configuración Requerida</h3>
-                <p>Por favor configura Supabase en app.js para ver los posts guardados.</p>
+                <h3>Configuration Required</h3>
+                <p>Please configure Supabase in app.js to view saved posts.</p>
             </div>
         `;
         return;
     }
     
     try {
-        postsListEl.innerHTML = '<div class="loading">Cargando posts...</div>';
+        postsListEl.innerHTML = '<div class="loading">Loading posts...</div>';
         
         const { data, error } = await supabaseClient
             .from('social_posts')
@@ -300,8 +300,8 @@ async function loadPosts() {
                         <line x1="9" y1="9" x2="15" y2="15"></line>
                         <line x1="15" y1="9" x2="9" y2="15"></line>
                     </svg>
-                    <h3>No hay posts</h3>
-                    <p>Genera contenido nuevo para comenzar</p>
+                    <h3>No posts yet</h3>
+                    <p>Generate new content to get started</p>
                 </div>
             `;
             return;
@@ -313,7 +313,7 @@ async function loadPosts() {
         console.error('Error loading posts:', error);
         postsListEl.innerHTML = `
             <div class="empty-state">
-                <h3>Error al cargar</h3>
+                <h3>Error loading</h3>
                 <p>${error.message}</p>
             </div>
         `;
@@ -322,7 +322,7 @@ async function loadPosts() {
 
 // Render Post Item
 function renderPost(post) {
-    const date = new Date(post.created_at).toLocaleDateString('es-ES', {
+    const date = new Date(post.created_at).toLocaleDateString('en-US', {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
@@ -375,7 +375,7 @@ function renderPost(post) {
                             <polyline points="16 6 12 2 8 6"></polyline>
                             <line x1="12" y1="2" x2="12" y2="15"></line>
                         </svg>
-                        Publicar
+                        Publish
                     </button>
                 </div>
             ` : ''}
@@ -386,7 +386,7 @@ function renderPost(post) {
 // Publish Single Post
 async function publishPost(postId) {
     if (!supabaseClient) {
-        showToast('Supabase no está configurado', 'error');
+        showToast('Supabase is not configured', 'error');
         return;
     }
     
@@ -400,7 +400,7 @@ async function publishPost(postId) {
         if (error) throw error;
         
         // Show platform selection modal (simplified - you can enhance this)
-        const platforms = prompt('¿En qué plataformas quieres publicar?\nIngresa: linkedin, facebook, instagram (separadas por comas)');
+        const platforms = prompt('Which platforms do you want to publish to?\nEnter: linkedin, facebook, instagram (separated by commas)');
         
         if (!platforms) return;
         
@@ -429,24 +429,24 @@ async function publishPost(postId) {
         });
         
         if (response.ok) {
-            showToast('¡Post publicado exitosamente!', 'success');
+            showToast('Post published successfully!', 'success');
         } else {
-            throw new Error('Error en la publicación');
+            throw new Error('Error publishing');
         }
     } catch (error) {
         console.error('Error:', error);
-        showToast('Error al publicar: ' + error.message, 'error');
+        showToast('Error publishing: ' + error.message, 'error');
     }
 }
 
 // Publish Multiple Selected Posts
 async function publishSelectedPosts() {
     if (selectedPosts.size === 0) {
-        showToast('Selecciona al menos un post', 'warning');
+        showToast('Select at least one post', 'warning');
         return;
     }
     
-    const platforms = prompt('¿En qué plataformas quieres publicar?\nIngresa: linkedin, facebook, instagram (separadas por comas)');
+    const platforms = prompt('Which platforms do you want to publish to?\nEnter: linkedin, facebook, instagram (separated by commas)');
     if (!platforms) return;
     
     const platformList = platforms.toLowerCase().split(',').map(p => p.trim());
