@@ -852,7 +852,7 @@
         },
         "sendBody": true,
         "contentType": "binaryData",
-        "inputDataFieldName": "data",
+        "inputDataFieldName": "={{ $('Separate Images LI').item.binary.data }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -898,7 +898,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  \"author\": \"urn:li:organization:105834790\",\n  \"commentary\": $json.post_type,\n  \"visibility\": \"PUBLIC\",\n  \"distribution\": {\n    \"feedDistribution\": \"MAIN_FEED\",\n    \"targetEntities\": [],\n    \"thirdPartyDistributionChannels\": []\n  },\n  \"content\": {\n    \"multiImage\": {\n      \"images\": $json.contentEntities\n    }\n  },\n  \"lifecycleState\": \"PUBLISHED\",\n  \"isReshareDisabledByAuthor\": false\n} }}",
+        "jsonBody": "={{ {\n  \"author\": \"urn:li:organization:105834790\",\n  \"commentary\": $('Merge Webhook with DB').first().json.post_type,\n  \"visibility\": \"PUBLIC\",\n  \"distribution\": {\n    \"feedDistribution\": \"MAIN_FEED\",\n    \"targetEntities\": [],\n    \"thirdPartyDistributionChannels\": []\n  },\n  \"content\": {\n    \"multiImage\": {\n      \"images\": $json.contentEntities\n    }\n  },\n  \"lifecycleState\": \"PUBLISHED\",\n  \"isReshareDisabledByAuthor\": false\n} }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
