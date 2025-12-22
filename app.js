@@ -345,6 +345,15 @@ function renderPost(post) {
     });
     
     const statusClass = post.status === 'completed' ? 'completed' : 'pending';
+    const isCompleted = post.status === 'completed';
+    
+    // Parse image_url - puede ser string simple o texto que contiene URL
+    let imageUrl = null;
+    if (post.image_url) {
+        // Si contiene "https://", extraer la URL
+        const urlMatch = post.image_url.match(/https?:\/\/[^\s,]+/);
+        imageUrl = urlMatch ? urlMatch[0] : post.image_url;
+    }
     
     return `
         <div class="post-item" data-post-id="${post.id}">
@@ -352,7 +361,7 @@ function renderPost(post) {
                 <div>
                     <input type="checkbox" class="post-checkbox" data-post-id="${post.id}">
                     <span class="post-meta">${date}</span>
-                    ${post.post_type ? `<span class="post-meta"> • ${post.post_type}</span>` : ''}
+                    ${post.post_type ? `<span class="post-meta"> • ${post.post_type.substring(0, 50)}${post.post_type.length > 50 ? '...' : ''}</span>` : ''}
                 </div>
                 <span class="post-status ${statusClass}">${post.status}</span>
             </div>
@@ -361,22 +370,24 @@ function renderPost(post) {
                 <div class="post-copy">${escapeHtml(post.post_copy)}</div>
             ` : ''}
             
-            ${post.image_url ? `
+            ${imageUrl ? `
                 <div class="post-image">
-                    <img src="${post.image_url}" alt="Post image">
+                    <img src="${imageUrl}" alt="Post image" onerror="this.parentElement.style.display='none'">
                 </div>
             ` : ''}
             
-            <div class="post-actions">
-                <button class="btn btn-small btn-publish" onclick="publishPost('${post.id}')">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
-                        <polyline points="16 6 12 2 8 6"></polyline>
-                        <line x1="12" y1="2" x2="12" y2="15"></line>
-                    </svg>
-                    Publicar
-                </button>
-            </div>
+            ${!isCompleted ? `
+                <div class="post-actions">
+                    <button class="btn btn-small btn-publish" onclick="publishPost('${post.id}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                            <polyline points="16 6 12 2 8 6"></polyline>
+                            <line x1="12" y1="2" x2="12" y2="15"></line>
+                        </svg>
+                        Publicar
+                    </button>
+                </div>
+            ` : ''}
         </div>
     `;
 }
