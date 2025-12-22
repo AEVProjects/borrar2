@@ -174,10 +174,8 @@ publishForm.addEventListener('submit', async (e) => {
         btn.disabled = true;
         btn.textContent = 'Publishing...';
         
-        console.log('📤 Sending to n8n:', n8nPublishWebhook);
-        console.log('📦 Data:', data);
-        
-        const response = await fetch(n8nPublishWebhook, {
+        // Send to n8n webhook
+        fetch(n8nPublishWebhook, {
             method: 'POST',
             mode: 'no-cors',
             headers: {
@@ -186,14 +184,15 @@ publishForm.addEventListener('submit', async (e) => {
             body: JSON.stringify(data)
         });
         
-        if (response.ok) {
-            showToast('Post published successfully!', 'success');
-            publishForm.reset();
-            imagePreview.classList.remove('active');
-            imagePreview.innerHTML = '';
-        } else {
-            throw new Error('Error publishing');
-        }
+        // Since no-cors doesn't let us read response, assume success after send
+        showToast('Post published successfully!', 'success');
+        publishForm.reset();
+        imagePreview.classList.remove('active');
+        imagePreview.innerHTML = '';
+        
+        // Reload posts after 3 seconds to show new post
+        setTimeout(() => loadPosts(), 3000);
+        
     } catch (error) {
         console.error('Error:', error);
         showToast('Error publishing. Check webhook configuration.', 'error');
@@ -292,6 +291,16 @@ async function loadPosts() {
         
         if (error) throw error;
         
+        // Debug: Check first post structure
+        if (data && data.length > 0) {
+            console.log('Sample post columns:', Object.keys(data[0]));
+            console.log('First post publish values:', {
+                linkedin: data[0].publish_linkedin,
+                facebook: data[0].publish_facebook,
+                instagram: data[0].publish_instagram
+            });
+        }
+        
         if (!data || data.length === 0) {
             postsListEl.innerHTML = `
                 <div class="empty-state">
@@ -332,14 +341,8 @@ function renderPost(post) {
     
     const isCompleted = post.status === 'completed';
     
-    // Determine published platforms - check actual data
+    // Determine published platforms
     const platforms = [];
-    console.log('Post data:', { 
-        publish_linkedin: post.publish_linkedin, 
-        publish_facebook: post.publish_facebook, 
-        publish_instagram: post.publish_instagram 
-    });
-    
     if (post.publish_linkedin === 'Yes') platforms.push('linkedin');
     if (post.publish_facebook === 'Yes') platforms.push('facebook');
     if (post.publish_instagram === 'Yes') platforms.push('instagram');
