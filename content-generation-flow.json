@@ -1,0 +1,596 @@
+{
+  "name": "MSI Content Generator - AI Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "70738d02-4bd8-4dac-853f-ba4836aafaf5",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1648,
+        4320
+      ],
+      "id": "051a35f0-aeef-410d-a780-efcb20226ecb",
+      "name": "Webhook - Generate Content",
+      "webhookId": "70738d02-4bd8-4dac-853f-ba4836aafaf5"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "chatInput",
+              "name": "chatInput",
+              "value": "=Topic: {{ $json.topic }}\nPost Type: {{ $json.post_type }}\nVisual Style: {{ $json.visual_style }}\nOrientation: {{ $json.orientation }}\nData Points: {{ $json.data_points || 'None provided' }}\nHeadline: {{ $json.headline }}\nContext: {{ $json.context || 'None provided' }}",
+              "type": "string"
+            },
+            {
+              "id": "topic",
+              "name": "topic",
+              "value": "={{ $json.topic }}",
+              "type": "string"
+            },
+            {
+              "id": "post_type",
+              "name": "post_type",
+              "value": "={{ $json.post_type }}",
+              "type": "string"
+            },
+            {
+              "id": "visual_style",
+              "name": "visual_style",
+              "value": "={{ $json.visual_style }}",
+              "type": "string"
+            },
+            {
+              "id": "orientation",
+              "name": "orientation",
+              "value": "={{ $json.orientation }}",
+              "type": "string"
+            },
+            {
+              "id": "headline",
+              "name": "headline",
+              "value": "={{ $json.headline }}",
+              "type": "string"
+            },
+            {
+              "id": "data_points",
+              "name": "data_points",
+              "value": "={{ $json.data_points || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "context",
+              "name": "context",
+              "value": "={{ $json.context || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        -1424,
+        4320
+      ],
+      "id": "896bbe6c-3210-452d-9596-08df48cda671",
+      "name": "Format Form Input"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "=# ROLE: Strategic Content Analyst for MSI Americas\n\n## YOUR TASK\nAnalyze the user's content request and provide strategic guidance for both LinkedIn copy and visual design.\n\n## OUTPUT FORMAT\nYou MUST output your response in this EXACT structure:\n\n---CONTENT STRATEGY---\nHook: [Compelling first line]\nBody: [Main message with examples]\nCTA: [Call to action as question]\nHashtags: [3-5 relevant hashtags including #MSIAmericas]\n\n---VISUAL STRATEGY---\nMain Scene: [Technical visualization description]\nVisual Style: [From user input]\nOrientation: [From user input]\nDimensions: [Extract from orientation]\nComposition: [Layout approach]\n\n---GRAPHIC ELEMENTS---\n1. [Element type and description]\n2. [Element type and description]\n\n---IN-IMAGE TEXT---\n[Use EXACT headline from user input]\n\n---DATA POINTS---\n- [Stat or metric 1]\n- [Stat or metric 2]\n\n---TECHNICAL NOTES---\n[Implementation details from user context]\n\n## MSI CONTEXT\nMSI Americas specializes in:\n- Cloud Solutions & Migration (AWS, Azure, GCP)\n- 5G Infrastructure & IoT Implementation\n- IT Staff Augmentation\n- Sustainability Tech & Diversity Programs\n\n## CONTENT STRATEGY RULES\n1. NO generic corporate language\n2. Use specific data and real examples\n3. Keep hook under 150 characters\n4. Be technical but accessible\n5. Always end with conversational CTA\n\n## VISUAL STRATEGY RULES\n1. Use MSI colors: #004AAD (blue), #67B547 (green), #FFFDF1 (off-white)\n2. Avoid stock photo aesthetics\n3. Focus on abstract data visualizations\n4. Keep compositions clean with negative space\n5. Include 2-3 graphic elements maximum\n\nREMEMBER: Follow the OUTPUT FORMAT exactly. Use the user's provided headline, visual style, and orientation directly."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -1200,
+        4320
+      ],
+      "id": "c3521399-90f5-456c-a8e8-e2aabb5ddd63",
+      "name": "Agent 1: Strategy Analyzer"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Agent 1: Strategy Analyzer').item.json.output }}",
+        "options": {
+          "systemMessage": "# ROLE: LinkedIn Copy Writer for MSI Americas\n\n## CRITICAL OUTPUT REQUIREMENT\n⚠️ YOU MUST OUTPUT ONLY PLAIN TEXT - NO METADATA, NO LABELS, NO FORMATTING MARKERS\n⚠️ Your response will be saved DIRECTLY to a database text field\n⚠️ DO NOT include \"CHARACTER COUNT\" or \"ESTIMATED READING TIME\" or any other labels\n⚠️ Output ONLY the LinkedIn post text itself, nothing else\n\n## YOUR TASK\nReceive the CONTENT STRATEGY section and create compelling LinkedIn post copy.\n\n## WRITING GUIDELINES\n\n### Structure\n- Hook (First 2 lines): Specific stat, question, or concrete statement\n- Body: Include data points, use line breaks every 2-3 sentences\n- CTA: Conversational question\n\n### Voice\n- Sound like a senior engineer who's fixed this 50 times\n- Direct and honest, not salesy\n- Technical but accessible\n\n### Banned Phrases\nNEVER use:\n- \"In today's digital landscape\"\n- \"Revolutionize/Transform your business\"\n- \"Cutting-edge/Game-changing\"\n- \"Unlock the power of\"\n- \"Seamlessly integrate\"\n- \"Best-in-class\"\n\n### Rules\n1. English only\n2. Under 1,300 characters\n3. At least 2 specific numbers/stats\n4. NO emojis\n5. Always end with #MSIAmericas\n\n## EXAMPLE OUTPUT FORMAT\n```\nMost cloud migrations fail because teams focus on lift-and-shift instead of optimization. We've seen 60% of companies overspend by $200K+ annually on unused resources.\n\nThe fix isn't more tools. It's better architecture planning:\n- Right-size instances before migration\n- Implement auto-scaling from day one\n- Use reserved instances for predictable workloads\n\nWe helped a healthcare client reduce AWS costs by 47% in 90 days without touching a single application. The secret? Proper tagging and governance from the start.\n\nWhat's been your biggest challenge with cloud cost optimization?\n\n#MSIAmericas #CloudMigration #AWSOptimization\n```\n\nREMEMBER: Output ONLY the post text. No preamble, no metadata, no character counts. Just the post."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -848,
+        4320
+      ],
+      "id": "4fd9f345-8da6-4dc6-9a88-289e9a737233",
+      "name": "Agent 2: Copy Writer"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "social_posts"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "topic": "={{ $('Format Form Input').item.json.topic || 'No topic provided' }}",
+            "post_type": "={{ $('Format Form Input').item.json.post_type || 'image' }}",
+            "visual_style": "={{ $('Format Form Input').item.json.visual_style || 'professional' }}",
+            "orientation": "={{ $('Format Form Input').item.json.orientation || 'square' }}",
+            "headline": "={{ $('Format Form Input').item.json.headline || '' }}",
+            "data_points": "={{ $('Format Form Input').item.json.data_points || '' }}",
+            "context": "={{ $('Format Form Input').item.json.context || '' }}",
+            "strategy_analysis": "={{ $('Agent 1: Strategy Analyzer').item.json.output }}",
+            "post_copy": "={{ $json.output }}",
+            "status": "copy_completed"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -496,
+        4320
+      ],
+      "id": "cabab081-7fbb-4b4c-ab38-2dc7e2066dc9",
+      "name": "Save Post to DB",
+      "credentials": {
+        "postgres": {
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Agent 1: Strategy Analyzer').item.json.output }}",
+        "options": {
+          "systemMessage": "# ROLE: AI Image Prompt Engineer for MSI Americas\n\n## CRITICAL OUTPUT REQUIREMENT\n⚠️ YOU MUST OUTPUT ONLY PLAIN TEXT - A SINGLE CONTINUOUS IMAGE GENERATION PROMPT\n⚠️ NO SECTIONS, NO HEADERS, NO LABELS, NO METADATA\n⚠️ Your response will be saved DIRECTLY to a database text field and sent to an image generation API\n⚠️ DO NOT include \"MSI IMAGE GENERATION PROMPT\" or \"TECHNICAL SPECIFICATIONS\" or any other section headers\n⚠️ Output ONLY the prompt text itself in a single flowing paragraph\n\n## YOUR TASK\nReceive the VISUAL STRATEGY, GRAPHIC ELEMENTS, IN-IMAGE TEXT, and DATA POINTS sections and create ONE complete image generation prompt as plain text.\n\n## MSI BRAND IDENTITY\n**Colors (MANDATORY):**\n- Deep Blue #004AAD (Primary)\n- Tech Green #67B547 (Accent)\n- Off-White #FFFDF1 (Backgrounds)\n- Light Blue #4A9FFF (Glows/Glass)\n\n**Typography:**\n- Headlines: ITC Avant Garde Gothic Bold\n- Subheadings: Poppins\n- Body: Quicksand Regular/Medium\n- Data/Numbers: Rajdhani Bold\n\n**Style:** Corporate, Secure, Tech-Forward. Clean, functional, engineered look.\n\n## TEXT RENDERING RULES (CRITICAL)\n\n**RULE 1: ONLY ONE TEXT ELEMENT**\n- ONE SINGLE HEADLINE only (3-5 words)\n- NO additional labels, NO small text, NO subtitles\n\n**RULE 2: TEXT MUST BE LARGE**\n- Minimum 100-150pt equivalent\n- Text should occupy 20-30% of image height\n\n**RULE 3: FLAT 2D TEXT ONLY**\nALWAYS specify:\n- \"Clean, flat 2D typography\"\n- \"Bold sans-serif headline, ultra readable\"\n- \"Maximum legibility, zero effects on text\"\n- \"Simple flat overlay, no depth, no shadows\"\n\nNEVER use:\n- \"3D text\" or \"Extruded letters\"\n- \"Multiple text elements\"\n- \"Small labels or annotations\"\n\n**RULE 4: HIGH CONTRAST**\n- White text on dark backgrounds (preferred)\n- Clear visual separation from background\n\n## COMPOSITION TEMPLATES\n\n**Data Hero (for stats):**\n- Center: ONE large flat number/headline (100-150pt)\n- Background: Blue to Navy gradient\n- Accent: Tech Green glow\n\n**Tech Close-up (for technical topics):**\n- Foreground: Detailed tech component\n- Background: Blurred tech environment\n- Text: ONE white headline on dark area\n\n**Isometric Architecture (for systems):**\n- Isometric infrastructure view\n- MSI color-coded elements\n- Flow lines with glow effects\n- Text: ONE flat headline in clear space\n\n## WHAT TO AVOID\nNEVER include:\n- Generic office people with laptops\n- Stock photo aesthetics\n- Cluttered compositions\n- 3D text or extruded letters\n- Multiple text elements\n- Small text or tiny labels\n\n## EXAMPLE OUTPUT (THIS IS WHAT YOU SHOULD OUTPUT - PLAIN TEXT ONLY):\n\n```\nCreate a professional LinkedIn post image in 1080x1080 square format featuring an isometric 3D visualization of cloud infrastructure architecture. The scene shows interconnected server nodes rendered in MSI's deep blue (#004AAD) floating in space, connected by glowing tech green (#67B547) data streams. In the foreground, display three prominent server clusters arranged in a triangular formation, each with subtle tech green accent lights. The background uses a gradient from deep navy to MSI blue (#004AAD) with subtle circuit pattern texture. The main headline \"47% COST REDUCTION\" appears in large, bold, flat 2D white typography (ITC Avant Garde Gothic Bold style, 140pt equivalent) positioned in the upper third of the image with maximum contrast against the dark blue background. Add floating geometric UI elements showing abstract data metrics in translucent white frames with tech green highlights. Include subtle depth of field effect to create professional dimension. The overall aesthetic should be clean, corporate, and tech-forward with generous negative space. Ensure the typography is perfectly flat with no 3D effects, shadows, or depth - maximum readability is critical. The composition should avoid any stock photo aesthetics, focusing instead on abstract technical visualization that conveys cloud infrastructure expertise.\n```\n\nREMEMBER: Output ONLY a single flowing paragraph prompt. No sections, no headers, no metadata. Just the complete prompt text that will be sent directly to the image generation API."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -272,
+        4320
+      ],
+      "id": "5acf53e5-b217-44dc-95d8-ecd208518f35",
+      "name": "Agent 3: Image Prompt Engineer"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE social_posts \nSET image_prompt = '{{ $json.output }}',\n    status = 'prompt_completed',\n    updated_at = NOW()\nWHERE id = '{{ $('Save Post to DB').item.json.id }}'\nRETURNING *",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        80,
+        4320
+      ],
+      "id": "1a96ffed-7cd6-44ce-9dd0-af3ab03d4e12",
+      "name": "Update Image Prompt in DB",
+      "credentials": {
+        "postgres": {
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "image_prompt",
+              "name": "image_prompt",
+              "value": "={{ $json.image_prompt }}",
+              "type": "string"
+            },
+            {
+              "id": "post_id",
+              "name": "post_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "orientation",
+              "name": "orientation",
+              "value": "={{ $json.orientation }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        304,
+        4320
+      ],
+      "id": "609b70a9-3a9c-4237-8ab9-309437632397",
+      "name": "Prepare for Image Gen"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3-pro-image-preview",
+          "mode": "id"
+        },
+        "prompt": "={{ $json.image_prompt }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        528,
+        4320
+      ],
+      "id": "f064ae3d-1431-4e4b-8478-eef816850406",
+      "name": "Generate Image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "oF4jKBK0jRbwEPWt",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar binario de imagen para ImgBB\nconst item = $input.item;\n\nconsole.log('==== CHECK IMAGE BINARY ====');\nconsole.log('Item binary keys:', Object.keys(item.binary || {}));\nconsole.log('Item json keys:', Object.keys(item.json || {}));\n\n// Verificar si hay datos binarios\nif (item.binary && Object.keys(item.binary).length > 0) {\n  const binaryKey = Object.keys(item.binary)[0];\n  console.log('Found binary key:', binaryKey);\n  console.log('Binary data size:', item.binary[binaryKey]?.data?.length || 0);\n  \n  // Renombrar el binario a 'data' para ImgBB\n  return [{\n    json: item.json,\n    binary: {\n      data: item.binary[binaryKey]\n    }\n  }];\n} else {\n  console.log('ERROR: No binary data found in Gemini output');\n  throw new Error('No se generó imagen. Verifica que el modelo Gemini esté configurado correctamente.');\n}\n\nconsole.log('==== END CHECK IMAGE BINARY ====');"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        4320
+      ],
+      "id": "0ecf2043-a99a-4988-bbec-8f9821970813",
+      "name": "Check and Prepare Binary"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.imgbb.com/1/upload",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "image",
+              "inputDataFieldName": "=data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "238869cc-9451-4e10-8fac-447fc1d0a2a2",
+      "name": "Upload to ImgBB",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        976,
+        4320
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "zx6X4T7j4yDMYWKo",
+          "name": "imgbb-api"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE social_posts \nSET image_url = '{{ $json.data.url }}', \n    status = 'completed',\n    updated_at = NOW()\nWHERE id = '{{ $('Prepare for Image Gen').item.json.post_id }}'\nRETURNING *",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1200,
+        4320
+      ],
+      "id": "6c8d0d8a-f9c1-48bc-bced-0d7fb784fe5b",
+      "name": "Update DB with Image URL",
+      "credentials": {
+        "postgres": {
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "=✅ Content generated successfully!\n\n📝 Post ID: {{ $json.id }}\n📌 Topic: {{ $json.topic }}\n🎨 Type: {{ $json.post_type }}\n🖼️ Image: {{ $json.image_url }}\n⏰ Created: {{ $json.created_at }}",
+              "type": "string"
+            },
+            {
+              "id": "post_id",
+              "name": "post_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "image_url",
+              "name": "image_url",
+              "value": "={{ $json.image_url }}",
+              "type": "string"
+            },
+            {
+              "id": "post_copy",
+              "name": "post_copy",
+              "value": "={{ $json.post_copy }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        1424,
+        4320
+      ],
+      "id": "eb87841d-17cf-40c9-8a34-5f2021447b52",
+      "name": "Format Success Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Content generated successfully\", \"data\": $json } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1648,
+        4320
+      ],
+      "id": "8395f1a2-db94-45dd-a937-6c0ded6d5c17",
+      "name": "Respond to Webhook - Generate"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "chatgpt-4o-latest"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -1128,
+        4544
+      ],
+      "id": "5ce6bad5-5c4f-4cc8-95c9-c94654440078",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "13Oqly3WdRAzZVXL",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook - Generate Content": {
+      "main": [
+        [
+          {
+            "node": "Format Form Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Form Input": {
+      "main": [
+        [
+          {
+            "node": "Agent 1: Strategy Analyzer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent 1: Strategy Analyzer": {
+      "main": [
+        [
+          {
+            "node": "Agent 2: Copy Writer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent 2: Copy Writer": {
+      "main": [
+        [
+          {
+            "node": "Save Post to DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Post to DB": {
+      "main": [
+        [
+          {
+            "node": "Agent 3: Image Prompt Engineer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent 3: Image Prompt Engineer": {
+      "main": [
+        [
+          {
+            "node": "Update Image Prompt in DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Image Prompt in DB": {
+      "main": [
+        [
+          {
+            "node": "Prepare for Image Gen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare for Image Gen": {
+      "main": [
+        [
+          {
+            "node": "Generate Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image": {
+      "main": [
+        [
+          {
+            "node": "Check and Prepare Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check and Prepare Binary": {
+      "main": [
+        [
+          {
+            "node": "Upload to ImgBB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to ImgBB": {
+      "main": [
+        [
+          {
+            "node": "Update DB with Image URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update DB with Image URL": {
+      "main": [
+        [
+          {
+            "node": "Format Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Success Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook - Generate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent 1: Strategy Analyzer",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Agent 2: Copy Writer",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Agent 3: Image Prompt Engineer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "b5116c87255060ddf18db8a2b1b90e34b38f50f44815cf784a0b8a92b6bb4e6e"
+  }
+}
