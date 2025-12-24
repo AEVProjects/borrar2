@@ -102,6 +102,40 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-has-binary-001",
+              "leftValue": "={{ $binary.data !== undefined }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -4240,
+        -880
+      ],
+      "id": "check-has-binary-data-001",
+      "name": "Has Binary Data?"
+    },
+    {
+      "parameters": {
         "jsCode": "// AGRUPA TODOS LOS RESULTADOS DE IMGBB EN UN SOLO ITEM\n// O mantiene las URLs existentes si ya estaban presentes\nconst allItems = $input.all();\n\nconsole.log('==== AGGREGATE IMGBB START ====');\nconsole.log('AGGREGATE - Total items recibidos:', allItems.length);\n\n// OBTENER DATOS ORIGINALES DEL WEBHOOK desde 'Check if Image Exists'\nlet baseData = {};\nconst checkImageNode = $('Check if Image Exists');\nif (checkImageNode && checkImageNode.first) {\n  const firstCheckItem = checkImageNode.first();\n  if (firstCheckItem && firstCheckItem.json) {\n    baseData = { ...firstCheckItem.json };\n    console.log('AGGREGATE - Datos base desde Check if Image Exists');\n    console.log('AGGREGATE - post_type:', baseData.post_type);\n    console.log('AGGREGATE - publish_linkedin:', baseData.publish_linkedin);\n    console.log('AGGREGATE - publish_facebook:', baseData.publish_facebook);\n  }\n} else {\n  console.log('AGGREGATE - WARNING: No se pudo acceder a Check if Image Exists, usando primer item');\n  baseData = allItems[0]?.json || {};\n}\n\nlet imageArray = [];\n\n// CASO 1: Si ya tenemos URLs (publicación desde web)\nif (baseData.Image && Array.isArray(baseData.Image) && baseData.Image.length > 0 && baseData.Image[0].url) {\n  console.log('AGGREGATE - CASO 1: URLs ya existen, usando las existentes');\n  imageArray = baseData.Image;\n  console.log('AGGREGATE - Total imágenes existentes:', imageArray.length);\n} else {\n  // CASO 2: Crear array con URLs de ImgBB (generación nueva)\n  console.log('AGGREGATE - CASO 2: Procesando respuestas de ImgBB');\n  for (const item of allItems) {\n    if (item.json.data && item.json.data.url) {\n      imageArray.push({\n        url: item.json.data.url,\n        display_url: item.json.data.display_url || item.json.data.url,\n        delete_url: item.json.data.delete_url,\n        filename: item.json.data.image?.filename || 'image.jpg',\n        type: item.json.data.image?.mime || 'image/jpeg'\n      });\n    }\n  }\n  console.log('AGGREGATE - Total imágenes procesadas desde ImgBB:', imageArray.length);\n}\n\n// Resultado: UN solo item con DATOS ORIGINALES DEL WEBHOOK + todas las imágenes\nconst result = {\n  ...baseData,\n  Image: imageArray,\n  image_count: imageArray.length\n};\n\nconsole.log('AGGREGATE - post_type en resultado:', result.post_type);\nconsole.log('AGGREGATE - Array final con', imageArray.length, 'URLs');\nconsole.log('==== AGGREGATE IMGBB END ====');\n\nreturn [{\n  json: result\n}];"
       },
       "type": "n8n-nodes-base.code",
@@ -1139,12 +1173,7 @@
       "main": [
         [
           {
-            "node": "Generar URL (ImgBB)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Merge ImgBB Response",
+            "node": "Has Binary Data?",
             "type": "main",
             "index": 0
           }
@@ -1152,6 +1181,24 @@
         [
           {
             "node": "Guardar en Base de Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Binary Data?": {
+      "main": [
+        [
+          {
+            "node": "Generar URL (ImgBB)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge ImgBB Response",
             "type": "main",
             "index": 0
           }
