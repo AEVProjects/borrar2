@@ -1070,82 +1070,7 @@
     },
     {
       "parameters": {
-        "schema": {
-          "__rl": true,
-          "mode": "list",
-          "value": "public"
-        },
-        "table": {
-          "__rl": true,
-          "mode": "list",
-          "value": "social_posts"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "post_type": "={{ $json.post_type }}",
-            "image_url": "={{ $json.Image && Array.isArray($json.Image) ? $json.Image.map(img => img.url).join(',') : ($json.Image?.url || null) }}",
-            "status": "={{ $json.Image ? 'completed' : 'pending' }}",
-            "publish_linkedin": "={{ $json.publish_linkedin || 'No' }}",
-            "publish_facebook": "={{ $json.publish_facebook || 'No' }}",
-            "publish_instagram": "={{ $json.publish_instagram || 'No' }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "post_type",
-              "displayName": "post_type",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            },
-            {
-              "id": "image_url",
-              "displayName": "image_url",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            },
-            {
-              "id": "status",
-              "displayName": "status",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -3984,
-        -784
-      ],
-      "id": "e30b6736-f670-4acd-af09-b9ab2dca002f",
-      "name": "Guardar en Base de Datos",
-      "credentials": {
-        "postgres": {
-          "id": "WnTYs2zvPoE7hDJE",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Combinar datos del webhook con la respuesta de la BD\n// ESTE NODO PRESERVA EL ARRAY Image[] DESDE Merge ImgBB Response\nconst dbResponse = $input.item.json;\n\nconsole.log('==== MERGE DB START ====');\n\n// Obtener datos COMPLETOS desde Merge ImgBB Response (que ya tiene Image[] agregado)\nconst mergeImgBBNode = $('Merge ImgBB Response');\nlet webhookData = {};\nlet imageArray = [];\n\nif (mergeImgBBNode && mergeImgBBNode.item && mergeImgBBNode.item.json) {\n  // Tomar TODOS los datos de Merge ImgBB Response (que ya tiene Image[] completo)\n  webhookData = { ...mergeImgBBNode.item.json };\n  imageArray = webhookData.Image || [];\n  console.log('MERGE DB - Datos desde Merge ImgBB Response');\n  console.log('MERGE DB - Image array recibido:', Array.isArray(imageArray) ? imageArray.length : 0);\n  if (Array.isArray(imageArray) && imageArray.length > 0) {\n    console.log('MERGE DB - Image[0].url:', imageArray[0].url);\n    if (imageArray.length > 1) {\n      console.log('MERGE DB - Image[1].url:', imageArray[1].url);\n    }\n  }\n} else {\n  console.log('MERGE DB - ERROR: No se encontr\u00f3 Merge ImgBB Response');\n  const checkImageNode = $('Check if Image Exists');\n  if (checkImageNode && checkImageNode.item) {\n    webhookData = checkImageNode.item.json;\n  }\n}\n\n// Validar que el array est\u00e9 presente\nif (!Array.isArray(imageArray)) {\n  imageArray = [];\n  console.log('MERGE DB - WARNING: Image no es array, inicializando vac\u00edo');\n}\n\n// Resultado final - mantener Image[] exactamente como viene de Merge ImgBB Response\nconst result = {\n  ...webhookData,\n  db_record: dbResponse,\n  image_url: dbResponse.image_url,\n  // NO sobrescribir Image[], mantener el array completo de Merge ImgBB Response\n  Image: imageArray\n};\n\nconsole.log('MERGE DB - Image array FINAL LENGTH:', result.Image ? result.Image.length : 0);\nconsole.log('MERGE DB - result.Image content:', JSON.stringify(result.Image));\nconsole.log('==== MERGE DB END ====');\n\nreturn [{\n  json: result\n}];"
+        "jsCode": "// Preparar datos finales para publicación en redes sociales\n// Este nodo combina datos del webhook con información procesada de imágenes\nconst inputData = $input.item.json;\n\nconsole.log('==== MERGE FINAL DATA START ====');\nconsole.log('MERGE FINAL - Input keys:', Object.keys(inputData));\nconsole.log('MERGE FINAL - post_type:', inputData.post_type);\nconsole.log('MERGE FINAL - Image array length:', inputData.Image ? inputData.Image.length : 0);\n\n// Obtener datos COMPLETOS desde Merge ImgBB Response si existe\nconst mergeImgBBNode = $('Merge ImgBB Response');\nlet finalData = {};\nlet imageArray = [];\n\nif (mergeImgBBNode && mergeImgBBNode.item && mergeImgBBNode.item.json) {\n  // Tomar TODOS los datos de Merge ImgBB Response (que ya tiene Image[] completo)\n  finalData = { ...mergeImgBBNode.item.json };\n  imageArray = finalData.Image || [];\n  console.log('MERGE FINAL - Datos desde Merge ImgBB Response');\n  console.log('MERGE FINAL - Image array:', Array.isArray(imageArray) ? imageArray.length : 0);\n} else {\n  // Fallback: usar datos directos desde Check if Image Exists\n  console.log('MERGE FINAL - Usando datos de Check if Image Exists');\n  const checkImageNode = $('Check if Image Exists');\n  if (checkImageNode && checkImageNode.item && checkImageNode.item.json) {\n    finalData = { ...checkImageNode.item.json };\n    imageArray = finalData.Image || [];\n  } else {\n    finalData = { ...inputData };\n    imageArray = inputData.Image || [];\n  }\n}\n\n// Validar que el array esté presente\nif (!Array.isArray(imageArray)) {\n  imageArray = [];\n  console.log('MERGE FINAL - WARNING: Image no es array, inicializando vacío');\n}\n\n// Resultado final\nconst result = {\n  ...finalData,\n  Image: imageArray,\n  image_count: imageArray.length\n};\n\nconsole.log('MERGE FINAL - post_type final:', result.post_type);\nconsole.log('MERGE FINAL - Image array FINAL LENGTH:', result.Image ? result.Image.length : 0);\nif (result.Image && result.Image.length > 0) {\n  console.log('MERGE FINAL - First image URL:', result.Image[0].url);\n}\nconsole.log('==== MERGE FINAL DATA END ====');\n\nreturn [{\n  json: result\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1180,7 +1105,7 @@
         ],
         [
           {
-            "node": "Guardar en Base de Datos",
+            "node": "Merge Webhook with DB",
             "type": "main",
             "index": 0
           }
@@ -1220,7 +1145,7 @@
       "main": [
         [
           {
-            "node": "Guardar en Base de Datos",
+            "node": "Merge Webhook with DB",
             "type": "main",
             "index": 0
           }
@@ -1514,17 +1439,6 @@
           },
           {
             "node": "Respond to Webhook - Publish",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Guardar en Base de Datos": {
-      "main": [
-        [
-          {
-            "node": "Merge Webhook with DB",
             "type": "main",
             "index": 0
           }
