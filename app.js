@@ -516,9 +516,15 @@ async function publishPost(postId) {
             return;
         }
         
+        // Validate post has content
+        if (!post.post_type || post.post_type.trim() === '') {
+            showToast('Post has no content to publish', 'error');
+            return;
+        }
+        
         // Prepare data for n8n webhook - matching current-flow.json format
         const publishData = {
-            post_type: post.post_type,
+            post_type: post.post_type || '',
             publish_linkedin: linkedinChecked ? 'Yes' : 'No',
             publish_facebook: facebookChecked ? 'Yes' : 'No',
             publish_instagram: instagramChecked ? 'Yes' : 'No',
@@ -533,10 +539,10 @@ async function publishPost(postId) {
                     try {
                         imageUrls = JSON.parse(post.image_url);
                     } catch (e) {
-                        imageUrls = post.image_url.split(',').map(url => url.trim());
+                        imageUrls = post.image_url.split(',').map(url => url.trim()).filter(u => u);
                     }
                 } else if (post.image_url.includes(',')) {
-                    imageUrls = post.image_url.split(',').map(url => url.trim());
+                    imageUrls = post.image_url.split(',').map(url => url.trim()).filter(u => u);
                 } else {
                     imageUrls = [post.image_url];
                 }
@@ -545,15 +551,18 @@ async function publishPost(postId) {
             }
             
             // Convert to Image array format expected by current-flow.json
-            publishData.Image = imageUrls.map(url => ({
-                url: url,
-                display_url: url,
-                filename: 'image.jpg',
-                type: 'image/jpeg'
-            }));
+            if (imageUrls.length > 0) {
+                publishData.Image = imageUrls.map(url => ({
+                    url: url,
+                    display_url: url,
+                    filename: 'image.jpg',
+                    type: 'image/jpeg'
+                }));
+            }
         }
         
         console.log('Publishing post:', publishData);
+        console.log('Target webhook:', n8nPublishWebhook);
         
         // Send to n8n webhook
         const response = await fetch(n8nPublishWebhook, {
