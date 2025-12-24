@@ -564,6 +564,14 @@ async function publishPost(postId) {
         console.log('Publishing post:', publishData);
         console.log('Target webhook:', n8nPublishWebhook);
         
+        // Safety check: ensure we're not sending to generation webhook
+        if (!n8nPublishWebhook || n8nPublishWebhook.includes('70738d02-4bd8-4dac-853f-ba4836aafaf5')) {
+            showToast('Error: Publish webhook not configured correctly', 'error');
+            console.error('WEBHOOK ERROR: n8nPublishWebhook is:', n8nPublishWebhook);
+            console.error('This should be the PUBLISH webhook (025d6de3...), not the GENERATE webhook (70738d02...)');
+            return;
+        }
+        
         // Send to n8n webhook
         const response = await fetch(n8nPublishWebhook, {
             method: 'POST',
