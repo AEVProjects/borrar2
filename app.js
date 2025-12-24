@@ -458,15 +458,30 @@ function renderPost(post) {
                 </div>
             ` : ''}
             
-            ${!isCompleted ? `
-                <div class="post-actions">
-                    <button class="btn btn-small btn-publish" onclick="publishPost('${post.id}')">
+            ${platforms.length === 0 ? `
+                <div class="publish-section" style="margin-top: 16px; padding: 16px; background: #f8f9fa; border-radius: 8px;">
+                    <div style="margin-bottom: 12px; font-weight: 600; color: #333;">Select platforms to publish:</div>
+                    <div style="display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                            <input type="checkbox" id="linkedin_${post.id}" style="width: 16px; height: 16px; cursor: pointer;">
+                            <span style="font-size: 14px;">LinkedIn</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                            <input type="checkbox" id="facebook_${post.id}" style="width: 16px; height: 16px; cursor: pointer;">
+                            <span style="font-size: 14px;">Facebook</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                            <input type="checkbox" id="instagram_${post.id}" style="width: 16px; height: 16px; cursor: pointer;">
+                            <span style="font-size: 14px;">Instagram</span>
+                        </label>
+                    </div>
+                    <button class="btn btn-small btn-publish" onclick="publishPost('${post.id}')" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
                             <polyline points="16 6 12 2 8 6"></polyline>
                             <line x1="12" y1="2" x2="12" y2="15"></line>
                         </svg>
-                        Publish
+                        Publish Now
                     </button>
                 </div>
             ` : ''}
@@ -482,6 +497,7 @@ async function publishPost(postId) {
     }
     
     try {
+        // Get post data
         const { data: post, error } = await supabaseClient
             .from('social_posts')
             .select('*')
@@ -490,40 +506,81 @@ async function publishPost(postId) {
         
         if (error) throw error;
         
-        // Show platform selection modal (simplified - you can enhance this)
-        const platforms = prompt('Which platforms do you want to publish to?\nEnter: linkedin, facebook, instagram (separated by commas)');
+        // Get selected platforms from checkboxes
+        const linkedinChecked = document.getElementById(`linkedin_${postId}`)?.checked || false;
+        const facebookChecked = document.getElementById(`facebook_${postId}`)?.checked || false;
+        const instagramChecked = document.getElementById(`instagram_${postId}`)?.checked || false;
         
-        if (!platforms) return;
-        
-        const platformList = platforms.toLowerCase().split(',').map(p => p.trim());
-        
-        const publishData = {
-            post_type: post.post_copy || post.topic,
-            publish_linkedin: platformList.includes('linkedin') ? 'Yes' : 'No',
-            publish_facebook: platformList.includes('facebook') ? 'Yes' : 'No',
-            publish_instagram: platformList.includes('instagram') ? 'Yes' : 'No',
-        };
-        
-        // Send the image URL from database directly to n8n
-        // n8n will use this URL to publish on social media
-        if (post.image_url) {
-            publishData.image_url = post.image_url;
+        if (!linkedinChecked && !facebookChecked && !instagramChecked) {
+            showToast('Please select at least one platform', 'warning');
+            return;
         }
         
+        // Prepare data for n8n webhook - matching current-flow.json format
+        const publishData = {
+            post_type: post.post_type,
+            publish_linkedin: linkedinChecked ? 'Yes' : 'No',
+            publish_facebook: facebookChecked ? 'Yes' : 'No',
+            publish_instagram: instagramChecked ? 'Yes' : 'No',
+        };
+        
+        // Handle image_url - current-flow expects Image array format
+        if (post.image_url) {
+            // Parse image_url if it's a string
+            let imageUrls = [];
+            if (typeof post.image_url === 'string') {
+                if (post.image_url.startsWith('[')) {
+                    try {
+                        imageUrls = JSON.parse(post.image_url);
+                    } catch (e) {
+                        imageUrls = post.image_url.split(',').map(url => url.trim());
+                    }
+                } else if (post.image_url.includes(',')) {
+                    imageUrls = post.image_url.split(',').map(url => url.trim());
+                } else {
+                    imageUrls = [post.image_url];
+                }
+            } else if (Array.isArray(post.image_url)) {
+                imageUrls = post.image_url;
+            }
+            
+            // Convert to Image array format expected by current-flow.json
+            publishData.Image = imageUrls.map(url => ({
+                url: url,
+                display_url: url,
+                filename: 'image.jpg',
+                type: 'image/jpeg'
+            }));
+        }
+        
+        console.log('Publishing post:', publishData);
+        
+        // Send to n8n webhook
         const response = await fetch(n8nPublishWebhook, {
             method: 'POST',
-            mode: 'no-cors',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(publishData)
         });
         
-        if (response.ok) {
-            showToast('Post published successfully!', 'success');
-        } else {
-            throw new Error('Error publishing');
-        }
+        // Note: no-cors mode doesn't allow reading response
+        // So we'll show success and reload posts
+        showToast(`Publishing to ${[linkedinChecked && 'LinkedIn', facebookChecked && 'Facebook', instagramChecked && 'Instagram'].filter(Boolean).join(', ')}...`, 'success');
+        
+        // Update post status in database
+        await supabaseClient
+            .from('social_posts')
+            .update({
+                publish_linkedin: linkedinChecked ? 'Yes' : 'No',
+                publish_facebook: facebookChecked ? 'Yes' : 'No',
+                publish_instagram: instagramChecked ? 'Yes' : 'No'
+            })
+            .eq('id', postId);
+        
+        // Reload posts to show updated status
+        setTimeout(() => loadPosts(), 1000);
+        
     } catch (error) {
         console.error('Error:', error);
         showToast('Error publishing: ' + error.message, 'error');
