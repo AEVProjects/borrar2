@@ -2,401 +2,6 @@
   "nodes": [
     {
       "parameters": {
-        "httpMethod": "POST",
-        "path": "70738d02-4bd8-4dac-853f-ba4836aafaf5",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [
-        -4656,
-        32
-      ],
-      "id": "c29dd752-5920-423b-8557-998afd0652e4",
-      "name": "Webhook - Generate Content",
-      "webhookId": "70738d02-4bd8-4dac-853f-ba4836aafaf5"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "chatInput",
-              "name": "chatInput",
-              "value": "=Topic: {{ $json.topic }}\nPost Type: {{ $json.post_type }}\nVisual Style: {{ $json.visual_style }}\nOrientation: {{ $json.orientation }}\nData Points: {{ $json.data_points || 'None provided' }}\nHeadline: {{ $json.headline }}\nContext: {{ $json.context || 'None provided' }}",
-              "type": "string"
-            },
-            {
-              "id": "topic",
-              "name": "topic",
-              "value": "={{ $json.topic }}",
-              "type": "string"
-            },
-            {
-              "id": "post_type",
-              "name": "post_type",
-              "value": "={{ $json.post_type }}",
-              "type": "string"
-            },
-            {
-              "id": "visual_style",
-              "name": "visual_style",
-              "value": "={{ $json.visual_style }}",
-              "type": "string"
-            },
-            {
-              "id": "orientation",
-              "name": "orientation",
-              "value": "={{ $json.orientation }}",
-              "type": "string"
-            },
-            {
-              "id": "headline",
-              "name": "headline",
-              "value": "={{ $json.headline }}",
-              "type": "string"
-            },
-            {
-              "id": "data_points",
-              "name": "data_points",
-              "value": "={{ $json.data_points || '' }}",
-              "type": "string"
-            },
-            {
-              "id": "context",
-              "name": "context",
-              "value": "={{ $json.context || '' }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.3,
-      "position": [
-        -4432,
-        32
-      ],
-      "id": "25b6a539-ba55-4197-b99f-d1ed2d646a2a",
-      "name": "Format Form Input"
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "={{ $json.chatInput }}",
-        "options": {
-          "systemMessage": "=# ROLE: Strategic Content Analyst for MSI Americas\n\n## YOUR TASK\nAnalyze the user's content request and provide strategic guidance for both LinkedIn copy and visual design.\n\n## OUTPUT FORMAT\nYou MUST output your response in this EXACT structure:\n\n---CONTENT STRATEGY---\nHook: [Compelling first line]\nBody: [Main message with examples]\nCTA: [Call to action as question]\nHashtags: [3-5 relevant hashtags including #MSIAmericas]\n\n---VISUAL STRATEGY---\nMain Scene: [Technical visualization description]\nVisual Style: [From user input]\nOrientation: [From user input]\nDimensions: [Extract from orientation]\nComposition: [Layout approach]\n\n---GRAPHIC ELEMENTS---\n1. [Element type and description]\n2. [Element type and description]\n\n---IN-IMAGE TEXT---\n[Use EXACT headline from user input]\n\n---DATA POINTS---\n- [Stat or metric 1]\n- [Stat or metric 2]\n\n---TECHNICAL NOTES---\n[Implementation details from user context]\n\n## MSI CONTEXT\nMSI Americas specializes in:\n- Cloud Solutions & Migration (AWS, Azure, GCP)\n- 5G Infrastructure & IoT Implementation\n- IT Staff Augmentation\n- Sustainability Tech & Diversity Programs\n\n## CONTENT STRATEGY RULES\n1. NO generic corporate language\n2. Use specific data and real examples\n3. Keep hook under 150 characters\n4. Be technical but accessible\n5. Always end with conversational CTA\n\n## VISUAL STRATEGY RULES\n1. Use MSI colors: #004AAD (blue), #67B547 (green), #FFFDF1 (off-white)\n2. Avoid stock photo aesthetics\n3. Focus on abstract data visualizations\n4. Keep compositions clean with negative space\n5. Include 2-3 graphic elements maximum\n\nREMEMBER: Follow the OUTPUT FORMAT exactly. Use the user's provided headline, visual style, and orientation directly."
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 1.7,
-      "position": [
-        -4208,
-        32
-      ],
-      "id": "7d1dad60-227e-4d0f-a898-b3ae42672319",
-      "name": "Agent 1: Strategy Analyzer"
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "={{ $('Agent 1: Strategy Analyzer').item.json.output }}",
-        "options": {
-          "systemMessage": "# ROLE: LinkedIn Copy Writer for MSI Americas\n\n## CRITICAL OUTPUT REQUIREMENT\n⚠️ YOU MUST OUTPUT ONLY PLAIN TEXT - NO METADATA, NO LABELS, NO FORMATTING MARKERS\n⚠️ Your response will be saved DIRECTLY to a database text field\n⚠️ DO NOT include \"CHARACTER COUNT\" or \"ESTIMATED READING TIME\" or any other labels\n⚠️ Output ONLY the LinkedIn post text itself, nothing else\n\n## YOUR TASK\nReceive the CONTENT STRATEGY section and create compelling LinkedIn post copy.\n\n## WRITING GUIDELINES\n\n### Structure\n- Hook (First 2 lines): Specific stat, question, or concrete statement\n- Body: Include data points, use line breaks every 2-3 sentences\n- CTA: Conversational question\n\n### Voice\n- Sound like a senior engineer who's fixed this 50 times\n- Direct and honest, not salesy\n- Technical but accessible\n\n### Banned Phrases\nNEVER use:\n- \"In today's digital landscape\"\n- \"Revolutionize/Transform your business\"\n- \"Cutting-edge/Game-changing\"\n- \"Unlock the power of\"\n- \"Seamlessly integrate\"\n- \"Best-in-class\"\n\n### Rules\n1. English only\n2. Under 1,300 characters\n3. At least 2 specific numbers/stats\n4. NO emojis\n5. Always end with #MSIAmericas\n\n## EXAMPLE OUTPUT FORMAT\n```\nMost cloud migrations fail because teams focus on lift-and-shift instead of optimization. We've seen 60% of companies overspend by $200K+ annually on unused resources.\n\nThe fix isn't more tools. It's better architecture planning:\n- Right-size instances before migration\n- Implement auto-scaling from day one\n- Use reserved instances for predictable workloads\n\nWe helped a healthcare client reduce AWS costs by 47% in 90 days without touching a single application. The secret? Proper tagging and governance from the start.\n\nWhat's been your biggest challenge with cloud cost optimization?\n\n#MSIAmericas #CloudMigration #AWSOptimization\n```\n\nREMEMBER: Output ONLY the post text. No preamble, no metadata, no character counts. Just the post."
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 1.7,
-      "position": [
-        -3856,
-        32
-      ],
-      "id": "a50aad86-02cf-4f30-a750-df94793626c3",
-      "name": "Agent 2: Copy Writer"
-    },
-    {
-      "parameters": {
-        "schema": {
-          "__rl": true,
-          "mode": "list",
-          "value": "public"
-        },
-        "table": {
-          "__rl": true,
-          "mode": "list",
-          "value": "social_posts"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "topic": "={{ $('Format Form Input').item.json.topic || 'No topic provided' }}",
-            "post_type": "={{ $('Format Form Input').item.json.post_type || 'image' }}",
-            "visual_style": "={{ $('Format Form Input').item.json.visual_style || 'professional' }}",
-            "orientation": "={{ $('Format Form Input').item.json.orientation || 'square' }}",
-            "headline": "={{ $('Format Form Input').item.json.headline || '' }}",
-            "data_points": "={{ $('Format Form Input').item.json.data_points || '' }}",
-            "context": "={{ $('Format Form Input').item.json.context || '' }}",
-            "strategy_analysis": "={{ $('Agent 1: Strategy Analyzer').item.json.output }}",
-            "post_copy": "={{ $json.output }}",
-            "status": "copy_completed"
-          },
-          "matchingColumns": [],
-          "schema": []
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -3504,
-        32
-      ],
-      "id": "7b3215f0-b825-4a86-8091-76bab944747a",
-      "name": "Save Post to DB",
-      "credentials": {
-        "postgres": {
-          "id": "WnTYs2zvPoE7hDJE",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "={{ $('Agent 1: Strategy Analyzer').item.json.output }}",
-        "options": {
-          "systemMessage": "# ROLE: AI Image Prompt Engineer for MSI Americas\n\n## CRITICAL OUTPUT REQUIREMENT\n⚠️ YOU MUST OUTPUT ONLY PLAIN TEXT - A SINGLE CONTINUOUS IMAGE GENERATION PROMPT\n⚠️ NO SECTIONS, NO HEADERS, NO LABELS, NO METADATA\n⚠️ Your response will be saved DIRECTLY to a database text field and sent to an image generation API\n⚠️ DO NOT include \"MSI IMAGE GENERATION PROMPT\" or \"TECHNICAL SPECIFICATIONS\" or any other section headers\n⚠️ Output ONLY the prompt text itself in a single flowing paragraph\n\n## YOUR TASK\nReceive the VISUAL STRATEGY, GRAPHIC ELEMENTS, IN-IMAGE TEXT, and DATA POINTS sections and create ONE complete image generation prompt as plain text.\n\n## MSI BRAND IDENTITY\n**Colors (MANDATORY):**\n- Deep Blue #004AAD (Primary)\n- Tech Green #67B547 (Accent)\n- Off-White #FFFDF1 (Backgrounds)\n- Light Blue #4A9FFF (Glows/Glass)\n\n**Typography:**\n- Headlines: ITC Avant Garde Gothic Bold\n- Subheadings: Poppins\n- Body: Quicksand Regular/Medium\n- Data/Numbers: Rajdhani Bold\n\n**Style:** Corporate, Secure, Tech-Forward. Clean, functional, engineered look.\n\n## TEXT RENDERING RULES (CRITICAL)\n\n**RULE 1: ONLY ONE TEXT ELEMENT**\n- ONE SINGLE HEADLINE only (3-5 words)\n- NO additional labels, NO small text, NO subtitles\n\n**RULE 2: TEXT MUST BE LARGE**\n- Minimum 100-150pt equivalent\n- Text should occupy 20-30% of image height\n\n**RULE 3: FLAT 2D TEXT ONLY**\nALWAYS specify:\n- \"Clean, flat 2D typography\"\n- \"Bold sans-serif headline, ultra readable\"\n- \"Maximum legibility, zero effects on text\"\n- \"Simple flat overlay, no depth, no shadows\"\n\nNEVER use:\n- \"3D text\" or \"Extruded letters\"\n- \"Multiple text elements\"\n- \"Small labels or annotations\"\n\n**RULE 4: HIGH CONTRAST**\n- White text on dark backgrounds (preferred)\n- Clear visual separation from background\n\n## COMPOSITION TEMPLATES\n\n**Data Hero (for stats):**\n- Center: ONE large flat number/headline (100-150pt)\n- Background: Blue to Navy gradient\n- Accent: Tech Green glow\n\n**Tech Close-up (for technical topics):**\n- Foreground: Detailed tech component\n- Background: Blurred tech environment\n- Text: ONE white headline on dark area\n\n**Isometric Architecture (for systems):**\n- Isometric infrastructure view\n- MSI color-coded elements\n- Flow lines with glow effects\n- Text: ONE flat headline in clear space\n\n## WHAT TO AVOID\nNEVER include:\n- Generic office people with laptops\n- Stock photo aesthetics\n- Cluttered compositions\n- 3D text or extruded letters\n- Multiple text elements\n- Small text or tiny labels\n\n## EXAMPLE OUTPUT (THIS IS WHAT YOU SHOULD OUTPUT - PLAIN TEXT ONLY):\n\n```\nCreate a professional LinkedIn post image in 1080x1080 square format featuring an isometric 3D visualization of cloud infrastructure architecture. The scene shows interconnected server nodes rendered in MSI's deep blue (#004AAD) floating in space, connected by glowing tech green (#67B547) data streams. In the foreground, display three prominent server clusters arranged in a triangular formation, each with subtle tech green accent lights. The background uses a gradient from deep navy to MSI blue (#004AAD) with subtle circuit pattern texture. The main headline \"47% COST REDUCTION\" appears in large, bold, flat 2D white typography (ITC Avant Garde Gothic Bold style, 140pt equivalent) positioned in the upper third of the image with maximum contrast against the dark blue background. Add floating geometric UI elements showing abstract data metrics in translucent white frames with tech green highlights. Include subtle depth of field effect to create professional dimension. The overall aesthetic should be clean, corporate, and tech-forward with generous negative space. Ensure the typography is perfectly flat with no 3D effects, shadows, or depth - maximum readability is critical. The composition should avoid any stock photo aesthetics, focusing instead on abstract technical visualization that conveys cloud infrastructure expertise.\n```\n\nREMEMBER: Output ONLY a single flowing paragraph prompt. No sections, no headers, no metadata. Just the complete prompt text that will be sent directly to the image generation API."
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 1.7,
-      "position": [
-        -3280,
-        32
-      ],
-      "id": "a4f52176-1239-414a-8c41-81ab8ba1226e",
-      "name": "Agent 3: Image Prompt Engineer"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "=UPDATE social_posts \nSET image_prompt = '{{ $json.output }}',\n    status = 'prompt_completed',\n    updated_at = NOW()\nWHERE id = '{{ $('Save Post to DB').item.json.id }}'\nRETURNING *",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -2928,
-        32
-      ],
-      "id": "b31c2a55-b665-47bd-b0e6-8e377567c192",
-      "name": "Update Image Prompt in DB",
-      "credentials": {
-        "postgres": {
-          "id": "WnTYs2zvPoE7hDJE",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "image_prompt",
-              "name": "image_prompt",
-              "value": "={{ $json.image_prompt }}",
-              "type": "string"
-            },
-            {
-              "id": "post_id",
-              "name": "post_id",
-              "value": "={{ $json.id }}",
-              "type": "string"
-            },
-            {
-              "id": "orientation",
-              "name": "orientation",
-              "value": "={{ $json.orientation }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.3,
-      "position": [
-        -2704,
-        32
-      ],
-      "id": "9f11dfed-a219-47ad-9950-cdf311e90bf6",
-      "name": "Prepare for Image Gen"
-    },
-    {
-      "parameters": {
-        "resource": "image",
-        "modelId": {
-          "__rl": true,
-          "value": "models/gemini-3-pro-image-preview",
-          "mode": "id"
-        },
-        "prompt": "={{ $json.image_prompt }}",
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.googleGemini",
-      "typeVersion": 1,
-      "position": [
-        -2480,
-        32
-      ],
-      "id": "7aafb20d-eb9b-47d7-85d9-a60e86aaa08c",
-      "name": "Generate Image",
-      "credentials": {
-        "googlePalmApi": {
-          "id": "oF4jKBK0jRbwEPWt",
-          "name": "Google Gemini(PaLM) Api account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Preparar binario de imagen para ImgBB\nconst item = $input.item;\n\nconsole.log('==== CHECK IMAGE BINARY ====');\nconsole.log('Item binary keys:', Object.keys(item.binary || {}));\nconsole.log('Item json keys:', Object.keys(item.json || {}));\n\n// Verificar si hay datos binarios\nif (item.binary && Object.keys(item.binary).length > 0) {\n  const binaryKey = Object.keys(item.binary)[0];\n  console.log('Found binary key:', binaryKey);\n  console.log('Binary data size:', item.binary[binaryKey]?.data?.length || 0);\n  \n  // Renombrar el binario a 'data' para ImgBB\n  return [{\n    json: item.json,\n    binary: {\n      data: item.binary[binaryKey]\n    }\n  }];\n} else {\n  console.log('ERROR: No binary data found in Gemini output');\n  throw new Error('No se generó imagen. Verifica que el modelo Gemini esté configurado correctamente.');\n}\n\nconsole.log('==== END CHECK IMAGE BINARY ====');"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -2368,
-        32
-      ],
-      "id": "check-image-binary-001",
-      "name": "Check and Prepare Binary"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.imgbb.com/1/upload",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "contentType": "multipart-form-data",
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "key",
-              "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447"
-            },
-            {
-              "parameterType": "formBinaryData",
-              "name": "image",
-              "inputDataFieldName": "=data"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "9774cc00-56b5-47cd-8639-29bebe0d9589",
-      "name": "Upload to ImgBB",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        -2256,
-        32
-      ],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "zx6X4T7j4yDMYWKo",
-          "name": "imgbb-api"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "=UPDATE social_posts \nSET image_url = '{{ $json.data.url }}', \n    status = 'completed',\n    updated_at = NOW()\nWHERE id = '{{ $('Prepare for Image Gen').item.json.post_id }}'\nRETURNING *",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -2032,
-        32
-      ],
-      "id": "005709ce-2959-4a81-a997-faff96313da2",
-      "name": "Update DB with Image URL",
-      "credentials": {
-        "postgres": {
-          "id": "WnTYs2zvPoE7hDJE",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "success",
-              "name": "success",
-              "value": true,
-              "type": "boolean"
-            },
-            {
-              "id": "message",
-              "name": "message",
-              "value": "=✅ Content generated successfully!\n\n📝 Post ID: {{ $json.id }}\n📌 Topic: {{ $json.topic }}\n🎨 Type: {{ $json.post_type }}\n🖼️ Image: {{ $json.image_url }}\n⏰ Created: {{ $json.created_at }}",
-              "type": "string"
-            },
-            {
-              "id": "post_id",
-              "name": "post_id",
-              "value": "={{ $json.id }}",
-              "type": "string"
-            },
-            {
-              "id": "image_url",
-              "name": "image_url",
-              "value": "={{ $json.image_url }}",
-              "type": "string"
-            },
-            {
-              "id": "post_copy",
-              "name": "post_copy",
-              "value": "={{ $json.post_copy }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.3,
-      "position": [
-        -1808,
-        32
-      ],
-      "id": "aa618036-3d1a-46ce-94e2-dedbdb89b6f9",
-      "name": "Format Success Response"
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ { \"success\": true, \"message\": \"Content generated successfully\", \"data\": $json } }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        -1584,
-        32
-      ],
-      "id": "respond-generate-001",
-      "name": "Respond to Webhook - Generate"
-    },
-    {
-      "parameters": {
         "respondWith": "json",
         "responseBody": "={{ { \"success\": true, \"message\": \"Post published successfully\" } }}",
         "options": {}
@@ -412,33 +17,7 @@
     },
     {
       "parameters": {
-        "model": {
-          "__rl": true,
-          "value": "chatgpt-4o-latest",
-          "mode": "list",
-          "cachedResultName": "chatgpt-4o-latest"
-        },
-        "builtInTools": {},
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.3,
-      "position": [
-        -4128,
-        256
-      ],
-      "id": "2a9997b0-8df8-48ca-b9aa-60fd853a1146",
-      "name": "OpenAI Chat Model",
-      "credentials": {
-        "openAiApi": {
-          "id": "13Oqly3WdRAzZVXL",
-          "name": "OpenAi account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Prepara imágenes para ImgBB\n// Soporta tanto binarios nativos de n8n como base64 desde JSON (una o múltiples)\nconst items = $input.all();\nconst newItems = [];\n\nconsole.log('==== SEPARAR BINARIOS START ====');\nconsole.log('SEPARAR BINARIOS - Total items recibidos:', items.length);\n\nfor (const item of items) {\n  console.log('\\n--- SEPARAR BINARIOS - Procesando item ---');\n  console.log('SEPARAR BINARIOS - Item.json keys:', Object.keys(item.json));\n  console.log('SEPARAR BINARIOS - Tiene binary?:', !!item.binary);\n  if (item.binary) {\n    console.log('SEPARAR BINARIOS - Binary keys:', Object.keys(item.binary));\n  }\n  \n  // IMPORTANTE: Si body es un string JSON, parsearlo\n  let webhookData = {};\n  let parsedData = {};\n  \n  if (item.json.body && typeof item.json.body === 'string') {\n    try {\n      parsedData = JSON.parse(item.json.body);\n      console.log('SEPARAR BINARIOS - Body parseado:', JSON.stringify(parsedData));\n      webhookData = parsedData;\n    } catch (e) {\n      console.log('SEPARAR BINARIOS - Error parseando body:', e.message);\n      webhookData = item.json;\n    }\n  } else {\n    webhookData = item.json;\n  }\n  \n  console.log('SEPARAR BINARIOS - webhookData final:', JSON.stringify(webhookData));\n  \n  // Caso 1: Ya tiene binarios (desde n8n)\n  const binaryData = item.binary;\n  if (binaryData) {\n    for (const key of Object.keys(binaryData)) {\n      if (key.startsWith('Image') || key === 'data') {\n        const resultItem = {\n          json: webhookData,\n          binary: {\n            data: binaryData[key]\n          }\n        };\n        console.log('SEPARAR BINARIOS - Retornando con binario:', JSON.stringify(resultItem.json));\n        newItems.push(resultItem);\n      }\n    }\n    continue;\n  }\n\n  // Caso 2: Múltiples imágenes (Images array)\n  const imagesArray = webhookData.Images;\n  if (imagesArray && Array.isArray(imagesArray) && imagesArray.length > 0) {\n    console.log('SEPARAR BINARIOS - Formato detectado: Images array con', imagesArray.length, 'imágenes');\n    \n    for (let i = 0; i < imagesArray.length; i++) {\n      const imageData = imagesArray[i];\n      try {\n        const base64Data = imageData.data.split(',')[1] || imageData.data;\n        const buffer = Buffer.from(base64Data, 'base64');\n        \n        newItems.push({\n          json: webhookData,\n          binary: {\n            data: {\n              data: buffer.toString('base64'),\n              mimeType: imageData.mimeType || 'image/png',\n              fileName: imageData.fileName || `image_${i}.png`,\n              fileExtension: (imageData.fileName || 'image.png').split('.').pop()\n            }\n          }\n        });\n        console.log('SEPARAR BINARIOS - Imagen', i + 1, 'procesada exitosamente');\n        console.log('SEPARAR BINARIOS - Binary data length:', buffer.length);\n      } catch (error) {\n        console.log('SEPARAR BINARIOS - ERROR procesando imagen', i, ':', error.message);\n        console.log('SEPARAR BINARIOS - imageData:', JSON.stringify(imageData));\n        // NO agregar items sin binario - dejar que falle para detectar el problema\n      }\n    }\n    console.log('SEPARAR BINARIOS - Images array completado. Items creados:', newItems.length);\n    continue;\n  }\n\n  // Caso 3: Una sola imagen (Image objeto)\n  const imageData = webhookData.Image;\n  let hasImage = false;\n  let imageToProcess = null;\n  \n  // Formato 1: Image.data (objeto con data)\n  if (imageData && imageData.data) {\n    console.log('SEPARAR BINARIOS - Formato detectado: Image.data');\n    hasImage = true;\n    imageToProcess = imageData;\n  }\n  // Formato 2: Image es directamente el string base64\n  else if (typeof imageData === 'string' && imageData.length > 100) {\n    console.log('SEPARAR BINARIOS - Formato detectado: Image como string base64');\n    hasImage = true;\n    imageToProcess = {\n      data: imageData,\n      mimeType: 'image/png',\n      fileName: 'image.png'\n    };\n  }\n  // Formato 3: Imagen en otro campo\n  else if (webhookData.image && typeof webhookData.image === 'string' && webhookData.image.length > 100) {\n    console.log('SEPARAR BINARIOS - Formato detectado: campo image (minúscula)');\n    hasImage = true;\n    imageToProcess = {\n      data: webhookData.image,\n      mimeType: 'image/png',\n      fileName: 'image.png'\n    };\n  }\n  \n  if (hasImage && imageToProcess) {\n    try {\n      const base64Data = imageToProcess.data.split(',')[1] || imageToProcess.data;\n      const buffer = Buffer.from(base64Data, 'base64');\n      \n      const resultItem = {\n        json: webhookData,\n        binary: {\n          data: {\n            data: buffer.toString('base64'),\n            mimeType: imageToProcess.mimeType || 'image/png',\n            fileName: imageToProcess.fileName || 'image.png',\n            fileExtension: (imageToProcess.fileName || 'image.png').split('.').pop()\n          }\n        }\n      };\n      console.log('SEPARAR BINARIOS - Retornando con imagen base64');\n      newItems.push(resultItem);\n    } catch (error) {\n      console.log('SEPARAR BINARIOS - Error procesando imagen:', error.message);\n      newItems.push({\n        json: webhookData\n      });\n    }\n  } else {\n    // Caso 4: No hay imagen\n    console.log('SEPARAR BINARIOS - Sin imagen, pasando datos originales');\n    newItems.push({\n      json: webhookData\n    });\n  }\n}\n\nif (newItems.length === 0 && items.length > 0) {\n  console.log('SEPARAR BINARIOS - WARNING: No hay items procesados, devolviendo originales');\n  return items;\n}\n\nconsole.log('==== SEPARAR BINARIOS END ====');\nconsole.log('SEPARAR BINARIOS - Total items devueltos:', newItems.length);\nfor (let i = 0; i < newItems.length; i++) {\n  console.log(`SEPARAR BINARIOS - Item ${i}: tiene binary.data =`, !!newItems[i].binary?.data);\n}\n\nreturn newItems;"
+        "jsCode": "// Prepara im\u00e1genes para ImgBB\n// Soporta tanto binarios nativos de n8n como base64 desde JSON (una o m\u00faltiples)\nconst items = $input.all();\nconst newItems = [];\n\nconsole.log('==== SEPARAR BINARIOS START ====');\nconsole.log('SEPARAR BINARIOS - Total items recibidos:', items.length);\n\nfor (const item of items) {\n  console.log('\\n--- SEPARAR BINARIOS - Procesando item ---');\n  console.log('SEPARAR BINARIOS - Item.json keys:', Object.keys(item.json));\n  console.log('SEPARAR BINARIOS - Tiene binary?:', !!item.binary);\n  if (item.binary) {\n    console.log('SEPARAR BINARIOS - Binary keys:', Object.keys(item.binary));\n  }\n  \n  // IMPORTANTE: Si body es un string JSON, parsearlo\n  let webhookData = {};\n  let parsedData = {};\n  \n  if (item.json.body && typeof item.json.body === 'string') {\n    try {\n      parsedData = JSON.parse(item.json.body);\n      console.log('SEPARAR BINARIOS - Body parseado:', JSON.stringify(parsedData));\n      webhookData = parsedData;\n    } catch (e) {\n      console.log('SEPARAR BINARIOS - Error parseando body:', e.message);\n      webhookData = item.json;\n    }\n  } else {\n    webhookData = item.json;\n  }\n  \n  console.log('SEPARAR BINARIOS - webhookData final:', JSON.stringify(webhookData));\n  \n  // Caso 1: Ya tiene binarios (desde n8n)\n  const binaryData = item.binary;\n  if (binaryData) {\n    for (const key of Object.keys(binaryData)) {\n      if (key.startsWith('Image') || key === 'data') {\n        const resultItem = {\n          json: webhookData,\n          binary: {\n            data: binaryData[key]\n          }\n        };\n        console.log('SEPARAR BINARIOS - Retornando con binario:', JSON.stringify(resultItem.json));\n        newItems.push(resultItem);\n      }\n    }\n    continue;\n  }\n\n  // Caso 2: M\u00faltiples im\u00e1genes (Images array)\n  const imagesArray = webhookData.Images;\n  if (imagesArray && Array.isArray(imagesArray) && imagesArray.length > 0) {\n    console.log('SEPARAR BINARIOS - Formato detectado: Images array con', imagesArray.length, 'im\u00e1genes');\n    \n    for (let i = 0; i < imagesArray.length; i++) {\n      const imageData = imagesArray[i];\n      try {\n        const base64Data = imageData.data.split(',')[1] || imageData.data;\n        const buffer = Buffer.from(base64Data, 'base64');\n        \n        newItems.push({\n          json: webhookData,\n          binary: {\n            data: {\n              data: buffer.toString('base64'),\n              mimeType: imageData.mimeType || 'image/png',\n              fileName: imageData.fileName || `image_${i}.png`,\n              fileExtension: (imageData.fileName || 'image.png').split('.').pop()\n            }\n          }\n        });\n        console.log('SEPARAR BINARIOS - Imagen', i + 1, 'procesada exitosamente');\n        console.log('SEPARAR BINARIOS - Binary data length:', buffer.length);\n      } catch (error) {\n        console.log('SEPARAR BINARIOS - ERROR procesando imagen', i, ':', error.message);\n        console.log('SEPARAR BINARIOS - imageData:', JSON.stringify(imageData));\n        // NO agregar items sin binario - dejar que falle para detectar el problema\n      }\n    }\n    console.log('SEPARAR BINARIOS - Images array completado. Items creados:', newItems.length);\n    continue;\n  }\n\n  // Caso 3: Una sola imagen (Image objeto)\n  const imageData = webhookData.Image;\n  let hasImage = false;\n  let imageToProcess = null;\n  \n  // Formato 1: Image.data (objeto con data)\n  if (imageData && imageData.data) {\n    console.log('SEPARAR BINARIOS - Formato detectado: Image.data');\n    hasImage = true;\n    imageToProcess = imageData;\n  }\n  // Formato 2: Image es directamente el string base64\n  else if (typeof imageData === 'string' && imageData.length > 100) {\n    console.log('SEPARAR BINARIOS - Formato detectado: Image como string base64');\n    hasImage = true;\n    imageToProcess = {\n      data: imageData,\n      mimeType: 'image/png',\n      fileName: 'image.png'\n    };\n  }\n  // Formato 3: Imagen en otro campo\n  else if (webhookData.image && typeof webhookData.image === 'string' && webhookData.image.length > 100) {\n    console.log('SEPARAR BINARIOS - Formato detectado: campo image (min\u00fascula)');\n    hasImage = true;\n    imageToProcess = {\n      data: webhookData.image,\n      mimeType: 'image/png',\n      fileName: 'image.png'\n    };\n  }\n  \n  if (hasImage && imageToProcess) {\n    try {\n      const base64Data = imageToProcess.data.split(',')[1] || imageToProcess.data;\n      const buffer = Buffer.from(base64Data, 'base64');\n      \n      const resultItem = {\n        json: webhookData,\n        binary: {\n          data: {\n            data: buffer.toString('base64'),\n            mimeType: imageToProcess.mimeType || 'image/png',\n            fileName: imageToProcess.fileName || 'image.png',\n            fileExtension: (imageToProcess.fileName || 'image.png').split('.').pop()\n          }\n        }\n      };\n      console.log('SEPARAR BINARIOS - Retornando con imagen base64');\n      newItems.push(resultItem);\n    } catch (error) {\n      console.log('SEPARAR BINARIOS - Error procesando imagen:', error.message);\n      newItems.push({\n        json: webhookData\n      });\n    }\n  } else {\n    // Caso 4: No hay imagen\n    console.log('SEPARAR BINARIOS - Sin imagen, pasando datos originales');\n    newItems.push({\n      json: webhookData\n    });\n  }\n}\n\nif (newItems.length === 0 && items.length > 0) {\n  console.log('SEPARAR BINARIOS - WARNING: No hay items procesados, devolviendo originales');\n  return items;\n}\n\nconsole.log('==== SEPARAR BINARIOS END ====');\nconsole.log('SEPARAR BINARIOS - Total items devueltos:', newItems.length);\nfor (let i = 0; i < newItems.length; i++) {\n  console.log(`SEPARAR BINARIOS - Item ${i}: tiene binary.data =`, !!newItems[i].binary?.data);\n}\n\nreturn newItems;"
       },
       "id": "740d00c2-3284-470b-9dcc-eeeb23dc0ad0",
       "name": "Separar Binarios",
@@ -523,7 +102,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// AGRUPA TODOS LOS RESULTADOS DE IMGBB EN UN SOLO ITEM\nconst allItems = $input.all();\n\nconsole.log('==== AGGREGATE IMGBB START ====');\nconsole.log('AGGREGATE - Total items recibidos:', allItems.length);\n\n// OBTENER DATOS ORIGINALES DEL WEBHOOK desde 'Check if Image Exists'\nlet baseData = {};\nconst checkImageNode = $('Check if Image Exists');\nif (checkImageNode && checkImageNode.first) {\n  const firstCheckItem = checkImageNode.first();\n  if (firstCheckItem && firstCheckItem.json) {\n    baseData = { ...firstCheckItem.json };\n    console.log('AGGREGATE - Datos base desde Check if Image Exists');\n    console.log('AGGREGATE - post_type:', baseData.post_type);\n    console.log('AGGREGATE - publish_linkedin:', baseData.publish_linkedin);\n    console.log('AGGREGATE - publish_facebook:', baseData.publish_facebook);\n  }\n} else {\n  console.log('AGGREGATE - WARNING: No se pudo acceder a Check if Image Exists, usando primer item de ImgBB');\n  baseData = allItems[0]?.json || {};\n}\n\n// Crear array con todas las URLs de ImgBB\nconst imageArray = [];\nfor (const item of allItems) {\n  if (item.json.data && item.json.data.url) {\n    imageArray.push({\n      url: item.json.data.url,\n      display_url: item.json.data.display_url || item.json.data.url,\n      delete_url: item.json.data.delete_url,\n      filename: item.json.data.image?.filename || 'image.jpg',\n      type: item.json.data.image?.mime || 'image/jpeg'\n    });\n  }\n}\n\nconsole.log('AGGREGATE - Total imágenes en array:', imageArray.length);\n\n// Resultado: UN solo item con DATOS ORIGINALES DEL WEBHOOK + todas las imágenes\nconst result = {\n  ...baseData,\n  Image: imageArray,\n  image_count: imageArray.length\n};\n\nconsole.log('AGGREGATE - post_type en resultado:', result.post_type);\nconsole.log('AGGREGATE - Array final con', imageArray.length, 'URLs');\nconsole.log('==== AGGREGATE IMGBB END ====');\n\nreturn [{\n  json: result\n}];"
+        "jsCode": "// AGRUPA TODOS LOS RESULTADOS DE IMGBB EN UN SOLO ITEM\nconst allItems = $input.all();\n\nconsole.log('==== AGGREGATE IMGBB START ====');\nconsole.log('AGGREGATE - Total items recibidos:', allItems.length);\n\n// OBTENER DATOS ORIGINALES DEL WEBHOOK desde 'Check if Image Exists'\nlet baseData = {};\nconst checkImageNode = $('Check if Image Exists');\nif (checkImageNode && checkImageNode.first) {\n  const firstCheckItem = checkImageNode.first();\n  if (firstCheckItem && firstCheckItem.json) {\n    baseData = { ...firstCheckItem.json };\n    console.log('AGGREGATE - Datos base desde Check if Image Exists');\n    console.log('AGGREGATE - post_type:', baseData.post_type);\n    console.log('AGGREGATE - publish_linkedin:', baseData.publish_linkedin);\n    console.log('AGGREGATE - publish_facebook:', baseData.publish_facebook);\n  }\n} else {\n  console.log('AGGREGATE - WARNING: No se pudo acceder a Check if Image Exists, usando primer item de ImgBB');\n  baseData = allItems[0]?.json || {};\n}\n\n// Crear array con todas las URLs de ImgBB\nconst imageArray = [];\nfor (const item of allItems) {\n  if (item.json.data && item.json.data.url) {\n    imageArray.push({\n      url: item.json.data.url,\n      display_url: item.json.data.display_url || item.json.data.url,\n      delete_url: item.json.data.delete_url,\n      filename: item.json.data.image?.filename || 'image.jpg',\n      type: item.json.data.image?.mime || 'image/jpeg'\n    });\n  }\n}\n\nconsole.log('AGGREGATE - Total im\u00e1genes en array:', imageArray.length);\n\n// Resultado: UN solo item con DATOS ORIGINALES DEL WEBHOOK + todas las im\u00e1genes\nconst result = {\n  ...baseData,\n  Image: imageArray,\n  image_count: imageArray.length\n};\n\nconsole.log('AGGREGATE - post_type en resultado:', result.post_type);\nconsole.log('AGGREGATE - Array final con', imageArray.length, 'URLs');\nconsole.log('==== AGGREGATE IMGBB END ====');\n\nreturn [{\n  json: result\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -635,7 +214,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// PREPARA LINKEDIN: Descarga imágenes desde URLs de ImgBB\nconst currentItem = $input.first();\nconst baseJson = currentItem.json;\n\nconsole.log('==== PREP LI START ====');\nconsole.log('PREP LI - Image array LENGTH:', baseJson.Image ? baseJson.Image.length : 0);\n\n// Descargar imágenes desde URLs de ImgBB\nif (baseJson.Image && Array.isArray(baseJson.Image) && baseJson.Image.length > 0) {\n  console.log('PREP LI - Descargando', baseJson.Image.length, 'imágenes desde URLs...');\n  \n  const binaryData = {};\n  const downloadedCount = [];\n  \n  for (let i = 0; i < baseJson.Image.length; i++) {\n    const imgData = baseJson.Image[i];\n    if (!imgData.url) {\n      console.log('PREP LI - ERROR: Imagen', i, 'no tiene URL');\n      continue;\n    }\n    \n    try {\n      console.log(`PREP LI - Descargando imagen ${i + 1}/${baseJson.Image.length}:`, imgData.url);\n      \n      const response = await this.helpers.request({\n        method: 'GET',\n        uri: imgData.url,\n        encoding: null,\n        resolveWithFullResponse: false\n      });\n      \n      const keyName = i === 0 ? 'Image' : `Image${i}`;\n      binaryData[keyName] = {\n        data: Buffer.from(response).toString('base64'),\n        mimeType: imgData.type || 'image/png',\n        fileName: imgData.filename || `image_${i}.png`,\n        fileExtension: (imgData.filename || 'image.png').split('.').pop()\n      };\n      \n      downloadedCount.push(keyName);\n      console.log('PREP LI - ✓ Descargada:', keyName, '- size:', response.length, 'bytes');\n    } catch (error) {\n      console.log('PREP LI - ERROR descargando imagen', i, ':', error.message);\n    }\n  }\n  \n  if (downloadedCount.length > 0) {\n    console.log('PREP LI - Total descargadas:', downloadedCount.length);\n    console.log('PREP LI - Binary keys creadas:', downloadedCount.join(', '));\n    console.log('PREP LI - ROUTER EVALUARÁ:', baseJson.Image.length);\n    console.log('==== PREP LI END (OK) ====');\n    return [{\n      json: baseJson,\n      binary: binaryData\n    }];\n  } else {\n    console.log('PREP LI - ERROR: No se pudo descargar ninguna imagen');\n  }\n}\n\nconsole.log('PREP LI - Sin imágenes o error');\nconsole.log('==== PREP LI END ====');\nreturn [{ json: baseJson }];"
+        "jsCode": "// PREPARA LINKEDIN: Descarga im\u00e1genes desde URLs de ImgBB\nconst currentItem = $input.first();\nconst baseJson = currentItem.json;\n\nconsole.log('==== PREP LI START ====');\nconsole.log('PREP LI - Image array LENGTH:', baseJson.Image ? baseJson.Image.length : 0);\n\n// Descargar im\u00e1genes desde URLs de ImgBB\nif (baseJson.Image && Array.isArray(baseJson.Image) && baseJson.Image.length > 0) {\n  console.log('PREP LI - Descargando', baseJson.Image.length, 'im\u00e1genes desde URLs...');\n  \n  const binaryData = {};\n  const downloadedCount = [];\n  \n  for (let i = 0; i < baseJson.Image.length; i++) {\n    const imgData = baseJson.Image[i];\n    if (!imgData.url) {\n      console.log('PREP LI - ERROR: Imagen', i, 'no tiene URL');\n      continue;\n    }\n    \n    try {\n      console.log(`PREP LI - Descargando imagen ${i + 1}/${baseJson.Image.length}:`, imgData.url);\n      \n      const response = await this.helpers.request({\n        method: 'GET',\n        uri: imgData.url,\n        encoding: null,\n        resolveWithFullResponse: false\n      });\n      \n      const keyName = i === 0 ? 'Image' : `Image${i}`;\n      binaryData[keyName] = {\n        data: Buffer.from(response).toString('base64'),\n        mimeType: imgData.type || 'image/png',\n        fileName: imgData.filename || `image_${i}.png`,\n        fileExtension: (imgData.filename || 'image.png').split('.').pop()\n      };\n      \n      downloadedCount.push(keyName);\n      console.log('PREP LI - \u2713 Descargada:', keyName, '- size:', response.length, 'bytes');\n    } catch (error) {\n      console.log('PREP LI - ERROR descargando imagen', i, ':', error.message);\n    }\n  }\n  \n  if (downloadedCount.length > 0) {\n    console.log('PREP LI - Total descargadas:', downloadedCount.length);\n    console.log('PREP LI - Binary keys creadas:', downloadedCount.join(', '));\n    console.log('PREP LI - ROUTER EVALUAR\u00c1:', baseJson.Image.length);\n    console.log('==== PREP LI END (OK) ====');\n    return [{\n      json: baseJson,\n      binary: binaryData\n    }];\n  } else {\n    console.log('PREP LI - ERROR: No se pudo descargar ninguna imagen');\n  }\n}\n\nconsole.log('PREP LI - Sin im\u00e1genes o error');\nconsole.log('==== PREP LI END ====');\nreturn [{ json: baseJson }];"
       },
       "id": "67105eb6-0541-496a-a106-6be82265ab73",
       "name": "Prep URL LI",
@@ -785,7 +364,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// SEPARA MÚLTIPLES IMÁGENES PARA LINKEDIN\nconst allItems = $input.all();\nconst newItems = [];\n\nconsole.log('==== SEPARATE IMAGES LI START ====');\nconsole.log('SEPARATE LI - Total items recibidos:', allItems.length);\n\n// DEBUG: Ver qué binarios vienen en el primer item\nif (allItems.length > 0 && allItems[0].binary) {\n  console.log('SEPARATE LI - Binary keys en item 0:', Object.keys(allItems[0].binary));\n  console.log('SEPARATE LI - Image array en json:', allItems[0].json.Image ? allItems[0].json.Image.length : 0);\n}\n\n// Obtener binarios del item actual (vienen de Prep URL LI)\nfor (let idx = 0; idx < allItems.length; idx++) {\n  const item = allItems[idx];\n  console.log(`\\nSEPARATE LI - Item ${idx}:`);\n  console.log('SEPARATE LI - Tiene binary?:', !!item.binary);\n  \n  const binaryData = item.binary;\n  \n  if (!binaryData) {\n    console.log('SEPARATE LI - ERROR: No hay binarios en el item');\n    console.log('SEPARATE LI - item.json keys:', Object.keys(item.json));\n    continue;\n  }\n  \n  console.log('SEPARATE LI - Binary keys:', Object.keys(binaryData));\n\n  // Recorrer todas las llaves del objeto binario (Image, Image1, Image2, etc.)\n  for (const key of Object.keys(binaryData)) {\n    if (key.startsWith('Image') || key === 'data') {\n      const newItem = {\n        json: {\n          ...item.json,\n          filename: binaryData[key].fileName,\n          mimetype: binaryData[key].mimeType\n        },\n        binary: {\n          data: binaryData[key]\n        }\n      };\n      newItems.push(newItem);\n      console.log('SEPARATE LI - Binario separado:', key, '- tiene data?:', !!newItem.binary.data);\n    }\n  }\n}\n\nconsole.log('\\nSEPARATE LI - Total items devueltos:', newItems.length);\nfor (let i = 0; i < newItems.length; i++) {\n  console.log(`SEPARATE LI - Output item ${i}: tiene binary.data =`, !!newItems[i].binary?.data);\n}\nconsole.log('==== SEPARATE IMAGES LI END ====');\nreturn newItems;"
+        "jsCode": "// SEPARA M\u00daLTIPLES IM\u00c1GENES PARA LINKEDIN\nconst allItems = $input.all();\nconst newItems = [];\n\nconsole.log('==== SEPARATE IMAGES LI START ====');\nconsole.log('SEPARATE LI - Total items recibidos:', allItems.length);\n\n// DEBUG: Ver qu\u00e9 binarios vienen en el primer item\nif (allItems.length > 0 && allItems[0].binary) {\n  console.log('SEPARATE LI - Binary keys en item 0:', Object.keys(allItems[0].binary));\n  console.log('SEPARATE LI - Image array en json:', allItems[0].json.Image ? allItems[0].json.Image.length : 0);\n}\n\n// Obtener binarios del item actual (vienen de Prep URL LI)\nfor (let idx = 0; idx < allItems.length; idx++) {\n  const item = allItems[idx];\n  console.log(`\\nSEPARATE LI - Item ${idx}:`);\n  console.log('SEPARATE LI - Tiene binary?:', !!item.binary);\n  \n  const binaryData = item.binary;\n  \n  if (!binaryData) {\n    console.log('SEPARATE LI - ERROR: No hay binarios en el item');\n    console.log('SEPARATE LI - item.json keys:', Object.keys(item.json));\n    continue;\n  }\n  \n  console.log('SEPARATE LI - Binary keys:', Object.keys(binaryData));\n\n  // Recorrer todas las llaves del objeto binario (Image, Image1, Image2, etc.)\n  for (const key of Object.keys(binaryData)) {\n    if (key.startsWith('Image') || key === 'data') {\n      const newItem = {\n        json: {\n          ...item.json,\n          filename: binaryData[key].fileName,\n          mimetype: binaryData[key].mimeType\n        },\n        binary: {\n          data: binaryData[key]\n        }\n      };\n      newItems.push(newItem);\n      console.log('SEPARATE LI - Binario separado:', key, '- tiene data?:', !!newItem.binary.data);\n    }\n  }\n}\n\nconsole.log('\\nSEPARATE LI - Total items devueltos:', newItems.length);\nfor (let i = 0; i < newItems.length; i++) {\n  console.log(`SEPARATE LI - Output item ${i}: tiene binary.data =`, !!newItems[i].binary?.data);\n}\nconsole.log('==== SEPARATE IMAGES LI END ====');\nreturn newItems;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -866,7 +445,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Obtenemos todos los ítems del nodo de registro\nconst itemsRegistro = $('Register Load').all();\n\nconst mediaItems = [];\n\n// Recorremos cada respuesta de LinkedIn\nfor (const item of itemsRegistro) {\n    // Obtenemos el URN (el identificador de la imagen)\n    const urn = item.json.value.image;\n    \n    if (urn) {\n        // CORRECCIÓN: LinkedIn exige que la llave se llame \"id\", no \"media\"\n        mediaItems.push({\n            \"id\": urn\n        });\n    }\n}\n\n// Recuperamos el post_type del nodo Merge Webhook with DB\nconst postText = $('Merge Webhook with DB').first().json.post_type;\n\n// Devolvemos la lista limpia y correcta CON el post_type\nreturn [{\n    json: {\n        contentEntities: mediaItems,\n        post_type: postText\n    }\n}];"
+        "jsCode": "// Obtenemos todos los \u00edtems del nodo de registro\nconst itemsRegistro = $('Register Load').all();\n\nconst mediaItems = [];\n\n// Recorremos cada respuesta de LinkedIn\nfor (const item of itemsRegistro) {\n    // Obtenemos el URN (el identificador de la imagen)\n    const urn = item.json.value.image;\n    \n    if (urn) {\n        // CORRECCI\u00d3N: LinkedIn exige que la llave se llame \"id\", no \"media\"\n        mediaItems.push({\n            \"id\": urn\n        });\n    }\n}\n\n// Recuperamos el post_type del nodo Merge Webhook with DB\nconst postText = $('Merge Webhook with DB').first().json.post_type;\n\n// Devolvemos la lista limpia y correcta CON el post_type\nreturn [{\n    json: {\n        contentEntities: mediaItems,\n        post_type: postText\n    }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -918,7 +497,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// PREPARA FB: Asegura que Image array esté disponible\nconst currentItem = $input.first();\nconst baseJson = currentItem.json;\n\nconsole.log('==== PREP FB START ====');\nconsole.log('PREP FB - RECIBIENDO DATOS');\nconsole.log('PREP FB - baseJson.Image exists:', !!baseJson.Image);\nconsole.log('PREP FB - baseJson.Image is array:', Array.isArray(baseJson.Image));\nconsole.log('PREP FB - Image array LENGTH:', baseJson.Image ? baseJson.Image.length : 'UNDEFINED');\nif (baseJson.Image && Array.isArray(baseJson.Image)) {\n  console.log('PREP FB - Image URLs:', baseJson.Image.map(img => img.url));\n}\nconsole.log('PREP FB - image_url de BD:', baseJson.image_url);\n\n// Si ya tiene Image array (desde Merge Webhook with DB), usarlo\nif (baseJson.Image && Array.isArray(baseJson.Image) && baseJson.Image.length > 0) {\n  console.log('PREP FB - Usando Image array existente:', baseJson.Image.length);\n  console.log('PREP FB - ROUTER EVALUARÁ:', baseJson.Image && Array.isArray(baseJson.Image) ? baseJson.Image.length : 0);\n  console.log('==== PREP FB END (con Image[]) ====');\n  return [{\n    json: baseJson\n  }];\n}\n\n// Si no tiene Image array pero tiene image_url, crearlo\nif (baseJson.image_url) {\n  console.log('PREP FB - Creando Image array desde image_url');\n  baseJson.Image = [{\n    url: baseJson.image_url,\n    filename: 'fb_image.jpg'\n  }];\n  console.log('==== PREP FB END (creado desde URL) ====');\n  return [{\n    json: baseJson\n  }];\n}\n\nconsole.log('PREP FB - No hay imágenes');\nconsole.log('==== PREP FB END (texto) ====');\nreturn [{\n  json: baseJson\n}];"
+        "jsCode": "// PREPARA FB: Asegura que Image array est\u00e9 disponible\nconst currentItem = $input.first();\nconst baseJson = currentItem.json;\n\nconsole.log('==== PREP FB START ====');\nconsole.log('PREP FB - RECIBIENDO DATOS');\nconsole.log('PREP FB - baseJson.Image exists:', !!baseJson.Image);\nconsole.log('PREP FB - baseJson.Image is array:', Array.isArray(baseJson.Image));\nconsole.log('PREP FB - Image array LENGTH:', baseJson.Image ? baseJson.Image.length : 'UNDEFINED');\nif (baseJson.Image && Array.isArray(baseJson.Image)) {\n  console.log('PREP FB - Image URLs:', baseJson.Image.map(img => img.url));\n}\nconsole.log('PREP FB - image_url de BD:', baseJson.image_url);\n\n// Si ya tiene Image array (desde Merge Webhook with DB), usarlo\nif (baseJson.Image && Array.isArray(baseJson.Image) && baseJson.Image.length > 0) {\n  console.log('PREP FB - Usando Image array existente:', baseJson.Image.length);\n  console.log('PREP FB - ROUTER EVALUAR\u00c1:', baseJson.Image && Array.isArray(baseJson.Image) ? baseJson.Image.length : 0);\n  console.log('==== PREP FB END (con Image[]) ====');\n  return [{\n    json: baseJson\n  }];\n}\n\n// Si no tiene Image array pero tiene image_url, crearlo\nif (baseJson.image_url) {\n  console.log('PREP FB - Creando Image array desde image_url');\n  baseJson.Image = [{\n    url: baseJson.image_url,\n    filename: 'fb_image.jpg'\n  }];\n  console.log('==== PREP FB END (creado desde URL) ====');\n  return [{\n    json: baseJson\n  }];\n}\n\nconsole.log('PREP FB - No hay im\u00e1genes');\nconsole.log('==== PREP FB END (texto) ====');\nreturn [{\n  json: baseJson\n}];"
       },
       "id": "6d67010b-f8ee-4443-8a48-c2daa36c0a8a",
       "name": "Prep URL FB",
@@ -1139,7 +718,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const itemsUploaded = $('FB Upload URL (Hidden)').all();\n\n// Obtener post_type del primer item de FB Upload URL (Hidden)\n// que debería tener los datos parseados\nconst originalPost = itemsUploaded[0]?.json?.post_type || $input.first().json.post_type;\n\nconst mediaItems = [];\n\n// Recolectamos los IDs que nos devolvió Facebook\nfor (const item of itemsUploaded) {\n    const mediaId = item.json.id;\n    if (mediaId) {\n        mediaItems.push({\n            \"media_fbid\": mediaId\n        });\n    }\n}\n\nreturn [{\n    json: {\n        attached_media: mediaItems,\n        post_type: originalPost\n    }\n}];"
+        "jsCode": "const itemsUploaded = $('FB Upload URL (Hidden)').all();\n\n// Obtener post_type del primer item de FB Upload URL (Hidden)\n// que deber\u00eda tener los datos parseados\nconst originalPost = itemsUploaded[0]?.json?.post_type || $input.first().json.post_type;\n\nconst mediaItems = [];\n\n// Recolectamos los IDs que nos devolvi\u00f3 Facebook\nfor (const item of itemsUploaded) {\n    const mediaId = item.json.id;\n    if (mediaId) {\n        mediaItems.push({\n            \"media_fbid\": mediaId\n        });\n    }\n}\n\nreturn [{\n    json: {\n        attached_media: mediaItems,\n        post_type: originalPost\n    }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1178,7 +757,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Extrae las URLs del array Image[] para Instagram\nconst items = $input.all();\nconst firstItem = items[0]?.json || {};\n\n// Recuperamos el caption\nconst caption = firstItem.post_type || '';\n\n// Extraemos las URLs del array Image[]\nconst images = [];\nif (firstItem.Image && Array.isArray(firstItem.Image)) {\n  for (const img of firstItem.Image) {\n    if (img.url) {\n      images.push(img.url);\n    }\n  }\n}\n\nconsole.log('AGRUPAR IMGBB - Total imágenes:', images.length);\n\n// Devolvemos UN solo ítem con la lista y el conteo\nreturn [{\n  json: {\n    images_list: images,\n    total_count: images.length,\n    caption: caption\n  }\n}];"
+        "jsCode": "// Extrae las URLs del array Image[] para Instagram\nconst items = $input.all();\nconst firstItem = items[0]?.json || {};\n\n// Recuperamos el caption\nconst caption = firstItem.post_type || '';\n\n// Extraemos las URLs del array Image[]\nconst images = [];\nif (firstItem.Image && Array.isArray(firstItem.Image)) {\n  for (const img of firstItem.Image) {\n    if (img.url) {\n      images.push(img.url);\n    }\n  }\n}\n\nconsole.log('AGRUPAR IMGBB - Total im\u00e1genes:', images.length);\n\n// Devolvemos UN solo \u00edtem con la lista y el conteo\nreturn [{\n  json: {\n    images_list: images,\n    total_count: images.length,\n    caption: caption\n  }\n}];"
       },
       "id": "299cbc39-4173-4312-b14a-ac334254de18",
       "name": "Agrupar Datos ImgBB",
@@ -1292,7 +871,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Separamos la lista de nuevo para crear los ítems del carrusel uno por uno\nconst images = $input.first().json.images_list;\nconst caption = $input.first().json.caption;\n\nreturn images.map(url => ({\n  json: {\n    url: url,\n    parent_caption: caption\n  }\n}));"
+        "jsCode": "// Separamos la lista de nuevo para crear los \u00edtems del carrusel uno por uno\nconst images = $input.first().json.images_list;\nconst caption = $input.first().json.caption;\n\nreturn images.map(url => ({\n  json: {\n    url: url,\n    parent_caption: caption\n  }\n}));"
       },
       "id": "bc6b9027-35f7-4413-be01-231a30739ae2",
       "name": "Separar para Carrusel",
@@ -1532,7 +1111,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Combinar datos del webhook con la respuesta de la BD\n// ESTE NODO PRESERVA EL ARRAY Image[] DESDE Merge ImgBB Response\nconst dbResponse = $input.item.json;\n\nconsole.log('==== MERGE DB START ====');\n\n// Obtener datos COMPLETOS desde Merge ImgBB Response (que ya tiene Image[] agregado)\nconst mergeImgBBNode = $('Merge ImgBB Response');\nlet webhookData = {};\nlet imageArray = [];\n\nif (mergeImgBBNode && mergeImgBBNode.item && mergeImgBBNode.item.json) {\n  // Tomar TODOS los datos de Merge ImgBB Response (que ya tiene Image[] completo)\n  webhookData = { ...mergeImgBBNode.item.json };\n  imageArray = webhookData.Image || [];\n  console.log('MERGE DB - Datos desde Merge ImgBB Response');\n  console.log('MERGE DB - Image array recibido:', Array.isArray(imageArray) ? imageArray.length : 0);\n  if (Array.isArray(imageArray) && imageArray.length > 0) {\n    console.log('MERGE DB - Image[0].url:', imageArray[0].url);\n    if (imageArray.length > 1) {\n      console.log('MERGE DB - Image[1].url:', imageArray[1].url);\n    }\n  }\n} else {\n  console.log('MERGE DB - ERROR: No se encontró Merge ImgBB Response');\n  const checkImageNode = $('Check if Image Exists');\n  if (checkImageNode && checkImageNode.item) {\n    webhookData = checkImageNode.item.json;\n  }\n}\n\n// Validar que el array esté presente\nif (!Array.isArray(imageArray)) {\n  imageArray = [];\n  console.log('MERGE DB - WARNING: Image no es array, inicializando vacío');\n}\n\n// Resultado final - mantener Image[] exactamente como viene de Merge ImgBB Response\nconst result = {\n  ...webhookData,\n  db_record: dbResponse,\n  image_url: dbResponse.image_url,\n  // NO sobrescribir Image[], mantener el array completo de Merge ImgBB Response\n  Image: imageArray\n};\n\nconsole.log('MERGE DB - Image array FINAL LENGTH:', result.Image ? result.Image.length : 0);\nconsole.log('MERGE DB - result.Image content:', JSON.stringify(result.Image));\nconsole.log('==== MERGE DB END ====');\n\nreturn [{\n  json: result\n}];"
+        "jsCode": "// Combinar datos del webhook con la respuesta de la BD\n// ESTE NODO PRESERVA EL ARRAY Image[] DESDE Merge ImgBB Response\nconst dbResponse = $input.item.json;\n\nconsole.log('==== MERGE DB START ====');\n\n// Obtener datos COMPLETOS desde Merge ImgBB Response (que ya tiene Image[] agregado)\nconst mergeImgBBNode = $('Merge ImgBB Response');\nlet webhookData = {};\nlet imageArray = [];\n\nif (mergeImgBBNode && mergeImgBBNode.item && mergeImgBBNode.item.json) {\n  // Tomar TODOS los datos de Merge ImgBB Response (que ya tiene Image[] completo)\n  webhookData = { ...mergeImgBBNode.item.json };\n  imageArray = webhookData.Image || [];\n  console.log('MERGE DB - Datos desde Merge ImgBB Response');\n  console.log('MERGE DB - Image array recibido:', Array.isArray(imageArray) ? imageArray.length : 0);\n  if (Array.isArray(imageArray) && imageArray.length > 0) {\n    console.log('MERGE DB - Image[0].url:', imageArray[0].url);\n    if (imageArray.length > 1) {\n      console.log('MERGE DB - Image[1].url:', imageArray[1].url);\n    }\n  }\n} else {\n  console.log('MERGE DB - ERROR: No se encontr\u00f3 Merge ImgBB Response');\n  const checkImageNode = $('Check if Image Exists');\n  if (checkImageNode && checkImageNode.item) {\n    webhookData = checkImageNode.item.json;\n  }\n}\n\n// Validar que el array est\u00e9 presente\nif (!Array.isArray(imageArray)) {\n  imageArray = [];\n  console.log('MERGE DB - WARNING: Image no es array, inicializando vac\u00edo');\n}\n\n// Resultado final - mantener Image[] exactamente como viene de Merge ImgBB Response\nconst result = {\n  ...webhookData,\n  db_record: dbResponse,\n  image_url: dbResponse.image_url,\n  // NO sobrescribir Image[], mantener el array completo de Merge ImgBB Response\n  Image: imageArray\n};\n\nconsole.log('MERGE DB - Image array FINAL LENGTH:', result.Image ? result.Image.length : 0);\nconsole.log('MERGE DB - result.Image content:', JSON.stringify(result.Image));\nconsole.log('==== MERGE DB END ====');\n\nreturn [{\n  json: result\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1545,170 +1124,6 @@
     }
   ],
   "connections": {
-    "Webhook - Generate Content": {
-      "main": [
-        [
-          {
-            "node": "Format Form Input",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Format Form Input": {
-      "main": [
-        [
-          {
-            "node": "Agent 1: Strategy Analyzer",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Agent 1: Strategy Analyzer": {
-      "main": [
-        [
-          {
-            "node": "Agent 2: Copy Writer",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Agent 2: Copy Writer": {
-      "main": [
-        [
-          {
-            "node": "Save Post to DB",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Save Post to DB": {
-      "main": [
-        [
-          {
-            "node": "Agent 3: Image Prompt Engineer",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Agent 3: Image Prompt Engineer": {
-      "main": [
-        [
-          {
-            "node": "Update Image Prompt in DB",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Update Image Prompt in DB": {
-      "main": [
-        [
-          {
-            "node": "Prepare for Image Gen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare for Image Gen": {
-      "main": [
-        [
-          {
-            "node": "Generate Image",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Generate Image": {
-      "main": [
-        [
-          {
-            "node": "Check and Prepare Binary",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check and Prepare Binary": {
-      "main": [
-        [
-          {
-            "node": "Upload to ImgBB",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Upload to ImgBB": {
-      "main": [
-        [
-          {
-            "node": "Update DB with Image URL",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Update DB with Image URL": {
-      "main": [
-        [
-          {
-            "node": "Format Success Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Format Success Response": {
-      "main": [
-        [
-          {
-            "node": "Respond to Webhook - Generate",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "OpenAI Chat Model": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Agent 1: Strategy Analyzer",
-            "type": "ai_languageModel",
-            "index": 0
-          },
-          {
-            "node": "Agent 2: Copy Writer",
-            "type": "ai_languageModel",
-            "index": 0
-          },
-          {
-            "node": "Agent 3: Image Prompt Engineer",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Separar Binarios": {
       "main": [
         [
@@ -2086,9 +1501,6 @@
       ]
     },
     "Respond to Webhook - Publish": {
-      "main": []
-    },
-    "Respond to Webhook - Generate": {
       "main": []
     }
   },
