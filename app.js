@@ -532,12 +532,22 @@ async function publishPost(postId) {
         
         // Handle image_url - current-flow expects Images array with base64 format
         if (post.image_url) {
+            console.log('Raw post.image_url:', post.image_url);
+            console.log('Type:', typeof post.image_url);
+            
             // Parse image_url if it's a string
             let imageUrls = [];
             if (typeof post.image_url === 'string') {
                 if (post.image_url.startsWith('[')) {
                     try {
-                        imageUrls = JSON.parse(post.image_url);
+                        const parsed = JSON.parse(post.image_url);
+                        console.log('Parsed JSON:', parsed);
+                        // Si es un array de objetos con url, extraer las URLs
+                        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].url) {
+                            imageUrls = parsed.map(img => img.url);
+                        } else {
+                            imageUrls = parsed;
+                        }
                     } catch (e) {
                         imageUrls = post.image_url.split(',').map(url => url.trim()).filter(u => u);
                     }
@@ -547,8 +557,16 @@ async function publishPost(postId) {
                     imageUrls = [post.image_url];
                 }
             } else if (Array.isArray(post.image_url)) {
-                imageUrls = post.image_url;
+                console.log('image_url is already an array');
+                // Si es un array de objetos con url, extraer las URLs
+                if (post.image_url.length > 0 && post.image_url[0].url) {
+                    imageUrls = post.image_url.map(img => img.url);
+                } else {
+                    imageUrls = post.image_url;
+                }
             }
+            
+            console.log('Extracted imageUrls:', imageUrls);
             
             // Download images and convert to base64 format (matching create new post format)
             if (imageUrls.length > 0) {
