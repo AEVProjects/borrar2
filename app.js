@@ -569,7 +569,7 @@ async function publishPost(postId) {
                                 const mimeType = `image/${fileExtension === 'jpg' ? 'jpeg' : fileExtension}`;
                                 
                                 return {
-                                    data: `data:${mimeType};base64,${base64}`,
+                                    data: base64,  // Solo el base64 puro, sin prefijo
                                     mimeType: mimeType,
                                     fileName: `image.${fileExtension}`
                                 };
