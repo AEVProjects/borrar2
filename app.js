@@ -552,15 +552,22 @@ async function publishPost(postId) {
             
             // Download images and convert to base64 format (matching create new post format)
             if (imageUrls.length > 0) {
+                console.log('Starting image download for URLs:', imageUrls);
                 showToast('Downloading images...', 'info');
                 try {
                     const imagesBase64 = await Promise.all(
                         imageUrls.map(async (url) => {
                             try {
+                                console.log('Downloading image from:', url);
                                 // Download image from URL
                                 const response = await fetch(url);
+                                if (!response.ok) {
+                                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                                }
                                 const blob = await response.blob();
+                                console.log('Image downloaded, size:', blob.size, 'type:', blob.type);
                                 const base64 = await blobToBase64(blob);
+                                console.log('Base64 conversion complete, length:', base64.length);
                                 
                                 // Get file extension from URL or default to jpg
                                 const extension = url.split('.').pop().split('?')[0].toLowerCase();
@@ -568,11 +575,13 @@ async function publishPost(postId) {
                                 const fileExtension = validExtensions.includes(extension) ? extension : 'jpg';
                                 const mimeType = `image/${fileExtension === 'jpg' ? 'jpeg' : fileExtension}`;
                                 
-                                return {
-                                    data: `data:${mimeType};base64,${base64}`,  // Data URI completo para que el webhook lo reconozca como imagen
+                                const imageData = {
+                                    data: `data:${mimeType};base64,${base64}`,
                                     mimeType: mimeType,
                                     fileName: `image.${fileExtension}`
                                 };
+                                console.log('Image data prepared:', { mimeType, fileName: imageData.fileName, dataLength: imageData.data.length });
+                                return imageData;
                             } catch (error) {
                                 console.error('Error downloading image:', url, error);
                                 return null;
@@ -582,6 +591,7 @@ async function publishPost(postId) {
                     
                     // Filter out failed downloads
                     const validImages = imagesBase64.filter(img => img !== null);
+                    console.log('Valid images after filtering:', validImages.length);
                     
                     if (validImages.length === 0) {
                         throw new Error('Failed to download any images');
@@ -589,16 +599,21 @@ async function publishPost(postId) {
                     
                     // Use Images array format (same as create new post)
                     publishData.Images = validImages;
+                    console.log('Added Images to publishData:', publishData.Images.length, 'images');
                     
                 } catch (error) {
                     console.error('Error processing images:', error);
                     showToast('Error downloading images: ' + error.message, 'error');
                     return;
                 }
+            } else {
+                console.log('No image URLs found in post');
             }
+        } else {
+            console.log('Post has no image_url field');
         }
         
-        console.log('Publishing post:', publishData);
+        console.log('Final publishData before sending:', JSON.stringify(publishData, null, 2));
         console.log('Target webhook:', n8nPublishWebhook);
         
         // Safety check: ensure we're not sending to generation webhook
