@@ -569,7 +569,7 @@ async function publishPost(postId) {
                                 const mimeType = `image/${fileExtension === 'jpg' ? 'jpeg' : fileExtension}`;
                                 
                                 return {
-                                    data: base64,  // Solo el base64 puro, sin prefijo
+                                    data: `data:${mimeType};base64,${base64}`,  // Data URI completo para que el webhook lo reconozca como imagen
                                     mimeType: mimeType,
                                     fileName: `image.${fileExtension}`
                                 };
