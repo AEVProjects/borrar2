@@ -530,7 +530,7 @@ async function publishPost(postId) {
             publish_instagram: instagramChecked ? 'Yes' : 'No',
         };
         
-        // Handle image_url - current-flow expects Image array format
+        // Handle image_url - current-flow expects Images array with base64 format
         if (post.image_url) {
             // Parse image_url if it's a string
             let imageUrls = [];
@@ -550,14 +550,51 @@ async function publishPost(postId) {
                 imageUrls = post.image_url;
             }
             
-            // Convert to Image array format expected by current-flow.json
+            // Download images and convert to base64 format (matching create new post format)
             if (imageUrls.length > 0) {
-                publishData.Image = imageUrls.map(url => ({
-                    url: url,
-                    display_url: url,
-                    filename: 'image.jpg',
-                    type: 'image/jpeg'
-                }));
+                showToast('Downloading images...', 'info');
+                try {
+                    const imagesBase64 = await Promise.all(
+                        imageUrls.map(async (url) => {
+                            try {
+                                // Download image from URL
+                                const response = await fetch(url);
+                                const blob = await response.blob();
+                                const base64 = await blobToBase64(blob);
+                                
+                                // Get file extension from URL or default to jpg
+                                const extension = url.split('.').pop().split('?')[0].toLowerCase();
+                                const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                                const fileExtension = validExtensions.includes(extension) ? extension : 'jpg';
+                                const mimeType = `image/${fileExtension === 'jpg' ? 'jpeg' : fileExtension}`;
+                                
+                                return {
+                                    data: `data:${mimeType};base64,${base64}`,
+                                    mimeType: mimeType,
+                                    fileName: `image.${fileExtension}`
+                                };
+                            } catch (error) {
+                                console.error('Error downloading image:', url, error);
+                                return null;
+                            }
+                        })
+                    );
+                    
+                    // Filter out failed downloads
+                    const validImages = imagesBase64.filter(img => img !== null);
+                    
+                    if (validImages.length === 0) {
+                        throw new Error('Failed to download any images');
+                    }
+                    
+                    // Use Images array format (same as create new post)
+                    publishData.Images = validImages;
+                    
+                } catch (error) {
+                    console.error('Error processing images:', error);
+                    showToast('Error downloading images: ' + error.message, 'error');
+                    return;
+                }
             }
         }
         
