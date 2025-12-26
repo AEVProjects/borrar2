@@ -115,7 +115,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// PREPARAR DATOS PARA GUARDAR EN BD\n// Este nodo convierte el array Image[] en un string JSON para el campo image_url\n\nconst item = $input.item.json;\n\nconsole.log('==== PREPARE DB DATA START ====');\nconsole.log('PREPARE DB - Input item.Image type:', Array.isArray(item.Image) ? 'array' : typeof item.Image);\nconsole.log('PREPARE DB - Input item.Image length:', Array.isArray(item.Image) ? item.Image.length : 'N/A');\nconsole.log('PREPARE DB - post_id exists?', !!item.post_id);\n\nlet imageUrlString = null;\n\nif (item.Image) {\n  if (Array.isArray(item.Image)) {\n    // Es un array, extraer solo las URLs y convertir a JSON string\n    const urls = item.Image.map(img => img.url);\n    imageUrlString = JSON.stringify(urls);\n    console.log('PREPARE DB - Created URL array:', imageUrlString);\n  } else if (typeof item.Image === 'object' && item.Image.url) {\n    // Es un solo objeto, convertir a array de un elemento\n    imageUrlString = JSON.stringify([item.Image.url]);\n    console.log('PREPARE DB - Created single URL array:', imageUrlString);\n  } else {\n    console.log('PREPARE DB - WARNING: Image tiene formato inesperado:', JSON.stringify(item.Image));\n  }\n} else {\n  console.log('PREPARE DB - No Image field found, image_url will be null');\n}\n\n// Crear resultado con campos preparados para UPSERT automático\n// Solo incluimos los campos que queremos actualizar/insertar\nconst result = {\n  id: item.post_id || null,\n  post_type: item.post_type,\n  image_url: imageUrlString,\n  status: item.Image ? 'completed' : 'pending',\n  publish_linkedin: item.publish_linkedin || 'No',\n  publish_facebook: item.publish_facebook || 'No',\n  publish_instagram: item.publish_instagram || 'No'\n};\n\n\nif (result.id) {  console.log('PREPARE DB - post_id present, will UPSERT:', result.id);} else {  console.log('PREPARE DB - No post_id (id is null), will INSERT new record');}\n\nconsole.log('PREPARE DB - Final image_url:', imageUrlString);\nconsole.log('PREPARE DB - Final result:', JSON.stringify(result));\nconsole.log('==== PREPARE DB DATA END ====');\n\nreturn [{json: result}];"
+        "jsCode": "// PREPARAR DATOS PARA GUARDAR EN BD\n// Este nodo convierte el array Image[] en un string JSON para el campo image_url\n\nconst item = $input.item.json;\n\nconsole.log('==== PREPARE DB DATA START ====');\nconsole.log('PREPARE DB - Input item.Image type:', Array.isArray(item.Image) ? 'array' : typeof item.Image);\nconsole.log('PREPARE DB - Input item.Image length:', Array.isArray(item.Image) ? item.Image.length : 'N/A');\n\nlet imageUrlString = null;\n\nif (item.Image) {\n  if (Array.isArray(item.Image)) {\n    // Es un array, extraer solo las URLs y convertir a JSON string\n    const urls = item.Image.map(img => img.url);\n    imageUrlString = JSON.stringify(urls);\n    console.log('PREPARE DB - Created URL array:', imageUrlString);\n  } else if (typeof item.Image === 'object' && item.Image.url) {\n    // Es un solo objeto, convertir a array de un elemento\n    imageUrlString = JSON.stringify([item.Image.url]);\n    console.log('PREPARE DB - Created single URL array:', imageUrlString);\n  } else {\n    console.log('PREPARE DB - WARNING: Image tiene formato inesperado:', JSON.stringify(item.Image));\n  }\n} else {\n  console.log('PREPARE DB - No Image field found, image_url will be null');\n}\n\n// Crear resultado con todos los campos del input + image_url_string preparado\nconst result = {\n  ...item,\n  image_url_string: imageUrlString\n};\n\nconsole.log('PREPARE DB - Final image_url_string:', imageUrlString);\nconsole.log('==== PREPARE DB DATA END ====');\n\nreturn [{json: result}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1049,7 +1049,6 @@
     },
     {
       "parameters": {
-        "operation": "upsert",
         "schema": {
           "__rl": true,
           "mode": "list",
@@ -1063,26 +1062,15 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "id": "={{ $json.id }}",
             "post_type": "={{ $json.post_type }}",
-            "image_url": "={{ $json.image_url }}",
-            "status": "={{ $json.status }}",
-            "publish_linkedin": "={{ $json.publish_linkedin }}",
-            "publish_facebook": "={{ $json.publish_facebook }}",
-            "publish_instagram": "={{ $json.publish_instagram }}"
+            "image_url": "={{ $json.image_url_string }}",
+            "status": "={{ $json.Image ? 'completed' : 'pending' }}",
+            "publish_linkedin": "={{ $json.publish_linkedin || 'No' }}",
+            "publish_facebook": "={{ $json.publish_facebook || 'No' }}",
+            "publish_instagram": "={{ $json.publish_instagram || 'No' }}"
           },
-          "matchingColumns": ["id"],
+          "matchingColumns": [],
           "schema": [
-            {
-              "id": "id",
-              "displayName": "id",
-              "required": false,
-              "defaultMatch": true,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            },
             {
               "id": "post_type",
               "displayName": "post_type",
@@ -1090,9 +1078,107 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": false,
+              "canBeUsedToMatch": true,
               "removed": false
             },
+            {
+              "id": "image_url",
+              "displayName": "image_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -39360,
+        27168
+      ],
+      "id": "2e7f2069-a145-4c12-93f4-739b15106a32",
+      "name": "Guardar en Base de Datos",
+      "credentials": {
+        "postgres": {
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-post-id-exists",
+              "leftValue": "={{ $json.post_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -39584,
+        27168
+      ],
+      "id": "check-if-post-exists-node",
+      "name": "Check if Post Exists"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "social_posts"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "image_url": "={{ $json.image_url_string }}",
+            "status": "={{ $json.Image ? 'completed' : 'pending' }}",
+            "publish_linkedin": "={{ $json.publish_linkedin || 'No' }}",
+            "publish_facebook": "={{ $json.publish_facebook || 'No' }}",
+            "publish_instagram": "={{ $json.publish_instagram || 'No' }}"
+          },
+          "matchingColumns": ["id"],
+          "schema": [
             {
               "id": "image_url",
               "displayName": "image_url",
@@ -1114,34 +1200,25 @@
               "removed": false
             },
             {
-              "id": "publish_linkedin",
-              "displayName": "publish_linkedin",
+              "id": "id",
+              "displayName": "id",
               "required": false,
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": false,
+              "canBeUsedToMatch": true,
               "removed": false
-            },
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "where": {
+          "values": [
             {
-              "id": "publish_facebook",
-              "displayName": "publish_facebook",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false,
-              "removed": false
-            },
-            {
-              "id": "publish_instagram",
-              "displayName": "publish_instagram",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false,
-              "removed": false
+              "column": "id",
+              "condition": "equal",
+              "value": "={{ $json.post_id }}"
             }
           ]
         },
@@ -1151,10 +1228,10 @@
       "typeVersion": 2.5,
       "position": [
         -39360,
-        27168
+        27040
       ],
-      "id": "2e7f2069-a145-4c12-93f4-739b15106a32",
-      "name": "Guardar en Base de Datos",
+      "id": "update-post-in-database-node",
+      "name": "Actualizar en Base de Datos",
       "credentials": {
         "postgres": {
           "id": "WnTYs2zvPoE7hDJE",
@@ -1232,7 +1309,7 @@
       "main": [
         [
           {
-            "node": "Guardar en Base de Datos",
+            "node": "Check if Post Exists",
             "type": "main",
             "index": 0
           }
@@ -1533,6 +1610,35 @@
       ]
     },
     "Guardar en Base de Datos": {
+      "main": [
+        [
+          {
+            "node": "Merge Webhook with DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Post Exists": {
+      "main": [
+        [
+          {
+            "node": "Actualizar en Base de Datos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Guardar en Base de Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar en Base de Datos": {
       "main": [
         [
           {
