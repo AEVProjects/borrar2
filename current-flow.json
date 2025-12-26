@@ -1110,8 +1110,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -39360,
-        27168
+        -39136,
+        27296
       ],
       "id": "2e7f2069-a145-4c12-93f4-739b15106a32",
       "name": "Guardar en Base de Datos",
@@ -1149,7 +1149,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -39584,
+        -39360,
         27168
       ],
       "id": "check-if-post-exists-node",
@@ -1227,7 +1227,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -39360,
+        -39136,
         27040
       ],
       "id": "update-post-in-database-node",
