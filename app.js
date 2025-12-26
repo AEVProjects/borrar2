@@ -400,33 +400,25 @@ function renderPost(post) {
     // Parse image_url - can be JSON array, comma-separated, or single URL
     let imageUrls = [];
     if (post.image_url) {
-        console.log('Raw image_url:', post.image_url);
-        console.log('Type:', typeof post.image_url);
-        
         // Try JSON array format FIRST (because it might contain commas inside)
         if (post.image_url.startsWith('[')) {
             try {
                 const parsed = JSON.parse(post.image_url);
                 if (Array.isArray(parsed)) {
                     imageUrls = parsed;
-                    console.log('Parsed as JSON array, count:', imageUrls.length);
                 }
             } catch (e) {
-                console.log('JSON parse failed:', e.message);
+                // Silent fail
             }
         }
         // Try comma-separated URLs (simple format)
         else if (post.image_url.includes(',')) {
             imageUrls = post.image_url.split(',').map(url => url.trim()).filter(url => url);
-            console.log('Parsed as comma-separated, count:', imageUrls.length);
         }
         // Single URL
         else if (post.image_url.startsWith('http')) {
             imageUrls = [post.image_url];
-            console.log('Single URL');
         }
-        
-        console.log('Final imageUrls:', imageUrls);
     }
     
     return `
@@ -506,11 +498,6 @@ async function publishPost(postId) {
         
         if (error) throw error;
         
-        console.log('=== PUBLISH POST DEBUG ===');
-        console.log('Full post object:', post);
-        console.log('post.image_url exists?', !!post.image_url);
-        console.log('post.image_url value:', post.image_url);
-        
         // Get selected platforms from checkboxes
         const linkedinChecked = document.getElementById(`linkedin_${postId}`)?.checked || false;
         const facebookChecked = document.getElementById(`facebook_${postId}`)?.checked || false;
@@ -537,16 +524,12 @@ async function publishPost(postId) {
         
         // Handle image_url - current-flow expects Images array with base64 format
         if (post.image_url) {
-            console.log('Raw post.image_url:', post.image_url);
-            console.log('Type:', typeof post.image_url);
-            
             // Parse image_url if it's a string
             let imageUrls = [];
             if (typeof post.image_url === 'string') {
                 if (post.image_url.startsWith('[')) {
                     try {
                         const parsed = JSON.parse(post.image_url);
-                        console.log('Parsed JSON:', parsed);
                         // Si es un array de objetos con url, extraer las URLs
                         if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].url) {
                             imageUrls = parsed.map(img => img.url);
@@ -562,7 +545,6 @@ async function publishPost(postId) {
                     imageUrls = [post.image_url];
                 }
             } else if (Array.isArray(post.image_url)) {
-                console.log('image_url is already an array');
                 // Si es un array de objetos con url, extraer las URLs
                 if (post.image_url.length > 0 && post.image_url[0].url) {
                     imageUrls = post.image_url.map(img => img.url);
@@ -571,11 +553,8 @@ async function publishPost(postId) {
                 }
             }
             
-            console.log('Extracted imageUrls:', imageUrls);
-            
             // Download images and convert to base64 format (matching create new post format)
             if (imageUrls.length > 0) {
-                console.log('Starting image download for URLs:', imageUrls);
                 showToast('Downloading images...', 'info');
                 try {
                     const imagesBase64 = await Promise.all(
@@ -629,15 +608,8 @@ async function publishPost(postId) {
                     showToast('Error downloading images: ' + error.message, 'error');
                     return;
                 }
-            } else {
-                console.log('No image URLs found in post');
             }
-        } else {
-            console.log('Post has no image_url field');
         }
-        
-        console.log('Final publishData before sending:', JSON.stringify(publishData, null, 2));
-        console.log('Target webhook:', n8nPublishWebhook);
         
         // Safety check: ensure we're not sending to generation webhook
         if (!n8nPublishWebhook || n8nPublishWebhook.includes('70738d02-4bd8-4dac-853f-ba4836aafaf5')) {
