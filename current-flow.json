@@ -1071,6 +1071,9 @@
             "publish_instagram": "={{ $json.publish_instagram || 'No' }}"
           },
           "matchingColumns": ["id"],
+          "matchingColumnsValues": {
+            "id": "={{ $json.id }}"
+          },
           "schema": [
             {
               "id": "post_type",
