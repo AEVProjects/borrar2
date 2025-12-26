@@ -115,7 +115,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// PREPARAR DATOS PARA GUARDAR EN BD\n// Este nodo convierte el array Image[] en un string JSON para el campo image_url\n\nconst item = $input.item.json;\n\nconsole.log('==== PREPARE DB DATA START ====');\nconsole.log('PREPARE DB - Input item.Image type:', Array.isArray(item.Image) ? 'array' : typeof item.Image);\nconsole.log('PREPARE DB - Input item.Image length:', Array.isArray(item.Image) ? item.Image.length : 'N/A');\nconsole.log('PREPARE DB - post_id exists?', !!item.post_id);\n\nlet imageUrlString = null;\n\nif (item.Image) {\n  if (Array.isArray(item.Image)) {\n    // Es un array, extraer solo las URLs y convertir a JSON string\n    const urls = item.Image.map(img => img.url);\n    imageUrlString = JSON.stringify(urls);\n    console.log('PREPARE DB - Created URL array:', imageUrlString);\n  } else if (typeof item.Image === 'object' && item.Image.url) {\n    // Es un solo objeto, convertir a array de un elemento\n    imageUrlString = JSON.stringify([item.Image.url]);\n    console.log('PREPARE DB - Created single URL array:', imageUrlString);\n  } else {\n    console.log('PREPARE DB - WARNING: Image tiene formato inesperado:', JSON.stringify(item.Image));\n  }\n} else {\n  console.log('PREPARE DB - No Image field found, image_url will be null');\n}\n\n// Crear resultado con campos preparados para UPSERT automático\n// Solo incluimos los campos que queremos actualizar/insertar\nconst result = {\n  id: item.post_id || undefined,\n  post_type: item.post_type,\n  image_url: imageUrlString,\n  status: item.Image ? 'completed' : 'pending',\n  publish_linkedin: item.publish_linkedin || 'No',\n  publish_facebook: item.publish_facebook || 'No',\n  publish_instagram: item.publish_instagram || 'No'\n};\n\n// Si no hay id, eliminarlo para que haga INSERT\nif (!result.id) {\n  delete result.id;\n  console.log('PREPARE DB - No post_id, will INSERT new record');\n} else {\n  console.log('PREPARE DB - post_id present, will UPSERT:', result.id);\n}\n\nconsole.log('PREPARE DB - Final image_url:', imageUrlString);\nconsole.log('PREPARE DB - Final result:', JSON.stringify(result));\nconsole.log('==== PREPARE DB DATA END ====');\n\nreturn [{json: result}];"
+        "jsCode": "// PREPARAR DATOS PARA GUARDAR EN BD\n// Este nodo convierte el array Image[] en un string JSON para el campo image_url\n\nconst item = $input.item.json;\n\nconsole.log('==== PREPARE DB DATA START ====');\nconsole.log('PREPARE DB - Input item.Image type:', Array.isArray(item.Image) ? 'array' : typeof item.Image);\nconsole.log('PREPARE DB - Input item.Image length:', Array.isArray(item.Image) ? item.Image.length : 'N/A');\nconsole.log('PREPARE DB - post_id exists?', !!item.post_id);\n\nlet imageUrlString = null;\n\nif (item.Image) {\n  if (Array.isArray(item.Image)) {\n    // Es un array, extraer solo las URLs y convertir a JSON string\n    const urls = item.Image.map(img => img.url);\n    imageUrlString = JSON.stringify(urls);\n    console.log('PREPARE DB - Created URL array:', imageUrlString);\n  } else if (typeof item.Image === 'object' && item.Image.url) {\n    // Es un solo objeto, convertir a array de un elemento\n    imageUrlString = JSON.stringify([item.Image.url]);\n    console.log('PREPARE DB - Created single URL array:', imageUrlString);\n  } else {\n    console.log('PREPARE DB - WARNING: Image tiene formato inesperado:', JSON.stringify(item.Image));\n  }\n} else {\n  console.log('PREPARE DB - No Image field found, image_url will be null');\n}\n\n// Crear resultado con campos preparados para UPSERT automático\n// Solo incluimos los campos que queremos actualizar/insertar\nconst result = {\n  id: item.post_id || null,\n  post_type: item.post_type,\n  image_url: imageUrlString,\n  status: item.Image ? 'completed' : 'pending',\n  publish_linkedin: item.publish_linkedin || 'No',\n  publish_facebook: item.publish_facebook || 'No',\n  publish_instagram: item.publish_instagram || 'No'\n};\n\n\nif (result.id) {  console.log('PREPARE DB - post_id present, will UPSERT:', result.id);} else {  console.log('PREPARE DB - No post_id (id is null), will INSERT new record');}\n\nconsole.log('PREPARE DB - Final image_url:', imageUrlString);\nconsole.log('PREPARE DB - Final result:', JSON.stringify(result));\nconsole.log('==== PREPARE DB DATA END ====');\n\nreturn [{json: result}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1061,7 +1061,16 @@
           "value": "social_posts"
         },
         "columns": {
-          "mappingMode": "autoMapInputData",
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.id }}",
+            "post_type": "={{ $json.post_type }}",
+            "image_url": "={{ $json.image_url }}",
+            "status": "={{ $json.status }}",
+            "publish_linkedin": "={{ $json.publish_linkedin }}",
+            "publish_facebook": "={{ $json.publish_facebook }}",
+            "publish_instagram": "={{ $json.publish_instagram }}"
+          },
           "matchingColumns": ["id"],
           "schema": [
             {
