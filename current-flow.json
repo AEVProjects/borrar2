@@ -115,7 +115,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// PREPARAR DATOS PARA GUARDAR EN BD\n// Este nodo convierte el array Image[] en un string JSON para el campo image_url\n\nconst item = $input.item.json;\n\nconsole.log('==== PREPARE DB DATA START ====');\nconsole.log('PREPARE DB - Input item.Image type:', Array.isArray(item.Image) ? 'array' : typeof item.Image);\nconsole.log('PREPARE DB - Input item.Image length:', Array.isArray(item.Image) ? item.Image.length : 'N/A');\n\nlet imageUrlString = null;\n\nif (item.Image) {\n  if (Array.isArray(item.Image)) {\n    // Es un array, extraer solo las URLs y convertir a JSON string\n    const urls = item.Image.map(img => img.url);\n    imageUrlString = JSON.stringify(urls);\n    console.log('PREPARE DB - Created URL array:', imageUrlString);\n  } else if (typeof item.Image === 'object' && item.Image.url) {\n    // Es un solo objeto, convertir a array de un elemento\n    imageUrlString = JSON.stringify([item.Image.url]);\n    console.log('PREPARE DB - Created single URL array:', imageUrlString);\n  } else {\n    console.log('PREPARE DB - WARNING: Image tiene formato inesperado:', JSON.stringify(item.Image));\n  }\n} else {\n  console.log('PREPARE DB - No Image field found, image_url will be null');\n}\n\n// Crear resultado con todos los campos del input + image_url_string preparado\nconst result = {\n  ...item,\n  image_url_string: imageUrlString\n};\n\nconsole.log('PREPARE DB - Final image_url_string:', imageUrlString);\nconsole.log('==== PREPARE DB DATA END ====');\n\nreturn [{json: result}];"
+        "jsCode": "// PREPARAR DATOS PARA GUARDAR EN BD\n// Este nodo convierte el array Image[] en un string JSON para el campo image_url\n\nconst item = $input.item.json;\n\nconsole.log('==== PREPARE DB DATA START ====');\nconsole.log('PREPARE DB - Input item.Image type:', Array.isArray(item.Image) ? 'array' : typeof item.Image);\nconsole.log('PREPARE DB - Input item.Image length:', Array.isArray(item.Image) ? item.Image.length : 'N/A');\nconsole.log('PREPARE DB - post_id recibido:', item.post_id);\nconsole.log('PREPARE DB - post_type recibido:', item.post_type);\n\nlet imageUrlString = null;\n\nif (item.Image) {\n  if (Array.isArray(item.Image)) {\n    // Es un array, extraer solo las URLs y convertir a JSON string\n    const urls = item.Image.map(img => img.url);\n    imageUrlString = JSON.stringify(urls);\n    console.log('PREPARE DB - Created URL array:', imageUrlString);\n  } else if (typeof item.Image === 'object' && item.Image.url) {\n    // Es un solo objeto, convertir a array de un elemento\n    imageUrlString = JSON.stringify([item.Image.url]);\n    console.log('PREPARE DB - Created single URL array:', imageUrlString);\n  } else {\n    console.log('PREPARE DB - WARNING: Image tiene formato inesperado:', JSON.stringify(item.Image));\n  }\n} else {\n  console.log('PREPARE DB - No Image field found, image_url will be null');\n}\n\n// Crear resultado con todos los campos del input + image_url_string preparado\nconst result = {\n  ...item,\n  image_url_string: imageUrlString\n};\n\nconsole.log('PREPARE DB - post_id en result:', result.post_id);\nconsole.log('PREPARE DB - Final image_url_string:', imageUrlString);\nconsole.log('==== PREPARE DB DATA END ====');\n\nreturn [{json: result}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -125,6 +125,19 @@
       ],
       "id": "28a58ff2-9cca-4ec3-991b-8b790cba55a5",
       "name": "Prepare DB Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "// DEBUG: Verificar si existe post_id para decidir INSERT o UPDATE\nconst item = $input.item.json;\n\nconsole.log('==== CHECK POST ID DEBUG ====');\nconsole.log('post_id value:', item.post_id);\nconsole.log('post_id type:', typeof item.post_id);\nconsole.log('post_id exists:', !!item.post_id);\nconsole.log('post_id length:', item.post_id ? item.post_id.length : 0);\nconsole.log('All keys:', Object.keys(item));\nconsole.log('Should go to UPDATE?:', !!item.post_id && item.post_id.length > 0);\nconsole.log('==== CHECK POST ID DEBUG END ====');\n\nreturn [{json: item}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -39472,
+        27168
+      ],
+      "id": "debug-post-id-node",
+      "name": "Debug Post ID"
     },
     {
       "parameters": {
@@ -1306,6 +1319,17 @@
       ]
     },
     "Prepare DB Data": {
+      "main": [
+        [
+          {
+            "node": "Debug Post ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Debug Post ID": {
       "main": [
         [
           {
