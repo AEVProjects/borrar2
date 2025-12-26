@@ -115,7 +115,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// PREPARAR DATOS PARA GUARDAR EN BD\n// Este nodo convierte el array Image[] en un string JSON para el campo image_url\n\nconst item = $input.item.json;\n\nconsole.log('==== PREPARE DB DATA START ====');\nconsole.log('PREPARE DB - Input item.Image type:', Array.isArray(item.Image) ? 'array' : typeof item.Image);\nconsole.log('PREPARE DB - Input item.Image length:', Array.isArray(item.Image) ? item.Image.length : 'N/A');\n\nlet imageUrlString = null;\n\nif (item.Image) {\n  if (Array.isArray(item.Image)) {\n    // Es un array, extraer solo las URLs y convertir a JSON string\n    const urls = item.Image.map(img => img.url);\n    imageUrlString = JSON.stringify(urls);\n    console.log('PREPARE DB - Created URL array:', imageUrlString);\n  } else if (typeof item.Image === 'object' && item.Image.url) {\n    // Es un solo objeto, convertir a array de un elemento\n    imageUrlString = JSON.stringify([item.Image.url]);\n    console.log('PREPARE DB - Created single URL array:', imageUrlString);\n  } else {\n    console.log('PREPARE DB - WARNING: Image tiene formato inesperado:', JSON.stringify(item.Image));\n  }\n} else {\n  console.log('PREPARE DB - No Image field found, image_url will be null');\n}\n\n// Crear resultado con todos los campos del input + image_url_string preparado\nconst result = {\n  ...item,\n  image_url_string: imageUrlString\n};\n\nconsole.log('PREPARE DB - Final image_url_string:', imageUrlString);\nconsole.log('==== PREPARE DB DATA END ====');\n\nreturn [{json: result}];"
+        "jsCode": "// PREPARAR DATOS PARA GUARDAR EN BD\n// Este nodo convierte el array Image[] en un string JSON para el campo image_url\n\nconst item = $input.item.json;\n\nconsole.log('==== PREPARE DB DATA START ====');\nconsole.log('PREPARE DB - Input item.Image type:', Array.isArray(item.Image) ? 'array' : typeof item.Image);\nconsole.log('PREPARE DB - Input item.Image length:', Array.isArray(item.Image) ? item.Image.length : 'N/A');\nconsole.log('PREPARE DB - post_id exists?', !!item.post_id);\n\nlet imageUrlString = null;\n\nif (item.Image) {\n  if (Array.isArray(item.Image)) {\n    // Es un array, extraer solo las URLs y convertir a JSON string\n    const urls = item.Image.map(img => img.url);\n    imageUrlString = JSON.stringify(urls);\n    console.log('PREPARE DB - Created URL array:', imageUrlString);\n  } else if (typeof item.Image === 'object' && item.Image.url) {\n    // Es un solo objeto, convertir a array de un elemento\n    imageUrlString = JSON.stringify([item.Image.url]);\n    console.log('PREPARE DB - Created single URL array:', imageUrlString);\n  } else {\n    console.log('PREPARE DB - WARNING: Image tiene formato inesperado:', JSON.stringify(item.Image));\n  }\n} else {\n  console.log('PREPARE DB - No Image field found, image_url will be null');\n}\n\n// Crear resultado con todos los campos del input + image_url_string preparado\nconst result = {\n  ...item,\n  image_url_string: imageUrlString,\n  // Si viene post_id, usarlo como id para el UPSERT\n  id: item.post_id || undefined\n};\n\nconsole.log('PREPARE DB - Final image_url_string:', imageUrlString);\nconsole.log('PREPARE DB - Final id for UPSERT:', result.id);\nconsole.log('==== PREPARE DB DATA END ====');\n\nreturn [{json: result}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1049,6 +1049,7 @@
     },
     {
       "parameters": {
+        "operation": "upsert",
         "schema": {
           "__rl": true,
           "mode": "list",
@@ -1069,7 +1070,7 @@
             "publish_facebook": "={{ $json.publish_facebook || 'No' }}",
             "publish_instagram": "={{ $json.publish_instagram || 'No' }}"
           },
-          "matchingColumns": [],
+          "matchingColumns": ["id"],
           "schema": [
             {
               "id": "post_type",
@@ -1096,6 +1097,16 @@
               "displayName": "status",
               "required": false,
               "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
               "display": true,
               "type": "string",
               "canBeUsedToMatch": true,

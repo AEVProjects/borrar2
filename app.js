@@ -516,6 +516,7 @@ async function publishPost(postId) {
         
         // Prepare data for n8n webhook - matching current-flow.json format
         const publishData = {
+            post_id: postId, // Send post ID for UPSERT in database
             post_type: post.post_type || '',
             publish_linkedin: linkedinChecked ? 'Yes' : 'No',
             publish_facebook: facebookChecked ? 'Yes' : 'No',
