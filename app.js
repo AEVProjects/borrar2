@@ -506,6 +506,11 @@ async function publishPost(postId) {
         
         if (error) throw error;
         
+        console.log('=== PUBLISH POST DEBUG ===');
+        console.log('Full post object:', post);
+        console.log('post.image_url exists?', !!post.image_url);
+        console.log('post.image_url value:', post.image_url);
+        
         // Get selected platforms from checkboxes
         const linkedinChecked = document.getElementById(`linkedin_${postId}`)?.checked || false;
         const facebookChecked = document.getElementById(`facebook_${postId}`)?.checked || false;
