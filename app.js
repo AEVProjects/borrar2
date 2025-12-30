@@ -363,7 +363,7 @@ generateForm.addEventListener('submit', async (e) => {
         
         // Show progress alert
         showProgressAlert(
-            '🎨 Generating Content',
+            'Generating Content',
             'Our AI is creating your LinkedIn post and custom image...',
             'Sending request to AI...'
         );
@@ -401,14 +401,14 @@ generateForm.addEventListener('submit', async (e) => {
             const maxAttempts = 45; // 90 seconds max for generation (image takes time)
             let postComplete = false;
             
-            updateProgress(30, 'Creating LinkedIn copy...');
+            updateProgress(30, 'Generating LinkedIn copy...');
             
             // Status to display text mapping
             const statusMessages = {
-                'copy_completed': { text: 'Copy created! Creating image prompt...', percent: 45 },
-                'prompt_completed': { text: 'Image prompt ready! Downloading assets...', percent: 55 },
-                'image_generated': { text: '🎨 Generating AI image with Gemini...', percent: 70 },
-                'completed': { text: 'Complete!', percent: 100 }
+                'copy_completed': { text: 'Copy completed. Creating image prompt...', percent: 45 },
+                'prompt_completed': { text: 'Prompt completed. Downloading assets...', percent: 55 },
+                'image_generated': { text: 'Generating image with Gemini...', percent: 70 },
+                'completed': { text: 'Generation complete', percent: 100 }
             };
             
             while (attempts < maxAttempts && !postComplete) {
@@ -441,14 +441,16 @@ generateForm.addEventListener('submit', async (e) => {
                         // Check if complete (has image URL)
                         if (latestPost.image_url && latestPost.image_url.startsWith('http')) {
                             postComplete = true;
-                            updateProgress(100, 'Complete!');
+                            updateProgress(100, 'Generation complete');
                             
-                            // Show success alert
+                            // Show success alert and navigate to publish tab
                             setTimeout(() => {
                                 showSuccessAlert(
-                                    '🎉 Content Generated!',
-                                    `Your LinkedIn post about "${latestPost.topic || data.topic}" is ready with a custom AI-generated image. Check it in the posts list below!`
+                                    'Content Generated',
+                                    `Topic: "${latestPost.topic || data.topic}" - Copy and image ready. Navigate to Publish to post on LinkedIn.`
                                 );
+                                // Switch to Publish tab
+                                document.querySelector('[data-mode="publish"]')?.click();
                             }, 500);
                             
                             loadPosts();
