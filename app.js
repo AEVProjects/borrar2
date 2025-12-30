@@ -403,27 +403,22 @@ generateForm.addEventListener('submit', async (e) => {
             
             updateProgress(30, 'Creating LinkedIn copy...');
             
+            // Status to display text mapping
+            const statusMessages = {
+                'copy_completed': { text: 'Copy created! Creating image prompt...', percent: 45 },
+                'prompt_completed': { text: 'Image prompt ready! Downloading assets...', percent: 55 },
+                'generating_image': { text: '🎨 Generating AI image with Gemini...', percent: 70 },
+                'completed': { text: 'Complete!', percent: 100 }
+            };
+            
             while (attempts < maxAttempts && !postComplete) {
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 attempts++;
                 
-                // Update progress based on attempts
-                const progressPercent = Math.min(30 + (attempts * 1.5), 90);
-                
-                if (attempts < 10) {
-                    updateProgress(progressPercent, 'AI is writing your copy...');
-                } else if (attempts < 20) {
-                    updateProgress(progressPercent, 'Generating custom image...');
-                } else if (attempts < 35) {
-                    updateProgress(progressPercent, 'Rendering and uploading image...');
-                } else {
-                    updateProgress(progressPercent, 'Finalizing content...');
-                }
-                
-                // Check for new post with image_url populated
+                // Check for new post with status
                 const { data: newPosts } = await supabaseClient
                     .from('social_posts')
-                    .select('id, post_type, image_url, topic')
+                    .select('id, post_type, image_url, topic, status')
                     .order('created_at', { ascending: false })
                     .limit(1);
                 
@@ -432,7 +427,18 @@ generateForm.addEventListener('submit', async (e) => {
                     
                     // Check if this is a new post (different ID than before)
                     if (latestPost.id !== lastPostId) {
-                        // Post exists - check if image is ready
+                        // Get status-based progress
+                        const statusInfo = statusMessages[latestPost.status];
+                        
+                        if (statusInfo) {
+                            updateProgress(statusInfo.percent, statusInfo.text);
+                        } else {
+                            // Fallback for unknown status
+                            const progressPercent = Math.min(30 + (attempts * 1.5), 90);
+                            updateProgress(progressPercent, 'Processing...');
+                        }
+                        
+                        // Check if complete (has image URL)
                         if (latestPost.image_url && latestPost.image_url.startsWith('http')) {
                             postComplete = true;
                             updateProgress(100, 'Complete!');
@@ -447,9 +453,6 @@ generateForm.addEventListener('submit', async (e) => {
                             
                             loadPosts();
                             break;
-                        } else if (latestPost.post_type) {
-                            // Post exists but no image yet - update status
-                            updateProgress(progressPercent, 'Copy created, generating image...');
                         }
                     }
                 }

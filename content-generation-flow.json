@@ -158,13 +158,34 @@
     },
     {
       "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE social_posts SET status = 'generating_image', updated_at = NOW() WHERE id = '{{ $('Prepare for Image Gen').item.json.post_id }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        44816,
+        9328
+      ],
+      "id": "status-generating-image",
+      "name": "Status: Generating Image",
+      "credentials": {
+        "postgres": {
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "googlePalmApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [\n      { text: $json.image_prompt },\n      { inline_data: { mime_type: 'image/png', data: $json.logo_base64 } }\n    ]\n  }],\n  generationConfig: {\n    responseModalities: ['IMAGE'],\n    imageConfig: {\n      aspectRatio: '4:5',\n      imageSize: '2K'\n    }\n  }\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [\n      { text: $('Prepare for Image Gen').item.json.image_prompt },\n      { inline_data: { mime_type: 'image/png', data: $('Prepare for Image Gen').item.json.logo_base64 } }\n    ]\n  }],\n  generationConfig: {\n    responseModalities: ['IMAGE'],\n    imageConfig: {\n      aspectRatio: '4:5',\n      imageSize: '2K'\n    }\n  }\n}) }}",
         "options": {
           "response": {
             "response": {}
@@ -437,6 +458,17 @@
       ]
     },
     "Prepare for Image Gen": {
+      "main": [
+        [
+          {
+            "node": "Status: Generating Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status: Generating Image": {
       "main": [
         [
           {
