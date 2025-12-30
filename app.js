@@ -407,7 +407,7 @@ generateForm.addEventListener('submit', async (e) => {
             const statusMessages = {
                 'copy_completed': { text: 'Copy created! Creating image prompt...', percent: 45 },
                 'prompt_completed': { text: 'Image prompt ready! Downloading assets...', percent: 55 },
-                'generating_image': { text: '🎨 Generating AI image with Gemini...', percent: 70 },
+                'image_generated': { text: '🎨 Generating AI image with Gemini...', percent: 70 },
                 'completed': { text: 'Complete!', percent: 100 }
             };
             
