@@ -513,19 +513,22 @@ function renderPost(post) {
             
             ${imageUrls.length > 0 ? `
                 <div class="post-images-grid" style="display: grid; grid-template-columns: ${imageUrls.length === 1 ? '1fr' : imageUrls.length === 2 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(200px, 1fr))'}; gap: 8px; margin-top: 12px;">
-                    ${imageUrls.map((url, idx) => `
+                    ${imageUrls.map((url, idx) => {
+                        const cleanUrl = url.trim().replace(/'/g, '%27');
+                        return `
                         <div class="image-container" style="position: relative; width: 100%; aspect-ratio: 4/5; background: linear-gradient(135deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%); background-size: 200% 200%; animation: shimmer 1.5s infinite; border-radius: 8px; overflow: hidden;">
                             <img 
-                                src="${url.trim()}" 
+                                src="${cleanUrl}" 
                                 alt="Post image ${idx + 1}" 
                                 loading="lazy"
-                                style="width: 100%; height: 100%; object-fit: cover; cursor: pointer; opacity: 0; transition: opacity 0.3s ease;"
+                                class="post-grid-image"
+                                data-url="${cleanUrl}"
                                 onload="this.style.opacity='1'; this.parentElement.style.background='none'; this.parentElement.style.animation='none';"
-                                onerror="this.parentElement.innerHTML='<div style=\"display: flex; align-items: center; justify-content: center; height: 100%; color: #999; font-size: 12px;\">Image unavailable</div>';"
-                                onclick="window.open('${url.trim()}', '_blank')"
+                                onerror="this.style.display='none'; this.parentElement.classList.add('image-error');"
                             >
                         </div>
-                    `).join('')}
+                    `;
+                    }).join('')}
                 </div>
             ` : ''}
             
@@ -901,6 +904,16 @@ document.getElementById('use-generated-content')?.addEventListener('click', () =
 document.getElementById('regenerate-content')?.addEventListener('click', () => {
     generatedResults.style.display = 'none';
     showToast('Rellena el formulario para generar nuevo contenido', 'info');
+});
+
+// Click handler for post grid images (open in new tab)
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('post-grid-image')) {
+        const url = e.target.dataset.url;
+        if (url) {
+            window.open(url.replace(/%27/g, "'"), '_blank');
+        }
+    }
 });
 
 // Show descriptions for Post Type and Visual Style
