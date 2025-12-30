@@ -66,21 +66,21 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        240,
-        500
+        460,
+        300
       ],
       "id": "download-msi-logo-edit",
       "name": "Download MSI Logo"
     },
     {
       "parameters": {
-        "jsCode": "// Prepare original image and logo for Gemini edit\nconst formInput = $('Format Edit Input').item.json;\nconst originalImageItem = $('Download Original Image').item;\nconst logoItem = $('Download MSI Logo').item;\n\nconsole.log('==== PREPARE FOR IMAGE EDIT ====');\n\n// Get original image base64\nlet originalImageBase64 = '';\nlet originalMimeType = 'image/png';\n\nif (originalImageItem.binary && Object.keys(originalImageItem.binary).length > 0) {\n  const binaryKey = Object.keys(originalImageItem.binary)[0];\n  const binaryData = originalImageItem.binary[binaryKey];\n  originalMimeType = binaryData.mimeType || 'image/png';\n  \n  try {\n    const buffer = await this.helpers.getBinaryDataBuffer(0, binaryKey);\n    originalImageBase64 = buffer.toString('base64');\n    console.log('Original image base64 extracted, length:', originalImageBase64.length);\n  } catch (e) {\n    console.error('Failed to get original image buffer:', e.message);\n    if (typeof binaryData.data === 'string' && binaryData.data !== 'filesystem-v2') {\n      originalImageBase64 = binaryData.data;\n    }\n  }\n}\n\nif (!originalImageBase64 || originalImageBase64 === 'filesystem-v2') {\n  throw new Error('Failed to extract original image data');\n}\n\n// Get logo base64\nlet logoBase64 = '';\nif (logoItem.binary && Object.keys(logoItem.binary).length > 0) {\n  const binaryKey = Object.keys(logoItem.binary)[0];\n  const binaryData = logoItem.binary[binaryKey];\n  \n  try {\n    const buffer = await this.helpers.getBinaryDataBuffer(1, binaryKey);\n    logoBase64 = buffer.toString('base64');\n    console.log('Logo base64 extracted, length:', logoBase64.length);\n  } catch (e) {\n    console.error('Failed to get logo buffer:', e.message);\n    if (typeof binaryData.data === 'string' && binaryData.data !== 'filesystem-v2') {\n      logoBase64 = binaryData.data;\n    }\n  }\n}\n\nif (!logoBase64 || logoBase64 === 'filesystem-v2') {\n  throw new Error('Failed to extract logo data');\n}\n\nconsole.log('==== END PREPARE FOR IMAGE EDIT ====');\n\nreturn [{\n  json: {\n    edit_instructions: formInput.edit_instructions,\n    post_id: formInput.post_id,\n    original_image_base64: originalImageBase64,\n    original_mime_type: originalMimeType,\n    logo_base64: logoBase64\n  }\n}];"
+        "jsCode": "// Prepare original image and logo for Gemini edit\nconst formInput = $('Format Edit Input').item.json;\nconst originalImageItem = $('Download Original Image').item;\nconst logoItem = $('Download MSI Logo').item;\n\nconsole.log('==== PREPARE FOR IMAGE EDIT ====');\n\n// Get original image base64\nlet originalImageBase64 = '';\nlet originalMimeType = 'image/png';\n\nif (originalImageItem.binary && Object.keys(originalImageItem.binary).length > 0) {\n  const binaryKey = Object.keys(originalImageItem.binary)[0];\n  const binaryData = originalImageItem.binary[binaryKey];\n  originalMimeType = binaryData.mimeType || 'image/png';\n  \n  // Get base64 directly from the node reference\n  if (binaryData.data && binaryData.data !== 'filesystem-v2') {\n    originalImageBase64 = binaryData.data;\n  } else {\n    // Fallback: try to get from current input\n    const currentBinary = $input.item.binary;\n    if (currentBinary && Object.keys(currentBinary).length > 0) {\n      const currentKey = Object.keys(currentBinary)[0];\n      try {\n        const buffer = await this.helpers.getBinaryDataBuffer(0, currentKey);\n        originalImageBase64 = buffer.toString('base64');\n      } catch (e) {\n        console.error('Failed to get buffer:', e.message);\n      }\n    }\n  }\n  console.log('Original image base64 length:', originalImageBase64.length);\n}\n\nif (!originalImageBase64 || originalImageBase64 === 'filesystem-v2') {\n  throw new Error('Failed to extract original image data');\n}\n\n// Get logo base64 - logo is in the current input (last node in chain)\nlet logoBase64 = '';\nconst currentBinary = $input.item.binary;\nif (currentBinary && Object.keys(currentBinary).length > 0) {\n  const binaryKey = Object.keys(currentBinary)[0];\n  const binaryData = currentBinary[binaryKey];\n  \n  try {\n    const buffer = await this.helpers.getBinaryDataBuffer(0, binaryKey);\n    logoBase64 = buffer.toString('base64');\n    console.log('Logo base64 extracted, length:', logoBase64.length);\n  } catch (e) {\n    console.error('Failed to get logo buffer:', e.message);\n    if (binaryData.data && binaryData.data !== 'filesystem-v2') {\n      logoBase64 = binaryData.data;\n    }\n  }\n}\n\nif (!logoBase64 || logoBase64 === 'filesystem-v2') {\n  throw new Error('Failed to extract logo data');\n}\n\nconsole.log('==== END PREPARE FOR IMAGE EDIT ====');\n\nreturn [{\n  json: {\n    edit_instructions: formInput.edit_instructions,\n    post_id: formInput.post_id,\n    original_image_base64: originalImageBase64,\n    original_mime_type: originalMimeType,\n    logo_base64: logoBase64\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        460,
-        400
+        680,
+        300
       ],
       "id": "prepare-for-edit",
       "name": "Prepare for Edit"
@@ -278,11 +278,6 @@
             "node": "Download Original Image",
             "type": "main",
             "index": 0
-          },
-          {
-            "node": "Download MSI Logo",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -291,7 +286,7 @@
       "main": [
         [
           {
-            "node": "Prepare for Edit",
+            "node": "Download MSI Logo",
             "type": "main",
             "index": 0
           }
