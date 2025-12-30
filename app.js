@@ -143,9 +143,55 @@ publishForm.addEventListener('submit', async (e) => {
         publish_instagram: hasInstagram ? 'Yes' : 'No',
     };
     
-    // Convert multiple images to base64 array
+    // Check if we have pending image URLs (from "Use in Create Post")
     const imageFiles = imageInput.files;
-    if (imageFiles && imageFiles.length > 0) {
+    const hasPendingUrls = window.pendingImageUrls && window.pendingImageUrls.length > 0;
+    const hasNewFiles = imageFiles && imageFiles.length > 0;
+    
+    if (hasPendingUrls && !hasNewFiles) {
+        // Use existing URLs - download and convert to base64
+        showToast('Preparing images from URLs...', 'info');
+        try {
+            const imagesArray = await Promise.all(
+                window.pendingImageUrls.map(async (url) => {
+                    try {
+                        const response = await fetch(url);
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        const blob = await response.blob();
+                        const base64 = await blobToBase64(blob);
+                        
+                        const extension = url.split('.').pop().split('?')[0].toLowerCase();
+                        const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                        const fileExtension = validExtensions.includes(extension) ? extension : 'jpg';
+                        const mimeType = `image/${fileExtension === 'jpg' ? 'jpeg' : fileExtension}`;
+                        
+                        return {
+                            data: base64,
+                            mimeType: mimeType,
+                            fileName: `image.${fileExtension}`
+                        };
+                    } catch (error) {
+                        console.error('Error downloading image:', url, error);
+                        return null;
+                    }
+                })
+            );
+            
+            const validImages = imagesArray.filter(img => img !== null);
+            if (validImages.length > 0) {
+                if (validImages.length === 1) {
+                    data.Image = validImages[0];
+                } else {
+                    data.Images = validImages;
+                }
+            }
+        } catch (error) {
+            console.error('Error processing URLs:', error);
+            showToast('Error preparing images: ' + error.message, 'error');
+            return;
+        }
+    } else if (hasNewFiles) {
+        // Convert new files to base64 array
         const imagesArray = [];
         
         for (let i = 0; i < imageFiles.length; i++) {
@@ -183,6 +229,9 @@ publishForm.addEventListener('submit', async (e) => {
             },
             body: JSON.stringify(data)
         });
+        
+        // Clear pending URLs
+        window.pendingImageUrls = null;
         
         // Wait for workflow to complete and verify in database
         if (supabaseClient) {
@@ -452,33 +501,106 @@ function renderPost(post) {
             
             ${platforms.length === 0 ? `
                 <div class="publish-section" style="margin-top: 16px; padding: 16px; background: #f8f9fa; border-radius: 8px;">
-                    <div style="margin-bottom: 12px; font-weight: 600; color: #333;">Select platforms to publish:</div>
-                    <div style="display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
-                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                            <input type="checkbox" id="linkedin_${post.id}" style="width: 16px; height: 16px; cursor: pointer;">
-                            <span style="font-size: 14px;">LinkedIn</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                            <input type="checkbox" id="facebook_${post.id}" style="width: 16px; height: 16px; cursor: pointer;">
-                            <span style="font-size: 14px;">Facebook</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                            <input type="checkbox" id="instagram_${post.id}" style="width: 16px; height: 16px; cursor: pointer;">
-                            <span style="font-size: 14px;">Instagram</span>
-                        </label>
-                    </div>
-                    <button class="btn btn-small btn-publish" onclick="publishPost('${post.id}')" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
-                            <polyline points="16 6 12 2 8 6"></polyline>
-                            <line x1="12" y1="2" x2="12" y2="15"></line>
+                    <div style="margin-bottom: 12px; font-weight: 600; color: #333;">Not published yet</div>
+                    <button class="btn btn-small btn-use-content" onclick="useInCreatePost('${post.id}')" style="background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                         </svg>
-                        Publish Now
+                        Use in Create Post
                     </button>
                 </div>
             ` : ''}
         </div>
     `;
+}
+
+// Use Post Content in Create New Post Form
+async function useInCreatePost(postId) {
+    if (!supabaseClient) {
+        showToast('Supabase is not configured', 'error');
+        return;
+    }
+    
+    try {
+        showToast('Loading post content...', 'info');
+        
+        // Get post data from database
+        const { data: post, error } = await supabaseClient
+            .from('social_posts')
+            .select('*')
+            .eq('id', postId)
+            .single();
+        
+        if (error) throw error;
+        
+        // Fill the Post Content textarea
+        const postTypeInput = document.getElementById('post_type');
+        if (postTypeInput && post.post_type) {
+            postTypeInput.value = post.post_type;
+        }
+        
+        // Handle images - download and add to file input preview
+        let imageUrls = [];
+        if (post.image_url) {
+            // Parse image_url - can be JSON array, comma-separated, or single URL
+            if (post.image_url.startsWith('[')) {
+                try {
+                    const parsed = JSON.parse(post.image_url);
+                    if (Array.isArray(parsed)) {
+                        // If array of objects with url property
+                        if (parsed.length > 0 && parsed[0].url) {
+                            imageUrls = parsed.map(img => img.url);
+                        } else {
+                            imageUrls = parsed;
+                        }
+                    }
+                } catch (e) {
+                    // Silent fail
+                }
+            } else if (post.image_url.includes(',')) {
+                imageUrls = post.image_url.split(',').map(url => url.trim()).filter(url => url);
+            } else if (post.image_url.startsWith('http')) {
+                imageUrls = [post.image_url];
+            }
+        }
+        
+        // Show images in preview area
+        if (imageUrls.length > 0) {
+            const previewArea = document.getElementById('image-preview');
+            previewArea.innerHTML = '';
+            previewArea.classList.add('active');
+            
+            // Store image URLs for later use when publishing
+            window.pendingImageUrls = imageUrls;
+            
+            imageUrls.forEach((url, index) => {
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'preview-item';
+                imgContainer.innerHTML = `
+                    <img src="${url}" alt="Preview ${index + 1}" onerror="this.parentElement.style.display='none'">
+                    <span class="preview-number">${index + 1}</span>
+                    <span class="preview-url-indicator" style="position: absolute; bottom: 4px; left: 4px; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">From URL</span>
+                `;
+                previewArea.appendChild(imgContainer);
+            });
+            
+            // Clear file input since we're using URLs
+            document.getElementById('image').value = '';
+        }
+        
+        // Switch to Publish tab
+        document.querySelector('[data-mode="publish"]').click();
+        
+        // Scroll to form
+        document.getElementById('publish-form').scrollIntoView({ behavior: 'smooth' });
+        
+        showToast('Content loaded! Select platforms and publish.', 'success');
+        
+    } catch (error) {
+        console.error('Error loading post:', error);
+        showToast('Error loading post: ' + error.message, 'error');
+    }
 }
 
 // Publish Single Post
