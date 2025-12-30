@@ -140,25 +140,27 @@
                             <label for="post_type_gen">Post Type *</label>
                             <select id="post_type_gen" name="post_type" required>
                                 <option value="">Select...</option>
-                                <option value="Educational">Educational</option>
-                                <option value="Thought Leadership">Thought Leadership</option>
-                                <option value="Case Study/Storytelling">Case Study/Storytelling</option>
-                                <option value="Company News">Company News</option>
-                                <option value="Standard Infographic">Standard Infographic</option>
+                                <option value="Educational" data-description="Share technical insights, how-tos, and best practices that educate your audience on complex topics.">Educational</option>
+                                <option value="Thought Leadership" data-description="Position MSI as an industry expert with forward-thinking perspectives on trends and innovations.">Thought Leadership</option>
+                                <option value="Case Study/Storytelling" data-description="Showcase real client success stories with specific challenges, solutions, and measurable results.">Case Study/Storytelling</option>
+                                <option value="Company News" data-description="Announce partnerships, achievements, new services, or company milestones with professional tone.">Company News</option>
+                                <option value="Standard Infographic" data-description="Data-driven single image with clear statistics, visual hierarchy, and key takeaways.">Standard Infographic</option>
                             </select>
+                            <small class="field-description" id="post_type_description"></small>
                         </div>
 
                         <div class="form-group">
                             <label for="visual_style">Visual Style *</label>
                             <select id="visual_style" name="visual_style" required>
                                 <option value="">Select...</option>
-                                <option value="Modern 3D">Modern 3D</option>
-                                <option value="Isometric Architecture">Isometric Architecture</option>
-                                <option value="Tech Close-up">Tech Close-up</option>
-                                <option value="Data Hero">Data Hero</option>
-                                <option value="Glassmorphism">Glassmorphism</option>
-                                <option value="Minimalist Corporate Flyer">Minimalist Corporate Flyer</option>
+                                <option value="Modern 3D" data-description="Bold 3D rendered objects with dramatic lighting, depth, and contemporary tech aesthetic.">Modern 3D</option>
+                                <option value="Isometric Architecture" data-description="Geometric isometric perspective showing infrastructure, systems, or technical layouts with clean lines.">Isometric Architecture</option>
+                                <option value="Tech Close-up" data-description="Macro photography style of circuits, servers, cables, or tech components with shallow depth of field.">Tech Close-up</option>
+                                <option value="Data Hero" data-description="Data visualization focused design with charts, graphs, and analytics as the central visual element.">Data Hero</option>
+                                <option value="Glassmorphism" data-description="Frosted glass effects with blur, transparency, and layered depth for a premium modern look.">Glassmorphism</option>
+                                <option value="Minimalist Corporate Flyer" data-description="Clean, elegant design with bold typography, minimal elements, and sophisticated professional aesthetic.">Minimalist Corporate Flyer</option>
                             </select>
+                            <small class="field-description" id="visual_style_description"></small>
                         </div>
                     </div>
 

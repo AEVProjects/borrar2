@@ -733,6 +733,27 @@ document.getElementById('regenerate-content')?.addEventListener('click', () => {
     showToast('Rellena el formulario para generar nuevo contenido', 'info');
 });
 
+// Show descriptions for Post Type and Visual Style
+document.getElementById('post_type_gen')?.addEventListener('change', (e) => {
+    const selected = e.target.options[e.target.selectedIndex];
+    const description = selected.getAttribute('data-description');
+    const descEl = document.getElementById('post_type_description');
+    if (descEl) {
+        descEl.textContent = description || '';
+        descEl.style.display = description ? 'block' : 'none';
+    }
+});
+
+document.getElementById('visual_style')?.addEventListener('change', (e) => {
+    const selected = e.target.options[e.target.selectedIndex];
+    const description = selected.getAttribute('data-description');
+    const descEl = document.getElementById('visual_style_description');
+    if (descEl) {
+        descEl.textContent = description || '';
+        descEl.style.display = description ? 'block' : 'none';
+    }
+});
+
 // Initialize
 if (supabaseUrl === 'YOUR_SUPABASE_URL' || !supabaseUrl) {
     console.warn('⚠️ Por favor configura las credenciales de Supabase en config.js o app.js');

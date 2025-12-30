@@ -195,6 +195,19 @@ body {
     font-style: italic;
 }
 
+/* Field Description */
+.field-description {
+    display: none;
+    font-size: 13px;
+    color: #4a5568;
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: #f7fafc;
+    border-left: 3px solid var(--primary-color);
+    border-radius: 4px;
+    line-height: 1.5;
+}
+
 /* Image Preview */
 .image-preview {
     margin-top: 12px;
