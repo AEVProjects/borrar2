@@ -23,7 +23,7 @@ window.APP_CONFIG = {
     n8n: {
         publishWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/025d6de3-6b46-41c2-839d-58a8b18b649f',  // Del workflow "On form submission"
         generateWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/70738d02-4bd8-4dac-853f-ba4836aafaf5', // Del workflow "MSI Content Form"
-        editWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-image-edit' // Del workflow "MSI Image Edit Flow"
+        editWebhook: 'https://n8nmsi.app.n8n.cloud/webhook-test/msi-image-edit' // Del workflow "MSI Image Edit Flow"
     },
     
     // Security token - Este valor NO se puede cambiar desde el frontend
