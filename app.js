@@ -332,34 +332,54 @@ generateForm.addEventListener('submit', async (e) => {
         document.getElementById('generated-image').innerHTML = 
             '<p style="color: var(--text-secondary);">La imagen aparecerá en la base de datos cuando se complete la generación.</p>';
         
-        // Wait for post to appear in database
+        // Wait for post to appear in database WITH image
         if (supabaseClient) {
-            const { count: initialCount } = await supabaseClient
+            const { data: initialPosts } = await supabaseClient
                 .from('social_posts')
-                .select('*', { count: 'exact', head: true });
+                .select('id')
+                .order('created_at', { ascending: false })
+                .limit(1);
+            
+            const lastPostId = initialPosts?.[0]?.id || 0;
             
             let attempts = 0;
-            const maxAttempts = 10; // 20 seconds max for generation
-            let postCreated = false;
+            const maxAttempts = 30; // 60 seconds max for generation (image takes time)
+            let postComplete = false;
             
-            while (attempts < maxAttempts && !postCreated) {
+            while (attempts < maxAttempts && !postComplete) {
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 attempts++;
                 
-                const { count: newCount } = await supabaseClient
+                // Check for new post with image_url populated
+                const { data: newPosts } = await supabaseClient
                     .from('social_posts')
-                    .select('*', { count: 'exact', head: true });
+                    .select('id, post_type, image_url')
+                    .order('created_at', { ascending: false })
+                    .limit(1);
                 
-                if (newCount > initialCount) {
-                    postCreated = true;
-                    showToast('Contenido generado exitosamente!', 'success');
-                    loadPosts(); // Refresh immediately
-                    break;
+                if (newPosts && newPosts.length > 0) {
+                    const latestPost = newPosts[0];
+                    
+                    // Check if this is a new post (different ID than before)
+                    if (latestPost.id !== lastPostId) {
+                        // Post exists - check if image is ready
+                        if (latestPost.image_url && latestPost.image_url.startsWith('http')) {
+                            postComplete = true;
+                            showToast('¡Contenido generado con imagen!', 'success');
+                            loadPosts();
+                            break;
+                        } else if (latestPost.post_type) {
+                            // Post exists but no image yet - keep waiting a bit more
+                            showToast(`Generando imagen... (${attempts * 2}s)`, 'info');
+                        }
+                    }
                 }
             }
             
-            if (!postCreated) {
-                showToast('La generación está tomando más tiempo. Refresca los posts en unos momentos.', 'warning');
+            if (!postComplete) {
+                // Final check and load whatever we have
+                loadPosts();
+                showToast('Contenido creado. Si no ves la imagen, refresca en unos segundos.', 'warning');
             }
         }
         
@@ -492,9 +512,19 @@ function renderPost(post) {
             ` : ''}
             
             ${imageUrls.length > 0 ? `
-                <div class="post-images-grid" style="display: grid; grid-template-columns: ${imageUrls.length === 1 ? '1fr' : imageUrls.length === 2 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(250px, 1fr))'}; gap: 8px; margin-top: 12px;">
-                    ${imageUrls.map(url => `
-                        <img src="${url.trim()}" alt="Post image" style="width: 100%; height: ${imageUrls.length === 1 ? 'auto' : '250px'}; max-height: 500px; object-fit: cover; border-radius: 8px; cursor: pointer;" onerror="this.style.display='none'" onclick="window.open('${url.trim()}', '_blank')">
+                <div class="post-images-grid" style="display: grid; grid-template-columns: ${imageUrls.length === 1 ? '1fr' : imageUrls.length === 2 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(200px, 1fr))'}; gap: 8px; margin-top: 12px;">
+                    ${imageUrls.map((url, idx) => `
+                        <div class="image-container" style="position: relative; width: 100%; aspect-ratio: 4/5; background: linear-gradient(135deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%); background-size: 200% 200%; animation: shimmer 1.5s infinite; border-radius: 8px; overflow: hidden;">
+                            <img 
+                                src="${url.trim()}" 
+                                alt="Post image ${idx + 1}" 
+                                loading="lazy"
+                                style="width: 100%; height: 100%; object-fit: cover; cursor: pointer; opacity: 0; transition: opacity 0.3s ease;"
+                                onload="this.style.opacity='1'; this.parentElement.style.background='none'; this.parentElement.style.animation='none';"
+                                onerror="this.parentElement.innerHTML='<div style=\"display: flex; align-items: center; justify-content: center; height: 100%; color: #999; font-size: 12px;\">Image unavailable</div>';"
+                                onclick="window.open('${url.trim()}', '_blank')"
+                            >
+                        </div>
                     `).join('')}
                 </div>
             ` : ''}
@@ -525,6 +555,25 @@ async function useInCreatePost(postId) {
     try {
         showToast('Loading post content...', 'info');
         
+        // CLEAR PREVIOUS CONTENT FIRST
+        const postTypeInput = document.getElementById('post_type');
+        const previewArea = document.getElementById('image-preview');
+        const imageFileInput = document.getElementById('image');
+        
+        // Reset form fields
+        if (postTypeInput) postTypeInput.value = '';
+        if (previewArea) {
+            previewArea.innerHTML = '';
+            previewArea.classList.remove('active');
+        }
+        if (imageFileInput) imageFileInput.value = '';
+        window.pendingImageUrls = null;
+        
+        // Uncheck all platform checkboxes
+        document.getElementById('publish_linkedin').checked = false;
+        document.getElementById('publish_facebook').checked = false;
+        document.getElementById('publish_instagram').checked = false;
+        
         // Get post data from database
         const { data: post, error } = await supabaseClient
             .from('social_posts')
@@ -535,7 +584,6 @@ async function useInCreatePost(postId) {
         if (error) throw error;
         
         // Fill the Post Content textarea
-        const postTypeInput = document.getElementById('post_type');
         if (postTypeInput && post.post_type) {
             postTypeInput.value = post.post_type;
         }

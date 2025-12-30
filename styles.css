@@ -103,6 +103,31 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* Shimmer loading animation for images */
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* Image container with 4:5 aspect ratio */
+.image-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/5;
+    background: linear-gradient(135deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+    background-size: 200% 200%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.3s ease;
+}
+
 /* Two Column Layout */
 .two-column-layout {
     display: grid;
