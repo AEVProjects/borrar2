@@ -1,5 +1,4 @@
 {
-  "name": "MSI Content Generator - AI Workflow",
   "nodes": [
     {
       "parameters": {
@@ -11,10 +10,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        -1648,
-        4320
+        42528,
+        9328
       ],
-      "id": "051a35f0-aeef-410d-a780-efcb20226ecb",
+      "id": "300ae9e0-fd76-4933-a655-81ad64dd6f62",
       "name": "Webhook - Generate Content",
       "webhookId": "70738d02-4bd8-4dac-853f-ba4836aafaf5"
     },
@@ -25,27 +24,27 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1424,
-        4320
+        42752,
+        9328
       ],
-      "id": "896bbe6c-3210-452d-9596-08df48cda671",
+      "id": "925c75b4-e093-46f1-87b1-1630753d1f4a",
       "name": "Format Form Input"
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "=Create a content strategy for:\n\nTopic: {{ $json.topic }}\nPost Type: {{ $json.post_type }}\nVisual Style: {{ $json.visual_style }}\nOrientation: {{ $json.orientation }}\nHeadline: {{ $json.headline }}\nData Points: {{ $json.data_points || 'None provided' }}\nContext: {{ $json.context || 'None provided' }}",
+        "text": "=Create a content strategy for:\n\nTopic: {{ $json.topic }}\nPost Type: {{ $json.post_type }}\nVisual Style: {{ $json.visual_style }}\nHeadline: {{ $json.headline }}\nData Points: {{ $json.data_points || 'None provided' }}\nContext: {{ $json.context || 'None provided' }}\n\nNote: All images will be in 4:5 portrait format.",
         "options": {
-          "systemMessage": "=# ROLE: Strategic Content Analyst for MSI Americas\n\n## YOUR TASK\nAnalyze the user's content request and provide strategic guidance for both LinkedIn copy and visual design.\n\n## OUTPUT FORMAT\nYou MUST output your response in this EXACT structure:\n\n---CONTENT STRATEGY---\nHook: [Compelling first line]\nBody: [Main message with examples]\nCTA: [Call to action as question]\nHashtags: [3-5 relevant hashtags including #MSIAmericas]\n\n---VISUAL STRATEGY---\nMain Scene: [Technical visualization description]\nVisual Style: [From user input]\nOrientation: [From user input]\nDimensions: [Extract from orientation]\nComposition: [Layout approach]\n\n---GRAPHIC ELEMENTS---\n1. [Element type and description]\n2. [Element type and description]\n\n---IN-IMAGE TEXT---\n[Use EXACT headline from user input]\n\n---DATA POINTS---\n- [Stat or metric 1]\n- [Stat or metric 2]\n\n---TECHNICAL NOTES---\n[Implementation details from user context]\n\n## MSI CONTEXT\nMSI Americas specializes in:\n- Cloud Solutions & Migration (AWS, Azure, GCP)\n- 5G Infrastructure & IoT Implementation\n- IT Staff Augmentation\n- Sustainability Tech & Diversity Programs\n\n## CONTENT STRATEGY RULES\n1. NO generic corporate language\n2. Use specific data and real examples\n3. Keep hook under 150 characters\n4. Be technical but accessible\n5. Always end with conversational CTA\n\n## VISUAL STRATEGY RULES\n1. Use MSI colors: #004AAD (blue), #67B547 (green), #FFFDF1 (off-white)\n2. Avoid stock photo aesthetics\n3. Focus on abstract data visualizations\n4. Keep compositions clean with negative space\n5. Include 2-3 graphic elements maximum\n\nREMEMBER: Follow the OUTPUT FORMAT exactly. Use the user's provided headline, visual style, and orientation directly."
+          "systemMessage": "=# ROLE: Strategic Content Analyst for MSI Americas\n\n## YOUR TASK\nAnalyze the user's content request and provide strategic guidance for both LinkedIn copy and visual design.\n\n## OUTPUT FORMAT\nYou MUST output your response in this EXACT structure:\n\n---CONTENT STRATEGY---\nHook: [Compelling first line]\nBody: [Main message with examples]\nCTA: [Call to action as question]\nHashtags: [3-5 relevant hashtags including #MSIAmericas]\n\n---VISUAL STRATEGY---\nUser's Visual Style: [Copy exactly from user input]\nScene Concept: [How to visualize the topic using the user's chosen style]\nFormat: 4:5 Portrait\nComposition: [Vertical layout optimized for portrait format]\n\n---GRAPHIC ELEMENTS---\n[2-3 specific visual elements that match the user's visual style]\n\n---IN-IMAGE TEXT---\n[Copy EXACT headline from user input - character by character]\n\n---DATA POINTS---\n[If user provided data points, list them here. If not, suggest relevant metrics]\n\n---COLOR GUIDANCE---\nUse MSI brand colors: Deep Blue #004AAD, Tech Green #67B547, Off-White #FFFDF1\n\n## MSI CONTEXT\nMSI Americas specializes in:\n- Cloud Solutions & Migration (AWS, Azure, GCP)\n- 5G Infrastructure & IoT Implementation\n- IT Staff Augmentation\n- Sustainability Tech & Diversity Programs\n\n## CONTENT STRATEGY RULES\n1. NO generic corporate language\n2. Use specific data and real examples\n3. Keep hook under 150 characters\n4. Be technical but accessible\n5. Always end with conversational CTA\n\n## VISUAL STRATEGY RULES\n1. RESPECT the user's chosen Visual Style - adapt your scene concept to match it\n2. Use MSI brand colors: #004AAD (blue), #67B547 (green), #FFFDF1 (off-white)\n3. Suggest 2-3 graphic elements that fit the user's style\n4. Keep compositions clean for vertical 4:5 format\n5. If user provided data points, incorporate them visually\n\nREMEMBER: The user's Visual Style choice is PRIMARY - your strategy should enhance it, not replace it. Copy the user's headline exactly. All images are 4:5 portrait format."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
       "position": [
-        -1200,
-        4320
+        42976,
+        9328
       ],
-      "id": "c3521399-90f5-456c-a8e8-e2aabb5ddd63",
+      "id": "0f4f3960-c677-49ea-abb2-f686344cb63f",
       "name": "Agent 1: Strategy Analyzer"
     },
     {
@@ -53,16 +52,16 @@
         "promptType": "define",
         "text": "={{ $('Agent 1: Strategy Analyzer').item.json.output }}",
         "options": {
-          "systemMessage": "# ROLE: LinkedIn Copy Writer for MSI Americas\n\n## CRITICAL OUTPUT REQUIREMENT\n⚠️ YOU MUST OUTPUT ONLY PLAIN TEXT - NO METADATA, NO LABELS, NO FORMATTING MARKERS\n⚠️ Your response will be saved DIRECTLY to a database text field\n⚠️ DO NOT include \"CHARACTER COUNT\" or \"ESTIMATED READING TIME\" or any other labels\n⚠️ Output ONLY the LinkedIn post text itself, nothing else\n\n## YOUR TASK\nReceive the CONTENT STRATEGY section and create compelling LinkedIn post copy.\n\n## WRITING GUIDELINES\n\n### Structure\n- Hook (First 2 lines): Specific stat, question, or concrete statement\n- Body: Include data points, use line breaks every 2-3 sentences\n- CTA: Conversational question\n\n### Voice\n- Sound like a senior engineer who's fixed this 50 times\n- Direct and honest, not salesy\n- Technical but accessible\n\n### Banned Phrases\nNEVER use:\n- \"In today's digital landscape\"\n- \"Revolutionize/Transform your business\"\n- \"Cutting-edge/Game-changing\"\n- \"Unlock the power of\"\n- \"Seamlessly integrate\"\n- \"Best-in-class\"\n\n### Rules\n1. English only\n2. Under 1,300 characters\n3. At least 2 specific numbers/stats\n4. NO emojis\n5. Always end with #MSIAmericas\n\n## EXAMPLE OUTPUT FORMAT\n```\nMost cloud migrations fail because teams focus on lift-and-shift instead of optimization. We've seen 60% of companies overspend by $200K+ annually on unused resources.\n\nThe fix isn't more tools. It's better architecture planning:\n- Right-size instances before migration\n- Implement auto-scaling from day one\n- Use reserved instances for predictable workloads\n\nWe helped a healthcare client reduce AWS costs by 47% in 90 days without touching a single application. The secret? Proper tagging and governance from the start.\n\nWhat's been your biggest challenge with cloud cost optimization?\n\n#MSIAmericas #CloudMigration #AWSOptimization\n```\n\nREMEMBER: Output ONLY the post text. No preamble, no metadata, no character counts. Just the post."
+          "systemMessage": "# ROLE: LinkedIn Copy Writer for MSI Americas\n\nYou receive a CONTENT STRATEGY and create LinkedIn post copy. Output ONLY the post text - no labels, no metadata, no character counts.\n\n## STRUCTURE\n- Hook (First 2 lines): Specific stat, question, or concrete statement\n- Body: Include data points, line breaks every 2-3 sentences\n- CTA: Conversational question\n\n## VOICE\n- Senior engineer who's solved this 50 times\n- Direct and honest, not salesy\n- Technical but accessible\n\n## NEVER USE\n- \"In today's digital landscape\"\n- \"Revolutionize/Transform your business\"\n- \"Cutting-edge/Game-changing\"\n- \"Unlock the power of\"\n- \"Seamlessly integrate\"\n- \"Best-in-class\"\n\n## REQUIREMENTS\n- English only\n- Maximum 100 words (approximately 600-700 characters)\n- At least 2 specific numbers/stats\n- NO emojis\n- Always end with #MSIAmericas + relevant hashtags\n\n## EXAMPLE\nMost cloud migrations fail because teams focus on lift-and-shift instead of optimization. We've seen 60% of companies overspend by $200K+ annually on unused resources.\n\nThe fix isn't more tools. It's better architecture planning:\n- Right-size instances before migration\n- Implement auto-scaling from day one\n- Use reserved instances for predictable workloads\n\nWe helped a healthcare client reduce AWS costs by 47% in 90 days without touching a single application. The secret? Proper tagging and governance from the start.\n\nWhat's been your biggest challenge with cloud cost optimization?\n\n#MSIAmericas #CloudMigration #AWSOptimization"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
       "position": [
-        -848,
-        4320
+        43328,
+        9328
       ],
-      "id": "4fd9f345-8da6-4dc6-9a88-289e9a737233",
+      "id": "2b2bfa24-5340-482c-ab47-e937e0917a6c",
       "name": "Agent 2: Copy Writer"
     },
     {
@@ -74,10 +73,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -496,
-        4320
+        43680,
+        9328
       ],
-      "id": "cabab081-7fbb-4b4c-ab38-2dc7e2066dc9",
+      "id": "68ab5723-cc8f-4062-afed-b7b89357daf3",
       "name": "Save Post to DB",
       "credentials": {
         "postgres": {
@@ -89,18 +88,18 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "={{ $('Agent 1: Strategy Analyzer').item.json.output }}",
+        "text": "=STRATEGY ANALYSIS:\n{{ $('Agent 1: Strategy Analyzer').item.json.output }}\n\nUSER INPUT (USE THESE EXACT VALUES):\nHeadline: {{ $('Format Form Input').item.json.headline }}\nVisual Style: {{ $('Format Form Input').item.json.visual_style }}\nFormat: 4:5 Portrait",
         "options": {
-          "systemMessage": "# ROLE: AI Image Prompt Engineer for MSI Americas\n\n## CRITICAL OUTPUT REQUIREMENT\n⚠️ YOU MUST OUTPUT ONLY PLAIN TEXT - A SINGLE CONTINUOUS IMAGE GENERATION PROMPT\n⚠️ NO SECTIONS, NO HEADERS, NO LABELS, NO METADATA\n⚠️ Your response will be saved DIRECTLY to a database text field and sent to an image generation API\n⚠️ DO NOT include \"MSI IMAGE GENERATION PROMPT\" or \"TECHNICAL SPECIFICATIONS\" or any other section headers\n⚠️ Output ONLY the prompt text itself in a single flowing paragraph\n\n## YOUR TASK\nReceive the VISUAL STRATEGY, GRAPHIC ELEMENTS, IN-IMAGE TEXT, and DATA POINTS sections and create ONE complete image generation prompt as plain text.\n\n## MSI BRAND IDENTITY\n**Colors (MANDATORY):**\n- Deep Blue #004AAD (Primary)\n- Tech Green #67B547 (Accent)\n- Off-White #FFFDF1 (Backgrounds)\n- Light Blue #4A9FFF (Glows/Glass)\n\n**Typography:**\n- Headlines: ITC Avant Garde Gothic Bold\n- Subheadings: Poppins\n- Body: Quicksand Regular/Medium\n- Data/Numbers: Rajdhani Bold\n\n**Style:** Corporate, Secure, Tech-Forward. Clean, functional, engineered look.\n\n## MSI LOGO (AVAILABLE AS REFERENCE)\nYou have access to the MSI Americas logo as a reference image. CRITICAL: The logo must be used exactly as provided - do not modify its colors, structure, or design. Simply mention in your prompt that the MSI Americas logo should be incorporated naturally into the composition, maintaining its original appearance.\n\n## TEXT RENDERING RULES (CRITICAL)\n\n**RULE 1: ONLY ONE TEXT ELEMENT**\n- ONE SINGLE HEADLINE only (3-5 words)\n- NO additional labels, NO small text, NO subtitles\n\n**RULE 2: TEXT MUST BE LARGE**\n- Minimum 100-150pt equivalent\n- Text should occupy 20-30% of image height\n\n**RULE 3: FLAT 2D TEXT ONLY**\nALWAYS specify:\n- \"Clean, flat 2D typography\"\n- \"Bold sans-serif headline, ultra readable\"\n- \"Maximum legibility, zero effects on text\"\n- \"Simple flat overlay, no depth, no shadows\"\n\nNEVER use:\n- \"3D text\" or \"Extruded letters\"\n- \"Multiple text elements\"\n- \"Small labels or annotations\"\n\n**RULE 4: HIGH CONTRAST**\n- White text on dark backgrounds (preferred)\n- Clear visual separation from background\n\n## COMPOSITION TEMPLATES\n\n**Data Hero (for stats):**\n- Center: ONE large flat number/headline (100-150pt)\n- Background: Blue to Navy gradient\n- Accent: Tech Green glow\n\n**Tech Close-up (for technical topics):**\n- Foreground: Detailed tech component\n- Background: Blurred tech environment\n- Text: ONE white headline on dark area\n\n**Isometric Architecture (for systems):**\n- Isometric infrastructure view\n- MSI color-coded elements\n- Flow lines with glow effects\n- Text: ONE flat headline in clear space\n\n## WHAT TO AVOID\nNEVER include:\n- Generic office people with laptops\n- Stock photo aesthetics\n- Cluttered compositions\n- 3D text or extruded letters\n- Multiple text elements\n- Small text or tiny labels\n\n## EXAMPLE OUTPUT (THIS IS WHAT YOU SHOULD OUTPUT - PLAIN TEXT ONLY):\n\n```\nCreate a professional LinkedIn post image in 1080x1080 square format featuring an isometric 3D visualization of cloud infrastructure architecture. The scene shows interconnected server nodes rendered in MSI's deep blue (#004AAD) floating in space, connected by glowing tech green (#67B547) data streams. In the foreground, display three prominent server clusters arranged in a triangular formation, each with subtle tech green accent lights. The background uses a gradient from deep navy to MSI blue (#004AAD) with subtle circuit pattern texture. The main headline \"47% COST REDUCTION\" appears in large, bold, flat 2D white typography (ITC Avant Garde Gothic Bold style, 140pt equivalent) positioned in the upper third of the image with maximum contrast against the dark blue background. Add floating geometric UI elements showing abstract data metrics in translucent white frames with tech green highlights. Include subtle depth of field effect to create professional dimension. Include the MSI Americas logo in its original form without modifying its colors or structure. The overall aesthetic should be clean, corporate, and tech-forward with generous negative space. Ensure the typography is perfectly flat with no 3D effects, shadows, or depth - maximum readability is critical. The composition should avoid any stock photo aesthetics, focusing instead on abstract technical visualization that conveys cloud infrastructure expertise.\n```\n\nREMEMBER: Output ONLY a single flowing paragraph prompt. No sections, no headers, no metadata. Reference the MSI logo naturally, always emphasizing it must remain in its original form without color or structural changes. Just the complete prompt text that will be sent directly to the image generation API."
+          "systemMessage": "# ROLE: AI Image Prompt Engineer for MSI Americas\n\nYou receive the STRATEGY ANALYSIS and USER INPUT with exact headline text. Create a well-structured image generation prompt with clear headers and sections for Gemini 3 Pro Image generation.\n\n## MSI BRAND COLORS (MANDATORY)\n- Deep Blue #004AAD (primary backgrounds)\n- Tech Green #67B547 (accents, highlights)\n- Off-White #FFFDF1 (light backgrounds)\n- Light Blue #4A9FFF (glows, glass effects)\n\n## BRAND STYLE\nMSI Americas is corporate, secure, and tech-forward. Adapt these qualities to match the user's chosen Visual Style. Clean compositions with purposeful negative space.\n\n## TEXT RENDERING (CRITICAL)\nGemini 3 Pro has advanced text rendering. Use it properly:\n\n1. **Use the EXACT headline from the USER INPUT section above** - copy it character by character in quotes\n2. Request: \"bold sans-serif typography, large and prominent, high contrast\"\n3. **ONE headline only** - no small text, no labels, no subtitles\n4. Position text in upper third or center of composition\n5. White text on dark backgrounds OR dark text on light backgrounds\n\n## LOGO AND BRANDING (CRITICAL)\nA reference image of the MSI Americas logo is provided separately. In your prompt:\n- \"The provided MSI Americas logo should be placed at the bottom center of the image\"\n- \"The logo must remain exactly as provided - do not modify its colors, design, or structure\"\n- \"Below or next to the logo, include the text 'msitechnologiesinc.com' in small, clean sans-serif font\"\n- \"Position the logo and website with appropriate padding from the bottom edge\"\n\n## PROMPT STRUCTURE\nOrganize the output with clear sections:\n\n**SCENE DESCRIPTION:**\n[Describe the scene using the EXACT Visual Style from USER INPUT. If user chose \"Modern 3D\", use 3D elements. If \"Glassmorphism\", use glass effects. If \"Isometric Architecture\", use isometric perspective. If \"Minimalist Corporate Flyer\", create an elegant minimalist design with clean layouts and corporate styling. Match their choice exactly.]\n\n**COLOR PALETTE:**\n[MSI colors: Deep Blue #004AAD, Tech Green #67B547, Off-White #FFFDF1, Light Blue #4A9FFF]\n\n**HEADLINE TEXT:**\n\"[Copy EXACT headline from USER INPUT]\" - bold sans-serif, large and prominent\n\n**VISUAL ELEMENTS:**\n[Elements that match the user's Visual Style choice from the STRATEGY ANALYSIS]\n\n**BRANDING:**\nMSI Americas logo at bottom center (unmodified) with msitechnologiesinc.com below it\n\n**FORMAT:**\n4:5 portrait orientation\n\n## EXAMPLE (if user chose \"Glassmorphism\" style):\n**SCENE DESCRIPTION:**\nA Glassmorphism-style corporate visual showing frosted glass panels with cloud infrastructure elements visible through translucent layers. Semi-transparent overlays with subtle blur effects create depth. Minimalist vertical composition.\n\n**COLOR PALETTE:**\nDeep blue (#004AAD) background with tech green (#67B547) highlights through glass layers and light blue (#4A9FFF) glowing edges.\n\n**HEADLINE TEXT:**\n\"Cloud Migration Done Right\" - bold white sans-serif typography, large and prominent in the upper third.\n\n**VISUAL ELEMENTS:**\nFrosted glass panels with blur effect, semi-transparent geometric shapes representing cloud nodes, subtle glow effects on edges matching the Glassmorphism aesthetic.\n\n**BRANDING:**\nThe provided MSI Americas logo placed at bottom center, maintaining exact original design. Below the logo, 'msitechnologiesinc.com' in small clean sans-serif. Appropriate padding from bottom edge.\n\n**FORMAT:**\n4:5 portrait orientation.\n\nREMEMBER: ALWAYS adapt the scene to match the user's Visual Style choice. Copy their exact headline. Logo at bottom center, unmodified."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
       "position": [
-        -272,
-        4320
+        43904,
+        9328
       ],
-      "id": "5acf53e5-b217-44dc-95d8-ecd208518f35",
+      "id": "ea8f3659-6822-446c-a422-5c6cbccad8d1",
       "name": "Agent 3: Image Prompt Engineer"
     },
     {
@@ -112,10 +111,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        80,
-        4320
+        44256,
+        9328
       ],
-      "id": "1a96ffed-7cd6-44ce-9dd0-af3ab03d4e12",
+      "id": "a7cd9f98-25c2-423b-a0e5-eae0ef5fd23e",
       "name": "Update Image Prompt in DB",
       "credentials": {
         "postgres": {
@@ -126,7 +125,6 @@
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "https://i.ibb.co/hRCjb1MN/MSI-Technologies-Logo-White.png",
         "options": {
           "response": {
@@ -139,10 +137,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        192,
-        4440
+        44480,
+        9328
       ],
-      "id": "logo-download-002",
+      "id": "e7388793-1934-46d8-8295-94c649e7e357",
       "name": "Download MSI Logo"
     },
     {
@@ -152,10 +150,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        304,
-        4320
+        44704,
+        9328
       ],
-      "id": "609b70a9-3a9c-4237-8ab9-309437632397",
+      "id": "946e4b61-e404-4d31-9b93-f941c3e21579",
       "name": "Prepare for Image Gen"
     },
     {
@@ -166,22 +164,20 @@
         "nodeCredentialType": "googlePalmApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [\n      { text: $json.image_prompt },\n      { inline_data: { mime_type: 'image/png', data: $json.logo_base64 } }\n    ]\n  }],\n  generationConfig: {\n    responseModalities: ['IMAGE']\n  }\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [\n      { text: $json.image_prompt },\n      { inline_data: { mime_type: 'image/png', data: $json.logo_base64 } }\n    ]\n  }],\n  generationConfig: {\n    responseModalities: ['IMAGE'],\n    imageConfig: {\n      aspectRatio: '4:5',\n      imageSize: '2K'\n    }\n  }\n}) }}",
         "options": {
           "response": {
-            "response": {
-              "responseFormat": "autodetect"
-            }
+            "response": {}
           }
         }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        528,
-        4320
+        44928,
+        9328
       ],
-      "id": "f064ae3d-1431-4e4b-8478-eef816850406",
+      "id": "51c0c92e-88b8-4586-a63d-72d05a782b66",
       "name": "Generate Image",
       "credentials": {
         "googlePalmApi": {
@@ -197,10 +193,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        752,
-        4320
+        45152,
+        9328
       ],
-      "id": "0ecf2043-a99a-4988-bbec-8f9821970813",
+      "id": "df4a187f-baea-48b1-9836-3ba2f1cfc239",
       "name": "Check and Prepare Binary"
     },
     {
@@ -226,13 +222,13 @@
         },
         "options": {}
       },
-      "id": "238869cc-9451-4e10-8fac-447fc1d0a2a2",
+      "id": "bbf8aafd-92d4-4093-bca6-c020096ff42c",
       "name": "Upload to ImgBB",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        976,
-        4320
+        45376,
+        9328
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -250,10 +246,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        1200,
-        4320
+        45600,
+        9328
       ],
-      "id": "6c8d0d8a-f9c1-48bc-bced-0d7fb784fe5b",
+      "id": "632385f0-400e-4d69-bca7-109ce045e87f",
       "name": "Update DB with Image URL",
       "credentials": {
         "postgres": {
@@ -303,10 +299,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.3,
       "position": [
-        1424,
-        4320
+        45824,
+        9328
       ],
-      "id": "eb87841d-17cf-40c9-8a34-5f2021447b52",
+      "id": "267a7236-4b8b-4829-95b3-624e4ab460f1",
       "name": "Format Success Response"
     },
     {
@@ -318,10 +314,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        1648,
-        4320
+        46048,
+        9328
       ],
-      "id": "8395f1a2-db94-45dd-a937-6c0ded6d5c17",
+      "id": "eb29f774-3c6e-43fc-9fb0-65c0c9c93160",
       "name": "Respond to Webhook - Generate"
     },
     {
@@ -338,10 +334,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        -1128,
-        4544
+        43056,
+        9552
       ],
-      "id": "5ce6bad5-5c4f-4cc8-95c9-c94654440078",
+      "id": "a4023ec4-811c-46f9-98ed-07a7ab486d19",
       "name": "OpenAI Chat Model",
       "credentials": {
         "openAiApi": {
