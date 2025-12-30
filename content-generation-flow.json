@@ -188,7 +188,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Extract image binary from Gemini REST API response\nconst item = $input.item;\n\nconsole.log('==== CHECK IMAGE BINARY ====');\nconsole.log('Item binary keys:', Object.keys(item.binary || {}));\nconsole.log('Item json keys:', Object.keys(item.json || {}));\n\n// Check if binary data exists (from HTTP Request node)\nif (item.binary && Object.keys(item.binary).length > 0) {\n  const binaryKey = Object.keys(item.binary)[0];\n  console.log('Found binary key:', binaryKey);\n  console.log('Binary data size:', item.binary[binaryKey]?.data?.length || 0);\n  \n  // Rename binary to 'data' for ImgBB\n  return [{\n    json: item.json,\n    binary: {\n      data: item.binary[binaryKey]\n    }\n  }];\n}\n\n// Check if response has inline_data or inlineData (Gemini API structure - support both formats)\nconst parts = item.json?.candidates?.[0]?.content?.parts?.[0];\nconst inlineData = parts?.inline_data || parts?.inlineData;\n\nif (inlineData) {\n  console.log('Found inline image data from Gemini API');\n  console.log('Mime type:', inlineData.mime_type || inlineData.mimeType);\n  console.log('Data size:', inlineData.data?.length || 0);\n  \n  // Convert base64 to binary for ImgBB\n  return [{\n    json: item.json,\n    binary: {\n      data: {\n        data: inlineData.data,\n        mimeType: inlineData.mime_type || inlineData.mimeType || 'image/png',\n        fileName: 'generated-image.png'\n      }\n    }\n  }];\n}\n\nconsole.log('ERROR: No binary data found in Gemini output');\nthrow new Error('No se generó imagen. Verifica que el modelo Gemini esté configurado correctamente.');\n\nconsole.log('==== END CHECK IMAGE BINARY ====');"
+        "jsCode": "// Extract image binary from Gemini REST API response\nconst item = $input.item;\n\nconsole.log('==== CHECK IMAGE BINARY ====');\nconsole.log('Item binary keys:', Object.keys(item.binary || {}));\nconsole.log('Item json keys:', Object.keys(item.json || {}));\n\n// Check if binary data exists (from HTTP Request node)\nif (item.binary && Object.keys(item.binary).length > 0) {\n  const binaryKey = Object.keys(item.binary)[0];\n  console.log('Found binary key:', binaryKey);\n  console.log('Binary data size:', item.binary[binaryKey]?.data?.length || 0);\n  \n  // Rename binary to 'data' for next step\n  return [{\n    json: item.json,\n    binary: {\n      generated_image: item.binary[binaryKey]\n    }\n  }];\n}\n\n// Check if response has inline_data or inlineData (Gemini API structure - support both formats)\nconst parts = item.json?.candidates?.[0]?.content?.parts?.[0];\nconst inlineData = parts?.inline_data || parts?.inlineData;\n\nif (inlineData) {\n  console.log('Found inline image data from Gemini API');\n  console.log('Mime type:', inlineData.mime_type || inlineData.mimeType);\n  console.log('Data size:', inlineData.data?.length || 0);\n  \n  // Convert base64 to binary for next step\n  return [{\n    json: item.json,\n    binary: {\n      generated_image: {\n        data: inlineData.data,\n        mimeType: inlineData.mime_type || inlineData.mimeType || 'image/png',\n        fileName: 'generated-image.png'\n      }\n    }\n  }];\n}\n\nconsole.log('ERROR: No binary data found in Gemini output');\nthrow new Error('No se generó imagen. Verifica que el modelo Gemini esté configurado correctamente.');\n\nconsole.log('==== END CHECK IMAGE BINARY ====');"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -198,6 +198,19 @@
       ],
       "id": "df4a187f-baea-48b1-9836-3ba2f1cfc239",
       "name": "Check and Prepare Binary"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Overlay MSI logo onto generated image using sharp\nconst sharp = require('sharp');\n\nconst generatedImageItem = $input.item;\nconst logoItem = $('Download MSI Logo').item;\n\nconsole.log('==== OVERLAY LOGO ====');\n\n// Get generated image buffer\nconst generatedImageBuffer = await this.helpers.getBinaryDataBuffer(0, 'generated_image');\nconsole.log('Generated image buffer size:', generatedImageBuffer.length);\n\n// Get logo buffer\nconst logoBinaryKey = Object.keys(logoItem.binary)[0];\nconst logoBuffer = await this.helpers.getBinaryDataBuffer(logoItem.json.index || 0, logoBinaryKey);\nconsole.log('Logo buffer size:', logoBuffer.length);\n\n// Get image metadata to calculate positioning\nconst metadata = await sharp(generatedImageBuffer).metadata();\nconst imageWidth = metadata.width;\nconst imageHeight = metadata.height;\n\nconsole.log('Image dimensions:', imageWidth, 'x', imageHeight);\n\n// Resize logo to appropriate size (10% of image height, maintaining aspect ratio)\nconst logoHeight = Math.round(imageHeight * 0.10);\nconst resizedLogo = await sharp(logoBuffer)\n  .resize({ height: logoHeight, fit: 'contain' })\n  .toBuffer();\n\n// Get resized logo dimensions\nconst logoMetadata = await sharp(resizedLogo).metadata();\nconst logoWidth = logoMetadata.width;\n\nconsole.log('Resized logo dimensions:', logoWidth, 'x', logoHeight);\n\n// Calculate position: bottom center with 5% margin from bottom\nconst left = Math.round((imageWidth - logoWidth) / 2);\nconst top = Math.round(imageHeight - logoHeight - (imageHeight * 0.05));\n\nconsole.log('Logo position:', { left, top });\n\n// Composite logo onto generated image\nconst finalImageBuffer = await sharp(generatedImageBuffer)\n  .composite([{\n    input: resizedLogo,\n    top: top,\n    left: left\n  }])\n  .png()\n  .toBuffer();\n\nconsole.log('Final image size:', finalImageBuffer.length);\nconsole.log('==== END OVERLAY LOGO ====');\n\nreturn [{\n  json: generatedImageItem.json,\n  binary: {\n    data: {\n      data: finalImageBuffer,\n      mimeType: 'image/png',\n      fileName: 'msi-post-with-logo.png'\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        45376,
+        9328
+      ],
+      "id": "c8f3a9e1-8d2c-4f89-9a1e-7c6d8e4f5b3a",
+      "name": "Overlay Logo on Image"
     },
     {
       "parameters": {
@@ -227,7 +240,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        45376,
+        45600,
         9328
       ],
       "credentials": {
@@ -246,7 +259,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        45600,
+        45824,
         9328
       ],
       "id": "632385f0-400e-4d69-bca7-109ce045e87f",
@@ -299,7 +312,7 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.3,
       "position": [
-        45824,
+        46048,
         9328
       ],
       "id": "267a7236-4b8b-4829-95b3-624e4ab460f1",
@@ -314,7 +327,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        46048,
+        46272,
         9328
       ],
       "id": "eb29f774-3c6e-43fc-9fb0-65c0c9c93160",
@@ -459,6 +472,17 @@
       ]
     },
     "Check and Prepare Binary": {
+      "main": [
+        [
+          {
+            "node": "Overlay Logo on Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Overlay Logo on Image": {
       "main": [
         [
           {
