@@ -9,7 +9,8 @@ const CONFIG = window.APP_CONFIG || {
     },
     n8n: {
         publishWebhook: 'YOUR_N8N_PUBLISH_WEBHOOK_URL', // From first flow
-        generateWebhook: 'YOUR_N8N_GENERATE_WEBHOOK_URL' // From second flow (msi-content-form)
+        generateWebhook: 'YOUR_N8N_GENERATE_WEBHOOK_URL', // From second flow (msi-content-form)
+        editWebhook: 'YOUR_N8N_EDIT_WEBHOOK_URL' // From image edit flow
     }
 };
 
@@ -18,6 +19,7 @@ const supabaseUrl = CONFIG.supabaseUrl || CONFIG.supabase?.url;
 const supabaseKey = CONFIG.supabaseKey || CONFIG.supabase?.anonKey;
 const n8nPublishWebhook = CONFIG.n8nPublishWebhook || CONFIG.n8n?.publishWebhook;
 const n8nGenerateWebhook = CONFIG.n8nGenerateWebhook || CONFIG.n8n?.generateWebhook;
+const n8nEditWebhook = CONFIG.n8nEditWebhook || CONFIG.n8n?.editWebhook;
 
 // Supabase Client
 let supabaseClient;
@@ -57,12 +59,16 @@ let selectedPosts = new Set();
 // DOM Elements
 const publishMode = document.getElementById('publish-mode');
 const generateMode = document.getElementById('generate-mode');
+const editMode = document.getElementById('edit-mode');
 const publishForm = document.getElementById('publish-form');
 const generateForm = document.getElementById('generate-form');
+const editImageForm = document.getElementById('edit-image-form');
 const postsListEl = document.getElementById('posts-list');
+const editPostsListEl = document.getElementById('edit-posts-list');
 const imageInput = document.getElementById('image');
 const imagePreview = document.getElementById('image-preview');
 const refreshBtn = document.getElementById('refresh-posts');
+const refreshEditBtn = document.getElementById('refresh-edit-posts');
 const generatedResults = document.getElementById('generated-results');
 
 // Tab Navigation
@@ -75,12 +81,17 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.add('active');
         
         // Show/hide modes
+        publishMode?.classList.remove('active');
+        generateMode?.classList.remove('active');
+        editMode?.classList.remove('active');
+        
         if (mode === 'publish') {
-            publishMode.classList.add('active');
-            generateMode.classList.remove('active');
-        } else {
-            publishMode.classList.remove('active');
-            generateMode.classList.add('active');
+            publishMode?.classList.add('active');
+        } else if (mode === 'generate') {
+            generateMode?.classList.add('active');
+        } else if (mode === 'edit') {
+            editMode?.classList.add('active');
+            loadEditPosts(); // Load posts when switching to edit tab
         }
     });
 });
@@ -936,6 +947,268 @@ document.getElementById('visual_style')?.addEventListener('change', (e) => {
         descEl.style.display = description ? 'block' : 'none';
     }
 });
+
+// ============================================
+// IMAGE EDIT FUNCTIONALITY
+// ============================================
+
+// Preview image URL input
+document.getElementById('edit_image_url')?.addEventListener('input', (e) => {
+    const url = e.target.value.trim();
+    const previewEl = document.getElementById('edit-image-preview');
+    
+    if (url && url.startsWith('http')) {
+        previewEl.innerHTML = `
+            <div class="image-container" style="aspect-ratio: 4/5; background: linear-gradient(135deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%); background-size: 200% 200%; animation: shimmer 1.5s infinite;">
+                <img 
+                    src="${url}" 
+                    alt="Preview" 
+                    style="width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s;"
+                    onload="this.style.opacity='1'; this.parentElement.style.background='none'; this.parentElement.style.animation='none';"
+                    onerror="this.parentElement.innerHTML='<div style=\\'display: flex; align-items: center; justify-content: center; height: 100%; color: #dc3545; font-size: 14px;\\'>Invalid image URL</div>';"
+                >
+            </div>
+        `;
+    } else {
+        previewEl.innerHTML = `
+            <div class="preview-placeholder">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                <span>Paste URL above to preview</span>
+            </div>
+        `;
+    }
+});
+
+// Load posts for editing
+async function loadEditPosts() {
+    if (!supabaseClient) {
+        editPostsListEl.innerHTML = `
+            <div class="empty-state">
+                <h3>Configuration Required</h3>
+                <p>Please configure Supabase to view posts.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    try {
+        editPostsListEl.innerHTML = '<div class="loading">Loading posts...</div>';
+        
+        const { data, error } = await supabaseClient
+            .from('social_posts')
+            .select('*')
+            .not('image_url', 'is', null)
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        if (!data || data.length === 0) {
+            editPostsListEl.innerHTML = `
+                <div class="empty-state">
+                    <h3>No images to edit</h3>
+                    <p>Generate some content first to have images to edit.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        editPostsListEl.innerHTML = data.map(post => renderEditPost(post)).join('');
+        
+    } catch (error) {
+        console.error('Error loading edit posts:', error);
+        editPostsListEl.innerHTML = `
+            <div class="empty-state">
+                <h3>Error loading</h3>
+                <p>${error.message}</p>
+            </div>
+        `;
+    }
+}
+
+// Render post for edit selection
+function renderEditPost(post) {
+    const date = new Date(post.created_at).toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    
+    // Get first image URL
+    let imageUrl = '';
+    if (post.image_url) {
+        if (post.image_url.startsWith('[')) {
+            try {
+                const parsed = JSON.parse(post.image_url);
+                imageUrl = Array.isArray(parsed) ? (parsed[0]?.url || parsed[0]) : '';
+            } catch (e) { }
+        } else if (post.image_url.startsWith('http')) {
+            imageUrl = post.image_url.split(',')[0].trim();
+        }
+    }
+    
+    if (!imageUrl) return '';
+    
+    const truncatedCopy = post.post_type ? 
+        (post.post_type.length > 100 ? post.post_type.substring(0, 100) + '...' : post.post_type) : 
+        'No copy';
+    
+    return `
+        <div class="edit-post-item" data-post-id="${post.id}" style="display: flex; gap: 12px; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s;" onclick="selectPostForEdit('${post.id}', '${imageUrl.replace(/'/g, "\\'")}')">
+            <div class="edit-post-thumbnail" style="width: 80px; height: 100px; flex-shrink: 0; border-radius: 6px; overflow: hidden; background: #f0f0f0;">
+                <img src="${imageUrl}" alt="Post" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'">
+            </div>
+            <div class="edit-post-info" style="flex: 1; min-width: 0;">
+                <div style="font-size: 12px; color: #666; margin-bottom: 4px;">${date}</div>
+                <div style="font-size: 13px; color: #333; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">${escapeHtml(truncatedCopy)}</div>
+            </div>
+        </div>
+    `;
+}
+
+// Select post for editing
+function selectPostForEdit(postId, imageUrl) {
+    // Fill form with selected post data
+    document.getElementById('edit_image_url').value = imageUrl;
+    document.getElementById('edit_post_id').value = postId;
+    
+    // Trigger preview update
+    document.getElementById('edit_image_url').dispatchEvent(new Event('input'));
+    
+    // Highlight selected post
+    document.querySelectorAll('.edit-post-item').forEach(item => {
+        item.style.border = '1px solid #e0e0e0';
+        item.style.background = 'white';
+    });
+    const selectedItem = document.querySelector(`.edit-post-item[data-post-id="${postId}"]`);
+    if (selectedItem) {
+        selectedItem.style.border = '2px solid #3b82f6';
+        selectedItem.style.background = '#f0f7ff';
+    }
+    
+    // Scroll to form
+    document.getElementById('edit-image-form').scrollIntoView({ behavior: 'smooth' });
+    
+    showToast('Post selected. Enter your edit instructions.', 'success');
+}
+
+// Edit Image Form Submit
+editImageForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const imageUrl = document.getElementById('edit_image_url').value.trim();
+    const editInstructions = document.getElementById('edit_instructions').value.trim();
+    const postId = document.getElementById('edit_post_id').value || null;
+    
+    if (!imageUrl || !editInstructions) {
+        showToast('Please provide image URL and edit instructions', 'error');
+        return;
+    }
+    
+    const data = {
+        image_url: imageUrl,
+        edit_instructions: editInstructions,
+        post_id: postId
+    };
+    
+    try {
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+            </svg>
+            Editing Image...
+        `;
+        
+        showToast('Editing image... This may take up to 60 seconds.', 'info');
+        
+        // Send to n8n webhook
+        fetch(n8nEditWebhook, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        // Wait for edit to complete and check database
+        if (supabaseClient && postId) {
+            // Get initial image URL
+            const { data: initialPost } = await supabaseClient
+                .from('social_posts')
+                .select('image_url')
+                .eq('id', postId)
+                .single();
+            
+            const initialUrl = initialPost?.image_url || '';
+            
+            let attempts = 0;
+            const maxAttempts = 30; // 60 seconds max
+            let editComplete = false;
+            
+            while (attempts < maxAttempts && !editComplete) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                attempts++;
+                
+                const { data: updatedPost } = await supabaseClient
+                    .from('social_posts')
+                    .select('image_url, status')
+                    .eq('id', postId)
+                    .single();
+                
+                if (updatedPost && updatedPost.image_url !== initialUrl) {
+                    editComplete = true;
+                    showToast('Image edited successfully!', 'success');
+                    
+                    // Update the preview
+                    document.getElementById('edit_image_url').value = updatedPost.image_url;
+                    document.getElementById('edit_image_url').dispatchEvent(new Event('input'));
+                    
+                    // Clear instructions
+                    document.getElementById('edit_instructions').value = '';
+                    
+                    // Reload posts
+                    loadEditPosts();
+                    loadPosts();
+                    break;
+                }
+                
+                showToast(`Editing... (${attempts * 2}s)`, 'info');
+            }
+            
+            if (!editComplete) {
+                showToast('Edit is taking longer than expected. Check posts in a moment.', 'warning');
+            }
+        } else {
+            // No Supabase or no postId - just wait
+            await new Promise(resolve => setTimeout(resolve, 30000));
+            showToast('Edit request sent. Refresh to see changes.', 'success');
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error editing image: ' + error.message, 'error');
+    } finally {
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.disabled = false;
+        btn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            Apply Edit
+        `;
+    }
+});
+
+// Refresh edit posts button
+refreshEditBtn?.addEventListener('click', loadEditPosts);
 
 // Initialize
 if (supabaseUrl === 'YOUR_SUPABASE_URL' || !supabaseUrl) {

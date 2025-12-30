@@ -31,6 +31,13 @@
                     </svg>
                     Generate Content
                 </button>
+                <button class="tab-btn" data-mode="edit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    Edit Image
+                </button>
             </div>
         </nav>
 
@@ -203,6 +210,74 @@
                     <div class="result-actions">
                         <button id="use-generated-content" class="btn btn-primary">Use in Post</button>
                         <button id="regenerate-content" class="btn btn-secondary">Regenerate</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Image Mode -->
+        <div id="edit-mode" class="mode-content">
+            <div class="two-column-layout">
+                <!-- Left: Edit Form -->
+                <div class="column form-column">
+                    <div class="card">
+                        <h2>Edit Existing Image</h2>
+                        <form id="edit-image-form">
+                            <div class="form-group">
+                                <label for="edit_image_url">Image URL *</label>
+                                <input type="url" id="edit_image_url" name="image_url" required placeholder="https://i.ibb.co/...">
+                                <small class="form-hint">Paste the URL of the image you want to edit</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Image Preview</label>
+                                <div id="edit-image-preview" class="edit-image-preview">
+                                    <div class="preview-placeholder">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                            <polyline points="21 15 16 10 5 21"></polyline>
+                                        </svg>
+                                        <span>Paste URL above to preview</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="edit_instructions">Edit Instructions *</label>
+                                <textarea id="edit_instructions" name="edit_instructions" rows="5" required placeholder="Describe what you want to change...&#10;&#10;Examples:&#10;- Change the headline to 'New Title Here'&#10;- Remove the icon in the top left&#10;- Add a cloud icon near the server&#10;- Make the background darker&#10;- Change the green accent to orange"></textarea>
+                                <small class="form-hint">Be specific about what to add, remove, or modify. The AI will preserve the rest of the image.</small>
+                            </div>
+
+                            <input type="hidden" id="edit_post_id" name="post_id" value="">
+
+                            <button type="submit" class="btn btn-primary">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                                Apply Edit
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Right: Posts to Edit -->
+                <div class="column posts-column">
+                    <div class="card">
+                        <div class="posts-header">
+                            <h2>Select Post to Edit</h2>
+                            <button id="refresh-edit-posts" class="btn btn-secondary">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                </svg>
+                                Refresh
+                            </button>
+                        </div>
+                        <div id="edit-posts-list" class="posts-list">
+                            <div class="loading">Loading posts...</div>
+                        </div>
                     </div>
                 </div>
             </div>

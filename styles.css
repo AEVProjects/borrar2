@@ -679,3 +679,47 @@ input[type="checkbox"].post-checkbox {
 .empty-state p {
     font-size: 14px;
 }
+
+/* Edit Image Mode Styles */
+.edit-image-preview {
+    width: 100%;
+    max-width: 300px;
+    aspect-ratio: 4/5;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f8f9fa;
+}
+
+.edit-image-preview .preview-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-secondary);
+    gap: 12px;
+}
+
+.edit-image-preview .preview-placeholder svg {
+    opacity: 0.5;
+}
+
+.edit-image-preview .preview-placeholder span {
+    font-size: 13px;
+}
+
+.edit-post-item:hover {
+    border-color: #3b82f6 !important;
+    background: #f8fafc !important;
+}
+
+/* Spin animation for loading */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}

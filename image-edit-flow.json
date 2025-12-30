@@ -1,0 +1,405 @@
+{
+  "name": "MSI Image Edit Flow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "msi-image-edit",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        300
+      ],
+      "id": "webhook-image-edit",
+      "name": "Webhook - Image Edit",
+      "webhookId": "msi-image-edit"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract data from web form\nconst input = $input.item.json;\n\nconsole.log('==== IMAGE EDIT WEBHOOK INPUT ====');\nconsole.log('Raw input keys:', Object.keys(input));\n\n// Parse the body if it's a JSON string\nlet data;\nif (input.body) {\n  if (typeof input.body === 'string') {\n    try {\n      data = JSON.parse(input.body);\n    } catch (e) {\n      data = input;\n    }\n  } else if (typeof input.body === 'object') {\n    data = input.body;\n  } else {\n    data = input;\n  }\n} else if (input.query) {\n  data = input.query;\n} else {\n  data = input;\n}\n\nconsole.log('Extracted data:', JSON.stringify(data, null, 2));\n\n// Extract variables\nconst image_url = data.image_url || '';\nconst edit_instructions = data.edit_instructions || '';\nconst post_id = data.post_id || null;\n\nconsole.log('Final variables:', { image_url, edit_instructions, post_id });\nconsole.log('==== END IMAGE EDIT WEBHOOK INPUT ====');\n\nreturn [{\n  json: {\n    image_url,\n    edit_instructions,\n    post_id\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        20,
+        300
+      ],
+      "id": "format-edit-input",
+      "name": "Format Edit Input"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.image_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 90000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "id": "download-original-image",
+      "name": "Download Original Image"
+    },
+    {
+      "parameters": {
+        "url": "https://i.ibb.co/S7mKXdxr/MSI-Technologies-Icon.png",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        500
+      ],
+      "id": "download-msi-logo-edit",
+      "name": "Download MSI Logo"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare original image and logo for Gemini edit\nconst formInput = $('Format Edit Input').item.json;\nconst originalImageItem = $('Download Original Image').item;\nconst logoItem = $('Download MSI Logo').item;\n\nconsole.log('==== PREPARE FOR IMAGE EDIT ====');\n\n// Get original image base64\nlet originalImageBase64 = '';\nlet originalMimeType = 'image/png';\n\nif (originalImageItem.binary && Object.keys(originalImageItem.binary).length > 0) {\n  const binaryKey = Object.keys(originalImageItem.binary)[0];\n  const binaryData = originalImageItem.binary[binaryKey];\n  originalMimeType = binaryData.mimeType || 'image/png';\n  \n  try {\n    const buffer = await this.helpers.getBinaryDataBuffer(0, binaryKey);\n    originalImageBase64 = buffer.toString('base64');\n    console.log('Original image base64 extracted, length:', originalImageBase64.length);\n  } catch (e) {\n    console.error('Failed to get original image buffer:', e.message);\n    if (typeof binaryData.data === 'string' && binaryData.data !== 'filesystem-v2') {\n      originalImageBase64 = binaryData.data;\n    }\n  }\n}\n\nif (!originalImageBase64 || originalImageBase64 === 'filesystem-v2') {\n  throw new Error('Failed to extract original image data');\n}\n\n// Get logo base64\nlet logoBase64 = '';\nif (logoItem.binary && Object.keys(logoItem.binary).length > 0) {\n  const binaryKey = Object.keys(logoItem.binary)[0];\n  const binaryData = logoItem.binary[binaryKey];\n  \n  try {\n    const buffer = await this.helpers.getBinaryDataBuffer(1, binaryKey);\n    logoBase64 = buffer.toString('base64');\n    console.log('Logo base64 extracted, length:', logoBase64.length);\n  } catch (e) {\n    console.error('Failed to get logo buffer:', e.message);\n    if (typeof binaryData.data === 'string' && binaryData.data !== 'filesystem-v2') {\n      logoBase64 = binaryData.data;\n    }\n  }\n}\n\nif (!logoBase64 || logoBase64 === 'filesystem-v2') {\n  throw new Error('Failed to extract logo data');\n}\n\nconsole.log('==== END PREPARE FOR IMAGE EDIT ====');\n\nreturn [{\n  json: {\n    edit_instructions: formInput.edit_instructions,\n    post_id: formInput.post_id,\n    original_image_base64: originalImageBase64,\n    original_mime_type: originalMimeType,\n    logo_base64: logoBase64\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        400
+      ],
+      "id": "prepare-for-edit",
+      "name": "Prepare for Edit"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=USER'S EDIT REQUEST:\n{{ $json.edit_instructions }}\n\nAn original MSI Technologies branded image is provided. The user wants to make specific modifications to it.",
+        "options": {
+          "systemMessage": "# ROLE: Image Edit Prompt Engineer for MSI Technologies\n\nYou receive an EDIT REQUEST from the user and the ORIGINAL IMAGE. Your job is to create a precise edit prompt for Gemini 3 Pro to modify the existing image while preserving its core brand identity and visual style.\n\n## YOUR TASK\nAnalyze the user's edit request and create a detailed prompt that:\n1. PRESERVES the original image's composition, colors, and brand elements as much as possible\n2. Makes ONLY the requested changes\n3. Maintains MSI brand consistency (dark backgrounds, brand colors)\n\n## MSI BRAND ELEMENTS TO PRESERVE\n- Dark backgrounds (Deep Blue #004AAD, navy gradients)\n- Tech Green #67B547 accents\n- Light Blue #4A9FFF highlights\n- MSI Technologies logo positioning (keep in same corner unless asked to move)\n- Professional, corporate tech aesthetic\n- 4:5 portrait format\n\n## OUTPUT FORMAT\nCreate a clear, structured edit prompt with these sections:\n\n**EDIT OPERATION:**\n[Clearly state what needs to change: ADD, REMOVE, MODIFY, or STYLE CHANGE]\n\n**PRESERVE (CRITICAL):**\n[List elements that MUST stay the same - background style, colors, logo, overall composition]\n\n**CHANGE REQUEST:**\n[Detailed description of what to modify based on user's instructions]\n\n**TEXT HANDLING:**\n[If text changes are needed, specify: \"Use native text rendering for '[EXACT TEXT]' in [font style], [size], [color]. Must be crystal clear and legible.\"]\n[If NO text changes: \"Keep all existing text elements exactly as they appear.\"]\n\n**QUALITY REQUIREMENTS:**\n- Maintain 4:5 portrait aspect ratio\n- Keep dark background aesthetic\n- Preserve brand color palette\n- Ensure seamless integration of changes\n- Professional, polished result\n\n## EDIT TYPES AND APPROACHES\n\n### Adding Elements\n\"Add [element] to the image. Position it [location]. Ensure it matches the existing visual style with [specific style details]. Keep all other elements unchanged.\"\n\n### Removing Elements  \n\"Remove [element] from the image. Fill the space naturally with [background continuation/blur/etc]. Preserve all other visual elements exactly as they are.\"\n\n### Modifying Text\n\"Change the text '[old text]' to '[new text]'. Use native text rendering with the same font style, size, and positioning. Keep all other elements unchanged.\"\n\n### Style Adjustments\n\"Adjust [specific element] to be more [quality]. Maintain the overall composition and brand elements.\"\n\n### Color Changes\n\"Change [element]'s color from [old] to [new]. Ensure it still harmonizes with MSI brand colors (Deep Blue #004AAD, Tech Green #67B547).\"\n\n## EXAMPLE OUTPUT\n\n**EDIT OPERATION:**\nMODIFY TEXT\n\n**PRESERVE (CRITICAL):**\n- Dark navy gradient background\n- All visual elements (icons, shapes, geometric patterns)\n- MSI Technologies logo in bottom-right corner\n- Overall composition and layout\n- Tech Green and Light Blue accent colors\n\n**CHANGE REQUEST:**\nUpdate the main headline text from 'Digital Transformation' to 'Cloud Migration Made Simple'. Keep the same font style, size (60-70pt equivalent), and white color. Position remains in the upper third of the image.\n\n**TEXT HANDLING:**\nUse native text rendering for 'Cloud Migration Made Simple' in bold, modern sans-serif typography, very large size (60-70pt equivalent), white (#FFFDF1). Text must be crystal clear, sharp, and perfectly legible.\n\n**QUALITY REQUIREMENTS:**\n- Maintain 4:5 portrait aspect ratio\n- Keep dark background aesthetic  \n- Preserve brand color palette\n- Ensure seamless text integration\n- Professional, polished result\n\nREMEMBER: The goal is SURGICAL precision - change ONLY what the user asks for while keeping everything else intact. The MSI logo in the reference image must remain EXACTLY as provided - never regenerate or modify it."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        680,
+        400
+      ],
+      "id": "agent-edit-prompt",
+      "name": "Agent: Edit Prompt Engineer"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "chatgpt-4o-latest"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        760,
+        620
+      ],
+      "id": "openai-edit-model",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "lHBGxNYaK1O0Jomk",
+          "name": "OpenAI MSI Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare final edit prompt with images for Gemini\nconst prepData = $('Prepare for Edit').item.json;\nconst editPrompt = $('Agent: Edit Prompt Engineer').item.json.output;\n\nconsole.log('==== PREPARE GEMINI EDIT REQUEST ====');\nconsole.log('Edit prompt length:', editPrompt.length);\n\nreturn [{\n  json: {\n    edit_prompt: editPrompt,\n    original_image_base64: prepData.original_image_base64,\n    original_mime_type: prepData.original_mime_type,\n    logo_base64: prepData.logo_base64,\n    post_id: prepData.post_id\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        400
+      ],
+      "id": "prepare-gemini-edit",
+      "name": "Prepare Gemini Edit Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [\n      { text: $json.edit_prompt },\n      { inline_data: { mime_type: $json.original_mime_type, data: $json.original_image_base64 } },\n      { inline_data: { mime_type: 'image/png', data: $json.logo_base64 } }\n    ]\n  }],\n  generationConfig: {\n    responseModalities: ['IMAGE'],\n    imageConfig: {\n      aspectRatio: '4:5',\n      imageSize: '2K'\n    }\n  }\n}) }}",
+        "options": {
+          "response": {
+            "response": {}
+          },
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        400
+      ],
+      "id": "gemini-edit-image",
+      "name": "Gemini Edit Image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "FJvH4s4l6IXRKWr7",
+          "name": "Google PaLM (Gemini) API account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract edited image binary from Gemini response\nconst item = $input.item;\n\nconsole.log('==== CHECK EDITED IMAGE ====');\nconsole.log('Item json keys:', Object.keys(item.json || {}));\n\n// Check if response has inline_data (Gemini API structure)\nconst parts = item.json?.candidates?.[0]?.content?.parts?.[0];\nconst inlineData = parts?.inline_data || parts?.inlineData;\n\nif (inlineData) {\n  console.log('Found edited image from Gemini');\n  console.log('Mime type:', inlineData.mime_type || inlineData.mimeType);\n  console.log('Data size:', inlineData.data?.length || 0);\n  \n  return [{\n    json: {\n      post_id: $('Prepare Gemini Edit Request').item.json.post_id\n    },\n    binary: {\n      data: {\n        data: inlineData.data,\n        mimeType: inlineData.mime_type || inlineData.mimeType || 'image/png',\n        fileName: 'edited-image.png'\n      }\n    }\n  }];\n}\n\nconsole.log('ERROR: No edited image found');\nthrow new Error('Gemini did not return an edited image.');"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        400
+      ],
+      "id": "extract-edited-image",
+      "name": "Extract Edited Image"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.imgbb.com/1/upload",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "ba1c2cd7a524b648d14139c738a61bb4"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "image",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1560,
+        400
+      ],
+      "id": "upload-edited-imgbb",
+      "name": "Upload Edited to ImgBB",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "IUzVmNrr9Iev6ATm",
+          "name": "ImgBB no auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE social_posts \nSET image_url = '{{ $json.data.url }}',\n    status = 'edited',\n    updated_at = NOW()\nWHERE id = '{{ $('Extract Edited Image').item.json.post_id }}'\nRETURNING *",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1780,
+        400
+      ],
+      "id": "update-db-edited",
+      "name": "Update DB with Edited Image",
+      "credentials": {
+        "postgres": {
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Image edited successfully\", \"data\": { \"new_image_url\": $json.image_url, \"post_id\": $json.id } } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2000,
+        400
+      ],
+      "id": "respond-edit-success",
+      "name": "Respond Success"
+    }
+  ],
+  "connections": {
+    "Webhook - Image Edit": {
+      "main": [
+        [
+          {
+            "node": "Format Edit Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Edit Input": {
+      "main": [
+        [
+          {
+            "node": "Download Original Image",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Download MSI Logo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Original Image": {
+      "main": [
+        [
+          {
+            "node": "Prepare for Edit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download MSI Logo": {
+      "main": [
+        [
+          {
+            "node": "Prepare for Edit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare for Edit": {
+      "main": [
+        [
+          {
+            "node": "Agent: Edit Prompt Engineer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent: Edit Prompt Engineer": {
+      "main": [
+        [
+          {
+            "node": "Prepare Gemini Edit Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent: Edit Prompt Engineer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Gemini Edit Request": {
+      "main": [
+        [
+          {
+            "node": "Gemini Edit Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Edit Image": {
+      "main": [
+        [
+          {
+            "node": "Extract Edited Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Edited Image": {
+      "main": [
+        [
+          {
+            "node": "Upload Edited to ImgBB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Edited to ImgBB": {
+      "main": [
+        [
+          {
+            "node": "Update DB with Edited Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update DB with Edited Image": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "b5116c87255060ddf18db8a2b1b90e34b38f50f44815cf784a0b8a92b6bb4e6e"
+  }
+}
