@@ -244,6 +244,14 @@ publishForm.addEventListener('submit', async (e) => {
         // Clear pending URLs
         window.pendingImageUrls = null;
         
+        // Show progress alert for publishing
+        showProgressAlert(
+            '📤 Publishing Post',
+            'Sending your post to social media platforms...',
+            'Connecting to workflow...'
+        );
+        updateProgress(30, 'Processing content...');
+        
         // Wait for workflow to complete and verify in database
         if (supabaseClient) {
             // Get current post count
@@ -251,14 +259,18 @@ publishForm.addEventListener('submit', async (e) => {
                 .from('social_posts')
                 .select('*', { count: 'exact', head: true });
             
-            // Poll database for new post (check every 2 seconds, max 10 seconds)
+            updateProgress(50, 'Uploading to platforms...');
+            
+            // Poll database for new post (check every 2 seconds, max 15 seconds)
             let attempts = 0;
-            const maxAttempts = 5;
+            const maxAttempts = 7;
             let postCreated = false;
             
             while (attempts < maxAttempts && !postCreated) {
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 attempts++;
+                
+                updateProgress(50 + (attempts * 7), 'Verifying publication...');
                 
                 const { count: newCount } = await supabaseClient
                     .from('social_posts')
@@ -266,7 +278,21 @@ publishForm.addEventListener('submit', async (e) => {
                 
                 if (newCount > initialCount) {
                     postCreated = true;
-                    showToast('Post published successfully!', 'success');
+                    updateProgress(100, 'Published!');
+                    
+                    // Get platforms that were selected
+                    const platformsSelected = [];
+                    if (data.Platforms?.includes('linkedin')) platformsSelected.push('LinkedIn');
+                    if (data.Platforms?.includes('twitter')) platformsSelected.push('Twitter');
+                    if (data.Platforms?.includes('facebook')) platformsSelected.push('Facebook');
+                    
+                    setTimeout(() => {
+                        showSuccessAlert(
+                            '🚀 Post Published!',
+                            `Your post has been successfully published${platformsSelected.length ? ' to ' + platformsSelected.join(', ') : ''}. Check the posts list to see it!`
+                        );
+                    }, 500);
+                    
                     publishForm.reset();
                     imagePreview.classList.remove('active');
                     imagePreview.innerHTML = '';
@@ -276,12 +302,22 @@ publishForm.addEventListener('submit', async (e) => {
             }
             
             if (!postCreated) {
-                showToast('Post sent to workflow. Refresh posts in a moment to see it.', 'warning');
+                hideProgressAlert();
+                showToast('Post sent to workflow. It should appear shortly - refresh to check.', 'warning');
             }
         } else {
             // No Supabase, just show success after delay
-            await new Promise(resolve => setTimeout(resolve, 3000));
-            showToast('Post sent successfully!', 'success');
+            updateProgress(70, 'Sending...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            updateProgress(100, 'Sent!');
+            
+            setTimeout(() => {
+                showSuccessAlert(
+                    '🚀 Post Sent!',
+                    'Your post has been sent to the publishing workflow.'
+                );
+            }, 500);
+            
             publishForm.reset();
             imagePreview.classList.remove('active');
             imagePreview.innerHTML = '';
@@ -289,6 +325,7 @@ publishForm.addEventListener('submit', async (e) => {
         
     } catch (error) {
         console.error('Error:', error);
+        hideProgressAlert();
         showToast('Error publishing. Check webhook configuration.', 'error');
     } finally {
         const btn = e.target.querySelector('button[type="submit"]');
@@ -322,7 +359,15 @@ generateForm.addEventListener('submit', async (e) => {
     try {
         const btn = e.target.querySelector('button[type="submit"]');
         btn.disabled = true;
-        btn.textContent = 'Generando...';
+        btn.textContent = 'Generating...';
+        
+        // Show progress alert
+        showProgressAlert(
+            '🎨 Generating Content',
+            'Our AI is creating your LinkedIn post and custom image...',
+            'Sending request to AI...'
+        );
+        updateProgress(10, 'Sending request to AI...');
         
         // Send to n8n webhook
         fetch(n8nGenerateWebhook, {
@@ -334,14 +379,13 @@ generateForm.addEventListener('submit', async (e) => {
             body: JSON.stringify(data)
         });
         
-        // Show message that content is being generated
-        showToast('Contenido en generación...', 'success');
+        updateProgress(20, 'AI is analyzing your topic...');
         
         generatedResults.style.display = 'block';
         document.getElementById('generated-copy').textContent = 
-            'El contenido se está generando. Por favor, actualiza la lista de posts en unos momentos para ver el resultado.';
+            'Content is being generated. The result will appear shortly...';
         document.getElementById('generated-image').innerHTML = 
-            '<p style="color: var(--text-secondary);">La imagen aparecerá en la base de datos cuando se complete la generación.</p>';
+            '<p style="color: var(--text-secondary);">Image will appear when generation completes.</p>';
         
         // Wait for post to appear in database WITH image
         if (supabaseClient) {
@@ -354,17 +398,32 @@ generateForm.addEventListener('submit', async (e) => {
             const lastPostId = initialPosts?.[0]?.id || 0;
             
             let attempts = 0;
-            const maxAttempts = 30; // 60 seconds max for generation (image takes time)
+            const maxAttempts = 45; // 90 seconds max for generation (image takes time)
             let postComplete = false;
+            
+            updateProgress(30, 'Creating LinkedIn copy...');
             
             while (attempts < maxAttempts && !postComplete) {
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 attempts++;
                 
+                // Update progress based on attempts
+                const progressPercent = Math.min(30 + (attempts * 1.5), 90);
+                
+                if (attempts < 10) {
+                    updateProgress(progressPercent, 'AI is writing your copy...');
+                } else if (attempts < 20) {
+                    updateProgress(progressPercent, 'Generating custom image...');
+                } else if (attempts < 35) {
+                    updateProgress(progressPercent, 'Rendering and uploading image...');
+                } else {
+                    updateProgress(progressPercent, 'Finalizing content...');
+                }
+                
                 // Check for new post with image_url populated
                 const { data: newPosts } = await supabaseClient
                     .from('social_posts')
-                    .select('id, post_type, image_url')
+                    .select('id, post_type, image_url, topic')
                     .order('created_at', { ascending: false })
                     .limit(1);
                 
@@ -376,12 +435,21 @@ generateForm.addEventListener('submit', async (e) => {
                         // Post exists - check if image is ready
                         if (latestPost.image_url && latestPost.image_url.startsWith('http')) {
                             postComplete = true;
-                            showToast('¡Contenido generado con imagen!', 'success');
+                            updateProgress(100, 'Complete!');
+                            
+                            // Show success alert
+                            setTimeout(() => {
+                                showSuccessAlert(
+                                    '🎉 Content Generated!',
+                                    `Your LinkedIn post about "${latestPost.topic || data.topic}" is ready with a custom AI-generated image. Check it in the posts list below!`
+                                );
+                            }, 500);
+                            
                             loadPosts();
                             break;
                         } else if (latestPost.post_type) {
-                            // Post exists but no image yet - keep waiting a bit more
-                            showToast(`Generando imagen... (${attempts * 2}s)`, 'info');
+                            // Post exists but no image yet - update status
+                            updateProgress(progressPercent, 'Copy created, generating image...');
                         }
                     }
                 }
@@ -389,14 +457,24 @@ generateForm.addEventListener('submit', async (e) => {
             
             if (!postComplete) {
                 // Final check and load whatever we have
+                hideProgressAlert();
                 loadPosts();
-                showToast('Contenido creado. Si no ves la imagen, refresca en unos segundos.', 'warning');
+                showToast('Content created. Image may still be processing - refresh in a moment.', 'warning');
             }
+        } else {
+            // No Supabase - simulate progress
+            for (let i = 0; i < 5; i++) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                updateProgress(30 + (i * 15), 'Processing...');
+            }
+            hideProgressAlert();
+            showToast('Content sent for generation!', 'success');
         }
         
     } catch (error) {
         console.error('Error:', error);
-        showToast('Error al generar contenido. Verifica la configuración del webhook.', 'error');
+        hideProgressAlert();
+        showToast('Error generating content. Check webhook configuration.', 'error');
     } finally {
         const btn = e.target.querySelector('button[type="submit"]');
         btn.disabled = false;
@@ -404,7 +482,7 @@ generateForm.addEventListener('submit', async (e) => {
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
             </svg>
-            Generar Contenido
+            Generate Content
         `;
     }
 });
@@ -890,13 +968,69 @@ function escapeHtml(text) {
 
 function showToast(message, type = 'info') {
     const toast = document.getElementById('toast');
-    toast.textContent = message;
+    
+    // Add icon based on type
+    const icons = {
+        success: '✓',
+        error: '✗',
+        warning: '⚠',
+        info: 'ℹ'
+    };
+    
+    toast.innerHTML = `<span style="font-size: 18px;">${icons[type] || icons.info}</span> ${message}`;
     toast.className = `toast ${type} show`;
     
     setTimeout(() => {
         toast.classList.remove('show');
-    }, 3000);
+    }, 4000);
 }
+
+// Progress Alert Functions
+function showProgressAlert(title, message, status = 'Starting...') {
+    const alert = document.getElementById('progress-alert');
+    const progressBar = document.getElementById('progress-bar');
+    
+    document.getElementById('progress-title').textContent = title;
+    document.getElementById('progress-message').textContent = message;
+    document.getElementById('progress-status').textContent = status;
+    progressBar.style.width = '0%';
+    
+    alert.classList.add('show');
+}
+
+function updateProgress(percent, status) {
+    const progressBar = document.getElementById('progress-bar');
+    const statusEl = document.getElementById('progress-status');
+    
+    progressBar.style.width = `${percent}%`;
+    if (status) {
+        statusEl.textContent = status;
+    }
+}
+
+function hideProgressAlert() {
+    const alert = document.getElementById('progress-alert');
+    alert.classList.remove('show');
+}
+
+// Success Alert Functions
+function showSuccessAlert(title, message) {
+    hideProgressAlert(); // Hide progress if showing
+    
+    const alert = document.getElementById('success-alert');
+    document.getElementById('success-title').textContent = title;
+    document.getElementById('success-message').textContent = message;
+    
+    alert.classList.add('show');
+}
+
+function hideSuccessAlert() {
+    const alert = document.getElementById('success-alert');
+    alert.classList.remove('show');
+}
+
+// Close success alert button
+document.getElementById('success-close')?.addEventListener('click', hideSuccessAlert);
 
 // Event Listeners
 refreshBtn.addEventListener('click', loadPosts);
@@ -1125,7 +1259,13 @@ editImageForm?.addEventListener('submit', async (e) => {
             Editing Image...
         `;
         
-        showToast('Editing image... This may take up to 60 seconds.', 'info');
+        // Show progress alert
+        showProgressAlert(
+            '✏️ Editing Image',
+            'AI is modifying your image based on your instructions...',
+            'Analyzing original image...'
+        );
+        updateProgress(10, 'Analyzing original image...');
         
         // Send to n8n webhook
         fetch(n8nEditWebhook, {
@@ -1136,6 +1276,8 @@ editImageForm?.addEventListener('submit', async (e) => {
             },
             body: JSON.stringify(data)
         });
+        
+        updateProgress(20, 'Processing edit instructions...');
         
         // Wait for edit to complete and check database
         if (supabaseClient && postId) {
@@ -1149,12 +1291,23 @@ editImageForm?.addEventListener('submit', async (e) => {
             const initialUrl = initialPost?.image_url || '';
             
             let attempts = 0;
-            const maxAttempts = 30; // 60 seconds max
+            const maxAttempts = 45; // 90 seconds max
             let editComplete = false;
             
             while (attempts < maxAttempts && !editComplete) {
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 attempts++;
+                
+                // Update progress based on attempts
+                const progressPercent = Math.min(20 + (attempts * 1.8), 95);
+                
+                if (attempts < 10) {
+                    updateProgress(progressPercent, 'AI is understanding the edit request...');
+                } else if (attempts < 25) {
+                    updateProgress(progressPercent, 'Generating edited image...');
+                } else {
+                    updateProgress(progressPercent, 'Uploading new image...');
+                }
                 
                 const { data: updatedPost } = await supabaseClient
                     .from('social_posts')
@@ -1164,7 +1317,14 @@ editImageForm?.addEventListener('submit', async (e) => {
                 
                 if (updatedPost && updatedPost.image_url !== initialUrl) {
                     editComplete = true;
-                    showToast('Image edited successfully!', 'success');
+                    updateProgress(100, 'Edit complete!');
+                    
+                    setTimeout(() => {
+                        showSuccessAlert(
+                            '✨ Image Edited!',
+                            'Your image has been successfully edited with AI. The changes have been applied and saved!'
+                        );
+                    }, 500);
                     
                     // Update the preview
                     document.getElementById('edit_image_url').value = updatedPost.image_url;
@@ -1178,21 +1338,25 @@ editImageForm?.addEventListener('submit', async (e) => {
                     loadPosts();
                     break;
                 }
-                
-                showToast(`Editing... (${attempts * 2}s)`, 'info');
             }
             
             if (!editComplete) {
+                hideProgressAlert();
                 showToast('Edit is taking longer than expected. Check posts in a moment.', 'warning');
             }
         } else {
-            // No Supabase or no postId - just wait
-            await new Promise(resolve => setTimeout(resolve, 30000));
+            // No Supabase or no postId - simulate progress
+            for (let i = 0; i < 15; i++) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                updateProgress(20 + (i * 5), 'Processing...');
+            }
+            hideProgressAlert();
             showToast('Edit request sent. Refresh to see changes.', 'success');
         }
         
     } catch (error) {
         console.error('Error:', error);
+        hideProgressAlert();
         showToast('Error editing image: ' + error.message, 'error');
     } finally {
         const btn = e.target.querySelector('button[type="submit"]');
