@@ -246,8 +246,8 @@ publishForm.addEventListener('submit', async (e) => {
         
         // Show progress alert for publishing
         showProgressAlert(
-            '📤 Publishing Post',
-            'Sending your post to social media platforms...',
+            'Publishing Post',
+            'Sending post to social media platforms...',
             'Connecting to workflow...'
         );
         updateProgress(30, 'Processing content...');
@@ -288,8 +288,8 @@ publishForm.addEventListener('submit', async (e) => {
                     
                     setTimeout(() => {
                         showSuccessAlert(
-                            '🚀 Post Published!',
-                            `Your post has been successfully published${platformsSelected.length ? ' to ' + platformsSelected.join(', ') : ''}. Check the posts list to see it!`
+                            'Post Published',
+                            `Post successfully published${platformsSelected.length ? ' to ' + platformsSelected.join(', ') : ''}.`
                         );
                     }, 500);
                     
@@ -313,8 +313,8 @@ publishForm.addEventListener('submit', async (e) => {
             
             setTimeout(() => {
                 showSuccessAlert(
-                    '🚀 Post Sent!',
-                    'Your post has been sent to the publishing workflow.'
+                    'Post Sent',
+                    'Post sent to publishing workflow.'
                 );
             }, 500);
             
@@ -364,7 +364,7 @@ generateForm.addEventListener('submit', async (e) => {
         // Show progress alert
         showProgressAlert(
             'Generating Content',
-            'Our AI is creating your LinkedIn post and custom image...',
+            'AI is creating LinkedIn post and custom image...',
             'Sending request to AI...'
         );
         updateProgress(10, 'Sending request to AI...');
@@ -379,7 +379,7 @@ generateForm.addEventListener('submit', async (e) => {
             body: JSON.stringify(data)
         });
         
-        updateProgress(20, 'AI is analyzing your topic...');
+        updateProgress(20, 'AI is analyzing topic...');
         
         generatedResults.style.display = 'block';
         document.getElementById('generated-copy').textContent = 
@@ -1266,8 +1266,8 @@ editImageForm?.addEventListener('submit', async (e) => {
         
         // Show progress alert
         showProgressAlert(
-            '✏️ Editing Image',
-            'AI is modifying your image based on your instructions...',
+            'Editing Image',
+            'AI is modifying image based on instructions...',
             'Analyzing original image...'
         );
         updateProgress(10, 'Analyzing original image...');
@@ -1326,8 +1326,8 @@ editImageForm?.addEventListener('submit', async (e) => {
                     
                     setTimeout(() => {
                         showSuccessAlert(
-                            '✨ Image Edited!',
-                            'Your image has been successfully edited with AI. The changes have been applied and saved!'
+                            'Image Edited',
+                            'Image successfully edited. Changes applied and saved.'
                         );
                     }, 500);
                     
