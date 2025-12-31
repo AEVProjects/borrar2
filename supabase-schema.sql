@@ -32,9 +32,9 @@ CREATE TABLE public.social_posts (
   
   -- Metadata
   status text DEFAULT 'pending' NOT NULL 
-    CHECK (status IN ('pending', 'strategy_completed', 'copy_completed', 'prompt_completed', 'image_generated', 'completed', 'failed', 'editing_started', 'generating_edit', 'uploading_edit')),
+    CHECK (status IN ('pending', 'strategy_completed', 'copy_completed', 'prompt_completed', 'image_generated', 'completed', 'failed', 'editing_started', 'generating_edit')),
   -- Status flow: pending → copy_completed → prompt_completed → image_generated → completed
-  -- Edit flow: editing_started → generating_edit → uploading_edit → completed
+  -- Edit flow: editing_started → generating_edit → completed
   
   -- Timestamps
   created_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -155,3 +155,21 @@ BEGIN
         ALTER TABLE public.social_posts ADD COLUMN publish_instagram text DEFAULT 'No';
     END IF;
 END $$;
+
+-- ============================================================
+-- Migration: Update status constraint for image edit flow
+-- Run these commands ONE BY ONE in Supabase SQL Editor:
+-- ============================================================
+
+-- Step 1: Drop the existing constraint
+-- ALTER TABLE social_posts DROP CONSTRAINT social_posts_status_check;
+
+-- Step 2: Update any rows with invalid status values to 'completed'
+-- UPDATE social_posts 
+-- SET status = 'completed' 
+-- WHERE status NOT IN ('pending', 'strategy_completed', 'copy_completed', 'prompt_completed', 'image_generated', 'completed', 'failed', 'editing_started', 'generating_edit');
+
+-- Step 3: Add the new constraint with edit statuses
+-- ALTER TABLE social_posts 
+-- ADD CONSTRAINT social_posts_status_check 
+-- CHECK (status IN ('pending', 'strategy_completed', 'copy_completed', 'prompt_completed', 'image_generated', 'completed', 'failed', 'editing_started', 'generating_edit'));

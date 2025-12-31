@@ -1287,8 +1287,7 @@ editImageForm?.addEventListener('submit', async (e) => {
         // Status to display text mapping for edit flow
         const editStatusMessages = {
             'editing_started': { text: 'Downloading original image...', percent: 30 },
-            'generating_edit': { text: 'Generating edited image with Gemini...', percent: 60 },
-            'uploading_edit': { text: 'Uploading edited image...', percent: 85 },
+            'generating_edit': { text: 'Generating edited image with Gemini...', percent: 70 },
             'completed': { text: 'Edit complete', percent: 100 }
         };
         

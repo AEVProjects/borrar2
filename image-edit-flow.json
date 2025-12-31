@@ -153,27 +153,6 @@
     },
     {
       "parameters": {
-        "operation": "executeQuery",
-        "query": "=UPDATE social_posts SET status = 'uploading_edit', updated_at = NOW() WHERE id = '{{ $json.post_id }}'",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        1560,
-        300
-      ],
-      "id": "status-uploading-edit",
-      "name": "Status: Uploading Edit",
-      "credentials": {
-        "postgres": {
-          "id": "WnTYs2zvPoE7hDJE",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "method": "POST",
         "url": "https://api.imgbb.com/1/upload",
         "authentication": "genericCredentialType",
@@ -326,17 +305,6 @@
       ]
     },
     "Extract Edited Image": {
-      "main": [
-        [
-          {
-            "node": "Status: Uploading Edit",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Status: Uploading Edit": {
       "main": [
         [
           {
