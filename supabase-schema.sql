@@ -32,8 +32,9 @@ CREATE TABLE public.social_posts (
   
   -- Metadata
   status text DEFAULT 'pending' NOT NULL 
-    CHECK (status IN ('pending', 'strategy_completed', 'copy_completed', 'prompt_completed', 'image_generated', 'completed', 'failed')),
+    CHECK (status IN ('pending', 'strategy_completed', 'copy_completed', 'prompt_completed', 'image_generated', 'completed', 'failed', 'editing_started', 'generating_edit', 'uploading_edit')),
   -- Status flow: pending → copy_completed → prompt_completed → image_generated → completed
+  -- Edit flow: editing_started → generating_edit → uploading_edit → completed
   
   -- Timestamps
   created_at timestamp with time zone DEFAULT now() NOT NULL,

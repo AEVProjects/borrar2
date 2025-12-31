@@ -1284,6 +1284,14 @@ editImageForm?.addEventListener('submit', async (e) => {
         
         updateProgress(20, 'Processing edit instructions...');
         
+        // Status to display text mapping for edit flow
+        const editStatusMessages = {
+            'editing_started': { text: 'Downloading original image...', percent: 30 },
+            'generating_edit': { text: 'Generating edited image with Gemini...', percent: 60 },
+            'uploading_edit': { text: 'Uploading edited image...', percent: 85 },
+            'completed': { text: 'Edit complete', percent: 100 }
+        };
+        
         // Wait for edit to complete and check database
         if (supabaseClient && postId) {
             // Get initial image URL
@@ -1303,26 +1311,25 @@ editImageForm?.addEventListener('submit', async (e) => {
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 attempts++;
                 
-                // Update progress based on attempts
-                const progressPercent = Math.min(20 + (attempts * 1.8), 95);
-                
-                if (attempts < 10) {
-                    updateProgress(progressPercent, 'AI is understanding the edit request...');
-                } else if (attempts < 25) {
-                    updateProgress(progressPercent, 'Generating edited image...');
-                } else {
-                    updateProgress(progressPercent, 'Uploading new image...');
-                }
-                
                 const { data: updatedPost } = await supabaseClient
                     .from('social_posts')
                     .select('image_url, status')
                     .eq('id', postId)
                     .single();
                 
+                // Get status-based progress
+                const statusInfo = editStatusMessages[updatedPost?.status];
+                if (statusInfo) {
+                    updateProgress(statusInfo.percent, statusInfo.text);
+                } else {
+                    // Fallback for unknown status
+                    const progressPercent = Math.min(20 + (attempts * 1.8), 95);
+                    updateProgress(progressPercent, 'Processing...');
+                }
+                
                 if (updatedPost && updatedPost.image_url !== initialUrl) {
                     editComplete = true;
-                    updateProgress(100, 'Edit complete!');
+                    updateProgress(100, 'Edit complete');
                     
                     setTimeout(() => {
                         showSuccessAlert(
