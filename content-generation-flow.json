@@ -78,12 +78,10 @@
               "conditions": {
                 "options": {
                   "caseSensitive": false,
-                  "leftValue": "",
                   "typeValidation": "loose"
                 },
                 "conditions": [
                   {
-                    "id": "cond1",
                     "leftValue": "={{ $json.visual_style }}",
                     "rightValue": "Glassmorphism",
                     "operator": {
@@ -101,12 +99,10 @@
               "conditions": {
                 "options": {
                   "caseSensitive": false,
-                  "leftValue": "",
                   "typeValidation": "loose"
                 },
                 "conditions": [
                   {
-                    "id": "cond2",
                     "leftValue": "={{ $json.visual_style }}",
                     "rightValue": "Modern 3D",
                     "operator": {
@@ -124,12 +120,10 @@
               "conditions": {
                 "options": {
                   "caseSensitive": false,
-                  "leftValue": "",
                   "typeValidation": "loose"
                 },
                 "conditions": [
                   {
-                    "id": "cond3",
                     "leftValue": "={{ $json.visual_style }}",
                     "rightValue": "Isometric",
                     "operator": {
@@ -147,12 +141,10 @@
               "conditions": {
                 "options": {
                   "caseSensitive": false,
-                  "leftValue": "",
                   "typeValidation": "loose"
                 },
                 "conditions": [
                   {
-                    "id": "cond4",
                     "leftValue": "={{ $json.visual_style }}",
                     "rightValue": "Data Hero",
                     "operator": {
@@ -170,12 +162,10 @@
               "conditions": {
                 "options": {
                   "caseSensitive": false,
-                  "leftValue": "",
                   "typeValidation": "loose"
                 },
                 "conditions": [
                   {
-                    "id": "cond5",
                     "leftValue": "={{ $json.visual_style }}",
                     "rightValue": "Realistic",
                     "operator": {
@@ -189,18 +179,14 @@
               "renameOutput": true,
               "outputKey": "Realistic"
             }
-          ],
-          "fallbackOutput": {
-            "renameOutput": true,
-            "outputKey": "Default"
-          }
+          ]
         },
         "options": {
           "fallbackOutput": "extra"
         }
       },
       "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.2,
+      "typeVersion": 3,
       "position": [43904, 9328],
       "id": "visual-style-router",
       "name": "Route by Visual Style"
