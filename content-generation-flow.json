@@ -83,6 +83,7 @@
                 },
                 "conditions": [
                   {
+                    "id": "condition-glass",
                     "leftValue": "={{ $('Format Form Input').item.json.visual_style.toLowerCase() }}",
                     "rightValue": "glassmorphism",
                     "operator": {
@@ -105,6 +106,7 @@
                 },
                 "conditions": [
                   {
+                    "id": "condition-3d",
                     "leftValue": "={{ $('Format Form Input').item.json.visual_style.toLowerCase() }}",
                     "rightValue": "3d",
                     "operator": {
@@ -127,6 +129,7 @@
                 },
                 "conditions": [
                   {
+                    "id": "condition-iso",
                     "leftValue": "={{ $('Format Form Input').item.json.visual_style.toLowerCase() }}",
                     "rightValue": "isometric",
                     "operator": {
@@ -149,6 +152,7 @@
                 },
                 "conditions": [
                   {
+                    "id": "condition-data",
                     "leftValue": "={{ $('Format Form Input').item.json.visual_style.toLowerCase() }}",
                     "rightValue": "data",
                     "operator": {
@@ -171,11 +175,12 @@
                 },
                 "conditions": [
                   {
+                    "id": "condition-real",
                     "leftValue": "={{ $('Format Form Input').item.json.visual_style.toLowerCase() }}",
-                    "rightValue": "realistic|photography|professional|photo",
+                    "rightValue": "realistic",
                     "operator": {
                       "type": "string",
-                      "operation": "regex"
+                      "operation": "contains"
                     }
                   }
                 ],
