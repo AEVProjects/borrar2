@@ -83,12 +83,12 @@
                 },
                 "conditions": [
                   {
-                    "id": "condition-glass",
-                    "leftValue": "={{ $('Format Form Input').item.json.visual_style.toLowerCase() }}",
-                    "rightValue": "glassmorphism",
+                    "id": "cond1",
+                    "leftValue": "={{ $json.visual_style }}",
+                    "rightValue": "Glassmorphism",
                     "operator": {
                       "type": "string",
-                      "operation": "contains"
+                      "operation": "equals"
                     }
                   }
                 ],
@@ -106,12 +106,12 @@
                 },
                 "conditions": [
                   {
-                    "id": "condition-3d",
-                    "leftValue": "={{ $('Format Form Input').item.json.visual_style.toLowerCase() }}",
-                    "rightValue": "3d",
+                    "id": "cond2",
+                    "leftValue": "={{ $json.visual_style }}",
+                    "rightValue": "Modern 3D",
                     "operator": {
                       "type": "string",
-                      "operation": "contains"
+                      "operation": "equals"
                     }
                   }
                 ],
@@ -129,12 +129,12 @@
                 },
                 "conditions": [
                   {
-                    "id": "condition-iso",
-                    "leftValue": "={{ $('Format Form Input').item.json.visual_style.toLowerCase() }}",
-                    "rightValue": "isometric",
+                    "id": "cond3",
+                    "leftValue": "={{ $json.visual_style }}",
+                    "rightValue": "Isometric",
                     "operator": {
                       "type": "string",
-                      "operation": "contains"
+                      "operation": "equals"
                     }
                   }
                 ],
@@ -152,12 +152,12 @@
                 },
                 "conditions": [
                   {
-                    "id": "condition-data",
-                    "leftValue": "={{ $('Format Form Input').item.json.visual_style.toLowerCase() }}",
-                    "rightValue": "data",
+                    "id": "cond4",
+                    "leftValue": "={{ $json.visual_style }}",
+                    "rightValue": "Data Hero",
                     "operator": {
                       "type": "string",
-                      "operation": "contains"
+                      "operation": "equals"
                     }
                   }
                 ],
@@ -175,9 +175,9 @@
                 },
                 "conditions": [
                   {
-                    "id": "condition-real",
-                    "leftValue": "={{ $('Format Form Input').item.json.visual_style.toLowerCase() }}",
-                    "rightValue": "realistic",
+                    "id": "cond5",
+                    "leftValue": "={{ $json.visual_style }}",
+                    "rightValue": "Realistic",
                     "operator": {
                       "type": "string",
                       "operation": "contains"
@@ -195,7 +195,9 @@
             "outputKey": "Default"
           }
         },
-        "options": {}
+        "options": {
+          "fallbackOutput": "extra"
+        }
       },
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
@@ -205,7 +207,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// GLASSMORPHISM Style Instructions\nconst formInput = $('Format Form Input').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = $('Save Post to DB').item.json.id;\n\nconst styleInstructions = `\n## GLASSMORPHISM STYLE\n**SCENE:** Brand blue (#207CE5) to secondary blue (#004AAD) gradient background. THREE frosted glass panels arranged in layered composition with technology icons visible through translucent layers. Semi-transparent hexagonal shapes scattered. Subtle blur effects on glass edges. Connection lines in off-white.\n\n**VISUAL ELEMENTS:**\n1. Three frosted glass panels with blur effect\n2. Technology icons in white on panels (gears, circuits, data symbols)\n3. Semi-transparent hexagonal shapes (white accents)\n4. Connection lines between elements (white)\n5. Subtle glow effects on panel edges\n6. Professional rim lighting for depth\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style,\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId\n  }\n}];"
+        "jsCode": "// GLASSMORPHISM Style Instructions\nconst formInput = $('Save Post to DB').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = formInput.id;\n\nconst styleInstructions = `\n## GLASSMORPHISM STYLE\n**SCENE:** Brand blue (#207CE5) to secondary blue (#004AAD) gradient background. THREE frosted glass panels arranged in layered composition with technology icons visible through translucent layers. Semi-transparent hexagonal shapes scattered. Subtle blur effects on glass edges. Connection lines in off-white.\n\n**VISUAL ELEMENTS:**\n1. Three frosted glass panels with blur effect\n2. Technology icons in white on panels (gears, circuits, data symbols)\n3. Semi-transparent hexagonal shapes (white accents)\n4. Connection lines between elements (white)\n5. Subtle glow effects on panel edges\n6. Professional rim lighting for depth\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style,\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -215,7 +217,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// MODERN 3D Style Instructions\nconst formInput = $('Format Form Input').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = $('Save Post to DB').item.json.id;\n\nconst styleInstructions = `\n## MODERN 3D STYLE\n**SCENE:** Brand blue (#207CE5) gradient background with floating 3D geometric objects. Glossy spheres, cubes, and abstract tech shapes with realistic reflections and shadows. Dramatic lighting from multiple angles creating depth. Professional, futuristic corporate aesthetic.\n\n**VISUAL ELEMENTS:**\n1. Floating 3D geometric shapes (spheres, cubes, cylinders)\n2. Glossy metallic surfaces with reflections\n3. Dramatic rim lighting and shadows\n4. Abstract tech objects (servers, nodes, connections)\n5. Depth of field blur on background elements\n6. Subtle particle effects or light rays\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style,\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId\n  }\n}];"
+        "jsCode": "// MODERN 3D Style Instructions\nconst formInput = $('Save Post to DB').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = formInput.id;\n\nconst styleInstructions = `\n## MODERN 3D STYLE\n**SCENE:** Brand blue (#207CE5) gradient background with floating 3D geometric objects. Glossy spheres, cubes, and abstract tech shapes with realistic reflections and shadows. Dramatic lighting from multiple angles creating depth. Professional, futuristic corporate aesthetic.\n\n**VISUAL ELEMENTS:**\n1. Floating 3D geometric shapes (spheres, cubes, cylinders)\n2. Glossy metallic surfaces with reflections\n3. Dramatic rim lighting and shadows\n4. Abstract tech objects (servers, nodes, connections)\n5. Depth of field blur on background elements\n6. Subtle particle effects or light rays\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style,\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -225,7 +227,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// ISOMETRIC Style Instructions\nconst formInput = $('Format Form Input').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = $('Save Post to DB').item.json.id;\n\nconst styleInstructions = `\n## ISOMETRIC ARCHITECTURE STYLE\n**SCENE:** Brand blue (#207CE5) background with isometric 3D architecture. Clean geometric buildings, server rooms, or tech infrastructure in isometric perspective. Flat colors with subtle gradients. Professional technical illustration style.\n\n**VISUAL ELEMENTS:**\n1. Isometric buildings or server structures\n2. Clean geometric shapes in isometric view\n3. Network connection lines between structures\n4. Small human figures for scale (optional)\n5. Subtle shadows for depth\n6. Technical grid or blueprint elements\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style,\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId\n  }\n}];"
+        "jsCode": "// ISOMETRIC Style Instructions\nconst formInput = $('Save Post to DB').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = formInput.id;\n\nconst styleInstructions = `\n## ISOMETRIC ARCHITECTURE STYLE\n**SCENE:** Brand blue (#207CE5) background with isometric 3D architecture. Clean geometric buildings, server rooms, or tech infrastructure in isometric perspective. Flat colors with subtle gradients. Professional technical illustration style.\n\n**VISUAL ELEMENTS:**\n1. Isometric buildings or server structures\n2. Clean geometric shapes in isometric view\n3. Network connection lines between structures\n4. Small human figures for scale (optional)\n5. Subtle shadows for depth\n6. Technical grid or blueprint elements\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style,\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -235,7 +237,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// DATA HERO Style Instructions\nconst formInput = $('Format Form Input').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = $('Save Post to DB').item.json.id;\n\nconst styleInstructions = `\n## DATA HERO / VISUALIZATION STYLE\n**SCENE:** Brand blue (#207CE5) background with prominent data visualizations as hero element. Charts, graphs, dashboards, or data flow diagrams as main visual. Clean, modern infographic aesthetic with professional corporate feel.\n\n**VISUAL ELEMENTS:**\n1. Large chart or graph as hero element (bar, line, pie, or dashboard)\n2. Data points and nodes with connection lines\n3. Glowing data indicators and metrics\n4. Abstract data flow visualization\n5. Clean grid or axis lines\n6. Subtle animated feel (arrows, flow indicators)\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style,\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId\n  }\n}];"
+        "jsCode": "// DATA HERO Style Instructions\nconst formInput = $('Save Post to DB').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = formInput.id;\n\nconst styleInstructions = `\n## DATA HERO / VISUALIZATION STYLE\n**SCENE:** Brand blue (#207CE5) background with prominent data visualizations as hero element. Charts, graphs, dashboards, or data flow diagrams as main visual. Clean, modern infographic aesthetic with professional corporate feel.\n\n**VISUAL ELEMENTS:**\n1. Large chart or graph as hero element (bar, line, pie, or dashboard)\n2. Data points and nodes with connection lines\n3. Glowing data indicators and metrics\n4. Abstract data flow visualization\n5. Clean grid or axis lines\n6. Subtle animated feel (arrows, flow indicators)\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style,\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -245,7 +247,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// REALISTIC PHOTOGRAPHY Style Instructions\nconst formInput = $('Format Form Input').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = $('Save Post to DB').item.json.id;\n\nconst styleInstructions = `\n## REALISTIC PHOTOGRAPHY STYLE\n**PHOTO STYLE:** Generate a PHOTOREALISTIC STOCK PHOTO that looks like a candid professional photograph - NOT AI-generated looking.\n\n**SUBJECT:** 1-2 professional people in tech industry, age 28-45, diverse representation, authentic natural facial expression (confident smile or thoughtful), natural skin texture - avoid artificial smoothness.\n\n**CLOTHING:** Business casual or tech casual - fitted button-down shirt, polo, crew neck t-shirt, blazer, or modern minimalist sweater.\n\n**BACKGROUND:** Clean, minimal - soft blurred modern office, neutral gray wall, bright workspace with soft focus. Natural lighting with subtle shadows. NO complex patterns, NO surreal elements.\n\n**POSE:** Natural posture conveying confidence. Candid moment - working on laptop, in discussion, or looking at camera with genuine expression.\n\n**CAMERA:** Shot on professional camera, 85mm portrait lens, f/2.8 aperture, soft natural window lighting.\n\n**CRITICAL:** Real human with natural imperfections, realistic proportions. Should look like Getty Images or Shutterstock photo, NOT AI-generated.\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style,\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId\n  }\n}];"
+        "jsCode": "// REALISTIC PHOTOGRAPHY Style Instructions\nconst formInput = $('Save Post to DB').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = formInput.id;\n\nconst styleInstructions = `\n## REALISTIC PHOTOGRAPHY STYLE\n**PHOTO STYLE:** Generate a PHOTOREALISTIC STOCK PHOTO that looks like a candid professional photograph - NOT AI-generated looking.\n\n**SUBJECT:** 1-2 professional people in tech industry, age 28-45, diverse representation, authentic natural facial expression (confident smile or thoughtful), natural skin texture - avoid artificial smoothness.\n\n**CLOTHING:** Business casual or tech casual - fitted button-down shirt, polo, crew neck t-shirt, blazer, or modern minimalist sweater.\n\n**BACKGROUND:** Clean, minimal - soft blurred modern office, neutral gray wall, bright workspace with soft focus. Natural lighting with subtle shadows. NO complex patterns, NO surreal elements.\n\n**POSE:** Natural posture conveying confidence. Candid moment - working on laptop, in discussion, or looking at camera with genuine expression.\n\n**CAMERA:** Shot on professional camera, 85mm portrait lens, f/2.8 aperture, soft natural window lighting.\n\n**CRITICAL:** Real human with natural imperfections, realistic proportions. Should look like Getty Images or Shutterstock photo, NOT AI-generated.\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style,\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -255,7 +257,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// DEFAULT Style Instructions (fallback)\nconst formInput = $('Format Form Input').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = $('Save Post to DB').item.json.id;\n\nconst styleInstructions = `\n## DEFAULT CORPORATE STYLE\n**SCENE:** Clean brand blue (#207CE5) gradient background. Professional corporate design with abstract geometric elements. Modern, minimal aesthetic suitable for LinkedIn.\n\n**VISUAL ELEMENTS:**\n1. Solid brand blue background or subtle gradient\n2. Abstract geometric shapes (hexagons, circles, lines)\n3. Technology icons relevant to the topic\n4. Clean white accent lines or borders\n5. Professional lighting effects\n6. Subtle depth through shadows or glows\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style || 'Corporate',\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId\n  }\n}];"
+        "jsCode": "// DEFAULT Style Instructions (fallback)\nconst formInput = $('Save Post to DB').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = formInput.id;\n\nconst styleInstructions = `\n## DEFAULT CORPORATE STYLE\n**SCENE:** Clean brand blue (#207CE5) gradient background. Professional corporate design with abstract geometric elements. Modern, minimal aesthetic suitable for LinkedIn.\n\n**VISUAL ELEMENTS:**\n1. Solid brand blue background or subtle gradient\n2. Abstract geometric shapes (hexagons, circles, lines)\n3. Technology icons relevant to the topic\n4. Clean white accent lines or borders\n5. Professional lighting effects\n6. Subtle depth through shadows or glows\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style || 'Corporate',\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
