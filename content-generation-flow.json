@@ -313,7 +313,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=UPDATE social_posts SET status = 'image_generating', updated_at = NOW() WHERE id = '{{ $json.post_id }}'",
+        "query": "=UPDATE social_posts SET status = 'prompt_completed', updated_at = NOW() WHERE id = '{{ $json.post_id }}'",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
