@@ -260,18 +260,6 @@
     },
     {
       "parameters": {
-        "mode": "passThrough",
-        "output": "passAll",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [44352, 9328],
-      "id": "merge-styles",
-      "name": "Merge Style Routes"
-    },
-    {
-      "parameters": {
         "promptType": "define",
         "text": "=STRATEGY:\n{{ $json.strategy }}\n\nHEADLINE (use exactly): {{ $json.headline }}\nVISUAL STYLE: {{ $json.visual_style }}\n\nSTYLE INSTRUCTIONS:\n{{ $json.style_instructions }}",
         "options": {
@@ -287,7 +275,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=UPDATE social_posts \nSET image_prompt = '{{ $json.output.replace(/'/g, \"''\") }}',\n    status = 'prompt_completed',\n    updated_at = NOW()\nWHERE id = '{{ $('Merge Style Routes').item.json.post_id }}'\nRETURNING *",
+        "query": "=UPDATE social_posts \nSET image_prompt = '{{ $json.output.replace(/'/g, \"''\") }}',\n    status = 'prompt_completed',\n    updated_at = NOW()\nWHERE id = '{{ $('Save Post to DB').item.json.id }}'\nRETURNING *",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -669,7 +657,7 @@
       "main": [
         [
           {
-            "node": "Merge Style Routes",
+            "node": "Agent 3: Image Prompt",
             "type": "main",
             "index": 0
           }
@@ -680,7 +668,7 @@
       "main": [
         [
           {
-            "node": "Merge Style Routes",
+            "node": "Agent 3: Image Prompt",
             "type": "main",
             "index": 0
           }
@@ -691,7 +679,7 @@
       "main": [
         [
           {
-            "node": "Merge Style Routes",
+            "node": "Agent 3: Image Prompt",
             "type": "main",
             "index": 0
           }
@@ -702,7 +690,7 @@
       "main": [
         [
           {
-            "node": "Merge Style Routes",
+            "node": "Agent 3: Image Prompt",
             "type": "main",
             "index": 0
           }
@@ -713,7 +701,7 @@
       "main": [
         [
           {
-            "node": "Merge Style Routes",
+            "node": "Agent 3: Image Prompt",
             "type": "main",
             "index": 0
           }
@@ -721,17 +709,6 @@
       ]
     },
     "Style: Default": {
-      "main": [
-        [
-          {
-            "node": "Merge Style Routes",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge Style Routes": {
       "main": [
         [
           {
