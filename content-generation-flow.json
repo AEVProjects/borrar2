@@ -9,10 +9,7 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [
-        42528,
-        9328
-      ],
+      "position": [42528, 9328],
       "id": "300ae9e0-fd76-4933-a655-81ad64dd6f62",
       "name": "Webhook - Generate Content",
       "webhookId": "70738d02-4bd8-4dac-853f-ba4836aafaf5"
@@ -23,10 +20,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        42752,
-        9328
-      ],
+      "position": [42752, 9328],
       "id": "925c75b4-e093-46f1-87b1-1630753d1f4a",
       "name": "Format Form Input"
     },
@@ -35,15 +29,12 @@
         "promptType": "define",
         "text": "=Create a content strategy for:\n\nTopic: {{ $json.topic }}\nPost Type: {{ $json.post_type }}\nVisual Style: {{ $json.visual_style }}\nHeadline: {{ $json.headline }}\nData Points: {{ $json.data_points || 'None provided' }}\nContext: {{ $json.context || 'None provided' }}\n\nNote: All images will be in 4:5 portrait format.",
         "options": {
-          "systemMessage": "=# LANGUAGE REQUIREMENT\nALWAYS respond in English regardless of input language. Even if the user writes in Spanish, French, or any other language, your output MUST be in English.\n\n# ROLE: Strategic Content Analyst for MSI Technologies\n\n## YOUR TASK\nAnalyze the user's content request and provide strategic guidance for both LinkedIn copy and visual design.\n\n## OUTPUT FORMAT\nYou MUST output your response in this EXACT structure:\n\n---CONTENT STRATEGY---\nHook: [Compelling first line]\nBody: [Main message with examples]\nCTA: [Call to action as question]\nHashtags: [3-5 relevant hashtags including #MSITechnologies]\n\n---VISUAL STRATEGY---\nUser's Visual Style: [Copy exactly from user input]\nScene Concept: [How to visualize the topic using the user's chosen style]\nFormat: 4:5 Portrait\nComposition: [Vertical layout optimized for portrait format]\n\n---GRAPHIC ELEMENTS---\n[2-3 specific visual elements that match the user's visual style]\n\n---IN-IMAGE TEXT---\n[Copy EXACT headline from user input - character by character]\n\n---DATA POINTS---\n[Only list data points if user explicitly provided them. If none provided, write \"None provided - focus on insights and examples instead of statistics\"]\n\n---COLOR GUIDANCE---\nALWAYS use backgrounds with brand blue #207CE5 or darker variations. Use white and black for text and accents. Professional, clean aesthetic.\n\n## MSI CONTEXT\nMSI Technologies is a technology solutions company that helps businesses modernize their infrastructure, optimize operations, and implement innovative technology solutions. Focus on digital transformation, technical excellence, and business impact.\n\n## CONTENT STRATEGY RULES\n1. NO generic corporate language\n2. Use specific data and real examples ONLY if user provided them - NEVER invent statistics\n3. Keep hook under 150 characters\n4. Be technical but accessible\n5. Always end with conversational CTA\n\n## VISUAL STRATEGY RULES\n1. RESPECT the user's chosen Visual Style - adapt your scene concept to match it\n2. ALWAYS use brand blue #207CE5 backgrounds or darker blue variations. NEVER white or light backgrounds\n3. Use white and black for text and accents - clean, professional contrast\n4. Suggest 2-3 graphic elements that fit the user's style with premium, professional aesthetic\n5. Keep compositions clean for vertical 4:5 format with sophisticated lighting\n6. Allow subtitles or supporting text if needed to effectively convey the message\n\nREMEMBER: The user's Visual Style choice is PRIMARY - your strategy should enhance it, not replace it. Copy the user's headline exactly. Brand blue #207CE5 backgrounds MANDATORY. NEVER invent data or statistics. All images are 4:5 portrait format."
+          "systemMessage": "=# LANGUAGE REQUIREMENT\nALWAYS respond in English regardless of input language.\n\n# ROLE: Strategic Content Analyst for MSI Technologies\n\n## OUTPUT FORMAT\n---CONTENT STRATEGY---\nHook: [Compelling first line]\nBody: [Main message]\nCTA: [Call to action]\nHashtags: [3-5 hashtags including #MSITechnologies]\n\n---VISUAL STRATEGY---\nUser's Visual Style: [Copy exactly from user input]\nScene Concept: [Brief visualization concept]\nFormat: 4:5 Portrait\n\n---IN-IMAGE TEXT---\n[Copy EXACT headline from user input]\n\n---DATA POINTS---\n[Only if user provided them]\n\n## MSI CONTEXT\nMSI Technologies helps businesses modernize infrastructure and implement innovative technology solutions.\n\n## RULES\n1. NO generic corporate language\n2. NEVER invent statistics\n3. Brand blue #207CE5 backgrounds MANDATORY\n4. Copy headline exactly"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
-      "position": [
-        42976,
-        9328
-      ],
+      "position": [42976, 9328],
       "id": "0f4f3960-c677-49ea-abb2-f686344cb63f",
       "name": "Agent 1: Strategy Analyzer"
     },
@@ -52,30 +43,14 @@
         "promptType": "define",
         "text": "={{ $('Agent 1: Strategy Analyzer').item.json.output }}",
         "options": {
-          "systemMessage": "# LANGUAGE REQUIREMENT\nALWAYS respond in English regardless of input language. Even if the user writes in Spanish, French, or any other language, your output MUST be in English.\n\n# ROLE: LinkedIn Copy Writer for MSI Technologies\n\nYou receive a CONTENT STRATEGY and create LinkedIn post copy. Output ONLY the post text - no labels, no metadata, no character counts.\n\n## STRUCTURE\n- Hook (First 2 lines): Specific stat, question, or concrete statement\n- Body: Include data points, line breaks every 2-3 sentences\n- CTA: Conversational question\n\n## VOICE\n- Senior engineer who's solved this 50 times\n- Direct and honest, not salesy\n- Technical but accessible\n\n## NEVER USE\n- \"In today's digital landscape\"\n- \"Revolutionize/Transform your business\"\n- \"Cutting-edge/Game-changing\"\n- \"Unlock the power of\"\n- \"Seamlessly integrate\"\n- \"Best-in-class\"\n\n## REQUIREMENTS\n- English only\n- Maximum 100 words (approximately 600-700 characters)\n- Use specific numbers/stats ONLY if user provided them - NEVER invent data\n- NO emojis\n- Always end with #MSITechnologies + relevant hashtags\n\n## CONTACT INFO (ALWAYS INCLUDE)\nAt the end of EVERY post, BEFORE the hashtags, include a clear contact invitation with visual separator:\n- Format exactly like this (with the line above):\n  ───────────────────\n  📩 Let's talk → contact@msitechnologiesinc.com\n  🌐 msitechnologiesinc.com\n- The line separator and icons make it stand out\n- This is your clear call-to-action for readers ready to connect\n\n## EXAMPLE (with user-provided data)\nMost digital transformation projects fail because teams focus on technology first instead of business outcomes. We've seen 60% of companies struggle with adoption after investing millions.\n\nThe fix isn't more tools. It's better strategy:\n- Start with clear business objectives\n- Involve end-users from day one\n- Measure impact, not just implementation\n\nWe helped a healthcare client improve operational efficiency by 47% in 90 days through targeted technology optimization. The secret? Focus on people and processes, not just tech.\n\nWhat's been your biggest challenge with technology adoption?\n\n───────────────────\n📩 Let's talk → contact@msitechnologiesinc.com\n🌐 msitechnologiesinc.com\n\n#MSITechnologies #DigitalTransformation #TechStrategy\n\nNOTE: If no data points provided, focus on concrete insights, real scenarios, and actionable advice instead of statistics."
+          "systemMessage": "# LANGUAGE REQUIREMENT\nALWAYS respond in English.\n\n# ROLE: LinkedIn Copy Writer for MSI Technologies\n\nOutput ONLY the post text - no labels, no metadata.\n\n## STRUCTURE\n- Hook (First 2 lines): Specific stat, question, or concrete statement\n- Body: Include data points, line breaks every 2-3 sentences\n- CTA: Conversational question\n\n## VOICE\n- Senior engineer who's solved this 50 times\n- Direct and honest, not salesy\n\n## NEVER USE\n- \"In today's digital landscape\"\n- \"Revolutionize/Transform your business\"\n- \"Cutting-edge/Game-changing\"\n\n## REQUIREMENTS\n- Maximum 100 words\n- NEVER invent data\n- NO emojis\n\n## CONTACT INFO (ALWAYS INCLUDE)\nAt the end, BEFORE hashtags:\n───────────────────\n📩 Let's talk → contact@msitechnologiesinc.com\n🌐 msitechnologiesinc.com\n\nAlways end with #MSITechnologies + relevant hashtags"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
-      "position": [
-        43328,
-        9328
-      ],
+      "position": [43328, 9328],
       "id": "2b2bfa24-5340-482c-ab47-e937e0917a6c",
       "name": "Agent 2: Copy Writer"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Generar instrucciones específicas según el estilo visual seleccionado\nconst visualStyle = $('Format Form Input').item.json.visual_style || 'Modern 3D';\n\nconst styleInstructions = {\n  'Realistic Photography': `\n## REALISTIC PHOTOGRAPHY STYLE\nGenerate a PHOTOREALISTIC STOCK PHOTO that looks like a candid professional photograph - NOT AI-generated.\n\n**SUBJECT:**\n- 1-2 professional people in tech industry, age 28-45\n- Diverse representation, authentic natural expression\n- Natural skin texture, realistic proportions - avoid artificial smoothness\n\n**CLOTHING:**\n- Business casual or tech casual\n- Fitted button-down, polo, blazer, or modern minimalist sweater\n- Clean and professional but approachable\n\n**BACKGROUND:**\n- Clean minimal professional background\n- Soft blurred modern office, neutral gray wall, or bright workspace with soft focus\n- Natural lighting with subtle shadows\n- NO complex patterns, NO graphics, NO surreal elements\n\n**CAMERA:**\n- Professional camera, 85mm portrait lens, f/2.8 aperture\n- Natural depth of field, soft window lighting\n- Real human with natural imperfections\n- Should look like Getty Images or Shutterstock photo\n\n**BRAND INTEGRATION:**\n- Brand blue (#207CE5) as subtle color grading overlay\n- Text overlaid on photo with good contrast`,\n\n  'Glassmorphism': `\n## GLASSMORPHISM STYLE\nCreate a modern Glassmorphism design with frosted glass panels and depth.\n\n**GLASS PANELS:**\n- 2-3 frosted glass panels with subtle blur effect\n- Layered composition creating depth\n- Semi-transparent with visible content behind\n- Subtle white glowing edges\n\n**BACKGROUND:**\n- Brand blue (#207CE5) to secondary blue (#004AAD) gradient\n- Soft abstract shapes or patterns behind glass\n\n**VISUAL ELEMENTS:**\n- Technology icons visible through glass (gears, circuits, data symbols)\n- Semi-transparent hexagonal shapes scattered\n- Connection lines in off-white linking elements\n- Professional rim lighting creating depth\n\n**AESTHETIC:**\n- Premium, sophisticated vertical composition\n- Modern and sleek Apple/Microsoft style`,\n\n  'Modern 3D': `\n## MODERN 3D STYLE\nCreate a modern 3D rendered corporate visual with depth and dimension.\n\n**3D ELEMENTS:**\n- Clean geometric 3D shapes (cubes, spheres, abstract forms)\n- Floating technology-related 3D objects\n- Smooth surfaces with realistic materials\n- Professional studio lighting with soft shadows\n\n**BACKGROUND:**\n- Brand blue (#207CE5) gradient background\n- Subtle depth with ambient occlusion\n\n**VISUAL ELEMENTS:**\n- 3D tech icons or abstract representations\n- Clean geometric patterns\n- Soft reflections and highlights\n- Premium material finish (matte, glossy accents)\n\n**AESTHETIC:**\n- Modern corporate 3D visualization\n- Clean, minimal, professional`,\n\n  'Isometric': `\n## ISOMETRIC STYLE\nCreate an isometric illustration with clean geometric perspective.\n\n**ISOMETRIC ELEMENTS:**\n- Isometric tech infrastructure (servers, networks, buildings)\n- Clean 30-degree angle perspective\n- Flat colors with subtle shadows\n- Connected systems showing flow\n\n**BACKGROUND:**\n- Brand blue (#207CE5) solid or gradient\n- Clean minimal backdrop\n\n**VISUAL ELEMENTS:**\n- Isometric office/tech equipment\n- Data flow lines connecting elements\n- Small human figures for scale (optional)\n- Icons integrated into isometric scene\n\n**AESTHETIC:**\n- Clean vector-style isometric illustration\n- Tech infographic look`,\n\n  'Data Visualization': `\n## DATA VISUALIZATION STYLE\nCreate a data-driven visual with charts and metrics.\n\n**DATA ELEMENTS:**\n- Clean charts (bar, line, pie, or abstract data viz)\n- Metrics and KPIs displayed prominently\n- Data nodes and connection lines\n- Growth indicators and trend arrows\n\n**BACKGROUND:**\n- Brand blue (#207CE5) gradient\n- Subtle grid or data pattern\n\n**VISUAL ELEMENTS:**\n- Dashboard-style layout\n- Glowing data points\n- Network/connection visualizations\n- Clean iconography\n\n**AESTHETIC:**\n- Professional analytics dashboard\n- Data-driven corporate style`,\n\n  'Minimalist': `\n## MINIMALIST STYLE\nCreate ultra-clean minimal design with focus on typography.\n\n**DESIGN:**\n- Solid brand blue (#207CE5) background\n- Maximum whitespace utilization\n- Single accent element if any\n- Focus on typography hierarchy\n\n**BACKGROUND:**\n- Pure solid color or very subtle gradient\n- NO complex elements, NO photos\n\n**VISUAL ELEMENTS:**\n- One simple geometric shape as accent (optional)\n- Clean horizontal line separator (optional)\n- Logo and text only\n\n**AESTHETIC:**\n- Ultra-clean corporate minimalism\n- Swiss/Bauhaus design influence`\n};\n\n// Obtener instrucciones del estilo o usar default\nlet selectedStyle = styleInstructions[visualStyle];\nif (!selectedStyle) {\n  // Buscar coincidencia parcial\n  const styleKey = Object.keys(styleInstructions).find(key => \n    visualStyle.toLowerCase().includes(key.toLowerCase()) ||\n    key.toLowerCase().includes(visualStyle.toLowerCase())\n  );\n  selectedStyle = styleInstructions[styleKey] || styleInstructions['Modern 3D'];\n}\n\nreturn [{\n  json: {\n    visual_style: visualStyle,\n    style_instructions: selectedStyle,\n    headline: $('Format Form Input').item.json.headline,\n    strategy_output: $('Agent 1: Strategy Analyzer').item.json.output,\n    post_id: $('Save Post to DB').item.json.id\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        43792,
-        9328
-      ],
-      "id": "style-instructions-node",
-      "name": "Get Style Instructions"
     },
     {
       "parameters": {
@@ -85,10 +60,7 @@
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [
-        43680,
-        9328
-      ],
+      "position": [43680, 9328],
       "id": "68ab5723-cc8f-4062-afed-b7b89357daf3",
       "name": "Save Post to DB",
       "credentials": {
@@ -100,33 +72,227 @@
     },
     {
       "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Format Form Input').item.json.visual_style.toLowerCase() }}",
+                    "rightValue": "glassmorphism",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Glassmorphism"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Format Form Input').item.json.visual_style.toLowerCase() }}",
+                    "rightValue": "3d",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Modern3D"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Format Form Input').item.json.visual_style.toLowerCase() }}",
+                    "rightValue": "isometric",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Isometric"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Format Form Input').item.json.visual_style.toLowerCase() }}",
+                    "rightValue": "data",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "DataHero"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Format Form Input').item.json.visual_style.toLowerCase() }}",
+                    "rightValue": "realistic|photography|professional|photo",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Realistic"
+            }
+          ],
+          "fallbackOutput": {
+            "renameOutput": true,
+            "outputKey": "Default"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [43904, 9328],
+      "id": "visual-style-router",
+      "name": "Route by Visual Style"
+    },
+    {
+      "parameters": {
+        "jsCode": "// GLASSMORPHISM Style Instructions\nconst formInput = $('Format Form Input').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = $('Save Post to DB').item.json.id;\n\nconst styleInstructions = `\n## GLASSMORPHISM STYLE\n**SCENE:** Brand blue (#207CE5) to secondary blue (#004AAD) gradient background. THREE frosted glass panels arranged in layered composition with technology icons visible through translucent layers. Semi-transparent hexagonal shapes scattered. Subtle blur effects on glass edges. Connection lines in off-white.\n\n**VISUAL ELEMENTS:**\n1. Three frosted glass panels with blur effect\n2. Technology icons in white on panels (gears, circuits, data symbols)\n3. Semi-transparent hexagonal shapes (white accents)\n4. Connection lines between elements (white)\n5. Subtle glow effects on panel edges\n6. Professional rim lighting for depth\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style,\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [44128, 9028],
+      "id": "style-glassmorphism",
+      "name": "Style: Glassmorphism"
+    },
+    {
+      "parameters": {
+        "jsCode": "// MODERN 3D Style Instructions\nconst formInput = $('Format Form Input').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = $('Save Post to DB').item.json.id;\n\nconst styleInstructions = `\n## MODERN 3D STYLE\n**SCENE:** Brand blue (#207CE5) gradient background with floating 3D geometric objects. Glossy spheres, cubes, and abstract tech shapes with realistic reflections and shadows. Dramatic lighting from multiple angles creating depth. Professional, futuristic corporate aesthetic.\n\n**VISUAL ELEMENTS:**\n1. Floating 3D geometric shapes (spheres, cubes, cylinders)\n2. Glossy metallic surfaces with reflections\n3. Dramatic rim lighting and shadows\n4. Abstract tech objects (servers, nodes, connections)\n5. Depth of field blur on background elements\n6. Subtle particle effects or light rays\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style,\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [44128, 9178],
+      "id": "style-modern3d",
+      "name": "Style: Modern 3D"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ISOMETRIC Style Instructions\nconst formInput = $('Format Form Input').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = $('Save Post to DB').item.json.id;\n\nconst styleInstructions = `\n## ISOMETRIC ARCHITECTURE STYLE\n**SCENE:** Brand blue (#207CE5) background with isometric 3D architecture. Clean geometric buildings, server rooms, or tech infrastructure in isometric perspective. Flat colors with subtle gradients. Professional technical illustration style.\n\n**VISUAL ELEMENTS:**\n1. Isometric buildings or server structures\n2. Clean geometric shapes in isometric view\n3. Network connection lines between structures\n4. Small human figures for scale (optional)\n5. Subtle shadows for depth\n6. Technical grid or blueprint elements\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style,\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [44128, 9328],
+      "id": "style-isometric",
+      "name": "Style: Isometric"
+    },
+    {
+      "parameters": {
+        "jsCode": "// DATA HERO Style Instructions\nconst formInput = $('Format Form Input').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = $('Save Post to DB').item.json.id;\n\nconst styleInstructions = `\n## DATA HERO / VISUALIZATION STYLE\n**SCENE:** Brand blue (#207CE5) background with prominent data visualizations as hero element. Charts, graphs, dashboards, or data flow diagrams as main visual. Clean, modern infographic aesthetic with professional corporate feel.\n\n**VISUAL ELEMENTS:**\n1. Large chart or graph as hero element (bar, line, pie, or dashboard)\n2. Data points and nodes with connection lines\n3. Glowing data indicators and metrics\n4. Abstract data flow visualization\n5. Clean grid or axis lines\n6. Subtle animated feel (arrows, flow indicators)\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style,\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [44128, 9478],
+      "id": "style-datahero",
+      "name": "Style: Data Hero"
+    },
+    {
+      "parameters": {
+        "jsCode": "// REALISTIC PHOTOGRAPHY Style Instructions\nconst formInput = $('Format Form Input').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = $('Save Post to DB').item.json.id;\n\nconst styleInstructions = `\n## REALISTIC PHOTOGRAPHY STYLE\n**PHOTO STYLE:** Generate a PHOTOREALISTIC STOCK PHOTO that looks like a candid professional photograph - NOT AI-generated looking.\n\n**SUBJECT:** 1-2 professional people in tech industry, age 28-45, diverse representation, authentic natural facial expression (confident smile or thoughtful), natural skin texture - avoid artificial smoothness.\n\n**CLOTHING:** Business casual or tech casual - fitted button-down shirt, polo, crew neck t-shirt, blazer, or modern minimalist sweater.\n\n**BACKGROUND:** Clean, minimal - soft blurred modern office, neutral gray wall, bright workspace with soft focus. Natural lighting with subtle shadows. NO complex patterns, NO surreal elements.\n\n**POSE:** Natural posture conveying confidence. Candid moment - working on laptop, in discussion, or looking at camera with genuine expression.\n\n**CAMERA:** Shot on professional camera, 85mm portrait lens, f/2.8 aperture, soft natural window lighting.\n\n**CRITICAL:** Real human with natural imperfections, realistic proportions. Should look like Getty Images or Shutterstock photo, NOT AI-generated.\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style,\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [44128, 9628],
+      "id": "style-realistic",
+      "name": "Style: Realistic Photography"
+    },
+    {
+      "parameters": {
+        "jsCode": "// DEFAULT Style Instructions (fallback)\nconst formInput = $('Format Form Input').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = $('Save Post to DB').item.json.id;\n\nconst styleInstructions = `\n## DEFAULT CORPORATE STYLE\n**SCENE:** Clean brand blue (#207CE5) gradient background. Professional corporate design with abstract geometric elements. Modern, minimal aesthetic suitable for LinkedIn.\n\n**VISUAL ELEMENTS:**\n1. Solid brand blue background or subtle gradient\n2. Abstract geometric shapes (hexagons, circles, lines)\n3. Technology icons relevant to the topic\n4. Clean white accent lines or borders\n5. Professional lighting effects\n6. Subtle depth through shadows or glows\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style || 'Corporate',\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [44128, 9778],
+      "id": "style-default",
+      "name": "Style: Default"
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "passAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [44352, 9328],
+      "id": "merge-styles",
+      "name": "Merge Style Routes"
+    },
+    {
+      "parameters": {
         "promptType": "define",
-        "text": "=STRATEGY ANALYSIS:\n{{ $json.strategy_output }}\n\nUSER INPUT:\nHeadline: {{ $json.headline }}\nVisual Style: {{ $json.visual_style }}\nFormat: 4:5 Portrait\n\nSTYLE-SPECIFIC INSTRUCTIONS:\n{{ $json.style_instructions }}",
+        "text": "=STRATEGY:\n{{ $json.strategy }}\n\nHEADLINE (use exactly): {{ $json.headline }}\nVISUAL STYLE: {{ $json.visual_style }}\n\nSTYLE INSTRUCTIONS:\n{{ $json.style_instructions }}",
         "options": {
-          "systemMessage": "# ROLE: AI Image Prompt Engineer for MSI Technologies\n\nCreate an image generation prompt for Gemini 3 Pro based on the STRATEGY ANALYSIS and STYLE-SPECIFIC INSTRUCTIONS provided.\n\n## MSI BRAND COLORS (ALWAYS USE)\n- Brand Blue #207CE5 (primary)\n- Secondary Blue #004AAD (gradients, depth)\n- Off-White #FFFDF1 (text)\n- Dark Gray #2B2B2B (accents)\n\n## TEXT RENDERING\nRequest NATIVE TEXT RENDERING for crystal clear text:\n- Headline: EXACT text from input, bold sans-serif, 60-80pt, off-white (#FFFDF1), upper third\n- 2-3 Content lines below headline: 28-36pt, off-white\n- NO drop shadows - clean flat text\n\n## LOGO PLACEMENT\n- Place MSI logo in one corner (provided as reference image)\n- Use EXACTLY as provided - no modifications\n- Add contact badge: 'msitechnologiesinc.com'\n\n## OUTPUT STRUCTURE\n\n**SCENE DESCRIPTION:**\n[Apply the STYLE-SPECIFIC INSTRUCTIONS. Be detailed and specific.]\n\n**COLOR PALETTE:**\n[Brand blue #207CE5 primary, accents in off-white and dark gray]\n\n**HEADLINE TEXT:**\n\"Native text rendering: '[EXACT HEADLINE]' - Bold sans-serif, 70pt, off-white (#FFFDF1), NO shadows\"\n\n**CONTENT LINES:**\n\"2-3 supporting lines below headline, 28-32pt, off-white, clean spacing\"\n\n**VISUAL ELEMENTS:**\n[3-5 specific elements matching the style]\n\n**BRANDING:**\nMSI logo in [corner], contact badge nearby\n\n**FORMAT:**\n4:5 portrait\n\nFOLLOW THE STYLE-SPECIFIC INSTRUCTIONS PROVIDED. Output in English only."
+          "systemMessage": "# ROLE: Image Prompt Engineer for MSI Technologies\n\nCreate a Gemini 3 Pro image generation prompt using the STYLE INSTRUCTIONS provided.\n\n## MSI BRAND (ALWAYS APPLY)\n- Brand Blue #207CE5 (primary background)\n- Secondary Blue #004AAD (gradients, depth)\n- Off-White #FFFDF1 (text)\n- Dark Gray #2B2B2B (accents)\n\n## TEXT RENDERING\n1. **Headline**: \"Use native text rendering: '[EXACT HEADLINE]' - Bold sans-serif, 70pt, off-white (#FFFDF1), upper third, crystal clear.\"\n2. **Subtitles**: Add 2-3 content lines below headline (32pt, 28pt, 24pt), off-white, NO drop shadows.\n\n## LOGO (CRITICAL)\n\"Place provided MSI Technologies logo in bottom-right corner. Use EXACTLY as provided - no modifications. Near logo: 'Ready to transform? → msitechnologiesinc.com' in white pill, black text.\"\n\n## OUTPUT FORMAT\n**SCENE DESCRIPTION:**\n[Apply the STYLE INSTRUCTIONS here with brand colors]\n\n**COLOR PALETTE:**\nBrand blue #207CE5, secondary #004AAD, off-white #FFFDF1 text.\n\n**HEADLINE TEXT:**\n\"Native text rendering: '[EXACT HEADLINE]' - Bold, 70pt, off-white, crystal clear.\"\n\n**CONTENT LINES:**\n\"Below headline: 3 supporting lines, medium sizes, off-white, no shadows.\"\n\n**VISUAL ELEMENTS:**\n[From STYLE INSTRUCTIONS]\n\n**BRANDING:**\nMSI logo bottom-right corner, exactly as provided. Contact badge nearby.\n\n**FORMAT:**\n4:5 portrait"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
-      "position": [
-        43904,
-        9328
-      ],
-      "id": "ea8f3659-6822-446c-a422-5c6cbccad8d1",
-      "name": "Agent 3: Image Prompt Engineer"
+      "position": [44576, 9328],
+      "id": "agent-image-prompt",
+      "name": "Agent 3: Image Prompt"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=UPDATE social_posts \nSET image_prompt = '{{ $json.output.replace(/'/g, \"''\") }}',\n    status = 'prompt_completed',\n    updated_at = NOW()\nWHERE id = '{{ $('Get Style Instructions').item.json.post_id }}'\nRETURNING *",
+        "query": "=UPDATE social_posts \nSET image_prompt = '{{ $json.output.replace(/'/g, \"''\") }}',\n    status = 'prompt_completed',\n    updated_at = NOW()\nWHERE id = '{{ $('Merge Style Routes').item.json.post_id }}'\nRETURNING *",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [
-        44256,
-        9328
-      ],
+      "position": [44800, 9328],
       "id": "a7cd9f98-25c2-423b-a0e5-eae0ef5fd23e",
       "name": "Update Image Prompt in DB",
       "credentials": {
@@ -149,10 +315,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        44480,
-        9328
-      ],
+      "position": [45024, 9328],
       "id": "e7388793-1934-46d8-8295-94c649e7e357",
       "name": "Download MSI Logo"
     },
@@ -162,25 +325,19 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        44704,
-        9328
-      ],
+      "position": [45248, 9328],
       "id": "946e4b61-e404-4d31-9b93-f941c3e21579",
       "name": "Prepare for Image Gen"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=UPDATE social_posts SET status = 'image_generated', updated_at = NOW() WHERE id = '{{ $('Prepare for Image Gen').item.json.post_id }}'",
+        "query": "=UPDATE social_posts SET status = 'image_generating', updated_at = NOW() WHERE id = '{{ $json.post_id }}'",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [
-        44816,
-        9328
-      ],
+      "position": [45360, 9328],
       "id": "status-generating-image",
       "name": "Status: Generating Image",
       "credentials": {
@@ -207,10 +364,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        44928,
-        9328
-      ],
+      "position": [45472, 9328],
       "id": "51c0c92e-88b8-4586-a63d-72d05a782b66",
       "name": "Generate Image",
       "credentials": {
@@ -226,10 +380,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        45152,
-        9328
-      ],
+      "position": [45696, 9328],
       "id": "df4a187f-baea-48b1-9836-3ba2f1cfc239",
       "name": "Check and Prepare Binary"
     },
@@ -260,10 +411,7 @@
       "name": "Upload to ImgBB",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [
-        45376,
-        9328
-      ],
+      "position": [45920, 9328],
       "credentials": {
         "httpHeaderAuth": {
           "id": "zx6X4T7j4yDMYWKo",
@@ -279,10 +427,7 @@
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [
-        45600,
-        9328
-      ],
+      "position": [46144, 9328],
       "id": "632385f0-400e-4d69-bca7-109ce045e87f",
       "name": "Update DB with Image URL",
       "credentials": {
@@ -332,10 +477,7 @@
       },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.3,
-      "position": [
-        45824,
-        9328
-      ],
+      "position": [46368, 9328],
       "id": "267a7236-4b8b-4829-95b3-624e4ab460f1",
       "name": "Format Success Response"
     },
@@ -347,10 +489,7 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        46048,
-        9328
-      ],
+      "position": [46592, 9328],
       "id": "eb29f774-3c6e-43fc-9fb0-65c0c9c93160",
       "name": "Respond to Webhook - Generate"
     },
@@ -367,12 +506,55 @@
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
-      "position": [
-        43056,
-        9552
-      ],
+      "position": [43056, 9552],
       "id": "a4023ec4-811c-46f9-98ed-07a7ab486d19",
       "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "13Oqly3WdRAzZVXL",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "chatgpt-4o-latest"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [43408, 9552],
+      "id": "openai-copywriter",
+      "name": "OpenAI for Copy Writer",
+      "credentials": {
+        "openAiApi": {
+          "id": "13Oqly3WdRAzZVXL",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "chatgpt-4o-latest"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [44656, 9552],
+      "id": "openai-image-prompt",
+      "name": "OpenAI for Image Prompt",
       "credentials": {
         "openAiApi": {
           "id": "13Oqly3WdRAzZVXL",
@@ -430,25 +612,137 @@
       "main": [
         [
           {
-            "node": "Get Style Instructions",
+            "node": "Route by Visual Style",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Get Style Instructions": {
+    "Route by Visual Style": {
       "main": [
         [
           {
-            "node": "Agent 3: Image Prompt Engineer",
+            "node": "Style: Glassmorphism",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Style: Modern 3D",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Style: Isometric",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Style: Data Hero",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Style: Realistic Photography",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Style: Default",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Agent 3: Image Prompt Engineer": {
+    "Style: Glassmorphism": {
+      "main": [
+        [
+          {
+            "node": "Merge Style Routes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Style: Modern 3D": {
+      "main": [
+        [
+          {
+            "node": "Merge Style Routes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Style: Isometric": {
+      "main": [
+        [
+          {
+            "node": "Merge Style Routes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Style: Data Hero": {
+      "main": [
+        [
+          {
+            "node": "Merge Style Routes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Style: Realistic Photography": {
+      "main": [
+        [
+          {
+            "node": "Merge Style Routes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Style: Default": {
+      "main": [
+        [
+          {
+            "node": "Merge Style Routes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Style Routes": {
+      "main": [
+        [
+          {
+            "node": "Agent 3: Image Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent 3: Image Prompt": {
       "main": [
         [
           {
@@ -565,14 +859,26 @@
             "node": "Agent 1: Strategy Analyzer",
             "type": "ai_languageModel",
             "index": 0
-          },
+          }
+        ]
+      ]
+    },
+    "OpenAI for Copy Writer": {
+      "ai_languageModel": [
+        [
           {
             "node": "Agent 2: Copy Writer",
             "type": "ai_languageModel",
             "index": 0
-          },
+          }
+        ]
+      ]
+    },
+    "OpenAI for Image Prompt": {
+      "ai_languageModel": [
+        [
           {
-            "node": "Agent 3: Image Prompt Engineer",
+            "node": "Agent 3: Image Prompt",
             "type": "ai_languageModel",
             "index": 0
           }
