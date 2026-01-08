@@ -1,16 +1,27 @@
 // ========== SIMPLE PASSWORD AUTH ==========
 // Must run before any other code
 (function() {
+    console.log('Auth: Starting...');
+    console.log('Auth: APP_CONFIG exists?', !!window.APP_CONFIG);
+    
     const APP_PASSWORD = window.APP_CONFIG?.appPassword || 'Msi@2026#SecureApp!x7K';
     const AUTH_KEY = 'msi_authenticated';
     
+    console.log('Auth: Password configured?', !!APP_PASSWORD);
+    console.log('Auth: Already authenticated?', sessionStorage.getItem(AUTH_KEY) === 'true');
+    
     // Skip if already authenticated this session
-    if (sessionStorage.getItem(AUTH_KEY) === 'true') return;
+    if (sessionStorage.getItem(AUTH_KEY) === 'true') {
+        console.log('Auth: Skipping - already authenticated');
+        return;
+    }
     
     // Function to show auth prompt
     function showAuthPrompt() {
-        document.body.style.visibility = 'hidden';
-        document.body.style.overflow = 'hidden';
+        console.log('Auth: Showing prompt...');
+        
+        // First make body visible but hide content
+        document.body.style.visibility = 'visible';
         
         const overlay = document.createElement('div');
         overlay.id = 'auth-overlay';
@@ -23,27 +34,28 @@
                     <h2 style="margin:0 0 8px;color:#1a202c;font-size:24px;font-weight:700;">MSI Social Manager</h2>
                     <p style="color:#718096;margin:0 0 28px;font-size:14px;">Enter your access password to continue</p>
                     <input type="password" id="auth-pwd" placeholder="Password" 
-                        style="width:100%;padding:14px 18px;border:2px solid #e2e8f0;border-radius:12px;font-size:16px;margin-bottom:16px;box-sizing:border-box;outline:none;transition:all 0.2s;" 
-                        onfocus="this.style.borderColor='#207CE5';this.style.boxShadow='0 0 0 3px rgba(32,124,229,0.1)'" 
-                        onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
-                    <button id="auth-btn" style="width:100%;padding:14px;background:linear-gradient(135deg,#207CE5,#004AAD);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;" 
-                        onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 20px rgba(32,124,229,0.3)'" 
-                        onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+                        style="width:100%;padding:14px 18px;border:2px solid #e2e8f0;border-radius:12px;font-size:16px;margin-bottom:16px;box-sizing:border-box;outline:none;transition:all 0.2s;">
+                    <button id="auth-btn" style="width:100%;padding:14px;background:linear-gradient(135deg,#207CE5,#004AAD);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;">
                         Continue →
                     </button>
                     <p id="auth-err" style="color:#e53e3e;margin:16px 0 0;font-size:13px;display:none;">❌ Incorrect password. Try again.</p>
                 </div>
             </div>`;
-        document.body.appendChild(overlay);
+        document.body.insertBefore(overlay, document.body.firstChild);
+        
+        console.log('Auth: Overlay added to DOM');
         
         const pwdInput = document.getElementById('auth-pwd');
+        const authBtn = document.getElementById('auth-btn');
+        
         const verify = () => {
+            console.log('Auth: Verifying password...');
             if (pwdInput.value === APP_PASSWORD) {
+                console.log('Auth: Password correct!');
                 sessionStorage.setItem(AUTH_KEY, 'true');
-                document.getElementById('auth-overlay').remove();
-                document.body.style.visibility = 'visible';
-                document.body.style.overflow = '';
+                overlay.remove();
             } else {
+                console.log('Auth: Password incorrect');
                 document.getElementById('auth-err').style.display = 'block';
                 pwdInput.value = '';
                 pwdInput.style.borderColor = '#e53e3e';
@@ -52,15 +64,17 @@
             }
         };
         
-        document.getElementById('auth-btn').onclick = verify;
-        pwdInput.onkeypress = (e) => e.key === 'Enter' && verify();
+        authBtn.addEventListener('click', verify);
+        pwdInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') verify(); });
         setTimeout(() => pwdInput.focus(), 100);
     }
     
     // Run immediately if DOM is ready, otherwise wait
     if (document.readyState === 'loading') {
+        console.log('Auth: Waiting for DOM...');
         document.addEventListener('DOMContentLoaded', showAuthPrompt);
     } else {
+        console.log('Auth: DOM already ready');
         showAuthPrompt();
     }
 })();
