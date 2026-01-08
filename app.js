@@ -346,6 +346,8 @@ generateForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const formData = new FormData(e.target);
+    const useCustomColors = document.getElementById('use_custom_colors')?.checked || false;
+    
     const data = {
         topic: formData.get('topic'),
         post_type: formData.get('post_type'),
@@ -353,7 +355,13 @@ generateForm.addEventListener('submit', async (e) => {
         orientation: formData.get('orientation'),
         headline: formData.get('headline'),
         data_points: formData.get('data_points') || '',
-        context: formData.get('context') || ''
+        context: formData.get('context') || '',
+        // Color palette
+        use_custom_colors: useCustomColors,
+        color_primary: useCustomColors ? formData.get('color_primary') : '#207CE5',
+        color_secondary: useCustomColors ? formData.get('color_secondary') : '#004AAD',
+        color_accent: useCustomColors ? formData.get('color_accent') : '#FFFDF1',
+        color_dark: useCustomColors ? formData.get('color_dark') : '#2B2B2B'
     };
     
     try {
@@ -1384,6 +1392,108 @@ editImageForm?.addEventListener('submit', async (e) => {
 
 // Refresh edit posts button
 refreshEditBtn?.addEventListener('click', loadEditPosts);
+
+// =============================================
+// Color Palette Functionality
+// =============================================
+
+// Initialize color palette interactivity
+function initColorPalette() {
+    const useCustomColorsCheckbox = document.getElementById('use_custom_colors');
+    const colorInputsContainer = document.getElementById('color-inputs');
+    const colorPickers = ['primary', 'secondary', 'accent', 'dark'];
+    
+    if (!useCustomColorsCheckbox || !colorInputsContainer) return;
+    
+    // Toggle color inputs visibility
+    useCustomColorsCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            colorInputsContainer.classList.add('active');
+        } else {
+            colorInputsContainer.classList.remove('active');
+        }
+    });
+    
+    // Sync color pickers with hex inputs and preview swatches
+    colorPickers.forEach(colorName => {
+        const colorPicker = document.getElementById(`color_${colorName}`);
+        const hexInput = document.getElementById(`color_${colorName}_hex`);
+        const swatch = document.getElementById(`swatch_${colorName}`);
+        
+        if (!colorPicker || !hexInput) return;
+        
+        // Color picker changes → update hex input and swatch
+        colorPicker.addEventListener('input', function() {
+            hexInput.value = this.value.toUpperCase();
+            if (swatch) swatch.style.backgroundColor = this.value;
+        });
+        
+        // Hex input changes → update color picker and swatch
+        hexInput.addEventListener('input', function() {
+            let value = this.value.trim();
+            
+            // Add # if missing
+            if (value && !value.startsWith('#')) {
+                value = '#' + value;
+            }
+            
+            // Validate hex color
+            if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+                colorPicker.value = value;
+                if (swatch) swatch.style.backgroundColor = value;
+                this.style.borderColor = '';
+            } else if (value.length > 0) {
+                this.style.borderColor = 'var(--danger-color)';
+            }
+        });
+        
+        // Format hex on blur
+        hexInput.addEventListener('blur', function() {
+            let value = this.value.trim().toUpperCase();
+            if (value && !value.startsWith('#')) {
+                value = '#' + value;
+            }
+            if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+                this.value = value;
+                colorPicker.value = value;
+                if (swatch) swatch.style.backgroundColor = value;
+            } else if (value) {
+                // Reset to color picker value if invalid
+                this.value = colorPicker.value.toUpperCase();
+            }
+            this.style.borderColor = '';
+        });
+    });
+    
+    // Reset colors to MSI defaults
+    window.resetToMSIColors = function() {
+        const defaults = {
+            primary: '#207CE5',
+            secondary: '#004AAD',
+            accent: '#FFFDF1',
+            dark: '#2B2B2B'
+        };
+        
+        colorPickers.forEach(colorName => {
+            const colorPicker = document.getElementById(`color_${colorName}`);
+            const hexInput = document.getElementById(`color_${colorName}_hex`);
+            const swatch = document.getElementById(`swatch_${colorName}`);
+            
+            if (colorPicker) colorPicker.value = defaults[colorName];
+            if (hexInput) hexInput.value = defaults[colorName];
+            if (swatch) swatch.style.backgroundColor = defaults[colorName];
+        });
+        
+        showToast('Colors reset to MSI defaults', 'info');
+    };
+}
+
+// Call initialization on DOM ready
+document.addEventListener('DOMContentLoaded', initColorPalette);
+// Also call immediately in case DOM is already loaded
+if (document.readyState !== 'loading') {
+    initColorPalette();
+}
 
 // Initialize
 if (supabaseUrl === 'YOUR_SUPABASE_URL' || !supabaseUrl) {

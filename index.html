@@ -185,6 +185,55 @@
                         <textarea id="context" name="context" rows="4" placeholder="Specific requirements or additional details..."></textarea>
                     </div>
 
+                    <!-- Color Palette Section -->
+                    <div class="color-palette-section">
+                        <div class="palette-header">
+                            <label>Color Palette</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="use_custom_colors" name="use_custom_colors">
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-label">Custom Colors</span>
+                            </label>
+                        </div>
+                        <div id="color-inputs" class="color-inputs">
+                            <div class="color-picker-wrapper">
+                                <label>Primary</label>
+                                <div class="color-input-group">
+                                    <input type="color" id="color_primary" name="color_primary" value="#207CE5">
+                                    <input type="text" id="color_primary_hex" class="color-hex" value="#207CE5" maxlength="7">
+                                </div>
+                            </div>
+                            <div class="color-picker-wrapper">
+                                <label>Secondary</label>
+                                <div class="color-input-group">
+                                    <input type="color" id="color_secondary" name="color_secondary" value="#004AAD">
+                                    <input type="text" id="color_secondary_hex" class="color-hex" value="#004AAD" maxlength="7">
+                                </div>
+                            </div>
+                            <div class="color-picker-wrapper">
+                                <label>Accent (Text)</label>
+                                <div class="color-input-group">
+                                    <input type="color" id="color_accent" name="color_accent" value="#FFFDF1">
+                                    <input type="text" id="color_accent_hex" class="color-hex" value="#FFFDF1" maxlength="7">
+                                </div>
+                            </div>
+                            <div class="color-picker-wrapper">
+                                <label>Dark (Overlay)</label>
+                                <div class="color-input-group">
+                                    <input type="color" id="color_dark" name="color_dark" value="#2B2B2B">
+                                    <input type="text" id="color_dark_hex" class="color-hex" value="#2B2B2B" maxlength="7">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="color-preview">
+                            <div class="color-swatch" id="swatch_primary" style="background: #207CE5;"></div>
+                            <div class="color-swatch" id="swatch_secondary" style="background: #004AAD;"></div>
+                            <div class="color-swatch" id="swatch_accent" style="background: #FFFDF1;"></div>
+                            <div class="color-swatch" id="swatch_dark" style="background: #2B2B2B;"></div>
+                        </div>
+                        <p class="palette-default-note">Default: MSI Technologies brand colors</p>
+                    </div>
+
                     <button type="submit" class="btn btn-primary">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
