@@ -7,8 +7,8 @@
     // Skip if already authenticated this session
     if (sessionStorage.getItem(AUTH_KEY) === 'true') return;
     
-    // Block page and show password prompt
-    document.addEventListener('DOMContentLoaded', () => {
+    // Function to show auth prompt
+    function showAuthPrompt() {
         document.body.style.visibility = 'hidden';
         document.body.style.overflow = 'hidden';
         
@@ -55,7 +55,14 @@
         document.getElementById('auth-btn').onclick = verify;
         pwdInput.onkeypress = (e) => e.key === 'Enter' && verify();
         setTimeout(() => pwdInput.focus(), 100);
-    });
+    }
+    
+    // Run immediately if DOM is ready, otherwise wait
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', showAuthPrompt);
+    } else {
+        showAuthPrompt();
+    }
 })();
 // ========== END AUTH ==========
 
