@@ -28,5 +28,10 @@ window.APP_CONFIG = {
     
     // Security token - Este valor NO se puede cambiar desde el frontend
     // Si necesitas rotarlo, cambia este valor y actualiza n8n
-    webhookToken: 'msi_2024_secure_e8f4a9c2b1d5'
+    webhookToken: 'msi_2024_secure_e8f4a9c2b1d5',
+    
+    // App Access Password
+    // Contraseña para acceder a la aplicación
+    // Comparte esta contraseña solo con usuarios autorizados
+    appPassword: 'Msi@2026#SecureApp!x7K'
 };
