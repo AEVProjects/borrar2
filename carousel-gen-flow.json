@@ -1,5 +1,5 @@
 {
-  "name": "MSI Carousel Generator",
+  "name": "MSI Carousel Generator v2",
   "nodes": [
     {
       "parameters": {
@@ -10,18 +10,18 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [-200, 300],
+      "position": [-400, 300],
       "id": "webhook-carousel-gen",
       "name": "Webhook - Carousel Gen",
       "webhookId": "msi-carousel-gen"
     },
     {
       "parameters": {
-        "jsCode": "// Extract carousel data from web form\nconst input = $input.item.json;\n\nconsole.log('==== CAROUSEL WEBHOOK INPUT ====');\nconsole.log('Raw input:', JSON.stringify(input));\n\n// Parse the body if it's a JSON string\nlet data;\nif (input.body) {\n  if (typeof input.body === 'string') {\n    try {\n      data = JSON.parse(input.body);\n    } catch (e) {\n      data = input;\n    }\n  } else if (typeof input.body === 'object') {\n    data = input.body;\n  } else {\n    data = input;\n  }\n} else if (input.query) {\n  data = input.query;\n} else {\n  data = input;\n}\n\n// Extract carousel variables\nconst slides = data.slides || [];\nconst visual_style = data.visual_style || 'Modern 3D';\nconst topic = data.topic || '';\nconst context = data.context || '';\n\n// Color palette\nconst color_primary = data.color_palette?.primary || data.color_primary || '#207CE5';\nconst color_secondary = data.color_palette?.secondary || data.color_secondary || '#004AAD';\nconst color_accent = data.color_palette?.accent || data.color_accent || '#FFFDF1';\nconst color_dark = data.color_palette?.dark || data.color_dark || '#2B2B2B';\n\nconsole.log('Slides:', JSON.stringify(slides));\nconsole.log('Visual style:', visual_style);\nconsole.log('Colors:', { color_primary, color_secondary, color_accent, color_dark });\n\nif (!slides || slides.length === 0) {\n  throw new Error('CAROUSEL ERROR: At least one slide is required.');\n}\n\nif (slides.length > 10) {\n  throw new Error('CAROUSEL ERROR: Maximum 10 slides allowed.');\n}\n\nreturn [{\n  json: {\n    slides,\n    visual_style,\n    topic,\n    context,\n    color_primary,\n    color_secondary,\n    color_accent,\n    color_dark,\n    total_slides: slides.length\n  }\n}];"
+        "jsCode": "// Extract carousel data from web form\nconst input = $input.item.json;\n\nconsole.log('==== CAROUSEL WEBHOOK INPUT ====');\n\n// Parse the body if it's a JSON string\nlet data;\nif (input.body) {\n  if (typeof input.body === 'string') {\n    try {\n      data = JSON.parse(input.body);\n    } catch (e) {\n      data = input;\n    }\n  } else if (typeof input.body === 'object') {\n    data = input.body;\n  } else {\n    data = input;\n  }\n} else if (input.query) {\n  data = input.query;\n} else {\n  data = input;\n}\n\n// Extract carousel variables\nconst slides = data.slides || [];\nconst visual_style = data.visual_style || 'Modern 3D';\nconst topic = data.topic || '';\nconst context = data.context || '';\n\n// Color palette - MSI defaults\nconst color_primary = data.color_palette?.primary || data.color_primary || '#207CE5';\nconst color_secondary = data.color_palette?.secondary || data.color_secondary || '#004AAD';\nconst color_accent = data.color_palette?.accent || data.color_accent || '#FFFDF1';\nconst color_dark = data.color_palette?.dark || data.color_dark || '#2B2B2B';\n\nconsole.log('Slides:', JSON.stringify(slides));\nconsole.log('Visual style:', visual_style);\nconsole.log('Total slides:', slides.length);\n\nif (!slides || slides.length === 0) {\n  throw new Error('CAROUSEL ERROR: At least one slide is required.');\n}\n\nif (slides.length > 10) {\n  throw new Error('CAROUSEL ERROR: Maximum 10 slides allowed.');\n}\n\nreturn [{\n  json: {\n    slides,\n    visual_style,\n    topic,\n    context,\n    color_primary,\n    color_secondary,\n    color_accent,\n    color_dark,\n    total_slides: slides.length\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [20, 300],
+      "position": [-180, 300],
       "id": "format-carousel-input",
       "name": "Format Carousel Input"
     },
@@ -38,111 +38,40 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [240, 300],
+      "position": [40, 300],
       "id": "download-msi-logo",
       "name": "Download MSI Logo"
     },
     {
       "parameters": {
-        "jsCode": "// Extract logo and prepare for style strategy\nconst formInput = $('Format Carousel Input').item.json;\nconst logoItem = $input.item;\n\nconsole.log('==== PREPARE LOGO ====');\n\n// Get logo binary data and convert to base64\nlet logoBase64 = '';\nif (logoItem.binary && Object.keys(logoItem.binary).length > 0) {\n  const binaryKey = Object.keys(logoItem.binary)[0];\n  const binaryData = logoItem.binary[binaryKey];\n  \n  try {\n    const buffer = await this.helpers.getBinaryDataBuffer(0, binaryKey);\n    logoBase64 = buffer.toString('base64');\n    console.log('Logo base64 length:', logoBase64.length);\n  } catch (e) {\n    console.error('Failed to get buffer:', e.message);\n    if (binaryData.data && binaryData.data !== 'filesystem-v2') {\n      logoBase64 = binaryData.data;\n    }\n  }\n}\n\nif (!logoBase64 || logoBase64 === 'filesystem-v2') {\n  throw new Error('Failed to extract logo base64 data');\n}\n\nreturn [{\n  json: {\n    ...formInput,\n    logo_base64: logoBase64\n  }\n}];"
+        "jsCode": "// Extract logo and prepare slide items with DETAILED style instructions\nconst formInput = $('Format Carousel Input').item.json;\nconst logoItem = $input.item;\n\nconsole.log('==== PREPARE SLIDES WITH STYLE ====');\n\n// Get logo binary data and convert to base64\nlet logoBase64 = '';\nif (logoItem.binary && Object.keys(logoItem.binary).length > 0) {\n  const binaryKey = Object.keys(logoItem.binary)[0];\n  const binaryData = logoItem.binary[binaryKey];\n  \n  try {\n    const buffer = await this.helpers.getBinaryDataBuffer(0, binaryKey);\n    logoBase64 = buffer.toString('base64');\n    console.log('Logo base64 length:', logoBase64.length);\n  } catch (e) {\n    console.error('Failed to get buffer:', e.message);\n    if (binaryData.data && binaryData.data !== 'filesystem-v2') {\n      logoBase64 = binaryData.data;\n    }\n  }\n}\n\nif (!logoBase64 || logoBase64 === 'filesystem-v2') {\n  throw new Error('Failed to extract logo base64 data');\n}\n\n// DETAILED STYLE INSTRUCTIONS - same as content-generation-flow.json\nconst visualStyle = formInput.visual_style;\nconst primaryColor = formInput.color_primary;\nconst secondaryColor = formInput.color_secondary;\nconst accentColor = formInput.color_accent;\nconst darkColor = formInput.color_dark;\n\nlet styleInstructions = '';\n\nif (visualStyle === 'Glassmorphism' || visualStyle === 'glassmorphism') {\n  styleInstructions = `\n## GLASSMORPHISM STYLE\n**SCENE:** Brand color (${primaryColor}) to secondary color (${secondaryColor}) gradient background. THREE frosted glass panels arranged in layered composition with technology icons visible through translucent layers. Semi-transparent hexagonal shapes scattered. Subtle blur effects on glass edges. Connection lines in accent color (${accentColor}).\n\n**COLOR PALETTE:**\n- Primary: ${primaryColor}\n- Secondary: ${secondaryColor}\n- Accent/Text: ${accentColor}\n- Dark: ${darkColor}\n\n**VISUAL ELEMENTS:**\n1. Three frosted glass panels with blur effect\n2. Technology icons in white on panels (gears, circuits, data symbols)\n3. Semi-transparent hexagonal shapes (${accentColor} accents)\n4. Connection lines between elements (${accentColor})\n5. Subtle glow effects on panel edges\n6. Professional rim lighting for depth\n`;\n} else if (visualStyle === 'Modern 3D' || visualStyle === 'modern3d' || visualStyle === 'Modern3D') {\n  styleInstructions = `\n## MODERN 3D STYLE\n**SCENE:** Brand color (${primaryColor}) gradient background with floating 3D geometric objects. Glossy spheres, cubes, and abstract tech shapes with realistic reflections and shadows. Dramatic lighting from multiple angles creating depth. Professional, futuristic corporate aesthetic.\n\n**COLOR PALETTE:**\n- Primary: ${primaryColor}\n- Secondary: ${secondaryColor}\n- Accent/Text: ${accentColor}\n- Dark: ${darkColor}\n\n**VISUAL ELEMENTS:**\n1. Floating 3D geometric shapes (spheres, cubes, cylinders) with ${primaryColor} and ${secondaryColor} colors\n2. Glossy metallic surfaces with reflections in brand colors\n3. Dramatic rim lighting and shadows\n4. Abstract tech objects (servers, nodes, connections) in brand colors\n5. Depth of field blur on background elements\n6. Subtle particle effects or light rays in ${accentColor}\n7. Professional corporate tech aesthetic with depth and dimension\n`;\n} else if (visualStyle === 'Isometric' || visualStyle === 'isometric') {\n  styleInstructions = `\n## ISOMETRIC ARCHITECTURE STYLE\n**SCENE:** Brand color (${primaryColor}) background with isometric 3D architecture. Clean geometric buildings, server rooms, or tech infrastructure in isometric perspective. Flat colors with subtle gradients. Professional technical illustration style.\n\n**COLOR PALETTE:**\n- Primary: ${primaryColor}\n- Secondary: ${secondaryColor}\n- Accent/Text: ${accentColor}\n- Dark: ${darkColor}\n\n**VISUAL ELEMENTS:**\n1. Isometric buildings or server structures in ${primaryColor} and ${secondaryColor}\n2. Clean geometric shapes in isometric view\n3. Network connection lines between structures (${accentColor})\n4. Small human figures for scale (optional)\n5. Subtle shadows for depth\n6. Technical grid or blueprint elements\n`;\n} else if (visualStyle === 'Data Hero' || visualStyle === 'datahero' || visualStyle === 'DataHero') {\n  styleInstructions = `\n## DATA HERO / VISUALIZATION STYLE\n**SCENE:** Brand color (${primaryColor}) background with prominent data visualizations as hero element. Charts, graphs, dashboards, or data flow diagrams as main visual. Clean, modern infographic aesthetic with professional corporate feel.\n\n**COLOR PALETTE:**\n- Primary: ${primaryColor}\n- Secondary: ${secondaryColor}\n- Accent/Text: ${accentColor}\n- Dark: ${darkColor}\n\n**VISUAL ELEMENTS:**\n1. Large chart or graph as hero element (bar, line, pie, or dashboard) in brand colors\n2. Data points and nodes with connection lines (${accentColor})\n3. Glowing data indicators and metrics in ${primaryColor}\n4. Abstract data flow visualization\n5. Clean grid or axis lines in ${secondaryColor}\n6. Subtle animated feel (arrows, flow indicators)\n`;\n} else {\n  // DEFAULT Corporate style\n  styleInstructions = `\n## PROFESSIONAL CORPORATE STYLE\n**SCENE:** Clean brand color (${primaryColor}) gradient background transitioning to (${secondaryColor}). Professional corporate design with abstract geometric elements. Modern, minimal aesthetic suitable for social media carousel.\n\n**COLOR PALETTE:**\n- Primary: ${primaryColor}\n- Secondary: ${secondaryColor}\n- Accent/Text: ${accentColor}\n- Dark: ${darkColor}\n\n**VISUAL ELEMENTS:**\n1. Solid brand color background with gradient from ${primaryColor} to ${secondaryColor}\n2. Abstract geometric shapes (hexagons, circles, lines) in ${accentColor}\n3. Technology icons relevant to the topic in white or ${accentColor}\n4. Clean accent lines or borders (${accentColor})\n5. Professional lighting effects with depth\n6. Subtle shadows and 3D depth perception\n`;\n}\n\n// Create individual items for EACH slide - this is critical for batch processing\nconst slideItems = formInput.slides.map((slide, index) => ({\n  json: {\n    slide_number: index + 1,\n    total_slides: formInput.total_slides,\n    headline: slide.headline,\n    subtext: slide.subtext || '',\n    visual_style: formInput.visual_style,\n    style_instructions: styleInstructions,\n    topic: formInput.topic,\n    context: formInput.context,\n    color_primary: primaryColor,\n    color_secondary: secondaryColor,\n    color_accent: accentColor,\n    color_dark: darkColor,\n    logo_base64: logoBase64\n  }\n}));\n\nconsole.log('Created', slideItems.length, 'individual slide items for processing');\n\nreturn slideItems;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [460, 300],
-      "id": "prepare-logo",
-      "name": "Prepare Logo"
+      "position": [260, 300],
+      "id": "prepare-slides-with-style",
+      "name": "Prepare Slides with Style"
     },
     {
       "parameters": {
-        "promptType": "define",
-        "text": "=Create a UNIFIED visual style guide for a {{ $json.total_slides }}-slide Instagram carousel.\n\nTopic: {{ $json.topic }}\nVisual Style: {{ $json.visual_style }}\nContext: {{ $json.context || 'Professional technology company' }}\n\nSlides content:\n{{ $json.slides.map((s, i) => `Slide ${i+1}: ${s.headline}${s.subtext ? ' - ' + s.subtext : ''}`).join('\\n') }}\n\nColor Palette:\n- Primary: {{ $json.color_primary }}\n- Secondary: {{ $json.color_secondary }}\n- Accent: {{ $json.color_accent }}\n- Dark: {{ $json.color_dark }}\n\nIMPORTANT: The MSI Technologies logo (white icon on transparent background) must be placed in the BOTTOM RIGHT corner of EVERY slide.\n\nCreate a cohesive visual style that will be applied CONSISTENTLY across ALL slides.",
-        "options": {
-          "systemMessage": "# ROLE: Carousel Visual Strategist\n\nYou create unified visual strategies for multi-slide Instagram carousels that maintain perfect consistency.\n\n## OUTPUT FORMAT\nReturn a JSON object with this EXACT structure (no markdown, no explanation):\n{\n  \"style_foundation\": {\n    \"background\": \"Detailed description of the exact background treatment for ALL slides\",\n    \"lighting\": \"Exact lighting setup that will be identical across slides\",\n    \"color_application\": \"How the brand colors are applied consistently\",\n    \"recurring_elements\": \"Visual elements that appear in EVERY slide (geometric shapes, patterns, etc.)\",\n    \"typography_style\": \"Font style, weight, and placement rules\",\n    \"logo_placement\": \"MSI logo in bottom right corner, white icon, consistent size across all slides\"\n  },\n  \"consistency_rules\": [\n    \"Rule 1 for maintaining visual consistency\",\n    \"Rule 2...\",\n    \"Rule 3...\",\n    \"MSI logo always in bottom right corner\"\n  ],\n  \"variation_approach\": \"How slides differ while maintaining unity (e.g., different icons but same style)\"\n}\n\n## CRITICAL RULES\n1. The background MUST be identical or follow a clear progression\n2. All slides must feel like they belong to the same set\n3. Only the TEXT and FEATURED ELEMENT changes between slides\n4. Same camera angle/perspective if 3D\n5. Same lighting direction and intensity\n6. Same color ratios and placements\n7. MSI LOGO must appear in bottom right of every slide"
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 1.7,
-      "position": [680, 300],
-      "id": "agent-style-strategy",
-      "name": "Agent: Style Strategist"
-    },
-    {
-      "parameters": {
-        "model": {
-          "__rl": true,
-          "value": "chatgpt-4o-latest",
-          "mode": "list",
-          "cachedResultName": "chatgpt-4o-latest"
-        },
+        "batchSize": 1,
         "options": {}
       },
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.3,
-      "position": [760, 520],
-      "id": "openai-style-strategy",
-      "name": "OpenAI for Style Strategy",
-      "credentials": {
-        "openAiApi": {
-          "id": "13Oqly3WdRAzZVXL",
-          "name": "OpenAi account"
-        }
-      }
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [480, 300],
+      "id": "split-slides",
+      "name": "Process Each Slide"
     },
     {
       "parameters": {
-        "jsCode": "// Parse style strategy and prepare for slide generation\nconst formInput = $('Prepare Logo').item.json;\nconst strategyOutput = $input.item.json.output;\n\nconsole.log('==== PREPARE SLIDE GENERATION ====');\n\n// Parse the strategy JSON\nlet styleStrategy;\ntry {\n  let cleanOutput = strategyOutput;\n  if (cleanOutput.includes('```json')) {\n    cleanOutput = cleanOutput.replace(/```json\\n?/g, '').replace(/```\\n?/g, '');\n  } else if (cleanOutput.includes('```')) {\n    cleanOutput = cleanOutput.replace(/```\\n?/g, '');\n  }\n  styleStrategy = JSON.parse(cleanOutput.trim());\n} catch (e) {\n  console.log('Failed to parse strategy, using raw output');\n  styleStrategy = {\n    style_foundation: {\n      background: strategyOutput,\n      lighting: 'Professional studio lighting',\n      color_application: 'Brand colors applied consistently',\n      recurring_elements: 'Geometric shapes and tech elements',\n      typography_style: 'Bold modern sans-serif',\n      logo_placement: 'MSI logo in bottom right corner'\n    },\n    consistency_rules: ['Same background', 'Same lighting', 'Same style', 'MSI logo bottom right'],\n    variation_approach: 'Different featured icons per slide'\n  };\n}\n\n// Create an item for each slide\nconst slideItems = formInput.slides.map((slide, index) => ({\n  json: {\n    slide_number: index + 1,\n    total_slides: formInput.total_slides,\n    headline: slide.headline,\n    subtext: slide.subtext || '',\n    visual_style: formInput.visual_style,\n    style_strategy: styleStrategy,\n    color_primary: formInput.color_primary,\n    color_secondary: formInput.color_secondary,\n    color_accent: formInput.color_accent,\n    color_dark: formInput.color_dark,\n    topic: formInput.topic,\n    logo_base64: formInput.logo_base64\n  }\n}));\n\nconsole.log('Created', slideItems.length, 'slide items');\n\nreturn slideItems;"
+        "jsCode": "// Build the complete image prompt with all style details\nconst slide = $input.item.json;\n\nconsole.log('==== BUILD IMAGE PROMPT ====');\nconsole.log('Processing slide', slide.slide_number, 'of', slide.total_slides);\nconsole.log('Headline:', slide.headline);\n\nconst imagePrompt = `\nGenerate a professional 4:5 portrait image for an Instagram carousel (slide ${slide.slide_number} of ${slide.total_slides}).\n\n${slide.style_instructions}\n\n## THIS SPECIFIC SLIDE\n**Headline to display:** \"${slide.headline}\"\n**Subtext:** \"${slide.subtext || ''}\"\n**Topic context:** ${slide.topic || 'Technology and innovation'}\n\n## CRITICAL REQUIREMENTS\n1. The headline \"${slide.headline}\" must be prominently displayed as text overlay\n2. Use bold, modern sans-serif typography in ${slide.color_accent} color\n3. Place text in the lower third or center of the image\n4. The MSI Technologies logo (provided as reference image) MUST appear in the BOTTOM RIGHT corner\n5. The logo should be small but clearly visible (about 10-15% of image width)\n6. DO NOT modify, redraw, or recreate the logo - use it EXACTLY as provided\n\n## TEXT STYLING\n- Headline: 48-56pt equivalent, bold weight, ${slide.color_accent} color\n- Subtext: 24-28pt equivalent, regular weight, ${slide.color_accent} color with slight transparency\n- Add a subtle dark gradient or shadow behind text for readability\n\n## CONSISTENCY RULES (CRITICAL FOR CAROUSEL)\n- This is part of a ${slide.total_slides}-slide carousel\n- ALL slides must have the SAME background style and treatment\n- ALL slides must have the SAME lighting direction and intensity\n- ALL slides must have the SAME color ratios and placement\n- Only the TEXT and small FEATURED ICONS change between slides\n- The overall composition and feel must be IDENTICAL across all slides\n\n## FORMAT\n- Aspect ratio: 4:5 portrait (1080x1350 pixels)\n- High quality, professional Instagram content\n- Suitable for corporate social media\n`;\n\nreturn [{\n  json: {\n    slide_number: slide.slide_number,\n    total_slides: slide.total_slides,\n    headline: slide.headline,\n    subtext: slide.subtext,\n    image_prompt: imagePrompt,\n    logo_base64: slide.logo_base64,\n    color_primary: slide.color_primary,\n    color_secondary: slide.color_secondary,\n    color_accent: slide.color_accent,\n    color_dark: slide.color_dark\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [900, 300],
-      "id": "prepare-slides",
-      "name": "Prepare Slides"
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "=Generate an image prompt for SLIDE {{ $json.slide_number }} of {{ $json.total_slides }} in an Instagram carousel.\n\n## SLIDE CONTENT\nHeadline: {{ $json.headline }}\nSubtext: {{ $json.subtext || 'None' }}\n\n## UNIFIED STYLE STRATEGY (MUST FOLLOW EXACTLY)\n{{ JSON.stringify($json.style_strategy, null, 2) }}\n\n## COLOR PALETTE\n- Primary: {{ $json.color_primary }}\n- Secondary: {{ $json.color_secondary }}\n- Accent/Text: {{ $json.color_accent }}\n- Dark: {{ $json.color_dark }}\n\n## VISUAL STYLE\n{{ $json.visual_style }}\n\n## CRITICAL BRAND REQUIREMENT\nThe MSI Technologies logo (provided as reference image) MUST be placed in the BOTTOM RIGHT corner of the image. The logo should be white/light colored and clearly visible against the background.\n\nGenerate a detailed image prompt that:\n1. Follows the EXACT style foundation from the strategy\n2. Uses the SAME background, lighting, and recurring elements\n3. Features the headline text prominently\n4. Places the MSI logo in the bottom right corner\n5. Maintains perfect visual consistency with other slides",
-        "options": {
-          "systemMessage": "# ROLE: Carousel Slide Image Prompt Generator\n\nYou generate image prompts for individual carousel slides that maintain PERFECT consistency with the overall style strategy.\n\n## OUTPUT FORMAT\nReturn ONLY the image generation prompt. No explanations, no labels, no markdown.\n\n## CRITICAL REQUIREMENTS\n1. The background MUST match the style_foundation.background EXACTLY\n2. Lighting MUST match style_foundation.lighting EXACTLY\n3. All recurring_elements MUST be present\n4. The MSI Technologies logo MUST be in the BOTTOM RIGHT corner\n5. Only the TEXT OVERLAY and ONE FEATURED ELEMENT should be unique to this slide\n6. Format: 4:5 portrait (1080x1350)\n7. Include the exact headline text in the image\n8. Professional quality suitable for Instagram\n\n## PROMPT STRUCTURE\n[Background description from strategy], [Lighting from strategy], [Recurring elements], featuring [unique element for this slide]. Text overlay reads: \"[HEADLINE]\" in [typography style]. MSI Technologies logo positioned in the bottom right corner, white/light colored icon clearly visible. [Color application]. 4:5 portrait format, Instagram carousel slide."
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 1.7,
-      "position": [1120, 300],
-      "id": "agent-slide-prompt",
-      "name": "Agent: Slide Prompt"
-    },
-    {
-      "parameters": {
-        "model": {
-          "__rl": true,
-          "value": "chatgpt-4o-latest",
-          "mode": "list",
-          "cachedResultName": "chatgpt-4o-latest"
-        },
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.3,
-      "position": [1200, 520],
-      "id": "openai-slide-prompt",
-      "name": "OpenAI for Slide Prompt",
-      "credentials": {
-        "openAiApi": {
-          "id": "13Oqly3WdRAzZVXL",
-          "name": "OpenAi account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Prepare for Gemini image generation with logo\nconst slideData = $('Prepare Slides').item.json;\nconst imagePrompt = $input.item.json.output;\n\nconsole.log('==== PREPARE IMAGE GEN ====');\nconsole.log('Slide', slideData.slide_number, 'prompt length:', imagePrompt.length);\n\nreturn [{\n  json: {\n    slide_number: slideData.slide_number,\n    total_slides: slideData.total_slides,\n    headline: slideData.headline,\n    subtext: slideData.subtext,\n    image_prompt: imagePrompt,\n    logo_base64: slideData.logo_base64,\n    color_primary: slideData.color_primary,\n    color_secondary: slideData.color_secondary,\n    color_accent: slideData.color_accent,\n    color_dark: slideData.color_dark\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1340, 300],
-      "id": "prepare-image-gen",
-      "name": "Prepare Image Gen"
+      "position": [700, 300],
+      "id": "build-image-prompt",
+      "name": "Build Image Prompt"
     },
     {
       "parameters": {
@@ -152,7 +81,7 @@
         "nodeCredentialType": "googlePalmApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [\n      { text: $json.image_prompt + '\\n\\nIMPORTANT: This is slide ' + $json.slide_number + ' of ' + $json.total_slides + ' in a carousel. The headline text \"' + $json.headline + '\" must be clearly visible. Use colors: Primary ' + $json.color_primary + ', Secondary ' + $json.color_secondary + ', Accent ' + $json.color_accent + '. Format: 4:5 portrait ratio (1080x1350). The MSI logo (provided as reference) MUST appear in the BOTTOM RIGHT corner of the image.' },\n      { inline_data: { mime_type: 'image/png', data: $json.logo_base64 } }\n    ]\n  }],\n  generationConfig: {\n    responseModalities: ['IMAGE'],\n    imageConfig: {\n      aspectRatio: '4:5',\n      imageSize: '2K'\n    }\n  }\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [\n      { text: $json.image_prompt },\n      { inline_data: { mime_type: 'image/png', data: $json.logo_base64 } }\n    ]\n  }],\n  generationConfig: {\n    responseModalities: ['IMAGE'],\n    imageConfig: {\n      aspectRatio: '4:5',\n      imageSize: '2K'\n    }\n  }\n}) }}",
         "options": {
           "response": {
             "response": {}
@@ -162,7 +91,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1560, 300],
+      "position": [920, 300],
       "id": "gemini-generate-slide",
       "name": "Gemini Generate Slide",
       "credentials": {
@@ -174,11 +103,11 @@
     },
     {
       "parameters": {
-        "jsCode": "// Extract image binary from Gemini response\nconst item = $input.item;\nconst slideData = $('Prepare Image Gen').item.json;\n\nconsole.log('==== EXTRACT SLIDE IMAGE ====');\nconsole.log('Slide', slideData.slide_number);\n\n// Check for binary data first\nif (item.binary && Object.keys(item.binary).length > 0) {\n  const binaryKey = Object.keys(item.binary)[0];\n  console.log('Found binary key:', binaryKey);\n  \n  return [{\n    json: {\n      slide_number: slideData.slide_number,\n      total_slides: slideData.total_slides,\n      headline: slideData.headline,\n      subtext: slideData.subtext\n    },\n    binary: {\n      data: item.binary[binaryKey]\n    }\n  }];\n}\n\n// Check for inline_data in Gemini response\nconst candidates = item.json?.candidates || [];\nlet inlineData = null;\n\nfor (const candidate of candidates) {\n  const parts = candidate?.content?.parts || [];\n  for (const part of parts) {\n    if (part.inline_data || part.inlineData) {\n      inlineData = part.inline_data || part.inlineData;\n      break;\n    }\n  }\n  if (inlineData) break;\n}\n\nif (inlineData) {\n  console.log('Found inline image for slide', slideData.slide_number);\n  console.log('Data size:', inlineData.data?.length || 0);\n  \n  return [{\n    json: {\n      slide_number: slideData.slide_number,\n      total_slides: slideData.total_slides,\n      headline: slideData.headline,\n      subtext: slideData.subtext\n    },\n    binary: {\n      data: {\n        data: inlineData.data,\n        mimeType: inlineData.mime_type || inlineData.mimeType || 'image/png',\n        fileName: `carousel-slide-${slideData.slide_number}.png`\n      }\n    }\n  }];\n}\n\nthrow new Error('Gemini did not return an image for slide ' + slideData.slide_number);"
+        "jsCode": "// Extract image binary from Gemini response\nconst item = $input.item;\nconst slideData = $('Build Image Prompt').item.json;\n\nconsole.log('==== EXTRACT SLIDE IMAGE ====');\nconsole.log('Slide', slideData.slide_number);\nconsole.log('Response keys:', Object.keys(item.json || {}));\n\n// Check for binary data first\nif (item.binary && Object.keys(item.binary).length > 0) {\n  const binaryKey = Object.keys(item.binary)[0];\n  console.log('Found binary key:', binaryKey);\n  \n  return [{\n    json: {\n      slide_number: slideData.slide_number,\n      total_slides: slideData.total_slides,\n      headline: slideData.headline,\n      subtext: slideData.subtext\n    },\n    binary: {\n      data: item.binary[binaryKey]\n    }\n  }];\n}\n\n// Check for inline_data in Gemini response (support both formats)\nconst candidates = item.json?.candidates || [];\nlet inlineData = null;\n\nfor (const candidate of candidates) {\n  const parts = candidate?.content?.parts || [];\n  for (const part of parts) {\n    if (part.inline_data || part.inlineData) {\n      inlineData = part.inline_data || part.inlineData;\n      break;\n    }\n  }\n  if (inlineData) break;\n}\n\nif (inlineData) {\n  console.log('Found inline image for slide', slideData.slide_number);\n  console.log('Mime type:', inlineData.mime_type || inlineData.mimeType);\n  console.log('Data length:', inlineData.data?.length || 0);\n  \n  return [{\n    json: {\n      slide_number: slideData.slide_number,\n      total_slides: slideData.total_slides,\n      headline: slideData.headline,\n      subtext: slideData.subtext\n    },\n    binary: {\n      data: {\n        data: inlineData.data,\n        mimeType: inlineData.mime_type || inlineData.mimeType || 'image/png',\n        fileName: `carousel-slide-${slideData.slide_number}.png`\n      }\n    }\n  }];\n}\n\n// If no image found, log the full response for debugging\nconsole.log('FULL RESPONSE:', JSON.stringify(item.json, null, 2));\nthrow new Error('Gemini did not return an image for slide ' + slideData.slide_number + '. Check execution logs for details.');"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1780, 300],
+      "position": [1140, 300],
       "id": "extract-slide-image",
       "name": "Extract Slide Image"
     },
@@ -207,7 +136,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [2000, 300],
+      "position": [1360, 300],
       "id": "upload-slide-imgbb",
       "name": "Upload Slide to ImgBB",
       "credentials": {
@@ -219,13 +148,23 @@
     },
     {
       "parameters": {
-        "jsCode": "// Collect slide URL\nconst slideData = $('Extract Slide Image').item.json;\nconst uploadResponse = $input.item.json;\n\nconsole.log('==== COLLECT SLIDE URL ====');\nconsole.log('Slide', slideData.slide_number, 'URL:', uploadResponse.data?.url);\n\nreturn [{\n  json: {\n    slide_number: slideData.slide_number,\n    total_slides: slideData.total_slides,\n    headline: slideData.headline,\n    subtext: slideData.subtext || '',\n    image_url: uploadResponse.data?.url || uploadResponse.data?.display_url\n  }\n}];"
+        "jsCode": "// Collect slide URL and prepare for aggregation\nconst slideData = $('Extract Slide Image').item.json;\nconst uploadResponse = $input.item.json;\n\nconsole.log('==== COLLECT SLIDE URL ====');\nconst imageUrl = uploadResponse.data?.url || uploadResponse.data?.display_url;\nconsole.log('Slide', slideData.slide_number, 'URL:', imageUrl);\n\nif (!imageUrl) {\n  console.log('Upload response:', JSON.stringify(uploadResponse));\n  throw new Error('Failed to get image URL for slide ' + slideData.slide_number);\n}\n\nreturn [{\n  json: {\n    slide_number: slideData.slide_number,\n    total_slides: slideData.total_slides,\n    headline: slideData.headline,\n    subtext: slideData.subtext || '',\n    image_url: imageUrl\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2220, 300],
+      "position": [1580, 300],
       "id": "collect-slide-url",
       "name": "Collect Slide URL"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if we need to continue processing more slides\nconst currentSlide = $input.item.json;\nconsole.log('Processed slide', currentSlide.slide_number, 'of', currentSlide.total_slides);\n\n// Always pass through - the SplitInBatches node will handle the loop\nreturn [$input.item];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1800, 300],
+      "id": "loop-check",
+      "name": "Continue Loop"
     },
     {
       "parameters": {
@@ -235,17 +174,17 @@
       },
       "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
-      "position": [2440, 300],
+      "position": [700, 520],
       "id": "aggregate-slides",
       "name": "Aggregate All Slides"
     },
     {
       "parameters": {
-        "jsCode": "// Format final carousel response\nconst aggregatedData = $input.item.json.slides_data;\n\nconsole.log('==== FORMAT CAROUSEL RESPONSE ====');\nconsole.log('Aggregated slides:', aggregatedData.length);\n\n// Sort by slide number\nconst sortedSlides = aggregatedData.sort((a, b) => a.slide_number - b.slide_number);\n\n// Format slides for response\nconst formattedSlides = sortedSlides.map(s => ({\n  slide_number: s.slide_number,\n  headline: s.headline,\n  subtext: s.subtext || '',\n  image_url: s.image_url\n}));\n\nconsole.log('Final slides:', JSON.stringify(formattedSlides));\n\nreturn [{\n  json: {\n    success: true,\n    message: 'Carousel generated successfully',\n    data: {\n      total_slides: sortedSlides.length,\n      slides: formattedSlides\n    }\n  }\n}];"
+        "jsCode": "// Format final carousel response\nconst aggregatedData = $input.item.json.slides_data;\n\nconsole.log('==== FORMAT CAROUSEL RESPONSE ====');\nconsole.log('Total slides aggregated:', aggregatedData.length);\n\n// Sort by slide number to ensure correct order\nconst sortedSlides = aggregatedData.sort((a, b) => a.slide_number - b.slide_number);\n\n// Format slides for response\nconst formattedSlides = sortedSlides.map(s => ({\n  slide_number: s.slide_number,\n  headline: s.headline,\n  subtext: s.subtext || '',\n  image_url: s.image_url\n}));\n\nconsole.log('Formatted slides:', JSON.stringify(formattedSlides, null, 2));\n\nreturn [{\n  json: {\n    success: true,\n    message: `Carousel generated successfully with ${formattedSlides.length} slides`,\n    data: {\n      total_slides: formattedSlides.length,\n      slides: formattedSlides\n    }\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2660, 300],
+      "position": [920, 520],
       "id": "format-carousel-response",
       "name": "Format Carousel Response"
     },
@@ -274,7 +213,7 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [2880, 300],
+      "position": [1140, 520],
       "id": "respond-carousel-success",
       "name": "Respond Success"
     }
@@ -287,27 +226,18 @@
       "main": [[{ "node": "Download MSI Logo", "type": "main", "index": 0 }]]
     },
     "Download MSI Logo": {
-      "main": [[{ "node": "Prepare Logo", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Prepare Slides with Style", "type": "main", "index": 0 }]]
     },
-    "Prepare Logo": {
-      "main": [[{ "node": "Agent: Style Strategist", "type": "main", "index": 0 }]]
+    "Prepare Slides with Style": {
+      "main": [[{ "node": "Process Each Slide", "type": "main", "index": 0 }]]
     },
-    "Agent: Style Strategist": {
-      "main": [[{ "node": "Prepare Slides", "type": "main", "index": 0 }]]
+    "Process Each Slide": {
+      "main": [
+        [{ "node": "Build Image Prompt", "type": "main", "index": 0 }],
+        [{ "node": "Aggregate All Slides", "type": "main", "index": 0 }]
+      ]
     },
-    "OpenAI for Style Strategy": {
-      "ai_languageModel": [[{ "node": "Agent: Style Strategist", "type": "ai_languageModel", "index": 0 }]]
-    },
-    "Prepare Slides": {
-      "main": [[{ "node": "Agent: Slide Prompt", "type": "main", "index": 0 }]]
-    },
-    "Agent: Slide Prompt": {
-      "main": [[{ "node": "Prepare Image Gen", "type": "main", "index": 0 }]]
-    },
-    "OpenAI for Slide Prompt": {
-      "ai_languageModel": [[{ "node": "Agent: Slide Prompt", "type": "ai_languageModel", "index": 0 }]]
-    },
-    "Prepare Image Gen": {
+    "Build Image Prompt": {
       "main": [[{ "node": "Gemini Generate Slide", "type": "main", "index": 0 }]]
     },
     "Gemini Generate Slide": {
@@ -320,7 +250,10 @@
       "main": [[{ "node": "Collect Slide URL", "type": "main", "index": 0 }]]
     },
     "Collect Slide URL": {
-      "main": [[{ "node": "Aggregate All Slides", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Continue Loop", "type": "main", "index": 0 }]]
+    },
+    "Continue Loop": {
+      "main": [[{ "node": "Process Each Slide", "type": "main", "index": 0 }]]
     },
     "Aggregate All Slides": {
       "main": [[{ "node": "Format Carousel Response", "type": "main", "index": 0 }]]
