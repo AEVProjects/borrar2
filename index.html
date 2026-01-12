@@ -45,6 +45,14 @@
                     </svg>
                     Generate Video
                 </button>
+                <button class="tab-btn" data-mode="carousel">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="3" width="6" height="18" rx="1"></rect>
+                        <rect x="9" y="3" width="6" height="18" rx="1"></rect>
+                        <rect x="16" y="3" width="6" height="18" rx="1"></rect>
+                    </svg>
+                    Carousel
+                </button>
             </div>
         </nav>
 
@@ -436,6 +444,156 @@
                             Download Video
                         </a>
                         <button id="regenerate-video" class="btn btn-secondary">Generate Another</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Carousel Generation Mode -->
+        <div id="carousel-mode" class="mode-content">
+            <div class="card form-card">
+                <h2>Generate Instagram Carousel</h2>
+                <p class="form-subtitle">Create multiple slides with consistent visual style</p>
+                
+                <form id="carousel-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="carousel_topic">Topic / Theme</label>
+                            <input type="text" id="carousel_topic" name="topic" placeholder="e.g., Technology Solutions, Cloud Services">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="carousel_visual_style">Visual Style *</label>
+                            <select id="carousel_visual_style" name="visual_style" required>
+                                <option value="Modern 3D" selected>Modern 3D</option>
+                                <option value="Glassmorphism">Glassmorphism</option>
+                                <option value="Isometric Architecture">Isometric Architecture</option>
+                                <option value="Realistic Photography">Realistic Photography</option>
+                                <option value="Data Hero">Data Visualization</option>
+                                <option value="Minimalist Corporate">Minimalist Corporate</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="carousel_context">Context / Additional Instructions</label>
+                        <textarea id="carousel_context" name="context" rows="2" placeholder="Any specific requirements for the carousel style..."></textarea>
+                    </div>
+
+                    <!-- Slides Container -->
+                    <div class="slides-section">
+                        <div class="slides-header">
+                            <label>Carousel Slides</label>
+                            <button type="button" id="add-slide-btn" class="btn btn-secondary btn-small">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Add Slide
+                            </button>
+                        </div>
+                        
+                        <div id="slides-container" class="slides-container">
+                            <!-- Slide 1 -->
+                            <div class="slide-card" data-slide="1">
+                                <div class="slide-header">
+                                    <span class="slide-number">Slide 1</span>
+                                    <button type="button" class="remove-slide-btn" title="Remove slide" style="display: none;">×</button>
+                                </div>
+                                <div class="slide-inputs">
+                                    <input type="text" name="slide_1_headline" class="slide-headline" placeholder="Headline (e.g., One partner. Multiple solutions)" required>
+                                    <input type="text" name="slide_1_subtext" class="slide-subtext" placeholder="Subtext (optional)">
+                                </div>
+                            </div>
+
+                            <!-- Slide 2 -->
+                            <div class="slide-card" data-slide="2">
+                                <div class="slide-header">
+                                    <span class="slide-number">Slide 2</span>
+                                    <button type="button" class="remove-slide-btn" title="Remove slide">×</button>
+                                </div>
+                                <div class="slide-inputs">
+                                    <input type="text" name="slide_2_headline" class="slide-headline" placeholder="Headline" required>
+                                    <input type="text" name="slide_2_subtext" class="slide-subtext" placeholder="Subtext (optional)">
+                                </div>
+                            </div>
+
+                            <!-- Slide 3 -->
+                            <div class="slide-card" data-slide="3">
+                                <div class="slide-header">
+                                    <span class="slide-number">Slide 3</span>
+                                    <button type="button" class="remove-slide-btn" title="Remove slide">×</button>
+                                </div>
+                                <div class="slide-inputs">
+                                    <input type="text" name="slide_3_headline" class="slide-headline" placeholder="Headline" required>
+                                    <input type="text" name="slide_3_subtext" class="slide-subtext" placeholder="Subtext (optional)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Color Palette -->
+                    <div class="color-palette-section carousel-colors">
+                        <div class="palette-header">
+                            <label>Color Palette</label>
+                        </div>
+                        <div class="color-inputs active">
+                            <div class="color-picker-wrapper">
+                                <label>Primary</label>
+                                <div class="color-input-group">
+                                    <input type="color" id="carousel_color_primary" name="color_primary" value="#207CE5">
+                                </div>
+                            </div>
+                            <div class="color-picker-wrapper">
+                                <label>Secondary</label>
+                                <div class="color-input-group">
+                                    <input type="color" id="carousel_color_secondary" name="color_secondary" value="#004AAD">
+                                </div>
+                            </div>
+                            <div class="color-picker-wrapper">
+                                <label>Accent</label>
+                                <div class="color-input-group">
+                                    <input type="color" id="carousel_color_accent" name="color_accent" value="#FFFDF1">
+                                </div>
+                            </div>
+                            <div class="color-picker-wrapper">
+                                <label>Dark</label>
+                                <div class="color-input-group">
+                                    <input type="color" id="carousel_color_dark" name="color_dark" value="#2B2B2B">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-carousel">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="3" width="6" height="18" rx="1"></rect>
+                            <rect x="9" y="3" width="6" height="18" rx="1"></rect>
+                            <rect x="16" y="3" width="6" height="18" rx="1"></rect>
+                        </svg>
+                        Generate Carousel
+                    </button>
+                </form>
+            </div>
+
+            <!-- Carousel Results -->
+            <div id="carousel-results" class="generated-results" style="display: none;">
+                <div class="card">
+                    <h2>Generated Carousel</h2>
+                    <div id="carousel-preview" class="carousel-preview">
+                        <!-- Slides will be inserted here -->
+                    </div>
+                    <div class="result-actions">
+                        <button id="download-all-carousel" class="btn btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download All
+                        </button>
+                        <button id="use-carousel-in-post" class="btn btn-secondary">Use in Post</button>
+                        <button id="regenerate-carousel" class="btn btn-secondary">Generate Again</button>
                     </div>
                 </div>
             </div>

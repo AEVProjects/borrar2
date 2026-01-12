@@ -103,6 +103,7 @@ const n8nPublishWebhook = CONFIG.n8nPublishWebhook || CONFIG.n8n?.publishWebhook
 const n8nGenerateWebhook = CONFIG.n8nGenerateWebhook || CONFIG.n8n?.generateWebhook;
 const n8nEditWebhook = CONFIG.n8nEditWebhook || CONFIG.n8n?.editWebhook;
 const n8nVideoWebhook = CONFIG.n8nVideoWebhook || CONFIG.n8n?.videoWebhook;
+const n8nCarouselWebhook = CONFIG.n8nCarouselWebhook || CONFIG.n8n?.carouselWebhook;
 
 // Supabase Client
 let supabaseClient;
@@ -144,10 +145,12 @@ const publishMode = document.getElementById('publish-mode');
 const generateMode = document.getElementById('generate-mode');
 const editMode = document.getElementById('edit-mode');
 const videoMode = document.getElementById('video-mode');
+const carouselMode = document.getElementById('carousel-mode');
 const publishForm = document.getElementById('publish-form');
 const generateForm = document.getElementById('generate-form');
 const editImageForm = document.getElementById('edit-image-form');
 const videoForm = document.getElementById('video-form');
+const carouselForm = document.getElementById('carousel-form');
 const postsListEl = document.getElementById('posts-list');
 const editPostsListEl = document.getElementById('edit-posts-list');
 const imageInput = document.getElementById('image');
@@ -170,6 +173,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         generateMode?.classList.remove('active');
         editMode?.classList.remove('active');
         videoMode?.classList.remove('active');
+        carouselMode?.classList.remove('active');
         
         if (mode === 'publish') {
             publishMode?.classList.add('active');
@@ -180,6 +184,8 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
             loadEditPosts(); // Load posts when switching to edit tab
         } else if (mode === 'video') {
             videoMode?.classList.add('active');
+        } else if (mode === 'carousel') {
+            carouselMode?.classList.add('active');
         }
     });
 });
@@ -1734,6 +1740,311 @@ if (regenerateVideoBtn) {
 }
 
 // ========== END VIDEO GENERATION ==========
+
+// ========== CAROUSEL GENERATION ==========
+
+// Carousel slide counter
+let carouselSlideCount = 3;
+const MAX_SLIDES = 10;
+const MIN_SLIDES = 2;
+
+// Add slide button handler
+const addSlideBtn = document.getElementById('add-slide-btn');
+const slidesContainer = document.getElementById('slides-container');
+
+if (addSlideBtn && slidesContainer) {
+    addSlideBtn.addEventListener('click', () => {
+        if (carouselSlideCount >= MAX_SLIDES) {
+            showToast(`Maximum ${MAX_SLIDES} slides allowed`, 'warning');
+            return;
+        }
+        
+        carouselSlideCount++;
+        
+        const slideCard = document.createElement('div');
+        slideCard.className = 'slide-card';
+        slideCard.dataset.slide = carouselSlideCount;
+        slideCard.innerHTML = `
+            <div class="slide-header">
+                <span class="slide-number">Slide ${carouselSlideCount}</span>
+                <button type="button" class="remove-slide-btn" title="Remove slide">×</button>
+            </div>
+            <div class="slide-inputs">
+                <input type="text" name="slide_${carouselSlideCount}_headline" class="slide-headline" placeholder="Headline" required>
+                <input type="text" name="slide_${carouselSlideCount}_subtext" class="slide-subtext" placeholder="Subtext (optional)">
+            </div>
+        `;
+        
+        slidesContainer.appendChild(slideCard);
+        
+        // Add event listener for remove button
+        slideCard.querySelector('.remove-slide-btn').addEventListener('click', function() {
+            removeSlide(slideCard);
+        });
+        
+        updateRemoveButtonVisibility();
+    });
+}
+
+// Remove slide function
+function removeSlide(slideCard) {
+    if (carouselSlideCount <= MIN_SLIDES) {
+        showToast(`Minimum ${MIN_SLIDES} slides required`, 'warning');
+        return;
+    }
+    
+    slideCard.remove();
+    carouselSlideCount--;
+    
+    // Renumber remaining slides
+    const slides = slidesContainer.querySelectorAll('.slide-card');
+    slides.forEach((slide, index) => {
+        const num = index + 1;
+        slide.dataset.slide = num;
+        slide.querySelector('.slide-number').textContent = `Slide ${num}`;
+        slide.querySelector('.slide-headline').name = `slide_${num}_headline`;
+        slide.querySelector('.slide-subtext').name = `slide_${num}_subtext`;
+    });
+    
+    updateRemoveButtonVisibility();
+}
+
+// Update remove button visibility (hide for first slide if only minimum)
+function updateRemoveButtonVisibility() {
+    const slides = slidesContainer?.querySelectorAll('.slide-card');
+    slides?.forEach((slide, index) => {
+        const removeBtn = slide.querySelector('.remove-slide-btn');
+        if (removeBtn) {
+            if (slides.length <= MIN_SLIDES) {
+                removeBtn.style.display = 'none';
+            } else {
+                removeBtn.style.display = index === 0 ? 'none' : 'block';
+            }
+        }
+    });
+}
+
+// Event delegation for remove buttons
+if (slidesContainer) {
+    slidesContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('remove-slide-btn')) {
+            const slideCard = e.target.closest('.slide-card');
+            if (slideCard) {
+                removeSlide(slideCard);
+            }
+        }
+    });
+}
+
+// Carousel form submit handler
+if (carouselForm) {
+    carouselForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        
+        // Collect slides data
+        const slides = [];
+        const slideCards = slidesContainer.querySelectorAll('.slide-card');
+        slideCards.forEach((card, index) => {
+            const num = index + 1;
+            slides.push({
+                slide_number: num,
+                headline: formData.get(`slide_${num}_headline`) || '',
+                subtext: formData.get(`slide_${num}_subtext`) || ''
+            });
+        });
+        
+        const data = {
+            topic: formData.get('topic') || '',
+            visual_style: formData.get('visual_style'),
+            context: formData.get('context') || '',
+            color_palette: {
+                primary: formData.get('color_primary'),
+                secondary: formData.get('color_secondary'),
+                accent: formData.get('color_accent'),
+                dark: formData.get('color_dark')
+            },
+            slides: slides
+        };
+        
+        if (slides.length < MIN_SLIDES) {
+            showToast(`Minimum ${MIN_SLIDES} slides required`, 'error');
+            return;
+        }
+        
+        if (!slides.every(s => s.headline)) {
+            showToast('Please fill in all slide headlines', 'error');
+            return;
+        }
+        
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Generating...';
+        
+        // Show progress
+        showProgressAlert(
+            'Generating Carousel',
+            `Creating ${slides.length} slides with consistent style...`,
+            'Initializing style strategy...'
+        );
+        
+        try {
+            updateProgress(5, 'Sending request to AI...');
+            
+            const response = await fetch(n8nCarouselWebhook, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            updateProgress(15, 'Creating unified style strategy...');
+            
+            // Carousel generation takes time
+            let result;
+            try {
+                result = await response.json();
+            } catch (parseError) {
+                // If response takes too long
+                updateProgress(25, 'Generating slides (this may take a minute per slide)...');
+                
+                for (let i = 0; i < slides.length * 4; i++) {
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    const slideNum = Math.floor(i / 4) + 1;
+                    updateProgress(25 + (i * 5), `Processing slide ${slideNum}...`);
+                }
+                
+                hideProgressAlert();
+                showToast('Carousel generation submitted. Check back in a few minutes.', 'warning');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                return;
+            }
+            
+            if (result.success && result.data?.slides) {
+                updateProgress(100, 'Carousel ready!');
+                
+                setTimeout(() => {
+                    hideProgressAlert();
+                    
+                    // Show carousel results
+                    const carouselResults = document.getElementById('carousel-results');
+                    const carouselPreview = document.getElementById('carousel-preview');
+                    
+                    if (carouselPreview) {
+                        carouselPreview.innerHTML = '';
+                        
+                        result.data.slides.forEach((slide, index) => {
+                            const slideEl = document.createElement('div');
+                            slideEl.className = 'carousel-slide';
+                            slideEl.innerHTML = `
+                                <div class="slide-image-container">
+                                    <img src="${slide.image_url}" alt="Slide ${index + 1}" class="slide-image">
+                                    <span class="slide-badge">${index + 1}</span>
+                                </div>
+                                <div class="slide-info">
+                                    <h4>${slide.headline || ''}</h4>
+                                    <p>${slide.subtext || ''}</p>
+                                    <a href="${slide.image_url}" download="carousel-slide-${index + 1}.png" class="btn btn-small btn-secondary">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="7 10 12 15 17 10"></polyline>
+                                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                                        </svg>
+                                        Download
+                                    </a>
+                                </div>
+                            `;
+                            carouselPreview.appendChild(slideEl);
+                        });
+                    }
+                    
+                    if (carouselResults) {
+                        carouselResults.style.display = 'block';
+                        carouselResults.scrollIntoView({ behavior: 'smooth' });
+                    }
+                    
+                    showSuccessAlert('Carousel Generated!', `${result.data.slides.length} slides created with consistent style.`);
+                }, 500);
+            } else {
+                hideProgressAlert();
+                showToast(result.message || 'Carousel generation failed', 'error');
+            }
+            
+        } catch (error) {
+            console.error('Carousel generation error:', error);
+            hideProgressAlert();
+            showToast('Error generating carousel: ' + error.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
+}
+
+// Download all carousel images
+const downloadAllCarouselBtn = document.getElementById('download-all-carousel');
+if (downloadAllCarouselBtn) {
+    downloadAllCarouselBtn.addEventListener('click', async () => {
+        const slides = document.querySelectorAll('#carousel-preview .carousel-slide');
+        for (let i = 0; i < slides.length; i++) {
+            const img = slides[i].querySelector('img');
+            if (img && img.src) {
+                try {
+                    const response = await fetch(img.src);
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `carousel-slide-${i + 1}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    await new Promise(r => setTimeout(r, 500)); // Delay between downloads
+                } catch (err) {
+                    console.error('Download error:', err);
+                }
+            }
+        }
+        showToast('Downloading all slides...', 'success');
+    });
+}
+
+// Regenerate carousel button
+const regenerateCarouselBtn = document.getElementById('regenerate-carousel');
+if (regenerateCarouselBtn) {
+    regenerateCarouselBtn.addEventListener('click', () => {
+        const carouselResults = document.getElementById('carousel-results');
+        if (carouselResults) {
+            carouselResults.style.display = 'none';
+        }
+        carouselForm?.scrollIntoView({ behavior: 'smooth' });
+    });
+}
+
+// Use in post button
+const useCarouselInPostBtn = document.getElementById('use-carousel-in-post');
+if (useCarouselInPostBtn) {
+    useCarouselInPostBtn.addEventListener('click', () => {
+        // Collect all image URLs
+        const slides = document.querySelectorAll('#carousel-preview .carousel-slide img');
+        const urls = Array.from(slides).map(img => img.src).join('\n');
+        
+        // Copy to clipboard
+        navigator.clipboard.writeText(urls).then(() => {
+            showToast('Image URLs copied to clipboard!', 'success');
+        });
+        
+        // Switch to publish tab
+        document.querySelector('.tab-btn[data-mode="publish"]')?.click();
+    });
+}
+
+// ========== END CAROUSEL GENERATION ==========
 
 // Initialize
 if (supabaseUrl === 'YOUR_SUPABASE_URL' || !supabaseUrl) {
