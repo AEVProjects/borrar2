@@ -6,7 +6,24 @@
         "httpMethod": "POST",
         "path": "msi-carousel-gen",
         "responseMode": "responseNode",
-        "options": {}
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -17,6 +34,71 @@
       "id": "webhook-carousel-gen",
       "name": "Webhook - Carousel Gen",
       "webhookId": "msi-carousel-gen"
+    },
+    {
+      "parameters": {
+        "httpMethod": "OPTIONS",
+        "path": "msi-carousel-gen",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        100
+      ],
+      "id": "webhook-carousel-options",
+      "name": "Webhook - CORS Preflight",
+      "webhookId": "msi-carousel-gen-options"
+    },
+    {
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        20,
+        100
+      ],
+      "id": "respond-cors-preflight",
+      "name": "Respond CORS OK"
     },
     {
       "parameters": {
@@ -270,7 +352,16 @@
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ JSON.stringify($json) }}",
-        "options": {}
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
@@ -283,6 +374,17 @@
     }
   ],
   "connections": {
+    "Webhook - CORS Preflight": {
+      "main": [
+        [
+          {
+            "node": "Respond CORS OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Webhook - Carousel Gen": {
       "main": [
         [
