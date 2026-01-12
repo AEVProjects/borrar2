@@ -102,6 +102,7 @@ const supabaseKey = CONFIG.supabaseKey || CONFIG.supabase?.anonKey;
 const n8nPublishWebhook = CONFIG.n8nPublishWebhook || CONFIG.n8n?.publishWebhook;
 const n8nGenerateWebhook = CONFIG.n8nGenerateWebhook || CONFIG.n8n?.generateWebhook;
 const n8nEditWebhook = CONFIG.n8nEditWebhook || CONFIG.n8n?.editWebhook;
+const n8nVideoWebhook = CONFIG.n8nVideoWebhook || CONFIG.n8n?.videoWebhook;
 
 // Supabase Client
 let supabaseClient;
@@ -142,9 +143,11 @@ let selectedPosts = new Set();
 const publishMode = document.getElementById('publish-mode');
 const generateMode = document.getElementById('generate-mode');
 const editMode = document.getElementById('edit-mode');
+const videoMode = document.getElementById('video-mode');
 const publishForm = document.getElementById('publish-form');
 const generateForm = document.getElementById('generate-form');
 const editImageForm = document.getElementById('edit-image-form');
+const videoForm = document.getElementById('video-form');
 const postsListEl = document.getElementById('posts-list');
 const editPostsListEl = document.getElementById('edit-posts-list');
 const imageInput = document.getElementById('image');
@@ -166,6 +169,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         publishMode?.classList.remove('active');
         generateMode?.classList.remove('active');
         editMode?.classList.remove('active');
+        videoMode?.classList.remove('active');
         
         if (mode === 'publish') {
             publishMode?.classList.add('active');
@@ -174,6 +178,8 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         } else if (mode === 'edit') {
             editMode?.classList.add('active');
             loadEditPosts(); // Load posts when switching to edit tab
+        } else if (mode === 'video') {
+            videoMode?.classList.add('active');
         }
     });
 });
@@ -1576,6 +1582,158 @@ document.addEventListener('DOMContentLoaded', initColorPalette);
 if (document.readyState !== 'loading') {
     initColorPalette();
 }
+
+// ========== VIDEO GENERATION ==========
+
+// Reference image preview for video
+const videoReferenceInput = document.getElementById('video_reference_image');
+const videoReferencePreviewContainer = document.getElementById('video-reference-preview-container');
+const videoReferenceImg = document.getElementById('video-reference-img');
+
+if (videoReferenceInput) {
+    videoReferenceInput.addEventListener('input', (e) => {
+        const url = e.target.value.trim();
+        if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+            videoReferenceImg.src = url;
+            videoReferencePreviewContainer.style.display = 'block';
+            videoReferenceImg.onerror = () => {
+                videoReferencePreviewContainer.style.display = 'none';
+            };
+        } else {
+            videoReferencePreviewContainer.style.display = 'none';
+        }
+    });
+}
+
+// Video Form Submit
+if (videoForm) {
+    videoForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        
+        const data = {
+            prompt: formData.get('prompt'),
+            style: formData.get('style'),
+            duration: formData.get('duration'),
+            aspect_ratio: formData.get('aspect_ratio'),
+            topic: formData.get('topic') || '',
+            reference_image_url: formData.get('reference_image_url') || null
+        };
+        
+        if (!data.prompt) {
+            showToast('Please enter a video description', 'error');
+            return;
+        }
+        
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Generating...';
+        
+        // Show progress
+        showProgressAlert(
+            'Generating Video',
+            'Creating your video with Veo 3 AI...',
+            'Initializing video generation...'
+        );
+        
+        try {
+            updateProgress(10, 'Sending request to Veo 3...');
+            
+            const response = await fetch(n8nVideoWebhook, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            updateProgress(30, 'Processing prompt...');
+            
+            // Video generation takes time - poll or wait for response
+            let result;
+            try {
+                result = await response.json();
+            } catch (parseError) {
+                // If response is not JSON, assume it's processing
+                updateProgress(50, 'Video is being generated (this may take a few minutes)...');
+                
+                // Wait and show progress updates
+                for (let i = 0; i < 12; i++) {
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    updateProgress(50 + (i * 4), `Still generating... (${(i + 1) * 5}s elapsed)`);
+                }
+                
+                hideProgressAlert();
+                showToast('Video generation submitted. It may take a few minutes to complete.', 'warning');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                return;
+            }
+            
+            if (result.success && result.data?.video_url) {
+                updateProgress(100, 'Video ready!');
+                
+                setTimeout(() => {
+                    hideProgressAlert();
+                    
+                    // Show video results
+                    const videoResults = document.getElementById('video-results');
+                    const videoPlayer = document.getElementById('generated-video');
+                    const downloadLink = document.getElementById('download-video');
+                    const promptUsed = document.getElementById('video-prompt-used');
+                    
+                    if (videoPlayer) {
+                        videoPlayer.src = result.data.video_url;
+                        videoPlayer.load();
+                    }
+                    
+                    if (downloadLink) {
+                        downloadLink.href = result.data.video_url;
+                    }
+                    
+                    if (promptUsed && result.data.prompt) {
+                        promptUsed.innerHTML = `<strong>Optimized Prompt:</strong> ${result.data.prompt}`;
+                    }
+                    
+                    if (videoResults) {
+                        videoResults.style.display = 'block';
+                        videoResults.scrollIntoView({ behavior: 'smooth' });
+                    }
+                    
+                    showSuccessAlert('Video Generated!', 'Your AI video has been created successfully.');
+                }, 500);
+            } else {
+                hideProgressAlert();
+                showToast(result.message || 'Video generation failed', 'error');
+            }
+            
+        } catch (error) {
+            console.error('Video generation error:', error);
+            hideProgressAlert();
+            showToast('Error generating video: ' + error.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
+}
+
+// Regenerate video button
+const regenerateVideoBtn = document.getElementById('regenerate-video');
+if (regenerateVideoBtn) {
+    regenerateVideoBtn.addEventListener('click', () => {
+        const videoResults = document.getElementById('video-results');
+        if (videoResults) {
+            videoResults.style.display = 'none';
+        }
+        // Scroll to form
+        videoForm?.scrollIntoView({ behavior: 'smooth' });
+    });
+}
+
+// ========== END VIDEO GENERATION ==========
 
 // Initialize
 if (supabaseUrl === 'YOUR_SUPABASE_URL' || !supabaseUrl) {

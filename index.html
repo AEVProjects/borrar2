@@ -38,6 +38,13 @@
                     </svg>
                     Edit Image
                 </button>
+                <button class="tab-btn" data-mode="video">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                    </svg>
+                    Generate Video
+                </button>
             </div>
         </nav>
 
@@ -328,6 +335,107 @@
                         <div id="edit-posts-list" class="posts-list">
                             <div class="loading">Loading posts...</div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Generation Mode -->
+        <div id="video-mode" class="mode-content">
+            <div class="card form-card">
+                <h2>Generate Video with AI (Veo 3)</h2>
+                <form id="video-form">
+                    <div class="form-group">
+                        <label for="video_prompt">Video Description *</label>
+                        <textarea id="video_prompt" name="prompt" rows="4" required placeholder="Describe the video you want to create...&#10;&#10;Examples:&#10;- A futuristic data center with glowing blue servers and smooth camera movement&#10;- Abstract technology particles flowing through a neural network&#10;- Professional business meeting in a modern glass office"></textarea>
+                        <small class="form-hint">Be specific about the scene, movement, lighting, and mood you want.</small>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="video_style">Video Style *</label>
+                            <select id="video_style" name="style" required>
+                                <option value="cinematic" selected>Cinematic</option>
+                                <option value="professional">Professional/Corporate</option>
+                                <option value="dynamic">Dynamic/Energetic</option>
+                                <option value="minimal">Minimal/Clean</option>
+                                <option value="artistic">Artistic/Creative</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="video_duration">Duration</label>
+                            <select id="video_duration" name="duration">
+                                <option value="5s" selected>5 seconds</option>
+                                <option value="8s">8 seconds</option>
+                                <option value="10s">10 seconds</option>
+                                <option value="15s">15 seconds</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="video_aspect_ratio">Aspect Ratio</label>
+                            <select id="video_aspect_ratio" name="aspect_ratio">
+                                <option value="9:16" selected>9:16 (Vertical - TikTok/Reels)</option>
+                                <option value="16:9">16:9 (Horizontal - YouTube)</option>
+                                <option value="1:1">1:1 (Square - Instagram)</option>
+                                <option value="4:3">4:3 (Classic)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="video_topic">Topic (Optional)</label>
+                            <input type="text" id="video_topic" name="topic" placeholder="e.g., Cloud Computing, AI, Networking">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="video_reference_image">Reference Image URL (Optional)</label>
+                        <input type="url" id="video_reference_image" name="reference_image_url" placeholder="https://i.ibb.co/...">
+                        <small class="form-hint">Provide an image URL to create an image-to-video animation. Leave empty for text-to-video.</small>
+                    </div>
+
+                    <div class="form-group" id="video-reference-preview-container" style="display: none;">
+                        <label>Reference Image Preview</label>
+                        <div id="video-reference-preview" class="edit-image-preview">
+                            <img id="video-reference-img" src="" alt="Reference preview" style="max-width: 100%; border-radius: 8px;">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-video">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                        </svg>
+                        Generate Video
+                    </button>
+                </form>
+            </div>
+
+            <!-- Video Results -->
+            <div id="video-results" class="generated-results" style="display: none;">
+                <div class="card">
+                    <h2>Generated Video</h2>
+                    <div class="result-section">
+                        <div id="video-player" class="video-player">
+                            <video id="generated-video" controls style="width: 100%; max-height: 500px; border-radius: 8px;">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        <div id="video-prompt-used" class="video-prompt-used" style="margin-top: 16px;"></div>
+                    </div>
+                    <div class="result-actions">
+                        <a id="download-video" href="#" download="generated-video.mp4" class="btn btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download Video
+                        </a>
+                        <button id="regenerate-video" class="btn btn-secondary">Generate Another</button>
                     </div>
                 </div>
             </div>

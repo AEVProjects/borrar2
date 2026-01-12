@@ -1159,3 +1159,65 @@ input[type="checkbox"].post-checkbox {
     margin-top: 8px;
     opacity: 0.8;
 }
+
+/* Video Generation Styles */
+.btn-video {
+    background: linear-gradient(135deg, #8B5CF6, #6366F1);
+    border: none;
+}
+
+.btn-video:hover {
+    background: linear-gradient(135deg, #7C3AED, #4F46E5);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+}
+
+.video-player {
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.video-player video {
+    max-width: 100%;
+    max-height: 500px;
+}
+
+.video-prompt-used {
+    background: var(--bg-color);
+    padding: 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    border-left: 4px solid var(--primary-color);
+}
+
+.video-prompt-used strong {
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: 4px;
+}
+
+/* Video tab icon color */
+.tab-btn[data-mode="video"] svg {
+    color: #8B5CF6;
+}
+
+.tab-btn[data-mode="video"].active {
+    background: linear-gradient(135deg, #8B5CF6, #6366F1);
+    border-color: #8B5CF6;
+}
+
+.tab-btn[data-mode="video"].active svg {
+    color: white;
+}
+
+.tab-btn[data-mode="video"]:hover:not(.active) {
+    border-color: #8B5CF6;
+    color: #8B5CF6;
+}
