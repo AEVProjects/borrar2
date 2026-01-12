@@ -148,12 +148,12 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "googlePalmApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: $json.image_prompt + '\\n\\nIMPORTANT: This is slide ' + $json.slide_number + ' of ' + $json.total_slides + ' in a carousel. Maintain absolute visual consistency. The headline text \"' + $json.headline + '\" must be clearly visible and legible. Use colors: Primary ' + $json.color_primary + ', Secondary ' + $json.color_secondary + ', Accent ' + $json.color_accent + ', Dark ' + $json.color_dark + '. Format: 4:5 portrait ratio (1080x1350 pixels).'\n    }]\n  }],\n  generationConfig: {\n    responseModalities: ['IMAGE'],\n    temperature: 0.4\n  }\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: $json.image_prompt + '\\n\\nIMPORTANT: This is slide ' + $json.slide_number + ' of ' + $json.total_slides + ' in a carousel. Maintain absolute visual consistency. The headline text \"' + $json.headline + '\" must be clearly visible and legible. Use colors: Primary ' + $json.color_primary + ', Secondary ' + $json.color_secondary + ', Accent ' + $json.color_accent + ', Dark ' + $json.color_dark + '. Format: 4:5 portrait ratio (1080x1350 pixels).'\n    }]\n  }],\n  generationConfig: {\n    responseModalities: ['TEXT', 'IMAGE'],\n    temperature: 0.4\n  }\n}) }}",
         "options": {
           "response": {
             "response": {}
