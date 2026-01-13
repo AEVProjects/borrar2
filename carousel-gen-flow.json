@@ -1,5 +1,5 @@
 {
-  "name": "MSI Carousel Generator v4",
+  "name": "MSI Carousel Generator v5",
   "nodes": [
     {
       "parameters": {
@@ -10,20 +10,10 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [-400, 300],
-      "id": "webhook-carousel-gen",
-      "name": "Webhook - Carousel Gen",
+      "position": [260, 300],
+      "id": "webhook",
+      "name": "Webhook",
       "webhookId": "msi-carousel-gen"
-    },
-    {
-      "parameters": {
-        "jsCode": "const input = $input.item.json;\n\nlet data;\nif (input.body) {\n  if (typeof input.body === 'string') {\n    try { data = JSON.parse(input.body); } catch (e) { data = input; }\n  } else if (typeof input.body === 'object') {\n    data = input.body;\n  } else { data = input; }\n} else if (input.query) { data = input.query; }\nelse { data = input; }\n\nconst slides = data.slides || [];\nconst visual_style = data.visual_style || 'Modern 3D';\nconst topic = data.topic || '';\n\nconst color_primary = data.color_palette?.primary || data.color_primary || '#207CE5';\nconst color_secondary = data.color_palette?.secondary || data.color_secondary || '#004AAD';\nconst color_accent = data.color_palette?.accent || data.color_accent || '#FFFDF1';\nconst color_dark = data.color_palette?.dark || data.color_dark || '#2B2B2B';\n\nif (!slides || slides.length === 0) {\n  throw new Error('At least one slide is required.');\n}\n\nreturn [{ json: { slides, visual_style, topic, color_primary, color_secondary, color_accent, color_dark, total_slides: slides.length } }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [-180, 300],
-      "id": "format-input",
-      "name": "Format Input"
     },
     {
       "parameters": {
@@ -32,40 +22,29 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [40, 300],
+      "position": [480, 300],
       "id": "download-logo",
       "name": "Download Logo"
     },
     {
       "parameters": {
-        "jsCode": "const formInput = $('Format Input').item.json;\nconst logoItem = $input.item;\n\nlet logoBase64 = '';\nif (logoItem.binary && Object.keys(logoItem.binary).length > 0) {\n  const binaryKey = Object.keys(logoItem.binary)[0];\n  try {\n    const buffer = await this.helpers.getBinaryDataBuffer(0, binaryKey);\n    logoBase64 = buffer.toString('base64');\n  } catch (e) {\n    const bd = logoItem.binary[binaryKey];\n    if (bd.data && bd.data !== 'filesystem-v2') logoBase64 = bd.data;\n  }\n}\nif (!logoBase64 || logoBase64 === 'filesystem-v2') throw new Error('Failed to get logo');\n\nconst vs = formInput.visual_style;\nconst pc = formInput.color_primary;\nconst sc = formInput.color_secondary;\nconst ac = formInput.color_accent;\nconst dc = formInput.color_dark;\n\nlet style = '';\nif (vs.toLowerCase().includes('glass')) {\n  style = `GLASSMORPHISM: ${pc} to ${sc} gradient. Frosted glass panels, blur effects, hexagonal shapes, ${ac} connection lines, rim lighting.`;\n} else if (vs.toLowerCase().includes('3d') || vs.toLowerCase().includes('modern')) {\n  style = `MODERN 3D: ${pc} gradient with floating 3D objects (spheres, cubes). Glossy metallic surfaces, dramatic rim lighting, depth of field, particle effects in ${ac}. DEPTH and DIMENSION.`;\n} else if (vs.toLowerCase().includes('iso')) {\n  style = `ISOMETRIC: ${pc} background, isometric 3D architecture, server structures, ${ac} connection lines, technical grid.`;\n} else if (vs.toLowerCase().includes('data')) {\n  style = `DATA HERO: ${pc} background, charts/graphs as hero, data points with ${ac} lines, glowing indicators.`;\n} else {\n  style = `CORPORATE: ${pc} to ${sc} gradient, geometric shapes in ${ac}, professional lighting, subtle 3D depth.`;\n}\n\n// Return ALL slides as separate items\nconst items = formInput.slides.map((slide, i) => ({\n  json: {\n    slide_number: i + 1,\n    total_slides: formInput.total_slides,\n    headline: slide.headline,\n    subtext: slide.subtext || '',\n    style: style,\n    topic: formInput.topic,\n    pc, sc, ac, dc,\n    logo_base64: logoBase64\n  }\n}));\n\nconsole.log('Created', items.length, 'slide items');\nreturn items;"
+        "jsCode": "// Parse input and get logo\nconst webhookData = $('Webhook').item.json;\nconst logoItem = $input.item;\n\n// Get logo base64\nlet logoBase64 = '';\nif (logoItem.binary) {\n  const binaryKey = Object.keys(logoItem.binary)[0];\n  try {\n    const buffer = await this.helpers.getBinaryDataBuffer(0, binaryKey);\n    logoBase64 = buffer.toString('base64');\n  } catch (e) {\n    const bd = logoItem.binary[binaryKey];\n    if (bd.data && bd.data !== 'filesystem-v2') logoBase64 = bd.data;\n  }\n}\nif (!logoBase64) throw new Error('Failed to get logo');\n\n// Parse webhook body\nlet data = webhookData;\nif (webhookData.body) {\n  if (typeof webhookData.body === 'string') {\n    try { data = JSON.parse(webhookData.body); } catch(e) { data = webhookData; }\n  } else {\n    data = webhookData.body;\n  }\n}\n\nconst slides = data.slides || [];\nif (slides.length === 0) throw new Error('No slides provided');\n\nconst vs = data.visual_style || 'Modern 3D';\nconst pc = data.color_primary || '#207CE5';\nconst sc = data.color_secondary || '#004AAD';\nconst ac = data.color_accent || '#FFFDF1';\n\nlet style = '';\nif (vs.toLowerCase().includes('glass')) {\n  style = `GLASSMORPHISM: ${pc} to ${sc} gradient. Frosted glass panels with blur effects, hexagonal shapes, ${ac} connection lines, professional rim lighting.`;\n} else if (vs.toLowerCase().includes('3d') || vs.toLowerCase().includes('modern')) {\n  style = `MODERN 3D: ${pc} gradient with floating 3D geometric objects (glossy spheres, cubes, cylinders). Metallic surfaces with reflections, dramatic rim lighting, shadows, depth of field, particle effects in ${ac}. Professional DEPTH and DIMENSION.`;\n} else if (vs.toLowerCase().includes('iso')) {\n  style = `ISOMETRIC: ${pc} background with isometric 3D architecture, server structures, ${ac} connection lines, technical grid.`;\n} else {\n  style = `CORPORATE: ${pc} to ${sc} gradient, abstract geometric shapes in ${ac}, professional lighting with subtle 3D depth.`;\n}\n\nreturn [{\n  json: {\n    slides: slides,\n    total: slides.length,\n    style: style,\n    topic: data.topic || 'Technology',\n    ac: ac,\n    logo_base64: logoBase64\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [260, 300],
-      "id": "prepare-slides",
-      "name": "Prepare Slides"
+      "position": [700, 300],
+      "id": "prepare-data",
+      "name": "Prepare Data"
     },
     {
       "parameters": {
-        "batchSize": 1,
-        "options": {}
-      },
-      "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 3,
-      "position": [480, 300],
-      "id": "loop-slides",
-      "name": "Loop Slides"
-    },
-    {
-      "parameters": {
-        "jsCode": "const s = $input.item.json;\n\nconst prompt = `Create a 4:5 portrait Instagram image.\n\nSTYLE: ${s.style}\n\nSLIDE ${s.slide_number}/${s.total_slides}\nHEADLINE: \"${s.headline}\"\nSUBTEXT: \"${s.subtext}\"\nTOPIC: ${s.topic || 'Technology'}\n\nREQUIREMENTS:\n- Display \"${s.headline}\" as bold text overlay in ${s.ac} color\n- Dark gradient behind text for readability\n- MSI logo (provided image) in BOTTOM RIGHT corner\n- DO NOT modify the logo\n- Professional Instagram quality\n- ALL ${s.total_slides} slides must look like they belong together`;\n\nreturn [{ json: { ...s, image_prompt: prompt } }];"
+        "jsCode": "// Generate SLIDE 1\nconst d = $input.item.json;\nconst slide = d.slides[0];\n\nconst prompt = `Create 4:5 portrait Instagram image.\n\nSTYLE: ${d.style}\n\nSLIDE 1/${d.total} - HEADLINE: \"${slide.headline}\"\nTOPIC: ${d.topic}\n\nREQUIREMENTS:\n- Bold headline text \"${slide.headline}\" in ${d.ac} color\n- Dark gradient behind text\n- MSI logo (provided) in BOTTOM RIGHT corner - DO NOT modify it\n- Professional Instagram quality\n- This is slide 1 of ${d.total} - all must look consistent`;\n\nreturn [{ json: { slide_num: 1, headline: slide.headline, subtext: slide.subtext || '', prompt: prompt, logo: d.logo_base64, remaining_slides: d.slides.slice(1), total: d.total, style: d.style, topic: d.topic, ac: d.ac, results: [] } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [700, 200],
-      "id": "build-prompt",
-      "name": "Build Prompt"
+      "position": [920, 300],
+      "id": "slide1-prompt",
+      "name": "Slide 1 Prompt"
     },
     {
       "parameters": {
@@ -75,75 +54,194 @@
         "nodeCredentialType": "googlePalmApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.image_prompt }, { inline_data: { mime_type: 'image/png', data: $json.logo_base64 } }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '4:5', imageSize: '2K' } } }) }}",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }, { inline_data: { mime_type: 'image/png', data: $json.logo } }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '4:5', imageSize: '2K' } } }) }}",
         "options": { "timeout": 120000 }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [920, 200],
-      "id": "gemini",
-      "name": "Gemini",
+      "position": [1140, 300],
+      "id": "gemini1",
+      "name": "Gemini 1",
       "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.item;\nconst sd = $('Build Prompt').item.json;\n\nif (item.binary && Object.keys(item.binary).length > 0) {\n  return [{ json: { slide_number: sd.slide_number, total_slides: sd.total_slides, headline: sd.headline, subtext: sd.subtext }, binary: { data: item.binary[Object.keys(item.binary)[0]] } }];\n}\n\nconst candidates = item.json?.candidates || [];\nfor (const c of candidates) {\n  for (const p of (c?.content?.parts || [])) {\n    const d = p.inline_data || p.inlineData;\n    if (d) {\n      return [{ json: { slide_number: sd.slide_number, total_slides: sd.total_slides, headline: sd.headline, subtext: sd.subtext }, binary: { data: { data: d.data, mimeType: d.mime_type || 'image/png', fileName: `slide-${sd.slide_number}.png` } } }];\n    }\n  }\n}\nthrow new Error('No image for slide ' + sd.slide_number);"
+        "jsCode": "const prev = $('Slide 1 Prompt').item.json;\nconst resp = $input.item.json;\n\nlet imgData = '';\nconst candidates = resp.candidates || [];\nfor (const c of candidates) {\n  for (const p of (c?.content?.parts || [])) {\n    const d = p.inline_data || p.inlineData;\n    if (d && d.data) { imgData = d.data; break; }\n  }\n  if (imgData) break;\n}\nif (!imgData) throw new Error('No image for slide 1');\n\nreturn [{ json: { ...prev, img_data: imgData } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1140, 200],
-      "id": "extract-img",
-      "name": "Extract Image"
+      "position": [1360, 300],
+      "id": "extract1",
+      "name": "Extract 1"
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://api.imgbb.com/1/upload",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "contentType": "multipart-form-data",
-        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "parameterType": "formBinaryData", "name": "image", "inputDataFieldName": "data" }] },
+        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "name": "image", "value": "={{ $json.img_data }}" }] },
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [1360, 200],
-      "id": "upload",
-      "name": "Upload ImgBB",
-      "credentials": { "httpHeaderAuth": { "id": "zx6X4T7j4yDMYWKo", "name": "imgbb-api" } }
+      "typeVersion": 4.2,
+      "position": [1580, 300],
+      "id": "upload1",
+      "name": "Upload 1"
     },
     {
       "parameters": {
-        "jsCode": "const sd = $('Extract Image').item.json;\nconst url = $input.item.json.data?.url || $input.item.json.data?.display_url;\nif (!url) throw new Error('No URL for slide ' + sd.slide_number);\nconsole.log('Slide', sd.slide_number, 'done:', url);\nreturn [{ json: { slide_number: sd.slide_number, total_slides: sd.total_slides, headline: sd.headline, subtext: sd.subtext || '', image_url: url } }];"
+        "jsCode": "const prev = $('Extract 1').item.json;\nconst upload = $input.item.json;\nconst url = upload.data?.url || upload.data?.display_url;\n\nconst results = [{ slide_number: 1, headline: prev.headline, subtext: prev.subtext, image_url: url }];\n\n// Check if more slides\nif (prev.remaining_slides.length === 0) {\n  return [{ json: { done: true, results: results } }];\n}\n\nconst next = prev.remaining_slides[0];\nconst prompt = `Create 4:5 portrait Instagram image.\n\nSTYLE: ${prev.style}\n\nSLIDE 2/${prev.total} - HEADLINE: \"${next.headline}\"\nTOPIC: ${prev.topic}\n\nREQUIREMENTS:\n- Bold headline \"${next.headline}\" in ${prev.ac} color\n- Dark gradient behind text\n- MSI logo (provided) BOTTOM RIGHT - DO NOT modify\n- Professional Instagram quality\n- MUST match slide 1 style exactly`;\n\nreturn [{ json: { done: false, slide_num: 2, headline: next.headline, subtext: next.subtext || '', prompt: prompt, logo: prev.logo, remaining_slides: prev.remaining_slides.slice(1), total: prev.total, style: prev.style, topic: prev.topic, ac: prev.ac, results: results } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1580, 200],
-      "id": "collect-url",
-      "name": "Collect URL"
+      "position": [1800, 300],
+      "id": "collect1",
+      "name": "Collect 1"
     },
     {
       "parameters": {
-        "aggregate": "aggregateAllItemData",
-        "destinationFieldName": "slides_data",
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [{ "leftValue": "={{ $json.done }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2020, 300],
+      "id": "check1",
+      "name": "Done?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }, { inline_data: { mime_type: 'image/png', data: $json.logo } }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '4:5', imageSize: '2K' } } }) }}",
+        "options": { "timeout": 120000 }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2240, 420],
+      "id": "gemini2",
+      "name": "Gemini 2",
+      "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('Collect 1').item.json;\nconst resp = $input.item.json;\n\nlet imgData = '';\nconst candidates = resp.candidates || [];\nfor (const c of candidates) {\n  for (const p of (c?.content?.parts || [])) {\n    const d = p.inline_data || p.inlineData;\n    if (d && d.data) { imgData = d.data; break; }\n  }\n  if (imgData) break;\n}\nif (!imgData) throw new Error('No image for slide 2');\n\nreturn [{ json: { ...prev, img_data: imgData } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2460, 420],
+      "id": "extract2",
+      "name": "Extract 2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.imgbb.com/1/upload",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "name": "image", "value": "={{ $json.img_data }}" }] },
         "options": {}
       },
-      "type": "n8n-nodes-base.aggregate",
-      "typeVersion": 1,
-      "position": [700, 420],
-      "id": "aggregate",
-      "name": "Aggregate"
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2680, 420],
+      "id": "upload2",
+      "name": "Upload 2"
     },
     {
       "parameters": {
-        "jsCode": "const slides = $input.item.json.slides_data || [];\nconst sorted = slides.sort((a, b) => a.slide_number - b.slide_number);\nconst formatted = sorted.map(s => ({ slide_number: s.slide_number, headline: s.headline, subtext: s.subtext || '', image_url: s.image_url }));\nreturn [{ json: { success: true, message: `Carousel: ${formatted.length} slides`, data: { total_slides: formatted.length, slides: formatted } } }];"
+        "jsCode": "const prev = $('Extract 2').item.json;\nconst upload = $input.item.json;\nconst url = upload.data?.url || upload.data?.display_url;\n\nconst results = [...prev.results, { slide_number: 2, headline: prev.headline, subtext: prev.subtext, image_url: url }];\n\nif (prev.remaining_slides.length === 0) {\n  return [{ json: { done: true, results: results } }];\n}\n\nconst next = prev.remaining_slides[0];\nconst prompt = `Create 4:5 portrait Instagram image.\n\nSTYLE: ${prev.style}\n\nSLIDE 3/${prev.total} - HEADLINE: \"${next.headline}\"\nTOPIC: ${prev.topic}\n\nREQUIREMENTS:\n- Bold headline \"${next.headline}\" in ${prev.ac} color\n- Dark gradient behind text\n- MSI logo BOTTOM RIGHT - DO NOT modify\n- Professional Instagram quality\n- MUST match previous slides exactly`;\n\nreturn [{ json: { done: false, slide_num: 3, headline: next.headline, subtext: next.subtext || '', prompt: prompt, logo: prev.logo, remaining_slides: prev.remaining_slides.slice(1), total: prev.total, style: prev.style, topic: prev.topic, ac: prev.ac, results: results } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [920, 420],
-      "id": "format-resp",
-      "name": "Format Response"
+      "position": [2900, 420],
+      "id": "collect2",
+      "name": "Collect 2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [{ "leftValue": "={{ $json.done }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3120, 420],
+      "id": "check2",
+      "name": "Done? 2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }, { inline_data: { mime_type: 'image/png', data: $json.logo } }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '4:5', imageSize: '2K' } } }) }}",
+        "options": { "timeout": 120000 }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3340, 540],
+      "id": "gemini3",
+      "name": "Gemini 3",
+      "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('Collect 2').item.json;\nconst resp = $input.item.json;\n\nlet imgData = '';\nconst candidates = resp.candidates || [];\nfor (const c of candidates) {\n  for (const p of (c?.content?.parts || [])) {\n    const d = p.inline_data || p.inlineData;\n    if (d && d.data) { imgData = d.data; break; }\n  }\n  if (imgData) break;\n}\nif (!imgData) throw new Error('No image for slide 3');\n\nreturn [{ json: { ...prev, img_data: imgData } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3560, 540],
+      "id": "extract3",
+      "name": "Extract 3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.imgbb.com/1/upload",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "name": "image", "value": "={{ $json.img_data }}" }] },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3780, 540],
+      "id": "upload3",
+      "name": "Upload 3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('Extract 3').item.json;\nconst upload = $input.item.json;\nconst url = upload.data?.url || upload.data?.display_url;\n\nconst results = [...prev.results, { slide_number: 3, headline: prev.headline, subtext: prev.subtext, image_url: url }];\n\nreturn [{ json: { done: true, results: results } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4000, 540],
+      "id": "collect3",
+      "name": "Collect 3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.item.json;\nconst slides = data.results.sort((a, b) => a.slide_number - b.slide_number);\n\nreturn [{ json: { success: true, message: `Generated ${slides.length} carousel slides`, data: { total_slides: slides.length, slides: slides } } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4220, 300],
+      "id": "format-final",
+      "name": "Format Final"
     },
     {
       "parameters": {
@@ -153,29 +251,41 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1140, 420],
+      "position": [4440, 300],
       "id": "respond",
       "name": "Respond"
     }
   ],
   "connections": {
-    "Webhook - Carousel Gen": { "main": [[{ "node": "Format Input", "type": "main", "index": 0 }]] },
-    "Format Input": { "main": [[{ "node": "Download Logo", "type": "main", "index": 0 }]] },
-    "Download Logo": { "main": [[{ "node": "Prepare Slides", "type": "main", "index": 0 }]] },
-    "Prepare Slides": { "main": [[{ "node": "Loop Slides", "type": "main", "index": 0 }]] },
-    "Loop Slides": { 
+    "Webhook": { "main": [[{ "node": "Download Logo", "type": "main", "index": 0 }]] },
+    "Download Logo": { "main": [[{ "node": "Prepare Data", "type": "main", "index": 0 }]] },
+    "Prepare Data": { "main": [[{ "node": "Slide 1 Prompt", "type": "main", "index": 0 }]] },
+    "Slide 1 Prompt": { "main": [[{ "node": "Gemini 1", "type": "main", "index": 0 }]] },
+    "Gemini 1": { "main": [[{ "node": "Extract 1", "type": "main", "index": 0 }]] },
+    "Extract 1": { "main": [[{ "node": "Upload 1", "type": "main", "index": 0 }]] },
+    "Upload 1": { "main": [[{ "node": "Collect 1", "type": "main", "index": 0 }]] },
+    "Collect 1": { "main": [[{ "node": "Done?", "type": "main", "index": 0 }]] },
+    "Done?": { 
       "main": [
-        [{ "node": "Build Prompt", "type": "main", "index": 0 }],
-        [{ "node": "Aggregate", "type": "main", "index": 0 }]
+        [{ "node": "Format Final", "type": "main", "index": 0 }],
+        [{ "node": "Gemini 2", "type": "main", "index": 0 }]
       ] 
     },
-    "Build Prompt": { "main": [[{ "node": "Gemini", "type": "main", "index": 0 }]] },
-    "Gemini": { "main": [[{ "node": "Extract Image", "type": "main", "index": 0 }]] },
-    "Extract Image": { "main": [[{ "node": "Upload ImgBB", "type": "main", "index": 0 }]] },
-    "Upload ImgBB": { "main": [[{ "node": "Collect URL", "type": "main", "index": 0 }]] },
-    "Collect URL": { "main": [[{ "node": "Loop Slides", "type": "main", "index": 0 }]] },
-    "Aggregate": { "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]] },
-    "Format Response": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
+    "Gemini 2": { "main": [[{ "node": "Extract 2", "type": "main", "index": 0 }]] },
+    "Extract 2": { "main": [[{ "node": "Upload 2", "type": "main", "index": 0 }]] },
+    "Upload 2": { "main": [[{ "node": "Collect 2", "type": "main", "index": 0 }]] },
+    "Collect 2": { "main": [[{ "node": "Done? 2", "type": "main", "index": 0 }]] },
+    "Done? 2": { 
+      "main": [
+        [{ "node": "Format Final", "type": "main", "index": 0 }],
+        [{ "node": "Gemini 3", "type": "main", "index": 0 }]
+      ] 
+    },
+    "Gemini 3": { "main": [[{ "node": "Extract 3", "type": "main", "index": 0 }]] },
+    "Extract 3": { "main": [[{ "node": "Upload 3", "type": "main", "index": 0 }]] },
+    "Upload 3": { "main": [[{ "node": "Collect 3", "type": "main", "index": 0 }]] },
+    "Collect 3": { "main": [[{ "node": "Format Final", "type": "main", "index": 0 }]] },
+    "Format Final": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
   },
   "pinData": {},
   "meta": { "instanceId": "b5116c87255060ddf18db8a2b1b90e34b38f50f44815cf784a0b8a92b6bb4e6e" }
