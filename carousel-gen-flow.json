@@ -1,5 +1,5 @@
 {
-  "name": "MSI Carousel Generator v5",
+  "name": "MSI Carousel Generator v6",
   "nodes": [
     {
       "parameters": {
@@ -28,21 +28,140 @@
     },
     {
       "parameters": {
-        "jsCode": "// Parse input and get logo\nconst webhookData = $('Webhook').item.json;\nconst logoItem = $input.item;\n\n// Get logo base64\nlet logoBase64 = '';\nif (logoItem.binary) {\n  const binaryKey = Object.keys(logoItem.binary)[0];\n  try {\n    const buffer = await this.helpers.getBinaryDataBuffer(0, binaryKey);\n    logoBase64 = buffer.toString('base64');\n  } catch (e) {\n    const bd = logoItem.binary[binaryKey];\n    if (bd.data && bd.data !== 'filesystem-v2') logoBase64 = bd.data;\n  }\n}\nif (!logoBase64) throw new Error('Failed to get logo');\n\n// Parse webhook body\nlet data = webhookData;\nif (webhookData.body) {\n  if (typeof webhookData.body === 'string') {\n    try { data = JSON.parse(webhookData.body); } catch(e) { data = webhookData; }\n  } else {\n    data = webhookData.body;\n  }\n}\n\nconst slides = data.slides || [];\nif (slides.length === 0) throw new Error('No slides provided');\n\nconst vs = data.visual_style || 'Modern 3D';\nconst pc = data.color_primary || '#207CE5';\nconst sc = data.color_secondary || '#004AAD';\nconst ac = data.color_accent || '#FFFDF1';\nconst dc = data.color_dark || '#2B2B2B';\n\n// DETAILED STYLE INSTRUCTIONS - Same as content-generation-flow.json\nlet style = '';\n\nif (vs.toLowerCase().includes('glass')) {\n  style = `## GLASSMORPHISM STYLE\n**SCENE:** Brand color (${pc}) to secondary color (${sc}) gradient background. THREE frosted glass panels arranged in layered composition with technology icons visible through translucent layers. Semi-transparent hexagonal shapes scattered. Subtle blur effects on glass edges. Connection lines in accent color (${ac}).\n\n**COLOR PALETTE:**\n- Primary: ${pc}\n- Secondary: ${sc}\n- Accent/Text: ${ac}\n- Dark: ${dc}\n\n**VISUAL ELEMENTS:**\n1. Three frosted glass panels with blur effect\n2. Technology icons in white on panels (gears, circuits, data symbols)\n3. Semi-transparent hexagonal shapes (${ac} accents)\n4. Connection lines between elements (${ac})\n5. Subtle glow effects on panel edges\n6. Professional rim lighting for depth`;\n\n} else if (vs.toLowerCase().includes('3d') || vs.toLowerCase().includes('modern')) {\n  style = `## MODERN 3D STYLE\n**SCENE:** Brand color (${pc}) gradient background with floating 3D geometric objects. Glossy spheres, cubes, and abstract tech shapes with realistic reflections and shadows. Dramatic lighting from multiple angles creating depth. Professional, futuristic corporate aesthetic.\n\n**COLOR PALETTE:**\n- Primary: ${pc}\n- Secondary: ${sc}\n- Accent/Text: ${ac}\n- Dark: ${dc}\n\n**VISUAL ELEMENTS:**\n1. Floating 3D geometric shapes (spheres, cubes, cylinders)\n2. Glossy metallic surfaces with reflections\n3. Dramatic rim lighting and shadows\n4. Abstract tech objects (servers, nodes, connections)\n5. Depth of field blur on background elements\n6. Subtle particle effects or light rays`;\n\n} else if (vs.toLowerCase().includes('iso')) {\n  style = `## ISOMETRIC ARCHITECTURE STYLE\n**SCENE:** Brand color (${pc}) background with isometric 3D architecture. Clean geometric buildings, server rooms, or tech infrastructure in isometric perspective. Flat colors with subtle gradients. Professional technical illustration style.\n\n**COLOR PALETTE:**\n- Primary: ${pc}\n- Secondary: ${sc}\n- Accent/Text: ${ac}\n- Dark: ${dc}\n\n**VISUAL ELEMENTS:**\n1. Isometric buildings or server structures\n2. Clean geometric shapes in isometric view\n3. Network connection lines between structures (${ac})\n4. Small human figures for scale (optional)\n5. Subtle shadows for depth\n6. Technical grid or blueprint elements`;\n\n} else if (vs.toLowerCase().includes('data') || vs.toLowerCase().includes('hero')) {\n  style = `## DATA HERO / VISUALIZATION STYLE\n**SCENE:** Brand color (${pc}) background with prominent data visualizations as hero element. Charts, graphs, dashboards, or data flow diagrams as main visual. Clean, modern infographic aesthetic with professional corporate feel.\n\n**COLOR PALETTE:**\n- Primary: ${pc}\n- Secondary: ${sc}\n- Accent/Text: ${ac}\n- Dark: ${dc}\n\n**VISUAL ELEMENTS:**\n1. Large chart or graph as hero element (bar, line, pie, or dashboard)\n2. Data points and nodes with connection lines (${ac})\n3. Glowing data indicators and metrics\n4. Abstract data flow visualization\n5. Clean grid or axis lines\n6. Subtle animated feel (arrows, flow indicators)`;\n\n} else if (vs.toLowerCase().includes('realistic') || vs.toLowerCase().includes('photo')) {\n  style = `## PHOTOREALISTIC STOCK PHOTOGRAPHY\nGenerate a professional stock photograph that looks EXACTLY like it was shot by a commercial photographer.\n\n**COLOR PALETTE TO USE:**\n- Primary Brand Color: ${pc}\n- Secondary Color: ${sc}\n- Accent/Text Color: ${ac}\n- Dark Color: ${dc}\n\n### ABSOLUTE PROHIBITIONS\n- NO glowing effects, NO neon colors\n- NO surreal or fantasy elements\n- NO floating objects (everything must obey gravity)\n- EVERYTHING must look like it could exist in a real photograph\n\n### GRADIENT OVERLAY\n- BOTTOM edge: 90% SOLID with dark color (${dc})\n- TOP edge: 100% TRANSPARENT\n- Perfectly HORIZONTAL transition\n\n### SUBJECT & APPEARANCE\n- 1-2 professional people, age 30-42, tech industry professionals\n- Natural expressions, realistic skin texture, visible pores\n- Professional clothing: oxford shirts, quality sweaters, blazers\n\n### LIGHTING\n- Soft natural window light from camera-left (45-degree angle)\n- Subtle shadows, subsurface scattering on skin\n- Color temperature: slightly warm (5500-6000K)\n\n### CAMERA SPECS\n- 85mm f/1.4 portrait lens simulation\n- Shallow depth of field, subtle film grain\n- Natural, slightly desaturated colors`;\n\n} else {\n  style = `## DEFAULT CORPORATE STYLE\n**SCENE:** Clean brand color (${pc}) gradient background. Professional corporate design with abstract geometric elements. Modern, minimal aesthetic suitable for social media.\n\n**COLOR PALETTE:**\n- Primary: ${pc}\n- Secondary: ${sc}\n- Accent/Text: ${ac}\n- Dark: ${dc}\n\n**VISUAL ELEMENTS:**\n1. Solid brand color background or subtle gradient to secondary\n2. Abstract geometric shapes (hexagons, circles, lines) in accent color\n3. Technology icons relevant to the topic\n4. Clean accent lines or borders (${ac})\n5. Professional lighting effects\n6. Subtle depth through shadows or glows`;\n}\n\nreturn [{\n  json: {\n    slides: slides,\n    total: slides.length,\n    style: style,\n    visual_style: vs,\n    topic: data.topic || 'Technology',\n    ac: ac,\n    dc: dc,\n    logo_base64: logoBase64\n  }\n}];"
+        "jsCode": "// Parse input and get logo\nconst webhookData = $('Webhook').item.json;\nconst logoItem = $input.item;\n\n// Get logo base64\nlet logoBase64 = '';\nif (logoItem.binary) {\n  const binaryKey = Object.keys(logoItem.binary)[0];\n  try {\n    const buffer = await this.helpers.getBinaryDataBuffer(0, binaryKey);\n    logoBase64 = buffer.toString('base64');\n  } catch (e) {\n    const bd = logoItem.binary[binaryKey];\n    if (bd.data && bd.data !== 'filesystem-v2') logoBase64 = bd.data;\n  }\n}\nif (!logoBase64) throw new Error('Failed to get logo');\n\n// Parse webhook body\nlet data = webhookData;\nif (webhookData.body) {\n  if (typeof webhookData.body === 'string') {\n    try { data = JSON.parse(webhookData.body); } catch(e) { data = webhookData; }\n  } else {\n    data = webhookData.body;\n  }\n}\n\nconst slides = data.slides || [];\nif (slides.length === 0) throw new Error('No slides provided');\n\nreturn [{\n  json: {\n    slides: slides,\n    total: slides.length,\n    visual_style: data.visual_style || 'Modern 3D',\n    topic: data.topic || 'Technology',\n    color_primary: data.color_primary || '#207CE5',\n    color_secondary: data.color_secondary || '#004AAD',\n    color_accent: data.color_accent || '#FFFDF1',\n    color_dark: data.color_dark || '#2B2B2B',\n    logo_base64: logoBase64\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [700, 300],
-      "id": "prepare-data",
-      "name": "Prepare Data"
+      "id": "parse-input",
+      "name": "Parse Input"
     },
     {
       "parameters": {
-        "jsCode": "// Generate SLIDE 1\nconst d = $input.item.json;\nconst slide = d.slides[0];\n\nconst prompt = `Create a 4:5 portrait Instagram carousel image.\n\n${d.style}\n\n=== SLIDE 1 of ${d.total} ===\nHEADLINE: \"${slide.headline}\"\nTOPIC: ${d.topic}\n\n=== CRITICAL REQUIREMENTS ===\n1. HEADLINE TEXT: Bold, clear \"${slide.headline}\" text in ${d.ac} color\n2. TEXT AREA: Dark gradient (${d.dc}) behind headline for readability\n3. MSI LOGO: Place the provided logo in BOTTOM RIGHT corner - DO NOT modify, resize or distort it\n4. QUALITY: Professional Instagram-ready, high resolution\n5. CONSISTENCY: This is slide 1 of ${d.total} - ALL slides MUST have identical visual style\n\n=== DO NOT ===\n- Do NOT add any text other than the headline\n- Do NOT modify the MSI logo in any way\n- Do NOT use a different color palette`;\n\nreturn [{ json: { slide_num: 1, headline: slide.headline, subtext: slide.subtext || '', prompt: prompt, logo: d.logo_base64, remaining_slides: d.slides.slice(1), total: d.total, style: d.style, topic: d.topic, ac: d.ac, dc: d.dc, results: [] } }];"
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "typeValidation": "loose" },
+                "conditions": [{ "leftValue": "={{ $json.visual_style }}", "rightValue": "Glassmorphism", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Glassmorphism"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "typeValidation": "loose" },
+                "conditions": [{ "leftValue": "={{ $json.visual_style }}", "rightValue": "Modern 3D", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Modern3D"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "typeValidation": "loose" },
+                "conditions": [{ "leftValue": "={{ $json.visual_style }}", "rightValue": "Isometric", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Isometric"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "typeValidation": "loose" },
+                "conditions": [{ "leftValue": "={{ $json.visual_style }}", "rightValue": "Data Hero", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "DataHero"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "typeValidation": "loose" },
+                "conditions": [{ "leftValue": "={{ $json.visual_style }}", "rightValue": "Realistic", "operator": { "type": "string", "operation": "contains" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Realistic"
+            }
+          ]
+        },
+        "options": { "fallbackOutput": "extra" }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [920, 300],
+      "id": "route-style",
+      "name": "Route by Visual Style"
+    },
+    {
+      "parameters": {
+        "jsCode": "// GLASSMORPHISM Style Instructions\nconst input = $input.item.json;\nconst pc = input.color_primary;\nconst sc = input.color_secondary;\nconst ac = input.color_accent;\nconst dc = input.color_dark;\n\nconst styleInstructions = `## GLASSMORPHISM STYLE\n**SCENE:** Brand color (${pc}) to secondary color (${sc}) gradient background. THREE frosted glass panels arranged in layered composition with technology icons visible through translucent layers. Semi-transparent hexagonal shapes scattered. Subtle blur effects on glass edges. Connection lines in accent color (${ac}).\n\n**COLOR PALETTE:**\n- Primary: ${pc}\n- Secondary: ${sc}\n- Accent/Text: ${ac}\n- Dark: ${dc}\n\n**VISUAL ELEMENTS:**\n1. Three frosted glass panels with blur effect\n2. Technology icons in white on panels (gears, circuits, data symbols)\n3. Semi-transparent hexagonal shapes (${ac} accents)\n4. Connection lines between elements (${ac})\n5. Subtle glow effects on panel edges\n6. Professional rim lighting for depth`;\n\nreturn [{ json: { ...input, style_instructions: styleInstructions } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [920, 300],
+      "position": [1140, 100],
+      "id": "style-glass",
+      "name": "Style: Glassmorphism"
+    },
+    {
+      "parameters": {
+        "jsCode": "// MODERN 3D Style Instructions\nconst input = $input.item.json;\nconst pc = input.color_primary;\nconst sc = input.color_secondary;\nconst ac = input.color_accent;\nconst dc = input.color_dark;\n\nconst styleInstructions = `## MODERN 3D STYLE\n**SCENE:** Brand color (${pc}) gradient background with floating 3D geometric objects. Glossy spheres, cubes, and abstract tech shapes with realistic reflections and shadows. Dramatic lighting from multiple angles creating depth. Professional, futuristic corporate aesthetic.\n\n**COLOR PALETTE:**\n- Primary: ${pc}\n- Secondary: ${sc}\n- Accent/Text: ${ac}\n- Dark: ${dc}\n\n**VISUAL ELEMENTS:**\n1. Floating 3D geometric shapes (spheres, cubes, cylinders)\n2. Glossy metallic surfaces with reflections\n3. Dramatic rim lighting and shadows\n4. Abstract tech objects (servers, nodes, connections)\n5. Depth of field blur on background elements\n6. Subtle particle effects or light rays`;\n\nreturn [{ json: { ...input, style_instructions: styleInstructions } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 220],
+      "id": "style-modern3d",
+      "name": "Style: Modern 3D"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ISOMETRIC Style Instructions\nconst input = $input.item.json;\nconst pc = input.color_primary;\nconst sc = input.color_secondary;\nconst ac = input.color_accent;\nconst dc = input.color_dark;\n\nconst styleInstructions = `## ISOMETRIC ARCHITECTURE STYLE\n**SCENE:** Brand color (${pc}) background with isometric 3D architecture. Clean geometric buildings, server rooms, or tech infrastructure in isometric perspective. Flat colors with subtle gradients. Professional technical illustration style.\n\n**COLOR PALETTE:**\n- Primary: ${pc}\n- Secondary: ${sc}\n- Accent/Text: ${ac}\n- Dark: ${dc}\n\n**VISUAL ELEMENTS:**\n1. Isometric buildings or server structures\n2. Clean geometric shapes in isometric view\n3. Network connection lines between structures (${ac})\n4. Small human figures for scale (optional)\n5. Subtle shadows for depth\n6. Technical grid or blueprint elements`;\n\nreturn [{ json: { ...input, style_instructions: styleInstructions } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 340],
+      "id": "style-iso",
+      "name": "Style: Isometric"
+    },
+    {
+      "parameters": {
+        "jsCode": "// DATA HERO Style Instructions\nconst input = $input.item.json;\nconst pc = input.color_primary;\nconst sc = input.color_secondary;\nconst ac = input.color_accent;\nconst dc = input.color_dark;\n\nconst styleInstructions = `## DATA HERO / VISUALIZATION STYLE\n**SCENE:** Brand color (${pc}) background with prominent data visualizations as hero element. Charts, graphs, dashboards, or data flow diagrams as main visual. Clean, modern infographic aesthetic with professional corporate feel.\n\n**COLOR PALETTE:**\n- Primary: ${pc}\n- Secondary: ${sc}\n- Accent/Text: ${ac}\n- Dark: ${dc}\n\n**VISUAL ELEMENTS:**\n1. Large chart or graph as hero element (bar, line, pie, or dashboard)\n2. Data points and nodes with connection lines (${ac})\n3. Glowing data indicators and metrics\n4. Abstract data flow visualization\n5. Clean grid or axis lines\n6. Subtle animated feel (arrows, flow indicators)`;\n\nreturn [{ json: { ...input, style_instructions: styleInstructions } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 460],
+      "id": "style-data",
+      "name": "Style: Data Hero"
+    },
+    {
+      "parameters": {
+        "jsCode": "// REALISTIC PHOTOGRAPHY Style Instructions (NO GRADIENT)\nconst input = $input.item.json;\nconst pc = input.color_primary;\nconst sc = input.color_secondary;\nconst ac = input.color_accent;\nconst dc = input.color_dark;\n\nconst styleInstructions = `## PHOTOREALISTIC STOCK PHOTOGRAPHY\nGenerate a professional stock photograph that looks EXACTLY like it was shot by a commercial photographer for Getty Images or Shutterstock. This must be indistinguishable from real photography.\n\n**COLOR PALETTE TO USE:**\n- Primary Brand Color: ${pc}\n- Secondary Color: ${sc}\n- Accent/Text Color: ${ac}\n- Dark Color: ${dc}\n\n### ABSOLUTE PROHIBITIONS FOR THIS STYLE\n- NO glowing effects of ANY kind\n- NO luminous or light-emitting elements\n- NO light rays, god rays, or beam effects\n- NO surreal or fantasy elements whatsoever\n- NO floating objects (everything must obey gravity)\n- NO neon colors or oversaturated hues\n- NO dreamy, ethereal, or mystical atmosphere\n- NO abstract distortions or warping\n- NO lens flares or bloom effects\n- NO magical elements or impossible physics\n- NO futuristic holograms or sci-fi elements\n- NO glowing screens or monitors (realistic brightness only)\n- NO supernatural lighting\n- EVERYTHING must look like it could exist in a real photograph\n\n### SUBJECT & APPEARANCE\n- 1-2 professional people, age 30-42, tech industry professionals\n- Expression: genuine micro-expressions - slight asymmetry in smile, natural eye crinkles, relaxed brow\n- Skin: visible pores, natural texture variations, subtle imperfections (small moles, light freckles acceptable), realistic undertones (NOT plastic or airbrushed)\n- Hair: individual strands visible, natural flyaways, realistic shine patterns (NOT perfectly smooth)\n- Teeth: natural coloring (slight warmth, not pure white), realistic spacing\n\n### CLOTHING (SPECIFIC)\n- Option A: Fitted oxford button-down (light blue, white, or subtle pattern), sleeves rolled to forearm\n- Option B: Quality crew neck t-shirt (heather gray, navy, or muted tone) under blazer\n- Option C: Modern merino wool sweater (charcoal, navy) with visible knit texture\n- Fabric details: visible weave/texture, natural wrinkles at joints, realistic draping\n- NO: overly saturated colors, plastic-looking fabrics, or perfectly pressed clothing\n\n### ENVIRONMENT\n- Background: shallow depth of field (f/1.8-2.8 bokeh), soft circular highlights from background lights\n- Setting options: modern office with glass partitions (blurred), neutral concrete/white wall, bright workspace near window\n- Props if visible: realistic laptop (MacBook or Dell XPS), quality notebook, coffee cup with slight imperfections\n- NO: overly clean environments, artificial-looking plants, fantasy elements, unrealistic lighting\n\n### LIGHTING (CRITICAL FOR REALISM)\n- Primary: soft natural window light from camera-left (45-degree angle)\n- Fill: ambient bounce from environment (subtle, not flat)\n- Catchlights: single or double catchlight in eyes (rectangular window shape)\n- Shadows: soft gradual transitions, visible but not harsh shadow under chin/nose\n- Skin rendering: subsurface scattering effect (slight translucency at ear edges, nose bridge)\n- Color temperature: slightly warm (5500-6000K), natural white balance\n\n### CAMERA TECHNICAL SPECS\n- Lens simulation: 85mm f/1.4 portrait lens characteristics\n- Depth of field: subject sharp, background smoothly blurred (NO artificial blur artifacts)\n- Noise/grain: subtle film-like grain at 100% zoom (ISO 400-800 equivalent)\n- Sharpness: natural lens sharpness (NOT over-sharpened or HDR look)\n- Color science: natural, slightly desaturated (NOT oversaturated or filtered)\n\n### COMPOSITION\n- Framing: rule of thirds, subject's eyes at upper third intersection\n- Headroom: appropriate space above head (not cramped)\n- Negative space: intentional space for text overlay area\n- Angle: eye-level or very slight low angle (empowering, not distorted)\n\n### CRITICAL ANTI-AI MARKERS\n- Hands (if visible): correct finger count, natural positioning, visible knuckles and veins\n- Ears: realistic shape, proper attachment to head\n- Jewelry (if any): simple, realistic (watch with readable face, simple earrings)\n- Background text/signage (if any): legible, correctly spelled\n- Symmetry: slight natural asymmetry in face (NOT perfectly mirrored)\n- Edge definition: natural transitions between subject and background (NO artifacts)`;\n\nreturn [{ json: { ...input, style_instructions: styleInstructions } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 580],
+      "id": "style-realistic",
+      "name": "Style: Realistic"
+    },
+    {
+      "parameters": {
+        "jsCode": "// DEFAULT CORPORATE Style Instructions\nconst input = $input.item.json;\nconst pc = input.color_primary;\nconst sc = input.color_secondary;\nconst ac = input.color_accent;\nconst dc = input.color_dark;\n\nconst styleInstructions = `## DEFAULT CORPORATE STYLE\n**SCENE:** Clean brand color (${pc}) gradient background. Professional corporate design with abstract geometric elements. Modern, minimal aesthetic suitable for social media.\n\n**COLOR PALETTE:**\n- Primary: ${pc}\n- Secondary: ${sc}\n- Accent/Text: ${ac}\n- Dark: ${dc}\n\n**VISUAL ELEMENTS:**\n1. Solid brand color background or subtle gradient to secondary\n2. Abstract geometric shapes (hexagons, circles, lines) in accent color\n3. Technology icons relevant to the topic\n4. Clean accent lines or borders (${ac})\n5. Professional lighting effects\n6. Subtle depth through shadows or glows`;\n\nreturn [{ json: { ...input, style_instructions: styleInstructions } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 700],
+      "id": "style-default",
+      "name": "Style: Default"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate SLIDE 1 Prompt\nconst d = $input.item.json;\nconst slide = d.slides[0];\nconst ac = d.color_accent;\nconst dc = d.color_dark;\n\nconst prompt = `Create a 4:5 portrait Instagram carousel image.\n\n${d.style_instructions}\n\n=== SLIDE 1 of ${d.total} ===\nHEADLINE: \"${slide.headline}\"\nTOPIC: ${d.topic}\n\n=== CRITICAL REQUIREMENTS ===\n1. HEADLINE TEXT: Bold, clear \"${slide.headline}\" text in ${ac} color\n2. TEXT AREA: Place text in a readable area with good contrast\n3. MSI LOGO: Place the provided logo in BOTTOM RIGHT corner - DO NOT modify, resize or distort it\n4. QUALITY: Professional Instagram-ready, high resolution\n5. CONSISTENCY: This is slide 1 of ${d.total} - ALL slides MUST have identical visual style\n\n=== DO NOT ===\n- Do NOT add any text other than the headline\n- Do NOT modify the MSI logo in any way\n- Do NOT use a different color palette`;\n\nreturn [{ json: { slide_num: 1, headline: slide.headline, subtext: slide.subtext || '', prompt: prompt, logo: d.logo_base64, remaining_slides: d.slides.slice(1), total: d.total, style_instructions: d.style_instructions, topic: d.topic, color_accent: ac, color_dark: dc, results: [] } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1360, 300],
       "id": "slide1-prompt",
       "name": "Slide 1 Prompt"
     },
@@ -59,7 +178,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1140, 300],
+      "position": [1580, 300],
       "id": "gemini1",
       "name": "Gemini 1",
       "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
@@ -70,7 +189,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1360, 300],
+      "position": [1800, 300],
       "id": "extract1",
       "name": "Extract 1"
     },
@@ -85,17 +204,17 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1580, 300],
+      "position": [2020, 300],
       "id": "upload1",
       "name": "Upload 1"
     },
     {
       "parameters": {
-        "jsCode": "const prev = $('Extract 1').item.json;\nconst upload = $input.item.json;\nconst url = upload.data?.url || upload.data?.display_url;\n\nconst results = [{ slide_number: 1, headline: prev.headline, subtext: prev.subtext, image_url: url }];\n\n// Check if more slides\nif (prev.remaining_slides.length === 0) {\n  return [{ json: { done: true, results: results } }];\n}\n\nconst next = prev.remaining_slides[0];\nconst prompt = `Create a 4:5 portrait Instagram carousel image.\n\n${prev.style}\n\n=== SLIDE 2 of ${prev.total} ===\nHEADLINE: \"${next.headline}\"\nTOPIC: ${prev.topic}\n\n=== CRITICAL REQUIREMENTS ===\n1. HEADLINE TEXT: Bold, clear \"${next.headline}\" text in ${prev.ac} color\n2. TEXT AREA: Dark gradient (${prev.dc}) behind headline for readability\n3. MSI LOGO: Place the provided logo in BOTTOM RIGHT corner - DO NOT modify\n4. QUALITY: Professional Instagram-ready, high resolution\n5. CONSISTENCY: MUST match slide 1 style EXACTLY - same colors, same effects, same composition style\n\n=== DO NOT ===\n- Do NOT add any text other than the headline\n- Do NOT modify the MSI logo\n- Do NOT change the visual style from slide 1`;\n\nreturn [{ json: { done: false, slide_num: 2, headline: next.headline, subtext: next.subtext || '', prompt: prompt, logo: prev.logo, remaining_slides: prev.remaining_slides.slice(1), total: prev.total, style: prev.style, topic: prev.topic, ac: prev.ac, dc: prev.dc, results: results } }];"
+        "jsCode": "const prev = $('Extract 1').item.json;\nconst upload = $input.item.json;\nconst url = upload.data?.url || upload.data?.display_url;\n\nconst results = [{ slide_number: 1, headline: prev.headline, subtext: prev.subtext, image_url: url }];\n\nif (prev.remaining_slides.length === 0) {\n  return [{ json: { done: true, results: results } }];\n}\n\nconst next = prev.remaining_slides[0];\nconst prompt = `Create a 4:5 portrait Instagram carousel image.\n\n${prev.style_instructions}\n\n=== SLIDE 2 of ${prev.total} ===\nHEADLINE: \"${next.headline}\"\nTOPIC: ${prev.topic}\n\n=== CRITICAL REQUIREMENTS ===\n1. HEADLINE TEXT: Bold, clear \"${next.headline}\" text in ${prev.color_accent} color\n2. TEXT AREA: Place text in a readable area with good contrast\n3. MSI LOGO: Place the provided logo in BOTTOM RIGHT corner - DO NOT modify\n4. QUALITY: Professional Instagram-ready, high resolution\n5. CONSISTENCY: MUST match slide 1 style EXACTLY - same colors, same effects, same composition style\n\n=== DO NOT ===\n- Do NOT add any text other than the headline\n- Do NOT modify the MSI logo\n- Do NOT change the visual style from slide 1`;\n\nreturn [{ json: { done: false, slide_num: 2, headline: next.headline, subtext: next.subtext || '', prompt: prompt, logo: prev.logo, remaining_slides: prev.remaining_slides.slice(1), total: prev.total, style_instructions: prev.style_instructions, topic: prev.topic, color_accent: prev.color_accent, color_dark: prev.color_dark, results: results } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1800, 300],
+      "position": [2240, 300],
       "id": "collect1",
       "name": "Collect 1"
     },
@@ -109,7 +228,7 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [2020, 300],
+      "position": [2460, 300],
       "id": "check1",
       "name": "Done?"
     },
@@ -126,7 +245,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2240, 420],
+      "position": [2680, 420],
       "id": "gemini2",
       "name": "Gemini 2",
       "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
@@ -137,7 +256,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2460, 420],
+      "position": [2900, 420],
       "id": "extract2",
       "name": "Extract 2"
     },
@@ -152,17 +271,17 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2680, 420],
+      "position": [3120, 420],
       "id": "upload2",
       "name": "Upload 2"
     },
     {
       "parameters": {
-        "jsCode": "const prev = $('Extract 2').item.json;\nconst upload = $input.item.json;\nconst url = upload.data?.url || upload.data?.display_url;\n\nconst results = [...prev.results, { slide_number: 2, headline: prev.headline, subtext: prev.subtext, image_url: url }];\n\nif (prev.remaining_slides.length === 0) {\n  return [{ json: { done: true, results: results } }];\n}\n\nconst next = prev.remaining_slides[0];\nconst prompt = `Create a 4:5 portrait Instagram carousel image.\n\n${prev.style}\n\n=== SLIDE 3 of ${prev.total} ===\nHEADLINE: \"${next.headline}\"\nTOPIC: ${prev.topic}\n\n=== CRITICAL REQUIREMENTS ===\n1. HEADLINE TEXT: Bold, clear \"${next.headline}\" text in ${prev.ac} color\n2. TEXT AREA: Dark gradient (${prev.dc}) behind headline for readability\n3. MSI LOGO: Place the provided logo in BOTTOM RIGHT corner - DO NOT modify\n4. QUALITY: Professional Instagram-ready, high resolution\n5. CONSISTENCY: MUST match slides 1 and 2 style EXACTLY - same colors, effects, composition\n\n=== DO NOT ===\n- Do NOT add any text other than the headline\n- Do NOT modify the MSI logo\n- Do NOT change the visual style from previous slides`;\n\nreturn [{ json: { done: false, slide_num: 3, headline: next.headline, subtext: next.subtext || '', prompt: prompt, logo: prev.logo, remaining_slides: prev.remaining_slides.slice(1), total: prev.total, style: prev.style, topic: prev.topic, ac: prev.ac, dc: prev.dc, results: results } }];"
+        "jsCode": "const prev = $('Extract 2').item.json;\nconst upload = $input.item.json;\nconst url = upload.data?.url || upload.data?.display_url;\n\nconst results = [...prev.results, { slide_number: 2, headline: prev.headline, subtext: prev.subtext, image_url: url }];\n\nif (prev.remaining_slides.length === 0) {\n  return [{ json: { done: true, results: results } }];\n}\n\nconst next = prev.remaining_slides[0];\nconst prompt = `Create a 4:5 portrait Instagram carousel image.\n\n${prev.style_instructions}\n\n=== SLIDE 3 of ${prev.total} ===\nHEADLINE: \"${next.headline}\"\nTOPIC: ${prev.topic}\n\n=== CRITICAL REQUIREMENTS ===\n1. HEADLINE TEXT: Bold, clear \"${next.headline}\" text in ${prev.color_accent} color\n2. TEXT AREA: Place text in a readable area with good contrast\n3. MSI LOGO: Place the provided logo in BOTTOM RIGHT corner - DO NOT modify\n4. QUALITY: Professional Instagram-ready, high resolution\n5. CONSISTENCY: MUST match slides 1 and 2 style EXACTLY - same colors, effects, composition\n\n=== DO NOT ===\n- Do NOT add any text other than the headline\n- Do NOT modify the MSI logo\n- Do NOT change the visual style from previous slides`;\n\nreturn [{ json: { done: false, slide_num: 3, headline: next.headline, subtext: next.subtext || '', prompt: prompt, logo: prev.logo, remaining_slides: prev.remaining_slides.slice(1), total: prev.total, style_instructions: prev.style_instructions, topic: prev.topic, color_accent: prev.color_accent, color_dark: prev.color_dark, results: results } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2900, 420],
+      "position": [3340, 420],
       "id": "collect2",
       "name": "Collect 2"
     },
@@ -176,7 +295,7 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [3120, 420],
+      "position": [3560, 420],
       "id": "check2",
       "name": "Done? 2"
     },
@@ -193,7 +312,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [3340, 540],
+      "position": [3780, 540],
       "id": "gemini3",
       "name": "Gemini 3",
       "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
@@ -204,7 +323,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3560, 540],
+      "position": [4000, 540],
       "id": "extract3",
       "name": "Extract 3"
     },
@@ -219,7 +338,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [3780, 540],
+      "position": [4220, 540],
       "id": "upload3",
       "name": "Upload 3"
     },
@@ -229,7 +348,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4000, 540],
+      "position": [4440, 540],
       "id": "collect3",
       "name": "Collect 3"
     },
@@ -239,7 +358,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4220, 300],
+      "position": [4660, 300],
       "id": "format-final",
       "name": "Format Final"
     },
@@ -251,15 +370,31 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [4440, 300],
+      "position": [4880, 300],
       "id": "respond",
       "name": "Respond"
     }
   ],
   "connections": {
     "Webhook": { "main": [[{ "node": "Download Logo", "type": "main", "index": 0 }]] },
-    "Download Logo": { "main": [[{ "node": "Prepare Data", "type": "main", "index": 0 }]] },
-    "Prepare Data": { "main": [[{ "node": "Slide 1 Prompt", "type": "main", "index": 0 }]] },
+    "Download Logo": { "main": [[{ "node": "Parse Input", "type": "main", "index": 0 }]] },
+    "Parse Input": { "main": [[{ "node": "Route by Visual Style", "type": "main", "index": 0 }]] },
+    "Route by Visual Style": { 
+      "main": [
+        [{ "node": "Style: Glassmorphism", "type": "main", "index": 0 }],
+        [{ "node": "Style: Modern 3D", "type": "main", "index": 0 }],
+        [{ "node": "Style: Isometric", "type": "main", "index": 0 }],
+        [{ "node": "Style: Data Hero", "type": "main", "index": 0 }],
+        [{ "node": "Style: Realistic", "type": "main", "index": 0 }],
+        [{ "node": "Style: Default", "type": "main", "index": 0 }]
+      ] 
+    },
+    "Style: Glassmorphism": { "main": [[{ "node": "Slide 1 Prompt", "type": "main", "index": 0 }]] },
+    "Style: Modern 3D": { "main": [[{ "node": "Slide 1 Prompt", "type": "main", "index": 0 }]] },
+    "Style: Isometric": { "main": [[{ "node": "Slide 1 Prompt", "type": "main", "index": 0 }]] },
+    "Style: Data Hero": { "main": [[{ "node": "Slide 1 Prompt", "type": "main", "index": 0 }]] },
+    "Style: Realistic": { "main": [[{ "node": "Slide 1 Prompt", "type": "main", "index": 0 }]] },
+    "Style: Default": { "main": [[{ "node": "Slide 1 Prompt", "type": "main", "index": 0 }]] },
     "Slide 1 Prompt": { "main": [[{ "node": "Gemini 1", "type": "main", "index": 0 }]] },
     "Gemini 1": { "main": [[{ "node": "Extract 1", "type": "main", "index": 0 }]] },
     "Extract 1": { "main": [[{ "node": "Upload 1", "type": "main", "index": 0 }]] },
