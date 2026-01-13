@@ -1,5 +1,5 @@
 {
-  "name": "MSI Carousel Generator v6",
+  "name": "MSI Carousel Generator v7",
   "nodes": [
     {
       "parameters": {
@@ -28,13 +28,95 @@
     },
     {
       "parameters": {
-        "jsCode": "// Parse input and get logo\nconst webhookData = $('Webhook').item.json;\nconst logoItem = $input.item;\n\n// Get logo base64\nlet logoBase64 = '';\nif (logoItem.binary) {\n  const binaryKey = Object.keys(logoItem.binary)[0];\n  try {\n    const buffer = await this.helpers.getBinaryDataBuffer(0, binaryKey);\n    logoBase64 = buffer.toString('base64');\n  } catch (e) {\n    const bd = logoItem.binary[binaryKey];\n    if (bd.data && bd.data !== 'filesystem-v2') logoBase64 = bd.data;\n  }\n}\nif (!logoBase64) throw new Error('Failed to get logo');\n\n// Parse webhook body\nlet data = webhookData;\nif (webhookData.body) {\n  if (typeof webhookData.body === 'string') {\n    try { data = JSON.parse(webhookData.body); } catch(e) { data = webhookData; }\n  } else {\n    data = webhookData.body;\n  }\n}\n\nconst slides = data.slides || [];\nif (slides.length === 0) throw new Error('No slides provided');\n\nreturn [{\n  json: {\n    slides: slides,\n    total: slides.length,\n    visual_style: data.visual_style || 'Modern 3D',\n    topic: data.topic || 'Technology',\n    color_primary: data.color_primary || '#207CE5',\n    color_secondary: data.color_secondary || '#004AAD',\n    color_accent: data.color_accent || '#FFFDF1',\n    color_dark: data.color_dark || '#2B2B2B',\n    logo_base64: logoBase64\n  }\n}];"
+        "jsCode": "// Parse input and get logo\nconst webhookData = $('Webhook').item.json;\nconst logoItem = $input.item;\n\n// Get logo base64\nlet logoBase64 = '';\nif (logoItem.binary) {\n  const binaryKey = Object.keys(logoItem.binary)[0];\n  try {\n    const buffer = await this.helpers.getBinaryDataBuffer(0, binaryKey);\n    logoBase64 = buffer.toString('base64');\n  } catch (e) {\n    const bd = logoItem.binary[binaryKey];\n    if (bd.data && bd.data !== 'filesystem-v2') logoBase64 = bd.data;\n  }\n}\nif (!logoBase64) throw new Error('Failed to get logo');\n\n// Parse webhook body\nlet data = webhookData;\nif (webhookData.body) {\n  if (typeof webhookData.body === 'string') {\n    try { data = JSON.parse(webhookData.body); } catch(e) { data = webhookData; }\n  } else {\n    data = webhookData.body;\n  }\n}\n\nconst slides = data.slides || [];\nif (slides.length === 0) throw new Error('No slides provided');\n\nreturn [{\n  json: {\n    slides: slides,\n    total: slides.length,\n    visual_style: data.visual_style || 'Modern 3D',\n    topic: data.topic || 'Technology',\n    context: data.context || '',\n    color_primary: data.color_primary || '#207CE5',\n    color_secondary: data.color_secondary || '#004AAD',\n    color_accent: data.color_accent || '#FFFDF1',\n    color_dark: data.color_dark || '#2B2B2B',\n    logo_base64: logoBase64\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [700, 300],
       "id": "parse-input",
       "name": "Parse Input"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Create an Instagram carousel strategy for:\n\nTopic: {{ $json.topic }}\nNumber of Slides: {{ $json.total }}\nVisual Style: {{ $json.visual_style }}\nContext: {{ $json.context || 'None provided' }}\n\nSlide Headlines:\n{{ $json.slides.map((s, i) => `Slide ${i+1}: ${s.headline}`).join('\\n') }}\n\nNote: All images will be in 4:5 portrait format for Instagram.",
+        "options": {
+          "systemMessage": "# LANGUAGE REQUIREMENT\nALWAYS respond in English regardless of input language.\n\n# ROLE: Strategic Content Analyst for MSI Technologies - INSTAGRAM CAROUSEL SPECIALIST\n\n## OUTPUT FORMAT\n---CAROUSEL STRATEGY---\nTheme: [Overarching narrative that connects all slides]\nHook (Slide 1): [Why people stop scrolling - the attention grabber]\nFlow: [How each slide leads to the next]\nCTA (Final Slide): [Clear call to action]\nHashtags: [5-7 hashtags including #MSITechnologies]\n\n---VISUAL CONSISTENCY NOTES---\nUser's Visual Style: [Copy exactly from user input]\nUnifying Elements: [What visual elements MUST stay consistent across ALL slides]\nColor Strategy: [How to use the brand colors across slides]\nFormat: 4:5 Portrait Instagram Carousel\n\n---SLIDE BREAKDOWN---\n[For each slide: purpose, emotional beat, key visual focus]\n\n## MSI CONTEXT\nMSI Technologies helps businesses modernize infrastructure and implement innovative technology solutions.\n\n## CAROUSEL-SPECIFIC RULES\n1. Each slide must COMPEL the user to swipe to the next\n2. First slide = pattern interrupt, must stop the scroll\n3. Last slide = clear CTA with value proposition\n4. Middle slides = build value and maintain interest\n5. Visual style MUST be identical across all slides\n6. Brand blue #207CE5 backgrounds MANDATORY for consistency"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [920, 300],
+      "id": "agent-strategy",
+      "name": "Agent 1: Carousel Strategy"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "chatgpt-4o-latest"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [1000, 520],
+      "id": "openai-strategy",
+      "name": "OpenAI for Strategy",
+      "credentials": {
+        "openAiApi": {
+          "id": "13Oqly3WdRAzZVXL",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Agent 1: Carousel Strategy').item.json.output }}\n\n---SLIDES TO WRITE COPY FOR---\n{{ $('Parse Input').item.json.slides.map((s, i) => `Slide ${i+1}: ${s.headline}`).join('\\n') }}",
+        "options": {
+          "systemMessage": "# LANGUAGE REQUIREMENT\nALWAYS respond in English.\n\n# ROLE: Instagram Carousel Copy Writer for MSI Technologies\n\nWrite compelling copy for EACH slide of the carousel.\n\n## OUTPUT FORMAT\nFor each slide, output:\n\n**SLIDE [N]: [Headline]**\nCaption: [2-3 sentences max, punchy and direct]\nSubtext: [Optional supporting line for the image]\n\n## CAROUSEL COPY RULES\n- Slide 1: Hook - must stop the scroll (question, bold statement, or surprising fact)\n- Middle slides: Build value, each one a mini-story\n- Final slide: Clear CTA - what should they do next?\n\n## VOICE\n- Senior tech professional sharing insights\n- Confident but not arrogant\n- Direct and actionable\n\n## NEVER USE\n- \"In today's digital landscape\"\n- \"Revolutionize/Transform your business\"\n- \"Cutting-edge/Game-changing\"\n- Excessive emojis (max 1-2 per slide)\n\n## REQUIREMENTS\n- Keep each caption under 30 words\n- Make each slide independently valuable\n- BUT connected to the overall narrative\n- Natural flow between slides\n\n## FOR FINAL SLIDE ONLY\nInclude contact info:\n📩 contact@msitechnologiesinc.com\n🌐 msitechnologiesinc.com"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [1140, 300],
+      "id": "agent-copywriter",
+      "name": "Agent 2: Carousel Copy Writer"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "chatgpt-4o-latest"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [1220, 520],
+      "id": "openai-copywriter",
+      "name": "OpenAI for Copy Writer",
+      "credentials": {
+        "openAiApi": {
+          "id": "13Oqly3WdRAzZVXL",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge agent outputs with original data\nconst parseInput = $('Parse Input').item.json;\nconst strategy = $('Agent 1: Carousel Strategy').item.json.output;\nconst copy = $('Agent 2: Carousel Copy Writer').item.json.output;\n\nreturn [{\n  json: {\n    ...parseInput,\n    strategy: strategy,\n    carousel_copy: copy\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1360, 300],
+      "id": "merge-agent-outputs",
+      "name": "Merge Agent Outputs"
     },
     {
       "parameters": {
@@ -91,7 +173,7 @@
       },
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3,
-      "position": [920, 300],
+      "position": [1580, 300],
       "id": "route-style",
       "name": "Route by Visual Style"
     },
@@ -101,7 +183,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1140, 100],
+      "position": [1800, 100],
       "id": "style-glass",
       "name": "Style: Glassmorphism"
     },
@@ -111,7 +193,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1140, 220],
+      "position": [1800, 220],
       "id": "style-modern3d",
       "name": "Style: Modern 3D"
     },
@@ -121,7 +203,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1140, 340],
+      "position": [1800, 340],
       "id": "style-iso",
       "name": "Style: Isometric"
     },
@@ -131,17 +213,17 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1140, 460],
+      "position": [1800, 460],
       "id": "style-data",
       "name": "Style: Data Hero"
     },
     {
       "parameters": {
-        "jsCode": "// REALISTIC PHOTOGRAPHY Style Instructions (NO GRADIENT)\nconst input = $input.item.json;\nconst pc = input.color_primary;\nconst sc = input.color_secondary;\nconst ac = input.color_accent;\nconst dc = input.color_dark;\n\nconst styleInstructions = `## PHOTOREALISTIC STOCK PHOTOGRAPHY\nGenerate a professional stock photograph that looks EXACTLY like it was shot by a commercial photographer for Getty Images or Shutterstock. This must be indistinguishable from real photography.\n\n**COLOR PALETTE TO USE:**\n- Primary Brand Color: ${pc}\n- Secondary Color: ${sc}\n- Accent/Text Color: ${ac}\n- Dark Color: ${dc}\n\n### ABSOLUTE PROHIBITIONS FOR THIS STYLE\n- NO glowing effects of ANY kind\n- NO luminous or light-emitting elements\n- NO light rays, god rays, or beam effects\n- NO surreal or fantasy elements whatsoever\n- NO floating objects (everything must obey gravity)\n- NO neon colors or oversaturated hues\n- NO dreamy, ethereal, or mystical atmosphere\n- NO abstract distortions or warping\n- NO lens flares or bloom effects\n- NO magical elements or impossible physics\n- NO futuristic holograms or sci-fi elements\n- NO glowing screens or monitors (realistic brightness only)\n- NO supernatural lighting\n- EVERYTHING must look like it could exist in a real photograph\n\n### SUBJECT & APPEARANCE\n- 1-2 professional people, age 30-42, tech industry professionals\n- Expression: genuine micro-expressions - slight asymmetry in smile, natural eye crinkles, relaxed brow\n- Skin: visible pores, natural texture variations, subtle imperfections (small moles, light freckles acceptable), realistic undertones (NOT plastic or airbrushed)\n- Hair: individual strands visible, natural flyaways, realistic shine patterns (NOT perfectly smooth)\n- Teeth: natural coloring (slight warmth, not pure white), realistic spacing\n\n### CLOTHING (SPECIFIC)\n- Option A: Fitted oxford button-down (light blue, white, or subtle pattern), sleeves rolled to forearm\n- Option B: Quality crew neck t-shirt (heather gray, navy, or muted tone) under blazer\n- Option C: Modern merino wool sweater (charcoal, navy) with visible knit texture\n- Fabric details: visible weave/texture, natural wrinkles at joints, realistic draping\n- NO: overly saturated colors, plastic-looking fabrics, or perfectly pressed clothing\n\n### ENVIRONMENT\n- Background: shallow depth of field (f/1.8-2.8 bokeh), soft circular highlights from background lights\n- Setting options: modern office with glass partitions (blurred), neutral concrete/white wall, bright workspace near window\n- Props if visible: realistic laptop (MacBook or Dell XPS), quality notebook, coffee cup with slight imperfections\n- NO: overly clean environments, artificial-looking plants, fantasy elements, unrealistic lighting\n\n### LIGHTING (CRITICAL FOR REALISM)\n- Primary: soft natural window light from camera-left (45-degree angle)\n- Fill: ambient bounce from environment (subtle, not flat)\n- Catchlights: single or double catchlight in eyes (rectangular window shape)\n- Shadows: soft gradual transitions, visible but not harsh shadow under chin/nose\n- Skin rendering: subsurface scattering effect (slight translucency at ear edges, nose bridge)\n- Color temperature: slightly warm (5500-6000K), natural white balance\n\n### CAMERA TECHNICAL SPECS\n- Lens simulation: 85mm f/1.4 portrait lens characteristics\n- Depth of field: subject sharp, background smoothly blurred (NO artificial blur artifacts)\n- Noise/grain: subtle film-like grain at 100% zoom (ISO 400-800 equivalent)\n- Sharpness: natural lens sharpness (NOT over-sharpened or HDR look)\n- Color science: natural, slightly desaturated (NOT oversaturated or filtered)\n\n### COMPOSITION\n- Framing: rule of thirds, subject's eyes at upper third intersection\n- Headroom: appropriate space above head (not cramped)\n- Negative space: intentional space for text overlay area\n- Angle: eye-level or very slight low angle (empowering, not distorted)\n\n### CRITICAL ANTI-AI MARKERS\n- Hands (if visible): correct finger count, natural positioning, visible knuckles and veins\n- Ears: realistic shape, proper attachment to head\n- Jewelry (if any): simple, realistic (watch with readable face, simple earrings)\n- Background text/signage (if any): legible, correctly spelled\n- Symmetry: slight natural asymmetry in face (NOT perfectly mirrored)\n- Edge definition: natural transitions between subject and background (NO artifacts)`;\n\nreturn [{ json: { ...input, style_instructions: styleInstructions } }];"
+        "jsCode": "// REALISTIC PHOTOGRAPHY Style Instructions (NO GRADIENT)\nconst input = $input.item.json;\nconst pc = input.color_primary;\nconst sc = input.color_secondary;\nconst ac = input.color_accent;\nconst dc = input.color_dark;\n\nconst styleInstructions = `## PHOTOREALISTIC STOCK PHOTOGRAPHY\nGenerate a professional stock photograph that looks EXACTLY like it was shot by a commercial photographer for Getty Images or Shutterstock. This must be indistinguishable from real photography.\n\n**COLOR PALETTE TO USE:**\n- Primary Brand Color: ${pc}\n- Secondary Color: ${sc}\n- Accent/Text Color: ${ac}\n- Dark Color: ${dc}\n\n### ABSOLUTE PROHIBITIONS FOR THIS STYLE\n- NO glowing effects of ANY kind\n- NO luminous or light-emitting elements\n- NO light rays, god rays, or beam effects\n- NO surreal or fantasy elements whatsoever\n- NO floating objects (everything must obey gravity)\n- NO neon colors or oversaturated hues\n- NO dreamy, ethereal, or mystical atmosphere\n- NO abstract distortions or warping\n- NO lens flares or bloom effects\n- NO magical elements or impossible physics\n- NO futuristic holograms or sci-fi elements\n- NO glowing screens or monitors (realistic brightness only)\n- NO supernatural lighting\n- EVERYTHING must look like it could exist in a real photograph\n\n### SUBJECT & APPEARANCE\n- 1-2 professional people, age 30-42, tech industry professionals\n- Expression: genuine micro-expressions - slight asymmetry in smile, natural eye crinkles, relaxed brow\n- Skin: visible pores, natural texture variations, subtle imperfections\n- Hair: individual strands visible, natural flyaways, realistic shine patterns\n- Professional clothing: oxford shirts, quality sweaters, blazers\n\n### ENVIRONMENT\n- Background: shallow depth of field (f/1.8-2.8 bokeh)\n- Setting: modern office with glass partitions (blurred), neutral wall, bright workspace\n- Props if visible: realistic laptop, quality notebook, coffee cup\n\n### LIGHTING\n- Primary: soft natural window light from camera-left (45-degree angle)\n- Shadows: soft gradual transitions, visible but not harsh\n- Color temperature: slightly warm (5500-6000K)\n\n### CAMERA SPECS\n- 85mm f/1.4 portrait lens simulation\n- Shallow depth of field, subtle film grain\n- Natural, slightly desaturated colors`;\n\nreturn [{ json: { ...input, style_instructions: styleInstructions } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1140, 580],
+      "position": [1800, 580],
       "id": "style-realistic",
       "name": "Style: Realistic"
     },
@@ -151,17 +233,53 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1140, 700],
+      "position": [1800, 700],
       "id": "style-default",
       "name": "Style: Default"
     },
     {
       "parameters": {
-        "jsCode": "// Generate SLIDE 1 Prompt\nconst d = $input.item.json;\nconst slide = d.slides[0];\nconst ac = d.color_accent;\nconst dc = d.color_dark;\n\nconst prompt = `Create a 4:5 portrait Instagram carousel image.\n\n${d.style_instructions}\n\n=== SLIDE 1 of ${d.total} ===\nHEADLINE: \"${slide.headline}\"\nTOPIC: ${d.topic}\n\n=== CRITICAL REQUIREMENTS ===\n1. HEADLINE TEXT: Bold, clear \"${slide.headline}\" text in ${ac} color\n2. TEXT AREA: Place text in a readable area with good contrast\n3. MSI LOGO: Place the provided logo in BOTTOM RIGHT corner - DO NOT modify, resize or distort it\n4. QUALITY: Professional Instagram-ready, high resolution\n5. CONSISTENCY: This is slide 1 of ${d.total} - ALL slides MUST have identical visual style\n\n=== DO NOT ===\n- Do NOT add any text other than the headline\n- Do NOT modify the MSI logo in any way\n- Do NOT use a different color palette`;\n\nreturn [{ json: { slide_num: 1, headline: slide.headline, subtext: slide.subtext || '', prompt: prompt, logo: d.logo_base64, remaining_slides: d.slides.slice(1), total: d.total, style_instructions: d.style_instructions, topic: d.topic, color_accent: ac, color_dark: dc, results: [] } }];"
+        "promptType": "define",
+        "text": "=CAROUSEL STRATEGY:\n{{ $json.strategy }}\n\nCARROUSEL COPY:\n{{ $json.carousel_copy }}\n\nVISUAL STYLE: {{ $json.visual_style }}\nNUMBER OF SLIDES: {{ $json.total }}\n\nCOLOR PALETTE TO USE:\n- Primary Color: {{ $json.color_primary }}\n- Secondary Color: {{ $json.color_secondary }}\n- Accent/Text Color: {{ $json.color_accent }}\n- Dark Color: {{ $json.color_dark }}\n\nSTYLE INSTRUCTIONS:\n{{ $json.style_instructions }}\n\nSLIDES TO CREATE:\n{{ $json.slides.map((s, i) => `Slide ${i+1}: ${s.headline}`).join('\\n') }}",
+        "options": {
+          "systemMessage": "# ROLE: Image Prompt Engineer for MSI Technologies - CAROUSEL SPECIALIST\n\nCreate Gemini 3 Pro image generation prompts for EACH SLIDE of the carousel using the STYLE INSTRUCTIONS and COLOR PALETTE provided.\n\n## CRITICAL FOR CAROUSELS\n1. ALL slides MUST have IDENTICAL visual style - same backgrounds, same effects, same color treatment\n2. Only the HEADLINE text changes between slides\n3. The visual elements should create a cohesive series when viewed together\n4. Think of it as ONE design template applied to multiple slides\n\n## CRITICAL PROHIBITIONS (NEVER INCLUDE)\n- NO glowing effects, NO luminous elements, NO light rays\n- NO surreal or fantasy elements\n- NO floating objects defying gravity (unless style specifically calls for it)\n- NO neon colors or oversaturated hues\n- NEVER modify, alter, distort, or recreate the MSI logo - use it EXACTLY as provided\n\n## TEXT RENDERING\n- **Headline**: Text in Accent color from palette, bold sans-serif, 48-56pt\n- Clean, elegant typography\n- IMPORTANT: Do NOT use hyphens or dashes in the text\n\n## LOGO PLACEMENT\n- MSI Technologies logo: Use EXACTLY as provided - NO modifications\n- Place logo in BOTTOM RIGHT corner, consistent across ALL slides\n- Keep branding subtle but visible\n\n## OUTPUT FORMAT\nFor EACH slide, output:\n\n**SLIDE [N] PROMPT:**\n[Complete Gemini prompt for that slide, including all visual instructions and the specific headline for that slide]\n\n---\n\n**VISUAL CONSISTENCY NOTES:**\n[Brief notes on what MUST stay identical across all slides]\n\n## REMEMBER\nThe carousel must look like a professional series - when users swipe through, each slide should feel like part of the same story with the same visual DNA."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [2020, 300],
+      "id": "agent-image-prompt",
+      "name": "Agent 3: Image Prompts"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "chatgpt-4o-latest"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [2100, 520],
+      "id": "openai-image-prompt",
+      "name": "OpenAI for Image Prompts",
+      "credentials": {
+        "openAiApi": {
+          "id": "13Oqly3WdRAzZVXL",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate SLIDE 1 Prompt from Agent output\nconst d = $input.item.json;\nconst agentOutput = d.output || '';\nconst slide = d.slides[0];\nconst ac = d.color_accent;\nconst dc = d.color_dark;\n\n// Extract slide 1 prompt from agent output or create default\nlet slidePrompt = '';\nconst slide1Match = agentOutput.match(/\\*\\*SLIDE 1 PROMPT:\\*\\*([\\s\\S]*?)(?=\\*\\*SLIDE 2|---\\*\\*VISUAL|$)/i);\nif (slide1Match) {\n  slidePrompt = slide1Match[1].trim();\n} else {\n  // Fallback prompt\n  slidePrompt = `Create a 4:5 portrait Instagram carousel image.\n\n${d.style_instructions}\n\nHEADLINE: \"${slide.headline}\"\nTOPIC: ${d.topic}\n\nCRITICAL REQUIREMENTS:\n1. HEADLINE TEXT: Bold, clear \"${slide.headline}\" text in ${ac} color\n2. TEXT AREA: Place text in a readable area with good contrast\n3. MSI LOGO: Place the provided logo in BOTTOM RIGHT corner - DO NOT modify\n4. QUALITY: Professional Instagram-ready, high resolution\n5. This is slide 1 of ${d.total} - establish the visual style for the series`;\n}\n\nreturn [{ json: { \n  slide_num: 1, \n  headline: slide.headline, \n  subtext: slide.subtext || '', \n  prompt: slidePrompt, \n  logo: d.logo_base64, \n  remaining_slides: d.slides.slice(1), \n  total: d.total, \n  style_instructions: d.style_instructions, \n  topic: d.topic, \n  color_accent: ac, \n  color_dark: dc, \n  agent_output: agentOutput,\n  results: [] \n} }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1360, 300],
+      "position": [2240, 300],
       "id": "slide1-prompt",
       "name": "Slide 1 Prompt"
     },
@@ -178,7 +296,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1580, 300],
+      "position": [2460, 300],
       "id": "gemini1",
       "name": "Gemini 1",
       "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
@@ -189,7 +307,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1800, 300],
+      "position": [2680, 300],
       "id": "extract1",
       "name": "Extract 1"
     },
@@ -204,17 +322,17 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2020, 300],
+      "position": [2900, 300],
       "id": "upload1",
       "name": "Upload 1"
     },
     {
       "parameters": {
-        "jsCode": "const prev = $('Extract 1').item.json;\nconst upload = $input.item.json;\nconst url = upload.data?.url || upload.data?.display_url;\n\nconst results = [{ slide_number: 1, headline: prev.headline, subtext: prev.subtext, image_url: url }];\n\nif (prev.remaining_slides.length === 0) {\n  return [{ json: { done: true, results: results } }];\n}\n\nconst next = prev.remaining_slides[0];\nconst prompt = `Create a 4:5 portrait Instagram carousel image.\n\n${prev.style_instructions}\n\n=== SLIDE 2 of ${prev.total} ===\nHEADLINE: \"${next.headline}\"\nTOPIC: ${prev.topic}\n\n=== CRITICAL REQUIREMENTS ===\n1. HEADLINE TEXT: Bold, clear \"${next.headline}\" text in ${prev.color_accent} color\n2. TEXT AREA: Place text in a readable area with good contrast\n3. MSI LOGO: Place the provided logo in BOTTOM RIGHT corner - DO NOT modify\n4. QUALITY: Professional Instagram-ready, high resolution\n5. CONSISTENCY: MUST match slide 1 style EXACTLY - same colors, same effects, same composition style\n\n=== DO NOT ===\n- Do NOT add any text other than the headline\n- Do NOT modify the MSI logo\n- Do NOT change the visual style from slide 1`;\n\nreturn [{ json: { done: false, slide_num: 2, headline: next.headline, subtext: next.subtext || '', prompt: prompt, logo: prev.logo, remaining_slides: prev.remaining_slides.slice(1), total: prev.total, style_instructions: prev.style_instructions, topic: prev.topic, color_accent: prev.color_accent, color_dark: prev.color_dark, results: results } }];"
+        "jsCode": "const prev = $('Extract 1').item.json;\nconst upload = $input.item.json;\nconst url = upload.data?.url || upload.data?.display_url;\n\nconst results = [{ slide_number: 1, headline: prev.headline, subtext: prev.subtext, image_url: url }];\n\nif (prev.remaining_slides.length === 0) {\n  return [{ json: { done: true, results: results } }];\n}\n\nconst next = prev.remaining_slides[0];\n\n// Extract slide 2 prompt from agent output or create default\nlet slidePrompt = '';\nconst slide2Match = prev.agent_output.match(/\\*\\*SLIDE 2 PROMPT:\\*\\*([\\s\\S]*?)(?=\\*\\*SLIDE 3|---\\*\\*VISUAL|$)/i);\nif (slide2Match) {\n  slidePrompt = slide2Match[1].trim();\n} else {\n  slidePrompt = `Create a 4:5 portrait Instagram carousel image.\n\n${prev.style_instructions}\n\nSLIDE 2 of ${prev.total}\nHEADLINE: \"${next.headline}\"\nTOPIC: ${prev.topic}\n\nCRITICAL: MUST match slide 1 style EXACTLY - same colors, same effects, same composition.\n\n1. HEADLINE TEXT: Bold \"${next.headline}\" in ${prev.color_accent} color\n2. MSI LOGO: BOTTOM RIGHT corner - DO NOT modify\n3. Match slide 1 visual style exactly`;\n}\n\nreturn [{ json: { done: false, slide_num: 2, headline: next.headline, subtext: next.subtext || '', prompt: slidePrompt, logo: prev.logo, remaining_slides: prev.remaining_slides.slice(1), total: prev.total, style_instructions: prev.style_instructions, topic: prev.topic, color_accent: prev.color_accent, color_dark: prev.color_dark, agent_output: prev.agent_output, results: results } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2240, 300],
+      "position": [3120, 300],
       "id": "collect1",
       "name": "Collect 1"
     },
@@ -228,7 +346,7 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [2460, 300],
+      "position": [3340, 300],
       "id": "check1",
       "name": "Done?"
     },
@@ -245,7 +363,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2680, 420],
+      "position": [3560, 420],
       "id": "gemini2",
       "name": "Gemini 2",
       "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
@@ -256,7 +374,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2900, 420],
+      "position": [3780, 420],
       "id": "extract2",
       "name": "Extract 2"
     },
@@ -271,17 +389,17 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [3120, 420],
+      "position": [4000, 420],
       "id": "upload2",
       "name": "Upload 2"
     },
     {
       "parameters": {
-        "jsCode": "const prev = $('Extract 2').item.json;\nconst upload = $input.item.json;\nconst url = upload.data?.url || upload.data?.display_url;\n\nconst results = [...prev.results, { slide_number: 2, headline: prev.headline, subtext: prev.subtext, image_url: url }];\n\nif (prev.remaining_slides.length === 0) {\n  return [{ json: { done: true, results: results } }];\n}\n\nconst next = prev.remaining_slides[0];\nconst prompt = `Create a 4:5 portrait Instagram carousel image.\n\n${prev.style_instructions}\n\n=== SLIDE 3 of ${prev.total} ===\nHEADLINE: \"${next.headline}\"\nTOPIC: ${prev.topic}\n\n=== CRITICAL REQUIREMENTS ===\n1. HEADLINE TEXT: Bold, clear \"${next.headline}\" text in ${prev.color_accent} color\n2. TEXT AREA: Place text in a readable area with good contrast\n3. MSI LOGO: Place the provided logo in BOTTOM RIGHT corner - DO NOT modify\n4. QUALITY: Professional Instagram-ready, high resolution\n5. CONSISTENCY: MUST match slides 1 and 2 style EXACTLY - same colors, effects, composition\n\n=== DO NOT ===\n- Do NOT add any text other than the headline\n- Do NOT modify the MSI logo\n- Do NOT change the visual style from previous slides`;\n\nreturn [{ json: { done: false, slide_num: 3, headline: next.headline, subtext: next.subtext || '', prompt: prompt, logo: prev.logo, remaining_slides: prev.remaining_slides.slice(1), total: prev.total, style_instructions: prev.style_instructions, topic: prev.topic, color_accent: prev.color_accent, color_dark: prev.color_dark, results: results } }];"
+        "jsCode": "const prev = $('Extract 2').item.json;\nconst upload = $input.item.json;\nconst url = upload.data?.url || upload.data?.display_url;\n\nconst results = [...prev.results, { slide_number: 2, headline: prev.headline, subtext: prev.subtext, image_url: url }];\n\nif (prev.remaining_slides.length === 0) {\n  return [{ json: { done: true, results: results } }];\n}\n\nconst next = prev.remaining_slides[0];\n\n// Extract slide 3 prompt from agent output or create default\nlet slidePrompt = '';\nconst slide3Match = prev.agent_output.match(/\\*\\*SLIDE 3 PROMPT:\\*\\*([\\s\\S]*?)(?=\\*\\*SLIDE 4|---\\*\\*VISUAL|$)/i);\nif (slide3Match) {\n  slidePrompt = slide3Match[1].trim();\n} else {\n  slidePrompt = `Create a 4:5 portrait Instagram carousel image.\n\n${prev.style_instructions}\n\nSLIDE 3 of ${prev.total}\nHEADLINE: \"${next.headline}\"\nTOPIC: ${prev.topic}\n\nCRITICAL: MUST match slides 1 and 2 style EXACTLY.\n\n1. HEADLINE TEXT: Bold \"${next.headline}\" in ${prev.color_accent} color\n2. MSI LOGO: BOTTOM RIGHT corner - DO NOT modify\n3. Match previous slides visual style exactly`;\n}\n\nreturn [{ json: { done: false, slide_num: 3, headline: next.headline, subtext: next.subtext || '', prompt: slidePrompt, logo: prev.logo, remaining_slides: prev.remaining_slides.slice(1), total: prev.total, style_instructions: prev.style_instructions, topic: prev.topic, color_accent: prev.color_accent, color_dark: prev.color_dark, agent_output: prev.agent_output, results: results } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3340, 420],
+      "position": [4220, 420],
       "id": "collect2",
       "name": "Collect 2"
     },
@@ -295,7 +413,7 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [3560, 420],
+      "position": [4440, 420],
       "id": "check2",
       "name": "Done? 2"
     },
@@ -312,7 +430,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [3780, 540],
+      "position": [4660, 540],
       "id": "gemini3",
       "name": "Gemini 3",
       "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
@@ -323,7 +441,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4000, 540],
+      "position": [4880, 540],
       "id": "extract3",
       "name": "Extract 3"
     },
@@ -338,7 +456,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [4220, 540],
+      "position": [5100, 540],
       "id": "upload3",
       "name": "Upload 3"
     },
@@ -348,7 +466,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4440, 540],
+      "position": [5320, 540],
       "id": "collect3",
       "name": "Collect 3"
     },
@@ -358,7 +476,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4660, 300],
+      "position": [5540, 300],
       "id": "format-final",
       "name": "Format Final"
     },
@@ -370,7 +488,7 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [4880, 300],
+      "position": [5760, 300],
       "id": "respond",
       "name": "Respond"
     }
@@ -378,7 +496,13 @@
   "connections": {
     "Webhook": { "main": [[{ "node": "Download Logo", "type": "main", "index": 0 }]] },
     "Download Logo": { "main": [[{ "node": "Parse Input", "type": "main", "index": 0 }]] },
-    "Parse Input": { "main": [[{ "node": "Route by Visual Style", "type": "main", "index": 0 }]] },
+    "Parse Input": { "main": [[{ "node": "Agent 1: Carousel Strategy", "type": "main", "index": 0 }]] },
+    "Agent 1: Carousel Strategy": { "main": [[{ "node": "Agent 2: Carousel Copy Writer", "type": "main", "index": 0 }]] },
+    "Agent 2: Carousel Copy Writer": { "main": [[{ "node": "Merge Agent Outputs", "type": "main", "index": 0 }]] },
+    "Merge Agent Outputs": { "main": [[{ "node": "Route by Visual Style", "type": "main", "index": 0 }]] },
+    "OpenAI for Strategy": { "ai_languageModel": [[{ "node": "Agent 1: Carousel Strategy", "type": "ai_languageModel", "index": 0 }]] },
+    "OpenAI for Copy Writer": { "ai_languageModel": [[{ "node": "Agent 2: Carousel Copy Writer", "type": "ai_languageModel", "index": 0 }]] },
+    "OpenAI for Image Prompts": { "ai_languageModel": [[{ "node": "Agent 3: Image Prompts", "type": "ai_languageModel", "index": 0 }]] },
     "Route by Visual Style": { 
       "main": [
         [{ "node": "Style: Glassmorphism", "type": "main", "index": 0 }],
@@ -389,12 +513,13 @@
         [{ "node": "Style: Default", "type": "main", "index": 0 }]
       ] 
     },
-    "Style: Glassmorphism": { "main": [[{ "node": "Slide 1 Prompt", "type": "main", "index": 0 }]] },
-    "Style: Modern 3D": { "main": [[{ "node": "Slide 1 Prompt", "type": "main", "index": 0 }]] },
-    "Style: Isometric": { "main": [[{ "node": "Slide 1 Prompt", "type": "main", "index": 0 }]] },
-    "Style: Data Hero": { "main": [[{ "node": "Slide 1 Prompt", "type": "main", "index": 0 }]] },
-    "Style: Realistic": { "main": [[{ "node": "Slide 1 Prompt", "type": "main", "index": 0 }]] },
-    "Style: Default": { "main": [[{ "node": "Slide 1 Prompt", "type": "main", "index": 0 }]] },
+    "Style: Glassmorphism": { "main": [[{ "node": "Agent 3: Image Prompts", "type": "main", "index": 0 }]] },
+    "Style: Modern 3D": { "main": [[{ "node": "Agent 3: Image Prompts", "type": "main", "index": 0 }]] },
+    "Style: Isometric": { "main": [[{ "node": "Agent 3: Image Prompts", "type": "main", "index": 0 }]] },
+    "Style: Data Hero": { "main": [[{ "node": "Agent 3: Image Prompts", "type": "main", "index": 0 }]] },
+    "Style: Realistic": { "main": [[{ "node": "Agent 3: Image Prompts", "type": "main", "index": 0 }]] },
+    "Style: Default": { "main": [[{ "node": "Agent 3: Image Prompts", "type": "main", "index": 0 }]] },
+    "Agent 3: Image Prompts": { "main": [[{ "node": "Slide 1 Prompt", "type": "main", "index": 0 }]] },
     "Slide 1 Prompt": { "main": [[{ "node": "Gemini 1", "type": "main", "index": 0 }]] },
     "Gemini 1": { "main": [[{ "node": "Extract 1", "type": "main", "index": 0 }]] },
     "Extract 1": { "main": [[{ "node": "Upload 1", "type": "main", "index": 0 }]] },
