@@ -2353,7 +2353,7 @@ function loadDrafts() {
     const drafts = JSON.parse(localStorage.getItem('msi_content_drafts') || '[]');
     
     if (drafts.length === 0) {
-        listEl.innerHTML = '<p class="no-drafts">No hay borradores guardados.</p>';
+        listEl.innerHTML = '<p class="no-drafts">No hay borradores guardados todavía.<br>Usa el formulario de arriba para crear uno.</p>';
         return;
     }
     
@@ -2361,12 +2361,12 @@ function loadDrafts() {
         <div class="draft-item ${draft.status}">
             <div class="draft-header">
                 <h4 class="draft-topic">${draft.topic || 'Sin título'}</h4>
-                <span class="draft-status ${draft.status}">${draft.status === 'scheduled' ? '📅 Programado' : '📝 Borrador'}</span>
+                <span class="draft-status ${draft.status}">${draft.status === 'scheduled' ? 'Programado' : 'Borrador'}</span>
             </div>
             <p class="draft-meta">
-                ${draft.headline || ''} • ${draft.visual_style || ''}<br>
+                <strong>${draft.headline || ''}</strong> · ${draft.visual_style || ''}<br>
                 ${draft.status === 'scheduled' && draft.scheduled_for ? 
-                    `<strong>Programado:</strong> ${new Date(draft.scheduled_for).toLocaleString()}` : 
+                    `Programado para: ${new Date(draft.scheduled_for).toLocaleString()}` : 
                     `Creado: ${new Date(draft.created_at).toLocaleDateString()}`}
             </p>
             <div class="draft-actions">

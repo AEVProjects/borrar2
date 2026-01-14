@@ -613,18 +613,20 @@
 
         <!-- Auto Daily Mode -->
         <div id="daily-mode" class="mode-content">
-            <div class="card form-card">
+            <div class="card form-card daily-card">
                 <div class="daily-header">
-                    <h2>🗓️ Content Planner</h2>
+                    <div class="daily-title-group">
+                        <h2>Content Planner</h2>
+                        <span class="daily-subtitle">Planifica tu contenido con IA</span>
+                    </div>
                     <span class="daily-date" id="current-date"></span>
                 </div>
-                <p class="daily-description">Escribe tu idea y deja que la IA te sugiera la mejor estrategia de contenido.</p>
 
                 <!-- Step 1: Input your idea -->
                 <div id="daily-step-1" class="daily-step">
                     <div class="step-header">
                         <span class="step-number">1</span>
-                        <h3>Tu Idea</h3>
+                        <h3>Describe tu idea</h3>
                     </div>
                     <div class="form-group">
                         <label for="daily_idea">¿Sobre qué quieres crear contenido?</label>
@@ -643,19 +645,19 @@
                 <div id="daily-step-2" class="daily-step" style="display: none;">
                     <div class="step-header">
                         <span class="step-number">2</span>
-                        <h3>Estrategia Sugerida por IA</h3>
-                        <span class="ai-badge">✨ AI Generated</span>
+                        <h3>Estrategia Generada</h3>
+                        <span class="ai-badge">AI Generated</span>
                     </div>
                     <p class="step-description">Revisa y modifica los campos según necesites:</p>
                     
                     <form id="daily-strategy-form">
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="daily_topic">Topic *</label>
+                                <label for="daily_s_topic">Topic *</label>
                                 <input type="text" id="daily_s_topic" name="topic" required placeholder="Topic generado por IA">
                             </div>
                             <div class="form-group">
-                                <label for="daily_headline">Headline *</label>
+                                <label for="daily_s_headline">Headline *</label>
                                 <input type="text" id="daily_s_headline" name="headline" required placeholder="Headline para la imagen">
                             </div>
                         </div>
@@ -695,7 +697,7 @@
 
                         <!-- Schedule Section -->
                         <div class="schedule-section">
-                            <h4>📅 Programar Publicación</h4>
+                            <h4>Programar Publicación</h4>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="daily_schedule_date">Fecha</label>
@@ -738,7 +740,7 @@
             <!-- Saved Drafts / Scheduled Posts -->
             <div class="card" id="daily-drafts-card">
                 <div class="posts-header">
-                    <h2>📋 Borradores y Programados</h2>
+                    <h2>Borradores y Programados</h2>
                     <button id="refresh-drafts-btn" class="btn btn-secondary btn-small">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="23 4 23 10 17 10"></polyline>
