@@ -2046,16 +2046,13 @@ if (useCarouselInPostBtn) {
 
 // ========== END CAROUSEL GENERATION ==========
 
-// ========== AUTO DAILY GENERATION ==========
-
-// Daily content webhook URL
-const n8nDailyWebhook = CONFIG.n8n?.dailyWebhook || 'https://n8nmsi.app.n8n.cloud/webhook/daily-content-trigger';
+// ========== AUTO DAILY / CONTENT PLANNER ==========
 
 // Initialize daily mode
 function initDailyMode() {
     // Set current date
     const now = new Date();
-    const dateStr = now.toLocaleDateString('en-US', { 
+    const dateStr = now.toLocaleDateString('es-ES', { 
         weekday: 'long', 
         year: 'numeric', 
         month: 'long', 
@@ -2066,235 +2063,275 @@ function initDailyMode() {
         currentDateEl.textContent = dateStr;
     }
     
-    // Update context info
-    updateDailyContext();
-    
-    // Load recent auto-generated posts
-    loadDailyPosts();
-    
-    // Load stats
-    loadDailyStats();
-}
-
-// Update daily context display
-function updateDailyContext() {
-    const now = new Date();
-    const dayOfWeek = now.toLocaleDateString('en-US', { weekday: 'long' });
-    
-    const dailyThemes = {
-        'Monday': 'Week kickoff - productivity and planning',
-        'Tuesday': 'Technical deep-dive and how-to content',
-        'Wednesday': 'Industry insights and trends',
-        'Thursday': 'Case studies and success stories',
-        'Friday': 'Week wrap-up and weekend tips',
-        'Saturday': 'Behind-the-scenes and company culture',
-        'Sunday': 'Week preview and motivation'
-    };
-    
-    const visualStyles = ['Infographic', 'Glassmorphism', 'Modern 3D', 'Isometric', 'Data Hero'];
-    const visualStyleIndex = now.getDate() % visualStyles.length;
-    
-    // Special dates
-    const specialDates = {
-        '01-01': '🎆 New Year',
-        '02-14': '💝 Valentine\'s Day',
-        '03-14': '🥧 Pi Day',
-        '04-22': '🌍 Earth Day',
-        '07-04': '🇺🇸 Independence Day',
-        '10-31': '🎃 Halloween',
-        '12-25': '🎄 Christmas'
-    };
-    
-    const dateKey = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const specialEvent = specialDates[dateKey];
-    
-    // Update DOM
-    document.getElementById('context-day')?.textContent && (document.getElementById('context-day').textContent = dayOfWeek);
-    document.getElementById('context-theme')?.textContent && (document.getElementById('context-theme').textContent = dailyThemes[dayOfWeek] || 'General tech content');
-    document.getElementById('context-style')?.textContent && (document.getElementById('context-style').textContent = visualStyles[visualStyleIndex]);
-    
-    if (specialEvent) {
-        const specialRow = document.getElementById('special-event-row');
-        const specialValue = document.getElementById('context-special');
-        if (specialRow && specialValue) {
-            specialRow.style.display = 'flex';
-            specialValue.textContent = specialEvent;
-        }
+    // Set default date for scheduler
+    const dateInput = document.getElementById('daily_schedule_date');
+    if (dateInput) {
+        dateInput.value = now.toISOString().split('T')[0];
     }
+    
+    // Load saved drafts
+    loadDrafts();
 }
 
-// Load recent auto-generated posts
-async function loadDailyPosts() {
-    const listEl = document.getElementById('daily-posts-list');
-    if (!listEl) return;
-    
-    listEl.innerHTML = '<div class="loading">Loading recent posts...</div>';
-    
-    try {
-        // Fetch recent posts from Supabase
-        const response = await fetch(`${supabaseUrl}/rest/v1/social_posts?order=created_at.desc&limit=10`, {
-            headers: {
-                'apikey': supabaseAnonKey,
-                'Authorization': `Bearer ${supabaseAnonKey}`
-            }
-        });
+// Analyze idea with AI button
+const analyzeIdeaBtn = document.getElementById('analyze-idea-btn');
+if (analyzeIdeaBtn) {
+    analyzeIdeaBtn.addEventListener('click', async () => {
+        const ideaText = document.getElementById('daily_idea')?.value?.trim();
         
-        const posts = await response.json();
-        
-        if (posts.length === 0) {
-            listEl.innerHTML = '<p class="no-posts">No posts generated yet. Click "Generate Today\'s Content" to start!</p>';
+        if (!ideaText) {
+            showToast('Por favor escribe una idea primero', 'error');
             return;
         }
         
-        listEl.innerHTML = posts.map(post => `
-            <div class="post-item ${post.status === 'completed' ? 'completed' : post.status === 'failed' ? 'failed' : ''}">
-                <div class="post-header">
-                    <span class="post-date">${new Date(post.created_at).toLocaleDateString()}</span>
-                    <span class="post-status status-${post.status}">${post.status}</span>
-                </div>
-                <h4 class="post-topic">${post.topic || 'No topic'}</h4>
-                <p class="post-headline">${post.headline || ''}</p>
-                ${post.image_url ? `<img src="${post.image_url}" alt="Generated" class="post-thumbnail">` : ''}
-                <div class="post-meta">
-                    <span class="post-style">${post.visual_style || ''}</span>
-                </div>
-            </div>
-        `).join('');
+        const btn = analyzeIdeaBtn;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Analizando...';
         
-    } catch (error) {
-        console.error('Error loading daily posts:', error);
-        listEl.innerHTML = '<p class="error">Error loading posts</p>';
-    }
+        showProgressAlert('Analizando tu idea', 'La IA está generando la mejor estrategia...');
+        
+        try {
+            // Call OpenAI directly to analyze the idea
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${CONFIG.openai?.apiKey || ''}`
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4o',
+                    messages: [
+                        {
+                            role: 'system',
+                            content: `Eres un estratega de contenido para MSI Technologies, una empresa de consultoría tecnológica.
+                            
+Analiza la idea del usuario y genera una estrategia de contenido para LinkedIn.
+
+RESPONDE ÚNICAMENTE EN ESTE FORMATO JSON (sin markdown, sin backticks):
+{
+  "topic": "Título del tema (máximo 10 palabras)",
+  "headline": "Headline para la imagen (máximo 6 palabras, impactante)",
+  "post_type": "Educational|Thought Leadership|Case Study/Storytelling|Company News|Standard Infographic",
+  "visual_style": "Infographic|Glassmorphism|Modern 3D|Isometric|Data Hero",
+  "data_points": "2-3 estadísticas o datos relevantes separados por coma",
+  "context": "Contexto adicional de 2-3 oraciones sobre por qué es relevante"
 }
 
-// Load weekly stats
-async function loadDailyStats() {
-    try {
-        // Get this week's start date (Monday)
-        const now = new Date();
-        const dayOfWeek = now.getDay();
-        const monday = new Date(now);
-        monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-        monday.setHours(0, 0, 0, 0);
-        
-        const mondayStr = monday.toISOString();
-        
-        // Fetch posts from this week
-        const response = await fetch(`${supabaseUrl}/rest/v1/social_posts?created_at=gte.${mondayStr}&select=status`, {
-            headers: {
-                'apikey': supabaseAnonKey,
-                'Authorization': `Bearer ${supabaseAnonKey}`
+MSI Technologies se especializa en:
+- Modernización de infraestructura IT
+- Soluciones cloud
+- Optimización de redes
+- Ciberseguridad
+- Transformación digital`
+                        },
+                        {
+                            role: 'user',
+                            content: `Analiza esta idea y genera la estrategia: "${ideaText}"`
+                        }
+                    ],
+                    temperature: 0.7
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.choices && result.choices[0]) {
+                let content = result.choices[0].message.content;
+                
+                // Clean up the response (remove markdown if present)
+                content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                
+                const strategy = JSON.parse(content);
+                
+                // Fill in the form fields
+                document.getElementById('daily_s_topic').value = strategy.topic || '';
+                document.getElementById('daily_s_headline').value = strategy.headline || '';
+                document.getElementById('daily_s_post_type').value = strategy.post_type || 'Educational';
+                document.getElementById('daily_s_visual_style').value = strategy.visual_style || 'Infographic';
+                document.getElementById('daily_s_data_points').value = strategy.data_points || '';
+                document.getElementById('daily_s_context').value = strategy.context || '';
+                
+                // Show step 2
+                document.getElementById('daily-step-1').style.display = 'none';
+                document.getElementById('daily-step-2').style.display = 'block';
+                
+                hideProgressAlert();
+                showToast('¡Estrategia generada! Revisa y modifica si necesitas.', 'success');
+            } else {
+                throw new Error('No se pudo generar la estrategia');
             }
-        });
-        
-        const posts = await response.json();
-        
-        const generated = posts.length;
-        const completed = posts.filter(p => p.status === 'completed').length;
-        const pending = posts.filter(p => p.status === 'pending' || p.status === 'copy_completed' || p.status === 'prompt_completed').length;
-        
-        document.getElementById('stat-generated')?.textContent && (document.getElementById('stat-generated').textContent = generated);
-        document.getElementById('stat-published')?.textContent && (document.getElementById('stat-published').textContent = completed);
-        document.getElementById('stat-pending')?.textContent && (document.getElementById('stat-pending').textContent = pending);
-        
-    } catch (error) {
-        console.error('Error loading stats:', error);
-    }
-}
-
-// Quick generate button
-const quickGenerateBtn = document.getElementById('quick-generate-btn');
-if (quickGenerateBtn) {
-    quickGenerateBtn.addEventListener('click', async () => {
-        await generateDailyContent({});
+            
+        } catch (error) {
+            console.error('Error analyzing idea:', error);
+            hideProgressAlert();
+            
+            // Fallback: generate basic strategy locally
+            const fallbackStrategy = generateLocalStrategy(ideaText);
+            
+            document.getElementById('daily_s_topic').value = fallbackStrategy.topic;
+            document.getElementById('daily_s_headline').value = fallbackStrategy.headline;
+            document.getElementById('daily_s_post_type').value = fallbackStrategy.post_type;
+            document.getElementById('daily_s_visual_style').value = fallbackStrategy.visual_style;
+            document.getElementById('daily_s_data_points').value = fallbackStrategy.data_points;
+            document.getElementById('daily_s_context').value = fallbackStrategy.context;
+            
+            document.getElementById('daily-step-1').style.display = 'none';
+            document.getElementById('daily-step-2').style.display = 'block';
+            
+            showToast('Estrategia básica generada. Mejórala manualmente.', 'warning');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
     });
 }
 
-// Daily form submit (with custom settings)
-const dailyForm = document.getElementById('daily-form');
-if (dailyForm) {
-    dailyForm.addEventListener('submit', async (e) => {
+// Fallback local strategy generator
+function generateLocalStrategy(idea) {
+    const words = idea.split(' ').slice(0, 5).join(' ');
+    return {
+        topic: words + '...',
+        headline: words.split(' ').slice(0, 4).join(' '),
+        post_type: 'Educational',
+        visual_style: 'Infographic',
+        data_points: '',
+        context: idea
+    };
+}
+
+// Back button
+const dailyBackBtn = document.getElementById('daily-back-btn');
+if (dailyBackBtn) {
+    dailyBackBtn.addEventListener('click', () => {
+        document.getElementById('daily-step-2').style.display = 'none';
+        document.getElementById('daily-step-1').style.display = 'block';
+    });
+}
+
+// Save draft button
+const dailySaveBtn = document.getElementById('daily-save-btn');
+if (dailySaveBtn) {
+    dailySaveBtn.addEventListener('click', async () => {
+        const draft = collectStrategyData();
+        draft.status = 'draft';
+        draft.created_at = new Date().toISOString();
+        
+        // Save to localStorage
+        const drafts = JSON.parse(localStorage.getItem('msi_content_drafts') || '[]');
+        draft.id = Date.now().toString();
+        drafts.unshift(draft);
+        localStorage.setItem('msi_content_drafts', JSON.stringify(drafts.slice(0, 20))); // Keep last 20
+        
+        showToast('Borrador guardado', 'success');
+        loadDrafts();
+        
+        // Reset to step 1
+        document.getElementById('daily-step-2').style.display = 'none';
+        document.getElementById('daily-step-1').style.display = 'block';
+        document.getElementById('daily_idea').value = '';
+    });
+}
+
+// Generate now button
+const dailyStrategyForm = document.getElementById('daily-strategy-form');
+if (dailyStrategyForm) {
+    dailyStrategyForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        const formData = {
-            topic: document.getElementById('daily_topic')?.value || null,
-            post_type: document.getElementById('daily_post_type')?.value || null,
-            visual_style: document.getElementById('daily_visual_style')?.value || null
-        };
+        const data = collectStrategyData();
         
-        await generateDailyContent(formData);
+        // Check if scheduled for later
+        const scheduleDate = document.getElementById('daily_schedule_date')?.value;
+        const scheduleTime = document.getElementById('daily_schedule_time')?.value;
+        
+        if (scheduleDate && scheduleTime) {
+            const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
+            const now = new Date();
+            
+            if (scheduledDateTime > now) {
+                // Save as scheduled
+                data.status = 'scheduled';
+                data.scheduled_for = scheduledDateTime.toISOString();
+                data.created_at = new Date().toISOString();
+                data.id = Date.now().toString();
+                
+                const drafts = JSON.parse(localStorage.getItem('msi_content_drafts') || '[]');
+                drafts.unshift(data);
+                localStorage.setItem('msi_content_drafts', JSON.stringify(drafts.slice(0, 20)));
+                
+                showSuccessAlert('¡Programado!', `El contenido se generará el ${scheduledDateTime.toLocaleString()}`);
+                loadDrafts();
+                
+                // Reset
+                document.getElementById('daily-step-2').style.display = 'none';
+                document.getElementById('daily-step-1').style.display = 'block';
+                document.getElementById('daily_idea').value = '';
+                return;
+            }
+        }
+        
+        // Generate now - send to content generation webhook
+        await sendToGenerate(data);
     });
 }
 
-// Generate daily content
-async function generateDailyContent(options) {
-    const btn = quickGenerateBtn || dailyForm?.querySelector('button[type="submit"]');
+// Collect strategy form data
+function collectStrategyData() {
+    return {
+        topic: document.getElementById('daily_s_topic')?.value || '',
+        headline: document.getElementById('daily_s_headline')?.value || '',
+        post_type: document.getElementById('daily_s_post_type')?.value || 'Educational',
+        visual_style: document.getElementById('daily_s_visual_style')?.value || 'Infographic',
+        data_points: document.getElementById('daily_s_data_points')?.value || '',
+        context: document.getElementById('daily_s_context')?.value || '',
+        orientation: '4:5',
+        original_idea: document.getElementById('daily_idea')?.value || ''
+    };
+}
+
+// Send to generate content
+async function sendToGenerate(data) {
+    const btn = document.getElementById('daily-generate-btn');
     const originalText = btn?.innerHTML;
     
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span> Generating...';
+        btn.innerHTML = '<span class="spinner"></span> Generando...';
     }
     
-    showProgressAlert('Generating Daily Content', 'AI is creating today\'s perfect post...');
+    showProgressAlert('Generando Contenido', 'Enviando a Generate Content...');
     
     try {
-        const response = await fetch(n8nDailyWebhook, {
+        const response = await fetch(n8nGenerateWebhook, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(options)
+            body: JSON.stringify(data)
         });
         
         const result = await response.json();
         
-        if (result.success) {
-            // Update progress
-            updateProgressAlert('Finalizing...', 90);
-            
-            setTimeout(() => {
-                hideProgressAlert();
-                
-                // Show results
-                const resultsEl = document.getElementById('daily-results');
-                const topicEl = document.getElementById('daily-generated-topic');
-                const copyEl = document.getElementById('daily-generated-copy');
-                const imageEl = document.getElementById('daily-generated-image');
-                
-                if (topicEl && result.data) {
-                    topicEl.innerHTML = `
-                        <h4>${result.data.topic || 'Generated Topic'}</h4>
-                        <p>${result.data.headline || ''}</p>
-                    `;
-                }
-                
-                if (copyEl && result.data?.post_copy) {
-                    copyEl.innerHTML = `<pre>${result.data.post_copy}</pre>`;
-                }
-                
-                if (imageEl && result.data?.image_url) {
-                    imageEl.innerHTML = `<img src="${result.data.image_url}" alt="Generated Image">`;
-                }
-                
-                if (resultsEl) {
-                    resultsEl.style.display = 'block';
-                    resultsEl.scrollIntoView({ behavior: 'smooth' });
-                }
-                
-                // Refresh lists
-                loadDailyPosts();
-                loadDailyStats();
-                
-                showSuccessAlert('Content Generated!', 'Your daily content is ready.');
-            }, 500);
-        } else {
+        updateProgressAlert('Finalizando...', 90);
+        
+        setTimeout(() => {
             hideProgressAlert();
-            showToast(result.message || 'Generation failed', 'error');
-        }
+            
+            if (result.success) {
+                showSuccessAlert('¡Contenido Generado!', 'Tu post está listo. Ve a la pestaña Publish para verlo.');
+                
+                // Reset form
+                document.getElementById('daily-step-2').style.display = 'none';
+                document.getElementById('daily-step-1').style.display = 'block';
+                document.getElementById('daily_idea').value = '';
+            } else {
+                showToast(result.message || 'Error generando contenido', 'error');
+            }
+        }, 500);
         
     } catch (error) {
-        console.error('Daily generation error:', error);
+        console.error('Generate error:', error);
         hideProgressAlert();
-        showToast('Error generating content: ' + error.message, 'error');
+        showToast('Error: ' + error.message, 'error');
     } finally {
         if (btn) {
             btn.disabled = false;
@@ -2303,45 +2340,90 @@ async function generateDailyContent(options) {
     }
 }
 
-// Refresh daily posts button
-const refreshDailyBtn = document.getElementById('refresh-daily-posts');
-if (refreshDailyBtn) {
-    refreshDailyBtn.addEventListener('click', () => {
-        loadDailyPosts();
-        loadDailyStats();
-        showToast('Refreshed!', 'success');
-    });
+// Load drafts
+function loadDrafts() {
+    const listEl = document.getElementById('daily-drafts-list');
+    if (!listEl) return;
+    
+    const drafts = JSON.parse(localStorage.getItem('msi_content_drafts') || '[]');
+    
+    if (drafts.length === 0) {
+        listEl.innerHTML = '<p class="no-drafts">No hay borradores guardados.</p>';
+        return;
+    }
+    
+    listEl.innerHTML = drafts.map(draft => `
+        <div class="draft-item ${draft.status}">
+            <div class="draft-header">
+                <h4 class="draft-topic">${draft.topic || 'Sin título'}</h4>
+                <span class="draft-status ${draft.status}">${draft.status === 'scheduled' ? '📅 Programado' : '📝 Borrador'}</span>
+            </div>
+            <p class="draft-meta">
+                ${draft.headline || ''} • ${draft.visual_style || ''}<br>
+                ${draft.status === 'scheduled' && draft.scheduled_for ? 
+                    `<strong>Programado:</strong> ${new Date(draft.scheduled_for).toLocaleString()}` : 
+                    `Creado: ${new Date(draft.created_at).toLocaleDateString()}`}
+            </p>
+            <div class="draft-actions">
+                <button class="btn btn-small btn-primary" onclick="editDraft('${draft.id}')">Editar</button>
+                <button class="btn btn-small btn-secondary" onclick="generateDraft('${draft.id}')">Generar</button>
+                <button class="btn btn-small btn-danger" onclick="deleteDraft('${draft.id}')">Eliminar</button>
+            </div>
+        </div>
+    `).join('');
 }
 
-// Use daily content in publish
-const dailyUseBtn = document.getElementById('daily-use-content');
-if (dailyUseBtn) {
-    dailyUseBtn.addEventListener('click', () => {
-        const copyEl = document.getElementById('daily-generated-copy');
-        const imageEl = document.getElementById('daily-generated-image')?.querySelector('img');
+// Edit draft
+window.editDraft = function(id) {
+    const drafts = JSON.parse(localStorage.getItem('msi_content_drafts') || '[]');
+    const draft = drafts.find(d => d.id === id);
+    
+    if (draft) {
+        document.getElementById('daily_idea').value = draft.original_idea || '';
+        document.getElementById('daily_s_topic').value = draft.topic || '';
+        document.getElementById('daily_s_headline').value = draft.headline || '';
+        document.getElementById('daily_s_post_type').value = draft.post_type || 'Educational';
+        document.getElementById('daily_s_visual_style').value = draft.visual_style || 'Infographic';
+        document.getElementById('daily_s_data_points').value = draft.data_points || '';
+        document.getElementById('daily_s_context').value = draft.context || '';
         
-        if (copyEl) {
-            const postTypeInput = document.getElementById('post_type');
-            if (postTypeInput) {
-                postTypeInput.value = copyEl.textContent || '';
-            }
-        }
+        document.getElementById('daily-step-1').style.display = 'none';
+        document.getElementById('daily-step-2').style.display = 'block';
         
-        // Switch to publish tab
-        document.querySelector('.tab-btn[data-mode="publish"]')?.click();
-        showToast('Content loaded to Publish tab!', 'success');
-    });
-}
+        // Delete the draft being edited
+        deleteDraft(id, true);
+    }
+};
 
-// Regenerate daily content
-const dailyRegenerateBtn = document.getElementById('daily-regenerate');
-if (dailyRegenerateBtn) {
-    dailyRegenerateBtn.addEventListener('click', () => {
-        const resultsEl = document.getElementById('daily-results');
-        if (resultsEl) {
-            resultsEl.style.display = 'none';
-        }
-        quickGenerateBtn?.scrollIntoView({ behavior: 'smooth' });
+// Generate from draft
+window.generateDraft = async function(id) {
+    const drafts = JSON.parse(localStorage.getItem('msi_content_drafts') || '[]');
+    const draft = drafts.find(d => d.id === id);
+    
+    if (draft) {
+        await sendToGenerate(draft);
+        deleteDraft(id, true);
+    }
+};
+
+// Delete draft
+window.deleteDraft = function(id, silent = false) {
+    let drafts = JSON.parse(localStorage.getItem('msi_content_drafts') || '[]');
+    drafts = drafts.filter(d => d.id !== id);
+    localStorage.setItem('msi_content_drafts', JSON.stringify(drafts));
+    
+    if (!silent) {
+        showToast('Borrador eliminado', 'success');
+    }
+    loadDrafts();
+};
+
+// Refresh drafts button
+const refreshDraftsBtn = document.getElementById('refresh-drafts-btn');
+if (refreshDraftsBtn) {
+    refreshDraftsBtn.addEventListener('click', () => {
+        loadDrafts();
+        showToast('Lista actualizada', 'success');
     });
 }
 
@@ -2350,7 +2432,24 @@ document.querySelector('.tab-btn[data-mode="daily"]')?.addEventListener('click',
     initDailyMode();
 });
 
-// ========== END AUTO DAILY GENERATION ==========
+// Check for scheduled posts periodically
+setInterval(() => {
+    const drafts = JSON.parse(localStorage.getItem('msi_content_drafts') || '[]');
+    const now = new Date();
+    
+    drafts.forEach(draft => {
+        if (draft.status === 'scheduled' && draft.scheduled_for) {
+            const scheduledTime = new Date(draft.scheduled_for);
+            if (scheduledTime <= now) {
+                // Time to generate!
+                console.log('Generating scheduled post:', draft.topic);
+                generateDraft(draft.id);
+            }
+        }
+    });
+}, 60000); // Check every minute
+
+// ========== END AUTO DAILY / CONTENT PLANNER ==========
 
 // Initialize
 if (supabaseUrl === 'YOUR_SUPABASE_URL' || !supabaseUrl) {
