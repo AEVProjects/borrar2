@@ -2046,6 +2046,312 @@ if (useCarouselInPostBtn) {
 
 // ========== END CAROUSEL GENERATION ==========
 
+// ========== AUTO DAILY GENERATION ==========
+
+// Daily content webhook URL
+const n8nDailyWebhook = CONFIG.n8n?.dailyWebhook || 'https://n8nmsi.app.n8n.cloud/webhook/daily-content-trigger';
+
+// Initialize daily mode
+function initDailyMode() {
+    // Set current date
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    });
+    const currentDateEl = document.getElementById('current-date');
+    if (currentDateEl) {
+        currentDateEl.textContent = dateStr;
+    }
+    
+    // Update context info
+    updateDailyContext();
+    
+    // Load recent auto-generated posts
+    loadDailyPosts();
+    
+    // Load stats
+    loadDailyStats();
+}
+
+// Update daily context display
+function updateDailyContext() {
+    const now = new Date();
+    const dayOfWeek = now.toLocaleDateString('en-US', { weekday: 'long' });
+    
+    const dailyThemes = {
+        'Monday': 'Week kickoff - productivity and planning',
+        'Tuesday': 'Technical deep-dive and how-to content',
+        'Wednesday': 'Industry insights and trends',
+        'Thursday': 'Case studies and success stories',
+        'Friday': 'Week wrap-up and weekend tips',
+        'Saturday': 'Behind-the-scenes and company culture',
+        'Sunday': 'Week preview and motivation'
+    };
+    
+    const visualStyles = ['Infographic', 'Glassmorphism', 'Modern 3D', 'Isometric', 'Data Hero'];
+    const visualStyleIndex = now.getDate() % visualStyles.length;
+    
+    // Special dates
+    const specialDates = {
+        '01-01': '🎆 New Year',
+        '02-14': '💝 Valentine\'s Day',
+        '03-14': '🥧 Pi Day',
+        '04-22': '🌍 Earth Day',
+        '07-04': '🇺🇸 Independence Day',
+        '10-31': '🎃 Halloween',
+        '12-25': '🎄 Christmas'
+    };
+    
+    const dateKey = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const specialEvent = specialDates[dateKey];
+    
+    // Update DOM
+    document.getElementById('context-day')?.textContent && (document.getElementById('context-day').textContent = dayOfWeek);
+    document.getElementById('context-theme')?.textContent && (document.getElementById('context-theme').textContent = dailyThemes[dayOfWeek] || 'General tech content');
+    document.getElementById('context-style')?.textContent && (document.getElementById('context-style').textContent = visualStyles[visualStyleIndex]);
+    
+    if (specialEvent) {
+        const specialRow = document.getElementById('special-event-row');
+        const specialValue = document.getElementById('context-special');
+        if (specialRow && specialValue) {
+            specialRow.style.display = 'flex';
+            specialValue.textContent = specialEvent;
+        }
+    }
+}
+
+// Load recent auto-generated posts
+async function loadDailyPosts() {
+    const listEl = document.getElementById('daily-posts-list');
+    if (!listEl) return;
+    
+    listEl.innerHTML = '<div class="loading">Loading recent posts...</div>';
+    
+    try {
+        // Fetch recent posts from Supabase
+        const response = await fetch(`${supabaseUrl}/rest/v1/social_posts?order=created_at.desc&limit=10`, {
+            headers: {
+                'apikey': supabaseAnonKey,
+                'Authorization': `Bearer ${supabaseAnonKey}`
+            }
+        });
+        
+        const posts = await response.json();
+        
+        if (posts.length === 0) {
+            listEl.innerHTML = '<p class="no-posts">No posts generated yet. Click "Generate Today\'s Content" to start!</p>';
+            return;
+        }
+        
+        listEl.innerHTML = posts.map(post => `
+            <div class="post-item ${post.status === 'completed' ? 'completed' : post.status === 'failed' ? 'failed' : ''}">
+                <div class="post-header">
+                    <span class="post-date">${new Date(post.created_at).toLocaleDateString()}</span>
+                    <span class="post-status status-${post.status}">${post.status}</span>
+                </div>
+                <h4 class="post-topic">${post.topic || 'No topic'}</h4>
+                <p class="post-headline">${post.headline || ''}</p>
+                ${post.image_url ? `<img src="${post.image_url}" alt="Generated" class="post-thumbnail">` : ''}
+                <div class="post-meta">
+                    <span class="post-style">${post.visual_style || ''}</span>
+                </div>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error loading daily posts:', error);
+        listEl.innerHTML = '<p class="error">Error loading posts</p>';
+    }
+}
+
+// Load weekly stats
+async function loadDailyStats() {
+    try {
+        // Get this week's start date (Monday)
+        const now = new Date();
+        const dayOfWeek = now.getDay();
+        const monday = new Date(now);
+        monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+        monday.setHours(0, 0, 0, 0);
+        
+        const mondayStr = monday.toISOString();
+        
+        // Fetch posts from this week
+        const response = await fetch(`${supabaseUrl}/rest/v1/social_posts?created_at=gte.${mondayStr}&select=status`, {
+            headers: {
+                'apikey': supabaseAnonKey,
+                'Authorization': `Bearer ${supabaseAnonKey}`
+            }
+        });
+        
+        const posts = await response.json();
+        
+        const generated = posts.length;
+        const completed = posts.filter(p => p.status === 'completed').length;
+        const pending = posts.filter(p => p.status === 'pending' || p.status === 'copy_completed' || p.status === 'prompt_completed').length;
+        
+        document.getElementById('stat-generated')?.textContent && (document.getElementById('stat-generated').textContent = generated);
+        document.getElementById('stat-published')?.textContent && (document.getElementById('stat-published').textContent = completed);
+        document.getElementById('stat-pending')?.textContent && (document.getElementById('stat-pending').textContent = pending);
+        
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
+}
+
+// Quick generate button
+const quickGenerateBtn = document.getElementById('quick-generate-btn');
+if (quickGenerateBtn) {
+    quickGenerateBtn.addEventListener('click', async () => {
+        await generateDailyContent({});
+    });
+}
+
+// Daily form submit (with custom settings)
+const dailyForm = document.getElementById('daily-form');
+if (dailyForm) {
+    dailyForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = {
+            topic: document.getElementById('daily_topic')?.value || null,
+            post_type: document.getElementById('daily_post_type')?.value || null,
+            visual_style: document.getElementById('daily_visual_style')?.value || null
+        };
+        
+        await generateDailyContent(formData);
+    });
+}
+
+// Generate daily content
+async function generateDailyContent(options) {
+    const btn = quickGenerateBtn || dailyForm?.querySelector('button[type="submit"]');
+    const originalText = btn?.innerHTML;
+    
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Generating...';
+    }
+    
+    showProgressAlert('Generating Daily Content', 'AI is creating today\'s perfect post...');
+    
+    try {
+        const response = await fetch(n8nDailyWebhook, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(options)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Update progress
+            updateProgressAlert('Finalizing...', 90);
+            
+            setTimeout(() => {
+                hideProgressAlert();
+                
+                // Show results
+                const resultsEl = document.getElementById('daily-results');
+                const topicEl = document.getElementById('daily-generated-topic');
+                const copyEl = document.getElementById('daily-generated-copy');
+                const imageEl = document.getElementById('daily-generated-image');
+                
+                if (topicEl && result.data) {
+                    topicEl.innerHTML = `
+                        <h4>${result.data.topic || 'Generated Topic'}</h4>
+                        <p>${result.data.headline || ''}</p>
+                    `;
+                }
+                
+                if (copyEl && result.data?.post_copy) {
+                    copyEl.innerHTML = `<pre>${result.data.post_copy}</pre>`;
+                }
+                
+                if (imageEl && result.data?.image_url) {
+                    imageEl.innerHTML = `<img src="${result.data.image_url}" alt="Generated Image">`;
+                }
+                
+                if (resultsEl) {
+                    resultsEl.style.display = 'block';
+                    resultsEl.scrollIntoView({ behavior: 'smooth' });
+                }
+                
+                // Refresh lists
+                loadDailyPosts();
+                loadDailyStats();
+                
+                showSuccessAlert('Content Generated!', 'Your daily content is ready.');
+            }, 500);
+        } else {
+            hideProgressAlert();
+            showToast(result.message || 'Generation failed', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Daily generation error:', error);
+        hideProgressAlert();
+        showToast('Error generating content: ' + error.message, 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+}
+
+// Refresh daily posts button
+const refreshDailyBtn = document.getElementById('refresh-daily-posts');
+if (refreshDailyBtn) {
+    refreshDailyBtn.addEventListener('click', () => {
+        loadDailyPosts();
+        loadDailyStats();
+        showToast('Refreshed!', 'success');
+    });
+}
+
+// Use daily content in publish
+const dailyUseBtn = document.getElementById('daily-use-content');
+if (dailyUseBtn) {
+    dailyUseBtn.addEventListener('click', () => {
+        const copyEl = document.getElementById('daily-generated-copy');
+        const imageEl = document.getElementById('daily-generated-image')?.querySelector('img');
+        
+        if (copyEl) {
+            const postTypeInput = document.getElementById('post_type');
+            if (postTypeInput) {
+                postTypeInput.value = copyEl.textContent || '';
+            }
+        }
+        
+        // Switch to publish tab
+        document.querySelector('.tab-btn[data-mode="publish"]')?.click();
+        showToast('Content loaded to Publish tab!', 'success');
+    });
+}
+
+// Regenerate daily content
+const dailyRegenerateBtn = document.getElementById('daily-regenerate');
+if (dailyRegenerateBtn) {
+    dailyRegenerateBtn.addEventListener('click', () => {
+        const resultsEl = document.getElementById('daily-results');
+        if (resultsEl) {
+            resultsEl.style.display = 'none';
+        }
+        quickGenerateBtn?.scrollIntoView({ behavior: 'smooth' });
+    });
+}
+
+// Initialize daily mode when tab is clicked
+document.querySelector('.tab-btn[data-mode="daily"]')?.addEventListener('click', () => {
+    initDailyMode();
+});
+
+// ========== END AUTO DAILY GENERATION ==========
+
 // Initialize
 if (supabaseUrl === 'YOUR_SUPABASE_URL' || !supabaseUrl) {
     console.warn('⚠️ Por favor configura las credenciales de Supabase en config.js o app.js');

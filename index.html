@@ -53,6 +53,16 @@
                     </svg>
                     Carousel
                 </button>
+                <button class="tab-btn" data-mode="daily">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                        <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"></path>
+                    </svg>
+                    Auto Daily
+                </button>
             </div>
         </nav>
 
@@ -596,6 +606,164 @@
                         </button>
                         <button id="use-carousel-in-post" class="btn btn-secondary">Use in Post</button>
                         <button id="regenerate-carousel" class="btn btn-secondary">Generate Again</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Auto Daily Mode -->
+        <div id="daily-mode" class="mode-content">
+            <div class="two-column-layout">
+                <!-- Left: Daily Generator Form -->
+                <div class="column form-column">
+                    <div class="card">
+                        <div class="daily-header">
+                            <h2>🗓️ Auto Daily Generator</h2>
+                            <span class="daily-date" id="current-date"></span>
+                        </div>
+                        <p class="daily-description">Generate content automatically based on today's date, trending topics, and AI recommendations. Perfect for maintaining consistent daily posting.</p>
+                        
+                        <form id="daily-form">
+                            <!-- Quick Generate Section -->
+                            <div class="quick-generate-section">
+                                <h3>⚡ Quick Generate</h3>
+                                <p>Let AI choose the best topic for today</p>
+                                <button type="button" id="quick-generate-btn" class="btn btn-primary btn-large">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                    </svg>
+                                    Generate Today's Content
+                                </button>
+                            </div>
+
+                            <div class="divider-with-text">
+                                <span>OR customize</span>
+                            </div>
+
+                            <!-- Custom Topic Section -->
+                            <div class="form-group">
+                                <label for="daily_topic">Custom Topic (optional)</label>
+                                <input type="text" id="daily_topic" name="topic" placeholder="Leave empty for AI to choose based on trends">
+                                <small class="form-hint">If provided, AI will generate content around this topic</small>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="daily_post_type">Post Type</label>
+                                    <select id="daily_post_type" name="post_type">
+                                        <option value="">AI Recommends</option>
+                                        <option value="Educational">Educational</option>
+                                        <option value="Tips & Tricks">Tips & Tricks</option>
+                                        <option value="Industry News">Industry News</option>
+                                        <option value="Success Story">Success Story</option>
+                                        <option value="Problem/Solution">Problem/Solution</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="daily_visual_style">Visual Style</label>
+                                    <select id="daily_visual_style" name="visual_style">
+                                        <option value="">AI Recommends</option>
+                                        <option value="Infographic">Infographic</option>
+                                        <option value="Glassmorphism">Glassmorphism</option>
+                                        <option value="Modern 3D">Modern 3D</option>
+                                        <option value="Isometric">Isometric</option>
+                                        <option value="Data Hero">Data Hero</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-secondary">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                                </svg>
+                                Generate with Custom Settings
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Today's Context Card -->
+                    <div class="card daily-context-card">
+                        <h3>📊 Today's Context</h3>
+                        <div id="daily-context-info">
+                            <div class="context-item">
+                                <span class="context-label">Day:</span>
+                                <span class="context-value" id="context-day">Loading...</span>
+                            </div>
+                            <div class="context-item">
+                                <span class="context-label">Theme:</span>
+                                <span class="context-value" id="context-theme">Loading...</span>
+                            </div>
+                            <div class="context-item">
+                                <span class="context-label">Suggested Style:</span>
+                                <span class="context-value" id="context-style">Loading...</span>
+                            </div>
+                            <div class="context-item" id="special-event-row" style="display: none;">
+                                <span class="context-label">🎉 Special:</span>
+                                <span class="context-value" id="context-special"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Generation History -->
+                <div class="column posts-column">
+                    <div class="card">
+                        <div class="posts-header">
+                            <h2>📜 Recent Auto-Generated</h2>
+                            <button id="refresh-daily-posts" class="btn btn-secondary">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                </svg>
+                                Refresh
+                            </button>
+                        </div>
+                        <div id="daily-posts-list" class="posts-list">
+                            <div class="loading">Loading recent posts...</div>
+                        </div>
+                    </div>
+
+                    <!-- Generation Stats -->
+                    <div class="card stats-card">
+                        <h3>📈 This Week's Stats</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-value" id="stat-generated">0</span>
+                                <span class="stat-label">Generated</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="stat-published">0</span>
+                                <span class="stat-label">Published</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="stat-pending">0</span>
+                                <span class="stat-label">Pending</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daily Generated Results -->
+            <div id="daily-results" class="generated-results" style="display: none;">
+                <div class="card">
+                    <h2>✨ Generated Content</h2>
+                    <div class="result-grid">
+                        <div class="result-section">
+                            <h3>Topic & Copy</h3>
+                            <div id="daily-generated-topic" class="generated-topic"></div>
+                            <div id="daily-generated-copy" class="generated-copy"></div>
+                        </div>
+                        <div class="result-section">
+                            <h3>Generated Image</h3>
+                            <div id="daily-generated-image" class="generated-image"></div>
+                        </div>
+                    </div>
+                    <div class="result-actions">
+                        <button id="daily-use-content" class="btn btn-primary">Use in Publish</button>
+                        <button id="daily-regenerate" class="btn btn-secondary">Generate Another</button>
                     </div>
                 </div>
             </div>
