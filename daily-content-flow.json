@@ -1,0 +1,429 @@
+{
+  "name": "Daily Content Auto-Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1-5"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [800, 400],
+      "id": "schedule-trigger-daily",
+      "name": "Daily Schedule (8AM Mon-Fri)"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "daily-content-trigger",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [800, 600],
+      "id": "webhook-manual-trigger",
+      "name": "Manual Trigger Webhook",
+      "webhookId": "daily-content-trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare daily context\nconst now = new Date();\nconst input = $input.item.json;\n\n// Parse body if coming from webhook\nlet data = {};\nif (input.body) {\n  if (typeof input.body === 'string') {\n    try {\n      data = JSON.parse(input.body);\n    } catch (e) {\n      data = input;\n    }\n  } else {\n    data = input.body;\n  }\n} else {\n  data = input;\n}\n\n// Date information\nconst dayOfWeek = now.toLocaleDateString('en-US', { weekday: 'long' });\nconst month = now.toLocaleDateString('en-US', { month: 'long' });\nconst dayOfMonth = now.getDate();\nconst year = now.getFullYear();\nconst quarter = Math.ceil((now.getMonth() + 1) / 3);\n\n// Check for special dates/events\nconst specialDates = {\n  '01-01': 'New Year - Fresh start, new goals',\n  '02-14': 'Valentine\\'s Day - Love your technology',\n  '03-14': 'Pi Day - Mathematical precision in tech',\n  '04-22': 'Earth Day - Sustainable technology',\n  '05-01': 'May Day - Worker productivity tools',\n  '07-04': 'Independence Day - Digital freedom',\n  '10-31': 'Halloween - Scary tech problems solved',\n  '11-25': 'Thanksgiving - Grateful for technology',\n  '12-25': 'Christmas - Tech gifts and year review'\n};\n\nconst dateKey = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(dayOfMonth).padStart(2, '0')}`;\nconst specialEvent = specialDates[dateKey] || null;\n\n// Industry trends for 2026\nconst trendTopics = [\n  'AI-powered automation and business intelligence',\n  'Hybrid cloud infrastructure optimization',\n  'Cybersecurity best practices',\n  'Digital transformation strategies',\n  'IT infrastructure modernization',\n  'Data analytics and business insights',\n  'Remote work technology solutions',\n  'Network optimization and performance',\n  'Enterprise software integration',\n  'Cloud migration strategies'\n];\n\n// Content themes by day of week\nconst dailyThemes = {\n  'Monday': 'Week kickoff - productivity and planning',\n  'Tuesday': 'Technical deep-dive and how-to content',\n  'Wednesday': 'Industry insights and trends',\n  'Thursday': 'Case studies and success stories',\n  'Friday': 'Week wrap-up and weekend tips'\n};\n\nconst dailyTheme = dailyThemes[dayOfWeek] || 'General tech content';\n\n// Visual styles to rotate\nconst visualStyles = ['Infographic', 'Glassmorphism', 'Modern 3D', 'Isometric', 'Data Hero'];\nconst visualStyleIndex = dayOfMonth % visualStyles.length;\nconst suggestedVisualStyle = visualStyles[visualStyleIndex];\n\n// Post types to rotate\nconst postTypes = ['Educational', 'Tips & Tricks', 'Industry News', 'Success Story', 'Problem/Solution'];\nconst postTypeIndex = (dayOfMonth + 2) % postTypes.length;\nconst suggestedPostType = postTypes[postTypeIndex];\n\n// Number of posts to generate (from input or default 1)\nconst postsToGenerate = data.posts_count || 1;\nconst customTopic = data.topic || null;\nconst customVisualStyle = data.visual_style || null;\nconst customPostType = data.post_type || null;\n\nreturn [{\n  json: {\n    date: now.toISOString().split('T')[0],\n    day_of_week: dayOfWeek,\n    month: month,\n    day_of_month: dayOfMonth,\n    year: year,\n    quarter: quarter,\n    special_event: specialEvent,\n    daily_theme: dailyTheme,\n    trend_topics: trendTopics,\n    suggested_visual_style: customVisualStyle || suggestedVisualStyle,\n    suggested_post_type: customPostType || suggestedPostType,\n    posts_to_generate: postsToGenerate,\n    custom_topic: customTopic,\n    timestamp: now.toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 500],
+      "id": "prepare-daily-context",
+      "name": "Prepare Daily Context"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "merge-inputs",
+              "name": "=",
+              "value": "",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1000, 500],
+      "id": "merge-triggers",
+      "name": "Merge Triggers"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate a LinkedIn content topic for MSI Technologies.\n\n## TODAY'S CONTEXT\n- Date: {{ $json.date }} ({{ $json.day_of_week }})\n- Month: {{ $json.month }} {{ $json.year }}\n- Quarter: Q{{ $json.quarter }}\n- Daily Theme: {{ $json.daily_theme }}\n{{ $json.special_event ? '- Special Event: ' + $json.special_event : '' }}\n{{ $json.custom_topic ? '- REQUESTED TOPIC: ' + $json.custom_topic : '' }}\n\n## TRENDING INDUSTRY TOPICS\n{{ $json.trend_topics.join('\\n- ') }}\n\n## REQUIREMENTS\n1. Topic must be relevant to IT services and technology consulting\n2. Should appeal to business decision-makers (CTOs, IT Directors, CEOs)\n3. Must be actionable and provide value\n4. Align with the daily theme: {{ $json.daily_theme }}\n{{ $json.custom_topic ? '5. MUST incorporate the requested topic: ' + $json.custom_topic : '' }}",
+        "options": {
+          "systemMessage": "# ROLE: Content Strategist for MSI Technologies\n\nYou are a content strategist specializing in B2B technology content for LinkedIn.\n\n## OUTPUT FORMAT (STRICT - Return ONLY this format)\n---TOPIC---\n[One clear, specific topic title - max 10 words]\n\n---HEADLINE---\n[Attention-grabbing headline for the image - max 8 words]\n\n---DATA_POINTS---\n[2-3 compelling statistics or facts related to the topic, each on a new line]\n\n---CONTEXT---\n[Brief context about why this topic matters today - 2-3 sentences]\n\n## MSI TECHNOLOGIES CONTEXT\nMSI Technologies is a technology consulting company that helps businesses:\n- Modernize IT infrastructure\n- Implement cloud solutions\n- Optimize network performance\n- Enhance cybersecurity\n- Enable digital transformation\n\n## RULES\n1. Topics must be specific, not generic\n2. Headlines should create curiosity or promise value\n3. Data points should be realistic (you can reference industry statistics)\n4. Content should position MSI as thought leaders\n5. NO sales pitches - focus on education and value\n6. If a custom topic is provided, MUST use it as the main focus"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [1300, 500],
+      "id": "agent-topic-generator",
+      "name": "AI Topic Generator"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "chatgpt-4o-latest"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [1380, 720],
+      "id": "openai-topic-gen",
+      "name": "OpenAI for Topic Gen",
+      "credentials": {
+        "openAiApi": {
+          "id": "13Oqly3WdRAzZVXL",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI output and prepare for content generation\nconst aiOutput = $input.item.json.output;\nconst context = $('Prepare Daily Context').item.json;\n\nconsole.log('==== PARSE AI OUTPUT ====');\nconsole.log('AI Output:', aiOutput);\n\n// Parse sections\nconst sections = {\n  topic: '',\n  headline: '',\n  data_points: '',\n  context: ''\n};\n\n// Extract TOPIC\nconst topicMatch = aiOutput.match(/---TOPIC---\\s*([\\s\\S]*?)(?=---HEADLINE---|$)/i);\nif (topicMatch) {\n  sections.topic = topicMatch[1].trim();\n}\n\n// Extract HEADLINE\nconst headlineMatch = aiOutput.match(/---HEADLINE---\\s*([\\s\\S]*?)(?=---DATA_POINTS---|$)/i);\nif (headlineMatch) {\n  sections.headline = headlineMatch[1].trim();\n}\n\n// Extract DATA_POINTS\nconst dataMatch = aiOutput.match(/---DATA_POINTS---\\s*([\\s\\S]*?)(?=---CONTEXT---|$)/i);\nif (dataMatch) {\n  sections.data_points = dataMatch[1].trim();\n}\n\n// Extract CONTEXT\nconst contextMatch = aiOutput.match(/---CONTEXT---\\s*([\\s\\S]*?)$/i);\nif (contextMatch) {\n  sections.context = contextMatch[1].trim();\n}\n\nconsole.log('Parsed sections:', sections);\n\n// Prepare content generation request\nconst contentRequest = {\n  topic: sections.topic,\n  post_type: context.suggested_post_type,\n  visual_style: context.suggested_visual_style,\n  orientation: '4:5',\n  headline: sections.headline,\n  data_points: sections.data_points,\n  context: sections.context,\n  \n  // Metadata for tracking\n  auto_generated: true,\n  generation_date: context.date,\n  day_of_week: context.day_of_week,\n  special_event: context.special_event,\n  \n  // Default colors (MSI brand)\n  color_primary: '#207CE5',\n  color_secondary: '#004AAD',\n  color_accent: '#FFFDF1',\n  color_dark: '#2B2B2B',\n  use_custom_colors: false\n};\n\nconsole.log('Content request prepared:', contentRequest);\nconsole.log('==== END PARSE ====');\n\nreturn [{ json: contentRequest }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1500, 500],
+      "id": "parse-ai-output",
+      "name": "Parse AI Output"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO social_posts (\n  topic, \n  post_type, \n  visual_style, \n  orientation, \n  headline, \n  data_points, \n  context, \n  status,\n  created_at, \n  updated_at\n) VALUES (\n  '{{ $json.topic.replace(/'/g, \"''\") }}',\n  '{{ $json.post_type.replace(/'/g, \"''\") }}',\n  '{{ $json.visual_style.replace(/'/g, \"''\") }}',\n  '{{ $json.orientation }}',\n  '{{ $json.headline.replace(/'/g, \"''\") }}',\n  '{{ $json.data_points.replace(/'/g, \"''\") }}',\n  '{{ $json.context.replace(/'/g, \"''\") }}',\n  'pending',\n  NOW(),\n  NOW()\n)\nRETURNING *",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1700, 500],
+      "id": "save-scheduled-post",
+      "name": "Save Scheduled Post to DB",
+      "credentials": {
+        "postgres": {
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://n8nmsi.app.n8n.cloud/webhook/70738d02-4bd8-4dac-853f-ba4836aafaf5",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  topic: $('Parse AI Output').item.json.topic,\n  post_type: $('Parse AI Output').item.json.post_type,\n  visual_style: $('Parse AI Output').item.json.visual_style,\n  orientation: $('Parse AI Output').item.json.orientation,\n  headline: $('Parse AI Output').item.json.headline,\n  data_points: $('Parse AI Output').item.json.data_points,\n  context: $('Parse AI Output').item.json.context,\n  color_primary: $('Parse AI Output').item.json.color_primary,\n  color_secondary: $('Parse AI Output').item.json.color_secondary,\n  color_accent: $('Parse AI Output').item.json.color_accent,\n  color_dark: $('Parse AI Output').item.json.color_dark,\n  use_custom_colors: false\n}) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1900, 500],
+      "id": "call-content-generation",
+      "name": "Call Content Generation Flow"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process content generation response\nconst response = $input.item.json;\nconst scheduledPost = $('Save Scheduled Post to DB').item.json;\n\nconsole.log('==== PROCESS RESPONSE ====');\nconsole.log('Response:', JSON.stringify(response));\n\nlet postId = scheduledPost.id;\nlet imageUrl = null;\nlet postCopy = null;\n\n// Extract data from response\nif (response.success && response.data) {\n  imageUrl = response.data.image_url || null;\n  postCopy = response.data.post_copy || null;\n  \n  // Use the returned post_id if different\n  if (response.data.post_id) {\n    postId = response.data.post_id;\n  }\n}\n\nconsole.log('Post ID:', postId);\nconsole.log('Image URL:', imageUrl);\nconsole.log('==== END PROCESS ====');\n\nreturn [{\n  json: {\n    scheduled_post_id: scheduledPost.id,\n    generated_post_id: postId,\n    image_url: imageUrl,\n    post_copy: postCopy,\n    success: response.success || false,\n    topic: scheduledPost.topic,\n    headline: scheduledPost.headline,\n    visual_style: scheduledPost.visual_style\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2100, 500],
+      "id": "process-response",
+      "name": "Process Generation Response"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE social_posts \nSET \n  status = CASE \n    WHEN '{{ $json.image_url }}' != '' AND '{{ $json.image_url }}' != 'null' THEN 'completed' \n    ELSE 'failed' \n  END,\n  image_url = CASE \n    WHEN '{{ $json.image_url }}' != '' AND '{{ $json.image_url }}' != 'null' THEN '{{ $json.image_url }}'\n    ELSE image_url\n  END,\n  updated_at = NOW()\nWHERE id = '{{ $json.scheduled_post_id }}'\nRETURNING *",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [2300, 500],
+      "id": "update-post-status",
+      "name": "Update Post Status in DB",
+      "credentials": {
+        "postgres": {
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "=✅ Daily content generated successfully!\n\n📝 Post ID: {{ $json.id }}\n📌 Topic: {{ $json.topic }}\n🎨 Style: {{ $json.visual_style }}\n📰 Headline: {{ $json.headline }}\n🖼️ Image: {{ $json.image_url || 'Pending' }}\n📊 Status: {{ $json.status }}\n⏰ Generated: {{ $json.updated_at }}",
+              "type": "string"
+            },
+            {
+              "id": "post_id",
+              "name": "post_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "image_url",
+              "name": "image_url",
+              "value": "={{ $json.image_url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [2500, 500],
+      "id": "format-success",
+      "name": "Format Success Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Daily content generated\", \"data\": $json } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2700, 600],
+      "id": "respond-webhook",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "content": "## Daily Content Auto-Generator\n\nThis workflow automatically generates LinkedIn content for MSI Technologies.\n\n### Triggers:\n1. **Scheduled**: Runs daily at 8 AM (Mon-Fri)\n2. **Manual**: POST to `/webhook/daily-content-trigger`\n\n### Manual Trigger Body (optional):\n```json\n{\n  \"topic\": \"Custom topic to generate\",\n  \"visual_style\": \"Infographic\",\n  \"post_type\": \"Educational\",\n  \"posts_count\": 1\n}\n```\n\n### Flow:\n1. Prepares daily context (date, themes, trends)\n2. AI generates relevant topic and headline\n3. Saves scheduled post to database\n4. Calls main content generation workflow\n5. Updates post with generated image\n\n### Database Integration:\n- Uses `social_posts` table\n- Status flow: `pending` → `completed`/`failed`",
+        "height": 480,
+        "width": 400,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [400, 320],
+      "id": "sticky-note-docs",
+      "name": "Documentation"
+    },
+    {
+      "parameters": {
+        "content": "## 1. TRIGGERS\nSchedule or Manual",
+        "height": 180,
+        "width": 260,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [760, 320],
+      "id": "sticky-trigger",
+      "name": "Trigger Zone"
+    },
+    {
+      "parameters": {
+        "content": "## 2. AI TOPIC GENERATION\nGenerates relevant topic based on date and trends",
+        "height": 180,
+        "width": 320,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1060, 320],
+      "id": "sticky-ai",
+      "name": "AI Zone"
+    },
+    {
+      "parameters": {
+        "content": "## 3. DATABASE & GENERATION\nSave to DB and call content generation",
+        "height": 180,
+        "width": 520,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1660, 320],
+      "id": "sticky-db",
+      "name": "DB Zone"
+    },
+    {
+      "parameters": {
+        "content": "## 4. RESPONSE\nUpdate status and respond",
+        "height": 180,
+        "width": 340,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2460, 320],
+      "id": "sticky-response",
+      "name": "Response Zone"
+    }
+  ],
+  "connections": {
+    "Daily Schedule (8AM Mon-Fri)": {
+      "main": [
+        [
+          {
+            "node": "Merge Triggers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger Webhook": {
+      "main": [
+        [
+          {
+            "node": "Merge Triggers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Triggers": {
+      "main": [
+        [
+          {
+            "node": "Prepare Daily Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Daily Context": {
+      "main": [
+        [
+          {
+            "node": "AI Topic Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Topic Generator": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI for Topic Gen": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Topic Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Output": {
+      "main": [
+        [
+          {
+            "node": "Save Scheduled Post to DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Scheduled Post to DB": {
+      "main": [
+        [
+          {
+            "node": "Call Content Generation Flow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Content Generation Flow": {
+      "main": [
+        [
+          {
+            "node": "Process Generation Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Generation Response": {
+      "main": [
+        [
+          {
+            "node": "Update Post Status in DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Post Status in DB": {
+      "main": [
+        [
+          {
+            "node": "Format Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Success Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "b5116c87255060ddf18db8a2b1b90e34b38f50f44815cf784a0b8a92b6bb4e6e"
+  }
+}

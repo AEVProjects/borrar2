@@ -157,6 +157,115 @@ BEGIN
 END $$;
 
 -- ============================================================
+-- Content Calendar Table (for scheduling and auto-generation)
+-- ============================================================
+
+DROP TABLE IF EXISTS public.content_calendar CASCADE;
+
+CREATE TABLE public.content_calendar (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  
+  -- Scheduling
+  scheduled_date date NOT NULL,
+  scheduled_time time DEFAULT '09:00:00',
+  day_of_week character varying(10),
+  
+  -- Content configuration
+  topic_suggestion text,
+  post_type text DEFAULT 'Educational',
+  visual_style text DEFAULT 'Infographic',
+  custom_headline text,
+  custom_context text,
+  
+  -- AI generation settings
+  auto_generate boolean DEFAULT true,
+  use_trending_topics boolean DEFAULT true,
+  
+  -- Linked post (once generated)
+  generated_post_id uuid,
+  
+  -- Status
+  status text DEFAULT 'scheduled' NOT NULL 
+    CHECK (status IN ('scheduled', 'generating', 'generated', 'published', 'failed', 'cancelled')),
+  
+  -- Publishing configuration
+  publish_linkedin boolean DEFAULT true,
+  publish_facebook boolean DEFAULT false,
+  publish_instagram boolean DEFAULT false,
+  
+  -- Timestamps
+  created_at timestamp with time zone DEFAULT now() NOT NULL,
+  updated_at timestamp with time zone DEFAULT now() NOT NULL,
+  
+  CONSTRAINT content_calendar_pkey PRIMARY KEY (id),
+  CONSTRAINT content_calendar_post_fkey FOREIGN KEY (generated_post_id) REFERENCES public.social_posts(id) ON DELETE SET NULL
+);
+
+-- Indexes for content calendar
+CREATE INDEX idx_content_calendar_date ON public.content_calendar(scheduled_date);
+CREATE INDEX idx_content_calendar_status ON public.content_calendar(status);
+CREATE INDEX idx_content_calendar_auto_generate ON public.content_calendar(auto_generate) WHERE auto_generate = true;
+
+-- Trigger for content calendar updated_at
+CREATE TRIGGER update_content_calendar_updated_at
+    BEFORE UPDATE ON public.content_calendar
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Comments
+COMMENT ON TABLE public.content_calendar IS 'Content calendar for scheduling and auto-generating posts';
+COMMENT ON COLUMN public.content_calendar.scheduled_date IS 'Date when content should be generated/published';
+COMMENT ON COLUMN public.content_calendar.auto_generate IS 'If true, AI will generate topic automatically';
+COMMENT ON COLUMN public.content_calendar.generated_post_id IS 'Links to the generated post in social_posts table';
+
+-- ============================================================
+-- Daily Generation Log (tracks auto-generation runs)
+-- ============================================================
+
+DROP TABLE IF EXISTS public.generation_log CASCADE;
+
+CREATE TABLE public.generation_log (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  
+  -- Run information
+  run_date date NOT NULL DEFAULT CURRENT_DATE,
+  run_time timestamp with time zone DEFAULT now(),
+  trigger_type text DEFAULT 'scheduled' CHECK (trigger_type IN ('scheduled', 'manual', 'api')),
+  
+  -- Generation details
+  posts_requested integer DEFAULT 1,
+  posts_generated integer DEFAULT 0,
+  posts_failed integer DEFAULT 0,
+  
+  -- Linked posts (JSON array of post IDs)
+  generated_post_ids jsonb DEFAULT '[]'::jsonb,
+  
+  -- AI context used
+  daily_theme text,
+  special_event text,
+  trending_topics jsonb,
+  
+  -- Status and errors
+  status text DEFAULT 'running' CHECK (status IN ('running', 'completed', 'partial', 'failed')),
+  error_message text,
+  
+  -- Timing
+  started_at timestamp with time zone DEFAULT now(),
+  completed_at timestamp with time zone,
+  duration_seconds integer,
+  
+  CONSTRAINT generation_log_pkey PRIMARY KEY (id)
+);
+
+-- Indexes for generation log
+CREATE INDEX idx_generation_log_date ON public.generation_log(run_date DESC);
+CREATE INDEX idx_generation_log_status ON public.generation_log(status);
+
+-- Comments
+COMMENT ON TABLE public.generation_log IS 'Tracks all auto-generation runs and their results';
+COMMENT ON COLUMN public.generation_log.trigger_type IS 'How the generation was triggered: scheduled, manual, or API';
+
+-- ============================================================
 -- Migration: Update status constraint for image edit flow
 -- Run these commands ONE BY ONE in Supabase SQL Editor:
 -- ============================================================
