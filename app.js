@@ -735,19 +735,151 @@ function renderPost(post) {
             
             ${platforms.length === 0 ? `
                 <div class="publish-section" style="margin-top: 16px; padding: 16px; background: #f8f9fa; border-radius: 8px;">
-                    <div style="margin-bottom: 12px; font-weight: 600; color: #333;">Not published yet</div>
-                    <button class="btn btn-small btn-use-content" onclick="useInCreatePost('${post.id}')" style="background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                        </svg>
-                        Use in Create Post
-                    </button>
+                    ${post.scheduled_publish_at ? `
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <span style="background: #10b981; color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                                ⏰ Programado: ${new Date(post.scheduled_publish_at).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            <button onclick="cancelScheduledPost('${post.id}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 12px; text-decoration: underline;">Cancelar</button>
+                        </div>
+                    ` : `
+                        <div style="margin-bottom: 12px; font-weight: 600; color: #333;">Programar Publicación</div>
+                        
+                        <!-- Platform Selection -->
+                        <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="checkbox" id="sched_linkedin_${post.id}" style="width: 18px; height: 18px; accent-color: #0077b5;">
+                                <span style="font-size: 13px; font-weight: 500;">LinkedIn</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="checkbox" id="sched_facebook_${post.id}" style="width: 18px; height: 18px; accent-color: #1877f2;">
+                                <span style="font-size: 13px; font-weight: 500;">Facebook</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="checkbox" id="sched_instagram_${post.id}" style="width: 18px; height: 18px; accent-color: #e4405f;">
+                                <span style="font-size: 13px; font-weight: 500;">Instagram</span>
+                            </label>
+                        </div>
+                        
+                        <!-- DateTime Selection -->
+                        <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                            <input type="date" id="sched_date_${post.id}" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;" value="${new Date().toISOString().split('T')[0]}">
+                            <input type="time" id="sched_time_${post.id}" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;" value="09:00">
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button onclick="schedulePost('${post.id}')" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                Programar
+                            </button>
+                            <button onclick="useInCreatePost('${post.id}')" style="background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                                Publicar Ahora
+                            </button>
+                        </div>
+                    `}
                 </div>
             ` : ''}
         </div>
     `;
 }
+
+// Schedule Post for automatic publishing
+window.schedulePost = async function(postId) {
+    if (!supabaseClient) {
+        showToast('Supabase no está configurado', 'error');
+        return;
+    }
+    
+    // Get selected platforms
+    const linkedin = document.getElementById(`sched_linkedin_${postId}`)?.checked || false;
+    const facebook = document.getElementById(`sched_facebook_${postId}`)?.checked || false;
+    const instagram = document.getElementById(`sched_instagram_${postId}`)?.checked || false;
+    
+    if (!linkedin && !facebook && !instagram) {
+        showToast('Selecciona al menos una plataforma', 'warning');
+        return;
+    }
+    
+    // Get scheduled date/time
+    const dateInput = document.getElementById(`sched_date_${postId}`)?.value;
+    const timeInput = document.getElementById(`sched_time_${postId}`)?.value;
+    
+    if (!dateInput || !timeInput) {
+        showToast('Selecciona fecha y hora', 'warning');
+        return;
+    }
+    
+    const scheduledDateTime = new Date(`${dateInput}T${timeInput}`);
+    const now = new Date();
+    
+    if (scheduledDateTime <= now) {
+        showToast('La fecha/hora debe ser en el futuro', 'warning');
+        return;
+    }
+    
+    try {
+        // Update post in database with scheduled info
+        const { error } = await supabaseClient
+            .from('social_posts')
+            .update({
+                scheduled_publish_at: scheduledDateTime.toISOString(),
+                publish_linkedin: linkedin ? 'Scheduled' : 'No',
+                publish_facebook: facebook ? 'Scheduled' : 'No',
+                publish_instagram: instagram ? 'Scheduled' : 'No',
+                status: 'scheduled'
+            })
+            .eq('id', postId);
+        
+        if (error) throw error;
+        
+        showToast(`✅ Programado para ${scheduledDateTime.toLocaleString('es-ES')}`, 'success');
+        loadPosts(); // Refresh list
+        
+    } catch (error) {
+        console.error('Error scheduling post:', error);
+        showToast('Error al programar: ' + error.message, 'error');
+    }
+};
+
+// Cancel scheduled post
+window.cancelScheduledPost = async function(postId) {
+    if (!supabaseClient) {
+        showToast('Supabase no está configurado', 'error');
+        return;
+    }
+    
+    if (!confirm('¿Cancelar la publicación programada?')) return;
+    
+    try {
+        const { error } = await supabaseClient
+            .from('social_posts')
+            .update({
+                scheduled_publish_at: null,
+                publish_linkedin: 'No',
+                publish_facebook: 'No',
+                publish_instagram: 'No',
+                status: 'pending'
+            })
+            .eq('id', postId);
+        
+        if (error) throw error;
+        
+        showToast('Publicación programada cancelada', 'success');
+        loadPosts();
+        
+    } catch (error) {
+        console.error('Error canceling schedule:', error);
+        showToast('Error: ' + error.message, 'error');
+    }
+};
 
 // Use Post Content in Create New Post Form
 async function useInCreatePost(postId) {

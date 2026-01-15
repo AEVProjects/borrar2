@@ -30,9 +30,12 @@ CREATE TABLE public.social_posts (
   publish_facebook text DEFAULT 'No',
   publish_instagram text DEFAULT 'No',
   
+  -- Scheduled publishing
+  scheduled_publish_at timestamp with time zone,
+  
   -- Metadata
   status text DEFAULT 'pending' NOT NULL 
-    CHECK (status IN ('pending', 'strategy_completed', 'copy_completed', 'prompt_completed', 'image_generated', 'completed', 'failed', 'editing_started', 'generating_edit')),
+    CHECK (status IN ('pending', 'strategy_completed', 'copy_completed', 'prompt_completed', 'image_generated', 'completed', 'failed', 'editing_started', 'generating_edit', 'scheduled', 'publishing')),
   -- Status flow: pending → copy_completed → prompt_completed → image_generated → completed
   -- Edit flow: editing_started → generating_edit → completed
   

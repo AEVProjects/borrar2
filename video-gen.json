@@ -1,5 +1,5 @@
 {
-  "name": "MSI Video Generation - Veo 3",
+  "name": "MSI Video Generation - Veo 3.1",
   "nodes": [
     {
       "parameters": {
@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Extract data from web form for video generation\nconst input = $input.item.json;\n\nconsole.log('==== VIDEO GEN WEBHOOK INPUT ====');\nconsole.log('Raw input:', JSON.stringify(input));\n\n// Parse the body if it's a JSON string\nlet data;\nif (input.body) {\n  if (typeof input.body === 'string') {\n    try {\n      data = JSON.parse(input.body);\n    } catch (e) {\n      data = input;\n    }\n  } else if (typeof input.body === 'object') {\n    data = input.body;\n  } else {\n    data = input;\n  }\n} else if (input.query) {\n  data = input.query;\n} else {\n  data = input;\n}\n\n// Extract variables for video generation\nconst prompt = data.prompt || data.video_prompt || '';\nconst duration = data.duration || '5s'; // Default 5 seconds\nconst aspect_ratio = data.aspect_ratio || '9:16'; // Default vertical for social\nconst style = data.style || 'cinematic';\nconst reference_image_url = data.reference_image_url || null;\nconst post_id = data.post_id || null;\nconst topic = data.topic || '';\n\nconsole.log('Parsed data:', JSON.stringify(data));\nconsole.log('Variables:', { prompt, duration, aspect_ratio, style, reference_image_url, post_id, topic });\n\nif (!prompt) {\n  throw new Error('VIDEO GEN ERROR: prompt is required for video generation.');\n}\n\nreturn [{\n  json: {\n    prompt,\n    duration,\n    aspect_ratio,\n    style,\n    reference_image_url,\n    post_id,\n    topic\n  }\n}];"
+        "jsCode": "// Extract data from web form for video generation\nconst input = $input.item.json;\n\nconsole.log('==== VIDEO GEN WEBHOOK INPUT ====');\nconsole.log('Raw input:', JSON.stringify(input));\n\n// Parse the body if it's a JSON string\nlet data;\nif (input.body) {\n  if (typeof input.body === 'string') {\n    try {\n      data = JSON.parse(input.body);\n    } catch (e) {\n      data = input;\n    }\n  } else if (typeof input.body === 'object') {\n    data = input.body;\n  } else {\n    data = input;\n  }\n} else if (input.query) {\n  data = input.query;\n} else {\n  data = input;\n}\n\n// Extract variables for video generation\nconst prompt = data.prompt || data.video_prompt || '';\nconst duration = data.duration || '5s';\nconst aspect_ratio = data.aspect_ratio || '9:16';\nconst style = data.style || 'cinematic';\nconst reference_image_url = data.reference_image_url || null;\nconst post_id = data.post_id || null;\nconst topic = data.topic || '';\n\nconsole.log('Variables:', { prompt, duration, aspect_ratio, style, reference_image_url, post_id, topic });\n\nif (!prompt) {\n  throw new Error('VIDEO GEN ERROR: prompt is required for video generation.');\n}\n\nreturn [{\n  json: {\n    prompt,\n    duration,\n    aspect_ratio,\n    style,\n    reference_image_url,\n    post_id,\n    topic\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -89,9 +89,9 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=Create a professional video prompt for Veo 3 based on this request:\n\nUser Prompt: {{ $json.prompt }}\nStyle: {{ $json.style }}\nDuration: {{ $json.duration }}\nAspect Ratio: {{ $json.aspect_ratio }}\nTopic: {{ $json.topic || 'General' }}\n\nGenerate an optimized, detailed prompt for Veo 3 video generation that will create a high-quality, professional video.",
+        "text": "=Create a professional video prompt for Veo 3.1 based on this request:\n\nUser Prompt: {{ $json.prompt }}\nStyle: {{ $json.style }}\nDuration: {{ $json.duration }}\nAspect Ratio: {{ $json.aspect_ratio }}\nTopic: {{ $json.topic || 'General' }}\n\nGenerate an optimized, detailed prompt for Veo 3.1 video generation.",
         "options": {
-          "systemMessage": "# ROLE: Video Prompt Specialist for Veo 3\n\nYou are an expert at creating prompts for Google's Veo 3 video generation model.\n\n## OUTPUT FORMAT\nReturn ONLY the optimized video prompt, nothing else. No explanations, no labels.\n\n## RULES\n1. Be specific about camera movements (pan, zoom, dolly, tracking shot)\n2. Include lighting descriptions (golden hour, studio lighting, neon, etc.)\n3. Specify the mood and atmosphere\n4. Add details about motion and dynamics\n5. Keep it under 500 characters for best results\n6. Focus on visual elements that Veo 3 handles well:\n   - Smooth camera movements\n   - Realistic lighting and shadows\n   - Natural motion and physics\n   - Cinematic compositions\n\n## STYLE GUIDELINES\n- cinematic: Add film-quality elements, shallow depth of field, dramatic lighting\n- professional: Clean, corporate feel, steady shots, neutral lighting\n- dynamic: Fast cuts implied, energetic movement, bold compositions\n- minimal: Simple, clean, focused on single subject\n- artistic: Creative angles, unique compositions, experimental feel\n\n## ASPECT RATIO CONSIDERATIONS\n- 9:16 (vertical): Optimize for mobile/social viewing, subject centered\n- 16:9 (horizontal): Traditional video, wider compositions\n- 1:1 (square): Centered subjects, social media friendly"
+          "systemMessage": "# ROLE: Video Prompt Specialist for Veo 3.1\n\nYou are an expert at creating prompts for Google's Veo 3.1 video generation model.\n\n## OUTPUT FORMAT\nReturn ONLY the optimized video prompt, nothing else. No explanations, no labels.\n\n## RULES\n1. Be specific about camera movements (pan, zoom, dolly, tracking shot)\n2. Include lighting descriptions (golden hour, studio lighting, neon, etc.)\n3. Specify the mood and atmosphere\n4. Add details about motion and dynamics\n5. Keep it under 500 characters for best results\n6. Focus on visual elements that Veo handles well:\n   - Smooth camera movements\n   - Realistic lighting and shadows\n   - Natural motion and physics\n   - Cinematic compositions\n\n## STYLE GUIDELINES\n- cinematic: Add film-quality elements, shallow depth of field, dramatic lighting\n- professional: Clean, corporate feel, steady shots, neutral lighting\n- dynamic: Fast cuts implied, energetic movement, bold compositions\n- minimal: Simple, clean, focused on single subject\n- artistic: Creative angles, unique compositions, experimental feel"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -131,7 +131,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Prepare video generation request for Veo 3\nconst formInput = $('Format Video Input').item.json;\nconst optimizedPrompt = $input.item.json.output;\n\nconsole.log('==== PREPARE VIDEO GEN REQUEST ====');\nconsole.log('Optimized prompt:', optimizedPrompt);\n\n// Map duration to Veo 3 format\nconst durationMap = {\n  '5s': 5,\n  '10s': 10,\n  '15s': 15,\n  '8s': 8\n};\n\nconst durationSeconds = durationMap[formInput.duration] || 5;\n\n// Map aspect ratio to Veo 3 format\nconst aspectRatioMap = {\n  '9:16': '9:16',\n  '16:9': '16:9',\n  '1:1': '1:1',\n  '4:3': '4:3'\n};\n\nconst aspectRatio = aspectRatioMap[formInput.aspect_ratio] || '9:16';\n\nreturn [{\n  json: {\n    original_prompt: formInput.prompt,\n    optimized_prompt: optimizedPrompt,\n    duration_seconds: durationSeconds,\n    aspect_ratio: aspectRatio,\n    style: formInput.style,\n    reference_image_url: formInput.reference_image_url,\n    post_id: formInput.post_id,\n    topic: formInput.topic\n  }\n}];"
+        "jsCode": "// Prepare data for Veo 3.1 video generation\nconst formInput = $('Format Video Input').item.json;\nconst optimizedPrompt = $input.item.json.output;\n\nconsole.log('==== PREPARE VIDEO GEN REQUEST ====');\nconsole.log('Optimized prompt:', optimizedPrompt);\n\nreturn [{\n  json: {\n    prompt: optimizedPrompt,\n    original_prompt: formInput.prompt,\n    duration: formInput.duration,\n    aspect_ratio: formInput.aspect_ratio,\n    style: formInput.style,\n    reference_image_url: formInput.reference_image_url,\n    post_id: formInput.post_id,\n    topic: formInput.topic\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -144,121 +144,23 @@
     },
     {
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "check-reference-image",
-              "leftValue": "={{ $json.reference_image_url !== null && $json.reference_image_url !== '' }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
+        "resource": "video",
+        "prompt": "={{ $json.prompt }}",
+        "modelId": {
+          "__rl": true,
+          "value": "models/veo-3.1-fast-generate-preview",
+          "mode": "list",
+          "cachedResultName": "models/veo-3.1-fast-generate-preview"
         },
         "options": {}
       },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
       "position": [
         1120,
         300
       ],
-      "id": "check-reference-image",
-      "name": "Has Reference Image?"
-    },
-    {
-      "parameters": {
-        "url": "={{ $json.reference_image_url }}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "file"
-            }
-          },
-          "timeout": 90000
-        }
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1340,
-        200
-      ],
-      "id": "download-reference-image",
-      "name": "Download Reference Image"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Prepare reference image for Veo 3 image-to-video\nconst preparedData = $('Prepare Video Request').item.json;\nconst imageItem = $input.item;\n\nconsole.log('==== PREPARE IMAGE TO VIDEO ====');\n\nlet referenceImageBase64 = '';\nlet referenceMimeType = 'image/png';\n\nif (imageItem.binary && Object.keys(imageItem.binary).length > 0) {\n  const binaryKey = Object.keys(imageItem.binary)[0];\n  const binaryData = imageItem.binary[binaryKey];\n  referenceMimeType = binaryData.mimeType || 'image/png';\n  \n  try {\n    const buffer = await this.helpers.getBinaryDataBuffer(0, binaryKey);\n    referenceImageBase64 = buffer.toString('base64');\n    console.log('Reference image base64 length:', referenceImageBase64.length);\n  } catch (e) {\n    console.error('Failed to get buffer:', e.message);\n    if (binaryData.data && binaryData.data !== 'filesystem-v2') {\n      referenceImageBase64 = binaryData.data;\n    }\n  }\n}\n\nreturn [{\n  json: {\n    ...preparedData,\n    reference_image_base64: referenceImageBase64,\n    reference_mime_type: referenceMimeType,\n    generation_mode: 'image_to_video'\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1560,
-        200
-      ],
-      "id": "prepare-image-to-video",
-      "name": "Prepare Image to Video"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Prepare text-to-video request (no reference image)\nconst preparedData = $('Prepare Video Request').item.json;\n\nconsole.log('==== PREPARE TEXT TO VIDEO ====');\n\nreturn [{\n  json: {\n    ...preparedData,\n    reference_image_base64: null,\n    reference_mime_type: null,\n    generation_mode: 'text_to_video'\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1340,
-        400
-      ],
-      "id": "prepare-text-to-video",
-      "name": "Prepare Text to Video"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Merge both paths\nconst items = $input.all();\nconst item = items[0];\n\nconsole.log('==== MERGE VIDEO PATHS ====');\nconsole.log('Generation mode:', item.json.generation_mode);\n\nreturn [item];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1780,
-        300
-      ],
-      "id": "merge-video-paths",
-      "name": "Merge Video Paths"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/veo-3.1-generate-preview:generateVideos",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googlePalmApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ (() => {\n  const data = $json;\n  const requestBody = {\n    instances: [{\n      prompt: data.optimized_prompt\n    }],\n    parameters: {\n      aspectRatio: data.aspect_ratio,\n      durationSeconds: data.duration_seconds,\n      personGeneration: 'allow_adult',\n      generateAudio: true,\n      numberOfVideos: 1\n    }\n  };\n  \n  // Add reference image if available (image-to-video)\n  if (data.reference_image_base64 && data.generation_mode === 'image_to_video') {\n    requestBody.instances[0].referenceImage = {\n      bytesBase64Encoded: data.reference_image_base64,\n      mimeType: data.reference_mime_type\n    };\n  }\n  \n  return JSON.stringify(requestBody);\n})() }}",
-        "options": {
-          "response": {
-            "response": {}
-          },
-          "timeout": 300000
-        }
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        2000,
-        300
-      ],
-      "id": "veo3-generate-video",
+      "id": "veo-generate-video",
       "name": "Veo 3.1 Generate Video",
       "credentials": {
         "googlePalmApi": {
@@ -269,165 +171,16 @@
     },
     {
       "parameters": {
-        "jsCode": "// Extract operation name for polling\nconst response = $input.item.json;\nconst preparedData = $('Merge Video Paths').item.json;\n\nconsole.log('==== VEO 3 INITIAL RESPONSE ====');\nconsole.log('Response:', JSON.stringify(response));\n\n// Veo 3 returns a long-running operation\nconst operationName = response.name;\n\nif (!operationName) {\n  throw new Error('Veo 3 did not return an operation name. Response: ' + JSON.stringify(response));\n}\n\nconsole.log('Operation name:', operationName);\n\nreturn [{\n  json: {\n    operation_name: operationName,\n    post_id: preparedData.post_id,\n    optimized_prompt: preparedData.optimized_prompt,\n    poll_count: 0,\n    max_polls: 60 // Max 5 minutes (60 polls x 5 seconds)\n  }\n}];"
+        "jsCode": "// Process Veo 3.1 response - Native n8n Gemini node\n// The node returns the video data directly, not a URL\nconst response = $input.item.json;\nconst preparedData = $('Prepare Video Request').item.json;\n\nconsole.log('==== VEO 3.1 RESPONSE ====');\nconsole.log('Response keys:', Object.keys(response));\nconsole.log('Response type check:', typeof response);\n\nlet videoBase64 = '';\nlet mimeType = 'video/mp4';\n\n// The native n8n Gemini node returns video data directly\n// Check various possible response structures\nif (typeof response === 'string') {\n  // Direct base64 string\n  videoBase64 = response;\n} else if (response.data) {\n  // { data: base64string } or { data: { ... } }\n  videoBase64 = typeof response.data === 'string' ? response.data : (response.data.video || response.data.bytesBase64Encoded || '');\n  mimeType = response.mimeType || response.data.mimeType || mimeType;\n} else if (response.video) {\n  // { video: base64string } or { video: { bytesBase64Encoded: ... } }\n  videoBase64 = typeof response.video === 'string' ? response.video : (response.video.bytesBase64Encoded || response.video.data || '');\n  mimeType = response.video.mimeType || mimeType;\n} else if (response.bytesBase64Encoded) {\n  videoBase64 = response.bytesBase64Encoded;\n  mimeType = response.mimeType || mimeType;\n} else if (response.generatedVideos && response.generatedVideos.length > 0) {\n  const video = response.generatedVideos[0];\n  videoBase64 = video.video?.bytesBase64Encoded || video.bytesBase64Encoded || '';\n  mimeType = video.video?.mimeType || video.mimeType || mimeType;\n} else if (response.output) {\n  videoBase64 = typeof response.output === 'string' ? response.output : (response.output.bytesBase64Encoded || '');\n} else if (response.result) {\n  videoBase64 = typeof response.result === 'string' ? response.result : (response.result.bytesBase64Encoded || '');\n}\n\n// If we still don't have it, check if the response itself looks like base64\nif (!videoBase64) {\n  // Check all keys for base64-like content\n  for (const key of Object.keys(response)) {\n    const val = response[key];\n    if (typeof val === 'string' && val.length > 1000) {\n      // Likely base64 data\n      videoBase64 = val;\n      console.log(`Found video data in key: ${key}`);\n      break;\n    }\n  }\n}\n\nconsole.log('Has video base64:', !!videoBase64, videoBase64 ? `(${videoBase64.length} chars)` : '');\nconsole.log('MIME type:', mimeType);\n\nif (!videoBase64) {\n  console.log('Full response for debugging:', JSON.stringify(response, null, 2).substring(0, 2000));\n  throw new Error('No video data found in Veo response. Check logs for response structure.');\n}\n\n// Create a data URL for the video\nconst videoDataUrl = `data:${mimeType};base64,${videoBase64}`;\n\nconsole.log('Video data URL created, length:', videoDataUrl.length);\n\nreturn [{\n  json: {\n    video_base64: videoBase64,\n    video_data_url: videoDataUrl,\n    mime_type: mimeType,\n    has_video: true,\n    post_id: preparedData.post_id,\n    prompt: preparedData.prompt,\n    original_prompt: preparedData.original_prompt\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2220,
+        1340,
         300
       ],
-      "id": "extract-operation-name",
-      "name": "Extract Operation Name"
-    },
-    {
-      "parameters": {
-        "amount": 5,
-        "unit": "seconds"
-      },
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1.1,
-      "position": [
-        2440,
-        300
-      ],
-      "id": "wait-for-video",
-      "name": "Wait 5 Seconds",
-      "webhookId": "wait-video-gen"
-    },
-    {
-      "parameters": {
-        "method": "GET",
-        "url": "=https://generativelanguage.googleapis.com/v1beta/{{ $json.operation_name }}",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googlePalmApi",
-        "options": {
-          "response": {
-            "response": {}
-          },
-          "timeout": 30000
-        }
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        2660,
-        300
-      ],
-      "id": "poll-operation-status",
-      "name": "Poll Operation Status",
-      "credentials": {
-        "googlePalmApi": {
-          "id": "oF4jKBK0jRbwEPWt",
-          "name": "Google Gemini(PaLM) Api account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Check if video generation is complete\nconst response = $input.item.json;\nconst previousData = $('Wait 5 Seconds').item.json;\n\nconsole.log('==== POLL STATUS CHECK ====');\nconsole.log('Poll count:', previousData.poll_count + 1);\nconsole.log('Response done:', response.done);\n\nconst pollCount = (previousData.poll_count || 0) + 1;\n\nif (response.done === true) {\n  // Video generation complete\n  console.log('Video generation COMPLETE!');\n  return [{\n    json: {\n      status: 'complete',\n      response: response,\n      post_id: previousData.post_id,\n      optimized_prompt: previousData.optimized_prompt\n    }\n  }];\n} else if (response.error) {\n  // Error occurred\n  console.log('Video generation ERROR:', response.error);\n  return [{\n    json: {\n      status: 'error',\n      error: response.error,\n      post_id: previousData.post_id\n    }\n  }];\n} else if (pollCount >= previousData.max_polls) {\n  // Timeout\n  console.log('Video generation TIMEOUT');\n  return [{\n    json: {\n      status: 'timeout',\n      post_id: previousData.post_id\n    }\n  }];\n} else {\n  // Still processing, continue polling\n  console.log('Video still processing...');\n  return [{\n    json: {\n      status: 'processing',\n      operation_name: previousData.operation_name,\n      post_id: previousData.post_id,\n      optimized_prompt: previousData.optimized_prompt,\n      poll_count: pollCount,\n      max_polls: previousData.max_polls\n    }\n  }];\n}"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2880,
-        300
-      ],
-      "id": "check-video-status",
-      "name": "Check Video Status"
-    },
-    {
-      "parameters": {
-        "rules": {
-          "values": [
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": false,
-                  "typeValidation": "loose"
-                },
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.status }}",
-                    "rightValue": "complete",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "Complete"
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": false,
-                  "typeValidation": "loose"
-                },
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.status }}",
-                    "rightValue": "processing",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "Processing"
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": false,
-                  "typeValidation": "loose"
-                },
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.status }}",
-                    "rightValue": "error|timeout",
-                    "operator": {
-                      "type": "string",
-                      "operation": "regex"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "Error"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.2,
-      "position": [
-        3100,
-        300
-      ],
-      "id": "switch-video-status",
-      "name": "Route by Status"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Extract video data from completed response\nconst data = $input.item.json;\nconst response = data.response;\n\nconsole.log('==== EXTRACT VIDEO DATA ====');\n\n// Veo 3 response structure\nconst result = response.response || response.result;\nconst videos = result?.generatedVideos || result?.videos || [];\n\nif (videos.length === 0) {\n  throw new Error('No videos in Veo 3 response: ' + JSON.stringify(response));\n}\n\nconst video = videos[0];\nconst videoUri = video.video?.uri || video.uri;\nconst videoBase64 = video.video?.bytesBase64Encoded || video.bytesBase64Encoded;\n\nconsole.log('Video URI:', videoUri);\nconsole.log('Has base64:', !!videoBase64);\n\nreturn [{\n  json: {\n    video_uri: videoUri,\n    video_base64: videoBase64,\n    post_id: data.post_id,\n    optimized_prompt: data.optimized_prompt\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        3320,
-        200
-      ],
-      "id": "extract-video-data",
-      "name": "Extract Video Data"
+      "id": "process-video-response",
+      "name": "Process Video Response"
     },
     {
       "parameters": {
@@ -457,8 +210,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3540,
-        200
+        1560,
+        300
       ],
       "id": "check-update-db",
       "name": "Update DB?"
@@ -466,14 +219,14 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=UPDATE social_posts \nSET video_url = '{{ $json.video_uri || '' }}',\n    status = 'video_completed',\n    updated_at = NOW()\nWHERE id = '{{ $json.post_id }}'\nRETURNING *",
+        "query": "=UPDATE social_posts \nSET video_url = '{{ $json.video_data_url }}',\n    status = 'video_completed',\n    updated_at = NOW()\nWHERE id = '{{ $json.post_id }}'\nRETURNING *",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        3760,
-        100
+        1780,
+        200
       ],
       "id": "update-db-video",
       "name": "Update DB with Video",
@@ -486,48 +239,31 @@
     },
     {
       "parameters": {
+        "jsCode": "// Pass through for no DB update case\nconst data = $input.item.json;\n\nreturn [{\n  json: {\n    video_url: data.video_data_url,\n    video_base64: data.video_base64,\n    id: data.post_id,\n    prompt: data.prompt\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        400
+      ],
+      "id": "passthrough-no-db",
+      "name": "Passthrough (No DB)"
+    },
+    {
+      "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, message: 'Video generated successfully', data: { video_url: $json.video_url || $('Extract Video Data').item.json.video_uri, post_id: $json.id || $('Extract Video Data').item.json.post_id, prompt: $('Extract Video Data').item.json.optimized_prompt } }) }}",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Video generated successfully', data: { video_url: $json.video_url || $json.video_data_url, video_base64: $json.video_base64 ? true : false, post_id: $json.id || $json.post_id, prompt: $json.prompt } }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        3980,
-        200
+        2000,
+        300
       ],
       "id": "respond-video-success",
       "name": "Respond Success"
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, message: 'Video generation failed', error: $json.error || 'Timeout or unknown error', post_id: $json.post_id }) }}",
-        "options": {
-          "responseCode": 500
-        }
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        3320,
-        400
-      ],
-      "id": "respond-video-error",
-      "name": "Respond Error"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Pass through for no DB update case\nconst data = $input.item.json;\n\nreturn [{\n  json: {\n    video_url: data.video_uri,\n    id: data.post_id,\n    optimized_prompt: data.optimized_prompt\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        3760,
-        300
-      ],
-      "id": "passthrough-no-db",
-      "name": "Passthrough (No DB)"
     }
   ],
   "connections": {
@@ -608,156 +344,25 @@
       "main": [
         [
           {
-            "node": "Has Reference Image?",
+            "node": "Veo 3.1 Generate Video",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Has Reference Image?": {
+    "Veo 3.1 Generate Video": {
       "main": [
         [
           {
-            "node": "Download Reference Image",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Prepare Text to Video",
+            "node": "Process Video Response",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Download Reference Image": {
-      "main": [
-        [
-          {
-            "node": "Prepare Image to Video",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare Image to Video": {
-      "main": [
-        [
-          {
-            "node": "Merge Video Paths",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare Text to Video": {
-      "main": [
-        [
-          {
-            "node": "Merge Video Paths",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge Video Paths": {
-      "main": [
-        [
-          {
-            "node": "Veo 3 Generate Video",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Veo 3 Generate Video": {
-      "main": [
-        [
-          {
-            "node": "Extract Operation Name",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Extract Operation Name": {
-      "main": [
-        [
-          {
-            "node": "Wait 5 Seconds",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wait 5 Seconds": {
-      "main": [
-        [
-          {
-            "node": "Poll Operation Status",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Poll Operation Status": {
-      "main": [
-        [
-          {
-            "node": "Check Video Status",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check Video Status": {
-      "main": [
-        [
-          {
-            "node": "Route by Status",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Route by Status": {
-      "main": [
-        [
-          {
-            "node": "Extract Video Data",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Wait 5 Seconds",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Respond Error",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Extract Video Data": {
+    "Process Video Response": {
       "main": [
         [
           {

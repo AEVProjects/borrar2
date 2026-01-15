@@ -1,0 +1,340 @@
+{
+  "name": "MSI Scheduled Publisher",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -200,
+        300
+      ],
+      "id": "schedule-trigger",
+      "name": "Every Minute"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM social_posts \nWHERE status = 'scheduled' \nAND scheduled_publish_at IS NOT NULL \nAND scheduled_publish_at <= NOW()\nORDER BY scheduled_publish_at ASC\nLIMIT 5",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        20,
+        300
+      ],
+      "id": "get-scheduled-posts",
+      "name": "Get Scheduled Posts",
+      "credentials": {
+        "postgres": {
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-posts",
+              "leftValue": "={{ $json.id !== undefined && $json.id !== null }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        300
+      ],
+      "id": "has-posts-to-publish",
+      "name": "Has Posts?"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE social_posts SET status = 'publishing', updated_at = NOW() WHERE id = '{{ $json.id }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        460,
+        200
+      ],
+      "id": "mark-publishing",
+      "name": "Mark as Publishing",
+      "credentials": {
+        "postgres": {
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare post data for publishing\nconst post = $('Get Scheduled Posts').item.json;\n\nconsole.log('==== PUBLISHING SCHEDULED POST ====');\nconsole.log('Post ID:', post.id);\nconsole.log('Topic:', post.topic);\nconsole.log('Scheduled for:', post.scheduled_publish_at);\n\n// Determine which platforms to publish to\nconst platforms = {\n  linkedin: post.publish_linkedin === 'Scheduled' || post.publish_linkedin === 'Yes',\n  facebook: post.publish_facebook === 'Scheduled' || post.publish_facebook === 'Yes',\n  instagram: post.publish_instagram === 'Scheduled' || post.publish_instagram === 'Yes'\n};\n\n// Parse image URLs\nlet imageUrls = [];\nif (post.image_url) {\n  if (post.image_url.startsWith('[')) {\n    try {\n      const parsed = JSON.parse(post.image_url);\n      imageUrls = Array.isArray(parsed) ? parsed : [post.image_url];\n    } catch (e) {\n      imageUrls = [post.image_url];\n    }\n  } else if (post.image_url.includes(',')) {\n    imageUrls = post.image_url.split(',').map(url => url.trim());\n  } else {\n    imageUrls = [post.image_url];\n  }\n}\n\nconsole.log('Platforms:', platforms);\nconsole.log('Images:', imageUrls.length);\n\nreturn [{\n  json: {\n    post_id: post.id,\n    post_type: post.post_type || '',\n    topic: post.topic,\n    headline: post.headline,\n    publish_linkedin: platforms.linkedin ? 'Yes' : 'No',\n    publish_facebook: platforms.facebook ? 'Yes' : 'No',\n    publish_instagram: platforms.instagram ? 'Yes' : 'No',\n    image_urls: imageUrls,\n    image_url: post.image_url\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        200
+      ],
+      "id": "prepare-publish-data",
+      "name": "Prepare Publish Data"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-publish",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        200
+      ],
+      "id": "call-publish-webhook",
+      "name": "Call Publish Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check publish result\nconst response = $input.item.json;\nconst postId = $('Prepare Publish Data').item.json.post_id;\n\nconsole.log('==== PUBLISH RESULT ====');\nconsole.log('Response:', JSON.stringify(response));\n\nconst success = response.success || response.status === 'success' || response.linkedin_success || response.facebook_success;\n\nreturn [{\n  json: {\n    post_id: postId,\n    success: success,\n    response: response\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        200
+      ],
+      "id": "check-result",
+      "name": "Check Result"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "is-success",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1340,
+        200
+      ],
+      "id": "check-success",
+      "name": "Was Successful?"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE social_posts \nSET status = 'completed',\n    publish_linkedin = CASE WHEN publish_linkedin = 'Scheduled' THEN 'Yes' ELSE publish_linkedin END,\n    publish_facebook = CASE WHEN publish_facebook = 'Scheduled' THEN 'Yes' ELSE publish_facebook END,\n    publish_instagram = CASE WHEN publish_instagram = 'Scheduled' THEN 'Yes' ELSE publish_instagram END,\n    scheduled_publish_at = NULL,\n    updated_at = NOW()\nWHERE id = '{{ $json.post_id }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1560,
+        100
+      ],
+      "id": "mark-completed",
+      "name": "Mark Completed",
+      "credentials": {
+        "postgres": {
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE social_posts \nSET status = 'failed',\n    updated_at = NOW()\nWHERE id = '{{ $json.post_id }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1560,
+        300
+      ],
+      "id": "mark-failed",
+      "name": "Mark Failed",
+      "credentials": {
+        "postgres": {
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        460,
+        400
+      ],
+      "id": "no-posts",
+      "name": "No Posts to Publish"
+    }
+  ],
+  "connections": {
+    "Every Minute": {
+      "main": [
+        [
+          {
+            "node": "Get Scheduled Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Scheduled Posts": {
+      "main": [
+        [
+          {
+            "node": "Has Posts?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Posts?": {
+      "main": [
+        [
+          {
+            "node": "Mark as Publishing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Posts to Publish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark as Publishing": {
+      "main": [
+        [
+          {
+            "node": "Prepare Publish Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Publish Data": {
+      "main": [
+        [
+          {
+            "node": "Call Publish Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Publish Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Result": {
+      "main": [
+        [
+          {
+            "node": "Was Successful?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Was Successful?": {
+      "main": [
+        [
+          {
+            "node": "Mark Completed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "b5116c87255060ddf18db8a2b1b90e34b38f50f44815cf784a0b8a92b6bb4e6e"
+  }
+}
