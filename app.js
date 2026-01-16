@@ -1820,25 +1820,47 @@ if (videoForm) {
                 return;
             }
             
-            if (result.success && result.data?.video_url) {
-                updateProgress(100, 'Video ready!');
+            if (result.success && result.data?.youtube_url) {
+                updateProgress(100, 'Video uploaded to YouTube!');
                 
                 setTimeout(() => {
                     hideProgressAlert();
                     
-                    // Show video results
+                    // Show video results with YouTube embed
                     const videoResults = document.getElementById('video-results');
-                    const videoPlayer = document.getElementById('generated-video');
+                    const videoPlayerContainer = document.getElementById('video-player');
                     const downloadLink = document.getElementById('download-video');
                     const promptUsed = document.getElementById('video-prompt-used');
                     
-                    if (videoPlayer) {
-                        videoPlayer.src = result.data.video_url;
-                        videoPlayer.load();
+                    if (videoPlayerContainer) {
+                        // Replace video player with YouTube iframe
+                        const youtubeId = result.data.youtube_video_id || result.data.youtube_url.split('v=')[1]?.split('&')[0];
+                        videoPlayerContainer.innerHTML = `
+                            <iframe 
+                                width="100%" 
+                                height="500" 
+                                src="https://www.youtube.com/embed/${youtubeId}" 
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen
+                                style="border-radius: 8px;">
+                            </iframe>
+                        `;
                     }
                     
                     if (downloadLink) {
-                        downloadLink.href = result.data.video_url;
+                        // Change download to "View on YouTube"
+                        downloadLink.href = result.data.youtube_url;
+                        downloadLink.target = '_blank';
+                        downloadLink.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
+                            View on YouTube
+                        `;
+                        downloadLink.removeAttribute('download');
                     }
                     
                     if (promptUsed && result.data.prompt) {
@@ -1850,7 +1872,7 @@ if (videoForm) {
                         videoResults.scrollIntoView({ behavior: 'smooth' });
                     }
                     
-                    showSuccessAlert('Video Generated!', 'Your AI video has been created successfully.');
+                    showSuccessAlert('Video Uploaded!', 'Your AI video has been uploaded to YouTube successfully.');
                 }, 500);
             } else {
                 hideProgressAlert();

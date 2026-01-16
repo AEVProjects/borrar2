@@ -62,6 +62,7 @@ CREATE TABLE public.social_posts (
   
   -- Generated content
   image_url text,
+  youtube_url text,            -- YouTube video URL (from Veo 3.1)
   
   -- Publishing platforms
   publish_linkedin text DEFAULT 'No',
