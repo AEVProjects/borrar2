@@ -2613,7 +2613,7 @@ async function loadTrendNews() {
         }
 
         // Fetch news from trend_news table
-        const { data: news, error } = await supabase
+        const { data: news, error } = await supabaseClient
             .from('trend_news')
             .select('*')
             .order('scraped_at', { ascending: false })
@@ -2799,7 +2799,7 @@ function escapeHtml(text) {
 // View post from news link
 async function viewPostFromNews(postId) {
     try {
-        const { data: post, error } = await supabase
+        const { data: post, error } = await supabaseClient
             .from('social_posts')
             .select('*')
             .eq('id', postId)
