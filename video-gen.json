@@ -224,7 +224,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Extract YouTube URL from response\nconst response = $input.item.json;\nconst preparedData = $('Prepare YouTube Upload').item.json;\n\nconsole.log('==== YOUTUBE UPLOAD RESPONSE ====');\nconsole.log('Response keys:', Object.keys(response));\n\n// YouTube response structure: { id: 'video_id', snippet: { ... }, status: { ... } }\nconst videoId = response.id;\nconst youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;\n\nconsole.log('YouTube URL:', youtubeUrl);\nconsole.log('Video ID:', videoId);\n\nreturn [{\n  json: {\n    youtube_url: youtubeUrl,\n    youtube_video_id: videoId,\n    post_id: preparedData.post_id,\n    title: preparedData.title,\n    prompt: preparedData.original_prompt\n  }\n}];"
+        "jsCode": "// Extract YouTube URL from response\nconst response = $input.item.json;\nconst preparedData = $('Prepare YouTube Upload').item.json;\n\nconsole.log('==== YOUTUBE UPLOAD RESPONSE ====');\nconsole.log('Response keys:', Object.keys(response));\n\n// YouTube response structure: { id: 'video_id', uploadId: 'video_id', snippet: { ... }, status: { ... } }\nconst videoId = response.id || response.uploadId;\nconst youtubeUrl = `https://youtu.be/${videoId}`;\n\nconsole.log('YouTube URL:', youtubeUrl);\nconsole.log('Video ID:', videoId);\n\nreturn [{\n  json: {\n    youtube_url: youtubeUrl,\n    youtube_video_id: videoId,\n    post_id: preparedData.post_id,\n    title: preparedData.title,\n    prompt: preparedData.original_prompt\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -235,40 +235,7 @@
       "id": "extract-youtube-url",
       "name": "Extract YouTube URL"
     },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "check-has-post-id-final",
-              "leftValue": "={{ $json.post_id !== null && $json.post_id !== '' }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        2660,
-        200
-      ],
-      "id": "check-update-youtube-db",
-      "name": "Update DB with YouTube?"
-    },
+
     {
       "parameters": {
         "operation": "executeQuery",
@@ -278,8 +245,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        2880,
-        100
+        2660,
+        200
       ],
       "id": "update-db-youtube",
       "name": "Update DB with YouTube",
@@ -312,7 +279,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        3100,
+        2880,
         200
       ],
       "id": "respond-video-success",
@@ -323,19 +290,7 @@
     "Webhook - Video Gen": {
       "main": [
         [
-          {
-            "node": "Format Video Input",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Format Video Input": {
-      "main": [
-        [
-          {
-            "node": "Has Post ID?",
+      "node": "Has Post ID?",
             "type": "main",
             "index": 0
           }
@@ -452,25 +407,7 @@
       "main": [
         [
           {
-            "node": "Update DB with YouTube?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Update DB with YouTube?": {
-      "main": [
-        [
-          {
             "node": "Update DB with YouTube",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Passthrough YouTube (No DB)",
             "type": "main",
             "index": 0
           }
@@ -478,17 +415,6 @@
       ]
     },
     "Update DB with YouTube": {
-      "main": [
-        [
-          {
-            "node": "Respond Success",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Passthrough YouTube (No DB)": {
       "main": [
         [
           {
