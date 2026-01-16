@@ -290,7 +290,19 @@
     "Webhook - Video Gen": {
       "main": [
         [
-      "node": "Has Post ID?",
+          {
+            "node": "Format Video Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Video Input": {
+      "main": [
+        [
+          {
+            "node": "Has Post ID?",
             "type": "main",
             "index": 0
           }
