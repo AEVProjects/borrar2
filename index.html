@@ -63,6 +63,13 @@
                     </svg>
                     Auto Daily
                 </button>
+                <button class="tab-btn" data-mode="trends">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                        <polyline points="17 6 23 6 23 12"></polyline>
+                    </svg>
+                    Trends
+                </button>
             </div>
         </nav>
 
@@ -755,6 +762,83 @@
             </div>
         </div>
     </div>
+
+        <!-- Trends Mode -->
+        <div id="trends-mode" class="mode-content">
+            <div class="trends-container">
+                <!-- Header -->
+                <div class="trends-header">
+                    <div class="trends-title-group">
+                        <h2>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                <polyline points="17 6 23 6 23 12"></polyline>
+                            </svg>
+                            Trend News Monitor
+                        </h2>
+                        <span class="trends-subtitle">Noticias scrapeadas automáticamente de tendencias</span>
+                    </div>
+                    <div class="trends-actions">
+                        <button id="refresh-trends-btn" class="btn btn-secondary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                            </svg>
+                            Actualizar
+                        </button>
+                        <button id="trigger-trends-workflow-btn" class="btn btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                            </svg>
+                            Ejecutar Workflow
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="trends-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-news-count">0</div>
+                        <div class="stat-label">Noticias Total</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="used-news-count">0</div>
+                        <div class="stat-label">Usadas en Posts</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="pending-news-count">0</div>
+                        <div class="stat-label">Sin Usar</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="last-scrape-time">-</div>
+                        <div class="stat-label">Último Scrape</div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="trends-filters">
+                    <div class="filter-group">
+                        <label for="filter-trend-query">Filtrar por Trend:</label>
+                        <select id="filter-trend-query">
+                            <option value="">Todos los trends</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filter-used-status">Estado:</label>
+                        <select id="filter-used-status">
+                            <option value="">Todos</option>
+                            <option value="unused">Sin usar</option>
+                            <option value="used">Usadas</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- News Grid -->
+                <div class="trends-news-grid" id="trends-news-grid">
+                    <p class="loading-news">Cargando noticias...</p>
+                </div>
+            </div>
+        </div>
 
     <!-- Progress Alert Modal -->
     <div id="progress-alert" class="progress-alert">

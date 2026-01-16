@@ -1,0 +1,325 @@
+{
+  "name": "Trends Content Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "trigger-schedule",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300],
+      "notes": "Ejecuta cada 6 horas"
+    },
+    {
+      "parameters": {},
+      "id": "trigger-manual",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 100],
+      "notes": "Para pruebas manuales"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "msi-trends-content",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "trigger-webhook",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 500],
+      "webhookId": "msi-trends-content",
+      "notes": "Para ejecutar desde la web"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ========================================\n// WORKFLOW CONFIGURATION - MSI TECHNOLOGIES\n// ========================================\n\nreturn [{\n  json: {\n    brandName: \"MSI Technologies\",\n    brandDescription: \"MSI Technologies helps businesses modernize infrastructure, implement cloud solutions, cybersecurity, digital transformation, and innovative technology. Target: CTOs, IT Directors, tech decision-makers.\",\n    \n    searchQueries: [\n      \"Digital Transformation 2026\",\n      \"Cloud Migration Enterprise\",\n      \"Cybersecurity Business\",\n      \"IT Modernization\",\n      \"AI Business Automation\",\n      \"Data Analytics Enterprise\",\n      \"DevOps Best Practices\",\n      \"Zero Trust Security\"\n    ],\n    \n    googleTrendsRegion: \"US\",\n    newsLanguage: \"en\",\n    newsCountry: \"us\",\n    maxTrends: 5,\n    maxNews: 5,\n    \n    visualStyles: [\"Glassmorphism\", \"Modern 3D\", \"Isometric\", \"Data Hero\", \"Infographic\", \"Realistic Photography\"],\n    postTypes: [\"Educational\", \"Industry News\", \"Tips & Tricks\", \"Thought Leadership\"],\n    \n    // Webhook URL for content generation (update with your n8n URL)\n    contentWebhookUrl: \"https://your-n8n-instance.com/webhook/70738d02-4bd8-4dac-853f-ba4836aafaf5\"\n  }\n}];"
+      },
+      "id": "config-node",
+      "name": "Workflow Configuration",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.first().json;\nconst queries = config.searchQueries;\nconst randomIndex = Math.floor(Math.random() * queries.length);\nconst selectedQuery = queries[randomIndex];\n\nreturn [{\n  json: {\n    ...config,\n    searchQuery: selectedQuery\n  }\n}];"
+      },
+      "id": "select-query",
+      "name": "Select Random Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://serpapi.com/search.json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "serpApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "engine", "value": "google_trends" },
+            { "name": "q", "value": "={{ $json.searchQuery }}" },
+            { "name": "geo", "value": "={{ $json.googleTrendsRegion }}" },
+            { "name": "data_type", "value": "RELATED_QUERIES" }
+          ]
+        },
+        "options": { "timeout": 30000 }
+      },
+      "id": "get-trends",
+      "name": "Get Google Trends",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [660, 200],
+      "credentials": {
+        "serpApi": { "id": "RfnKNuS1eruwujfz", "name": "SerpAPI account" }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst config = $('Select Random Query').first().json;\nconst maxTrends = config.maxTrends || 5;\n\nlet relatedQueries = [];\n\nif (input.related_queries) {\n  if (input.related_queries.rising) {\n    relatedQueries = relatedQueries.concat(\n      input.related_queries.rising.map(q => ({ query: q.query, type: 'rising', value: q.value || 'Breakout' }))\n    );\n  }\n  if (input.related_queries.top) {\n    relatedQueries = relatedQueries.concat(\n      input.related_queries.top.map(q => ({ query: q.query, type: 'top', value: q.value || 100 }))\n    );\n  }\n}\n\nif (relatedQueries.length === 0) {\n  relatedQueries = [{ query: config.searchQuery, type: 'original', value: 100 }];\n}\n\nconst rising = relatedQueries.filter(q => q.type === 'rising');\nconst top = relatedQueries.filter(q => q.type === 'top');\nconst filtered = [...rising, ...top].slice(0, maxTrends);\n\nreturn [{\n  json: {\n    trends: filtered,\n    trendsJson: JSON.stringify(filtered, null, 2),\n    brandName: config.brandName,\n    brandDescription: config.brandDescription,\n    originalQuery: config.searchQuery,\n    visualStyles: config.visualStyles,\n    postTypes: config.postTypes,\n    maxNews: config.maxNews,\n    newsLanguage: config.newsLanguage,\n    newsCountry: config.newsCountry,\n    contentWebhookUrl: config.contentWebhookUrl\n  }\n}];"
+      },
+      "id": "filter-trends",
+      "name": "Filter Top Trends",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 200]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Trending queries for {{ $json.brandName }}:\n\n{{ $json.trendsJson }}\n\nBrand: {{ $json.brandDescription }}\n\nSelect the BEST query (NOT location-specific). Respond with ONLY the query text.",
+        "options": {
+          "systemMessage": "Select the most relevant trending topic for B2B tech LinkedIn content. Respond with ONLY the query text."
+        }
+      },
+      "id": "ai-select-trend",
+      "name": "AI: Select Best Trend",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [1100, 200]
+    },
+    {
+      "parameters": {
+        "model": { "__rl": true, "value": "gpt-4o-mini", "mode": "list", "cachedResultName": "gpt-4o-mini" },
+        "options": { "temperature": 0.3 }
+      },
+      "id": "openai-select",
+      "name": "OpenAI Select Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [1180, 420],
+      "credentials": { "openAiApi": { "id": "13Oqly3WdRAzZVXL", "name": "OpenAi account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiOutput = $input.first().json.output;\nconst prevData = $('Filter Top Trends').first().json;\n\nconst selectedTrend = aiOutput.replace(/^[\"']|[\"']$/g, '').replace(/\\n/g, ' ').trim();\n\nreturn [{\n  json: {\n    selectedTrend,\n    newsLanguage: prevData.newsLanguage,\n    newsCountry: prevData.newsCountry,\n    maxNews: prevData.maxNews,\n    brandName: prevData.brandName,\n    brandDescription: prevData.brandDescription,\n    visualStyles: prevData.visualStyles,\n    postTypes: prevData.postTypes,\n    originalQuery: prevData.originalQuery,\n    contentWebhookUrl: prevData.contentWebhookUrl\n  }\n}];"
+      },
+      "id": "prepare-trend",
+      "name": "Prepare Selected Trend",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://serpapi.com/search.json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "serpApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "engine", "value": "google_news" },
+            { "name": "q", "value": "={{ $json.selectedTrend }}" },
+            { "name": "gl", "value": "={{ $json.newsCountry }}" },
+            { "name": "hl", "value": "={{ $json.newsLanguage }}" }
+          ]
+        },
+        "options": { "timeout": 30000 }
+      },
+      "id": "search-news",
+      "name": "Search Google News",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1540, 200],
+      "credentials": { "serpApi": { "id": "RfnKNuS1eruwujfz", "name": "SerpAPI account" } },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst prevData = $('Prepare Selected Trend').first().json;\nconst maxNews = prevData.maxNews || 5;\n\nlet newsResults = [];\n\nif (input.news_results && Array.isArray(input.news_results)) {\n  newsResults = input.news_results.slice(0, maxNews).map((news, index) => ({\n    index: index + 1,\n    title: news.title || 'No title',\n    link: news.link || '',\n    source: news.source?.name || news.source || 'Unknown',\n    date: news.date || 'Recent',\n    snippet: news.snippet || ''\n  }));\n}\n\nif (newsResults.length === 0) {\n  newsResults = [{\n    index: 1,\n    title: prevData.selectedTrend,\n    link: '',\n    source: 'Trend topic',\n    date: 'Current',\n    snippet: 'Content based on trending topic.'\n  }];\n}\n\nreturn [{\n  json: {\n    selectedTrend: prevData.selectedTrend,\n    originalQuery: prevData.originalQuery,\n    brandName: prevData.brandName,\n    brandDescription: prevData.brandDescription,\n    newsCount: newsResults.length,\n    news: newsResults,\n    newsJson: JSON.stringify(newsResults, null, 2),\n    visualStyles: prevData.visualStyles,\n    postTypes: prevData.postTypes,\n    contentWebhookUrl: prevData.contentWebhookUrl\n  }\n}];"
+      },
+      "id": "filter-news",
+      "name": "Filter Top News",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1760, 200]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=WITH news_data AS (\n  SELECT * FROM (\n    VALUES \n    {{ $json.news.map((n, i) => `(${i + 1}, '${n.title.replace(/'/g, \"''\")}', '${n.link.replace(/'/g, \"''\")}', '${n.source.replace(/'/g, \"''\")}', '${n.date.replace(/'/g, \"''\")}', '${n.snippet.replace(/'/g, \"''\")}')`).join(',\\n    ') }}\n  ) AS t(idx, title, link, source, news_date, snippet)\n)\nINSERT INTO trend_news (trend_query, search_query, title, link, source, news_date, snippet, scraped_at)\nSELECT \n  '{{ $json.selectedTrend.replace(/'/g, \"''\") }}',\n  '{{ $json.originalQuery.replace(/'/g, \"''\") }}',\n  title, link, source, news_date, snippet, NOW()\nFROM news_data\nRETURNING id, title",
+        "options": {}
+      },
+      "id": "save-news-to-db",
+      "name": "Save News to DB",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1980, 200],
+      "credentials": { "postgres": { "id": "WnTYs2zvPoE7hDJE", "name": "Postgres account" } },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const newsDbResult = $input.all();\nconst newsData = $('Filter Top News').first().json;\n\n// Get the IDs of saved news\nconst savedNewsIds = newsDbResult.map(item => item.json.id).filter(id => id);\n\nreturn [{\n  json: {\n    ...newsData,\n    savedNewsIds: savedNewsIds\n  }\n}];"
+      },
+      "id": "prepare-for-ai",
+      "name": "Prepare for AI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2200, 200]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=# CONTENT FOR {{ $json.brandName }}\n\n## Trending: {{ $json.selectedTrend }}\n\n## Brand: {{ $json.brandDescription }}\n\n## News:\n{{ $json.newsJson }}\n\n## Visual Styles: {{ $json.visualStyles.join(', ') }}\n## Post Types: {{ $json.postTypes.join(', ') }}\n\n---\n\nGenerate ONE LinkedIn post. Respond ONLY with this JSON:\n{\n  \"topic\": \"2-3 word topic\",\n  \"post_type\": \"Educational|Industry News|Tips & Tricks|Thought Leadership\",\n  \"visual_style\": \"Glassmorphism|Modern 3D|Isometric|Data Hero|Infographic|Realistic Photography\",\n  \"headline\": \"5-8 word headline for image\",\n  \"data_points\": \"Key stats or N/A\",\n  \"context\": \"Why this matters + connection to MSI\"\n}",
+        "options": {
+          "systemMessage": "You are MSI Technologies content strategist. Generate B2B LinkedIn content for CTOs/IT Directors. Respond with valid JSON only."
+        }
+      },
+      "id": "ai-generate-post",
+      "name": "AI: Generate Post",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [2420, 200]
+    },
+    {
+      "parameters": {
+        "model": { "__rl": true, "value": "gpt-4o-mini", "mode": "list", "cachedResultName": "gpt-4o-mini" },
+        "options": { "temperature": 0.7, "maxTokens": 1000 }
+      },
+      "id": "openai-generate",
+      "name": "OpenAI Generate Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [2500, 420],
+      "credentials": { "openAiApi": { "id": "13Oqly3WdRAzZVXL", "name": "OpenAi account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiOutput = $input.first().json.output;\nconst newsData = $('Prepare for AI').first().json;\n\nlet postData;\ntry {\n  let cleanOutput = aiOutput.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  const jsonMatch = cleanOutput.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) cleanOutput = jsonMatch[0];\n  postData = JSON.parse(cleanOutput);\n} catch (e) {\n  postData = {\n    topic: newsData.selectedTrend,\n    post_type: 'Educational',\n    visual_style: 'Glassmorphism',\n    headline: newsData.selectedTrend.substring(0, 50),\n    data_points: 'N/A',\n    context: `Content about ${newsData.selectedTrend} for MSI Technologies.`\n  };\n}\n\nconst validVisualStyles = ['Glassmorphism', 'Modern 3D', 'Isometric', 'Data Hero', 'Infographic', 'Realistic Photography'];\nconst validPostTypes = ['Educational', 'Industry News', 'Tips & Tricks', 'Thought Leadership'];\n\nif (!validVisualStyles.includes(postData.visual_style)) postData.visual_style = 'Glassmorphism';\nif (!validPostTypes.includes(postData.post_type)) postData.post_type = 'Educational';\n\nreturn [{\n  json: {\n    topic: postData.topic || newsData.selectedTrend,\n    post_type: postData.post_type,\n    visual_style: postData.visual_style,\n    orientation: 'Portrait',\n    headline: postData.headline || newsData.selectedTrend,\n    data_points: postData.data_points || '',\n    context: postData.context || '',\n    trend_source: newsData.selectedTrend,\n    savedNewsIds: newsData.savedNewsIds,\n    contentWebhookUrl: newsData.contentWebhookUrl\n  }\n}];"
+      },
+      "id": "parse-post-data",
+      "name": "Parse Post Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2640, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.contentWebhookUrl }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"topic\": \"{{ $json.topic }}\",\n  \"post_type\": \"{{ $json.post_type }}\",\n  \"visual_style\": \"{{ $json.visual_style }}\",\n  \"orientation\": \"{{ $json.orientation }}\",\n  \"headline\": \"{{ $json.headline }}\",\n  \"data_points\": \"{{ $json.data_points }}\",\n  \"context\": \"{{ $json.context }}\",\n  \"trend_source\": \"{{ $json.trend_source }}\"\n}",
+        "options": { "timeout": 120000 }
+      },
+      "id": "call-content-webhook",
+      "name": "Generate Full Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [2860, 200],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const webhookResult = $input.first().json;\nconst postData = $('Parse Post Data').first().json;\nconst savedNewsIds = postData.savedNewsIds || [];\n\n// Get the post ID from the webhook response\nconst postId = webhookResult.post_id || webhookResult.id || null;\n\nreturn [{\n  json: {\n    postId: postId,\n    savedNewsIds: savedNewsIds,\n    success: !!postId,\n    webhookResult: webhookResult\n  }\n}];"
+      },
+      "id": "extract-post-id",
+      "name": "Extract Post ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3080, 200]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE trend_news \nSET is_used = true, used_for_post_id = '{{ $json.postId }}'\nWHERE id IN ({{ $json.savedNewsIds.map(id => `'${id}'`).join(', ') }})\nRETURNING id",
+        "options": {}
+      },
+      "id": "mark-news-used",
+      "name": "Mark News as Used",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [3300, 200],
+      "credentials": { "postgres": { "id": "WnTYs2zvPoE7hDJE", "name": "Postgres account" } },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE social_posts \nSET trend_source = '{{ $('Parse Post Data').first().json.trend_source.replace(/'/g, \"''\") }}'\nWHERE id = '{{ $('Extract Post ID').first().json.postId }}'\nRETURNING id, topic, headline, image_url, status",
+        "options": {}
+      },
+      "id": "update-trend-source",
+      "name": "Update Trend Source",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [3520, 200],
+      "credentials": { "postgres": { "id": "WnTYs2zvPoE7hDJE", "name": "Postgres account" } },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const dbResult = $input.first().json;\nconst webhookData = $('Extract Post ID').first().json.webhookResult;\n\nreturn [{\n  json: {\n    success: true,\n    message: 'Content generated from trends!',\n    post: {\n      id: dbResult.id,\n      topic: dbResult.topic,\n      headline: dbResult.headline,\n      image_url: dbResult.image_url,\n      status: dbResult.status\n    },\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "final-summary",
+      "name": "Final Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3740, 200]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [[{ "node": "Workflow Configuration", "type": "main", "index": 0 }]] },
+    "Manual Trigger": { "main": [[{ "node": "Workflow Configuration", "type": "main", "index": 0 }]] },
+    "Webhook Trigger": { "main": [[{ "node": "Workflow Configuration", "type": "main", "index": 0 }]] },
+    "Workflow Configuration": { "main": [[{ "node": "Select Random Query", "type": "main", "index": 0 }]] },
+    "Select Random Query": { "main": [[{ "node": "Get Google Trends", "type": "main", "index": 0 }]] },
+    "Get Google Trends": { "main": [[{ "node": "Filter Top Trends", "type": "main", "index": 0 }]] },
+    "Filter Top Trends": { "main": [[{ "node": "AI: Select Best Trend", "type": "main", "index": 0 }]] },
+    "AI: Select Best Trend": { "main": [[{ "node": "Prepare Selected Trend", "type": "main", "index": 0 }]] },
+    "OpenAI Select Model": { "ai_languageModel": [[{ "node": "AI: Select Best Trend", "type": "ai_languageModel", "index": 0 }]] },
+    "Prepare Selected Trend": { "main": [[{ "node": "Search Google News", "type": "main", "index": 0 }]] },
+    "Search Google News": { "main": [[{ "node": "Filter Top News", "type": "main", "index": 0 }]] },
+    "Filter Top News": { "main": [[{ "node": "Save News to DB", "type": "main", "index": 0 }]] },
+    "Save News to DB": { "main": [[{ "node": "Prepare for AI", "type": "main", "index": 0 }]] },
+    "Prepare for AI": { "main": [[{ "node": "AI: Generate Post", "type": "main", "index": 0 }]] },
+    "AI: Generate Post": { "main": [[{ "node": "Parse Post Data", "type": "main", "index": 0 }]] },
+    "OpenAI Generate Model": { "ai_languageModel": [[{ "node": "AI: Generate Post", "type": "ai_languageModel", "index": 0 }]] },
+    "Parse Post Data": { "main": [[{ "node": "Generate Full Content", "type": "main", "index": 0 }]] },
+    "Generate Full Content": { "main": [[{ "node": "Extract Post ID", "type": "main", "index": 0 }]] },
+    "Extract Post ID": { "main": [[{ "node": "Mark News as Used", "type": "main", "index": 0 }]] },
+    "Mark News as Used": { "main": [[{ "node": "Update Trend Source", "type": "main", "index": 0 }]] },
+    "Update Trend Source": { "main": [[{ "node": "Final Summary", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "meta": { "instanceId": "b5116c87255060ddf18db8a2b1b90e34b38f50f44815cf784a0b8a92b6bb4e6e" },
+  "tags": []
+}

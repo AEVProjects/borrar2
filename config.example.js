@@ -25,7 +25,8 @@ window.APP_CONFIG = {
         generateWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/70738d02-4bd8-4dac-853f-ba4836aafaf5', // Del workflow "MSI Content Form"
         editWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-image-edit', // Del workflow "MSI Image Edit Flow"
         videoWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-video-gen', // Del workflow "MSI Video Generation - Veo 3"
-        carouselWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-carousel-gen' // Del workflow "MSI Carousel Generation"
+        carouselWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-carousel-gen', // Del workflow "MSI Carousel Generation"
+        trendsWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-trends-content' // Del workflow "MSI Trends Content Flow"
     },
     
     // Security token - Este valor NO se puede cambiar desde el frontend

@@ -1,10 +1,45 @@
 -- MSI Content Generator Database Schema
 -- Drop existing tables (in correct order due to foreign keys)
+DROP TABLE IF EXISTS public.trend_news CASCADE;
 DROP TABLE IF EXISTS public.generated_images CASCADE;
 DROP TABLE IF EXISTS public.post_versions CASCADE;
 DROP TABLE IF EXISTS public.social_posts CASCADE;
 
--- Main social posts table
+-- =============================================
+-- TREND NEWS TABLE
+-- Stores scraped news from Google Trends
+-- =============================================
+CREATE TABLE public.trend_news (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  
+  -- Trend data
+  trend_query text NOT NULL,
+  search_query text,
+  
+  -- News article data
+  title text NOT NULL,
+  link text,
+  source text,
+  news_date text,
+  snippet text,
+  
+  -- Usage tracking
+  used_for_post_id uuid,
+  is_used boolean DEFAULT false,
+  
+  -- Timestamps
+  scraped_at timestamp with time zone DEFAULT now() NOT NULL,
+  
+  CONSTRAINT trend_news_pkey PRIMARY KEY (id)
+);
+
+-- Index for faster queries
+CREATE INDEX idx_trend_news_scraped ON public.trend_news(scraped_at DESC);
+CREATE INDEX idx_trend_news_used ON public.trend_news(is_used);
+
+-- =============================================
+-- MAIN SOCIAL POSTS TABLE
+-- =============================================
 CREATE TABLE public.social_posts (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   
@@ -16,6 +51,9 @@ CREATE TABLE public.social_posts (
   headline text NOT NULL,
   data_points text,
   context text,
+  
+  -- Trend source (for posts generated from trends)
+  trend_source text,
   
   -- Agent outputs (PLAIN TEXT)
   strategy_analysis text,      -- Full output from Agent 1
@@ -45,6 +83,11 @@ CREATE TABLE public.social_posts (
   
   CONSTRAINT social_posts_pkey PRIMARY KEY (id)
 );
+
+-- Add foreign key for trend_news
+ALTER TABLE public.trend_news 
+ADD CONSTRAINT trend_news_post_fkey 
+FOREIGN KEY (used_for_post_id) REFERENCES public.social_posts(id) ON DELETE SET NULL;
 
 -- Generated images table (for tracking multiple image generations)
 CREATE TABLE public.generated_images (

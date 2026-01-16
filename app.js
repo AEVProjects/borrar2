@@ -2588,6 +2588,315 @@ setInterval(() => {
 
 // ========== END AUTO DAILY / CONTENT PLANNER ==========
 
+// ========== TRENDS MODE ==========
+
+// Trends state
+let trendsData = {
+    news: [],
+    filters: {
+        trendQuery: '',
+        usedStatus: ''
+    }
+};
+
+// Load trend news from database
+async function loadTrendNews() {
+    try {
+        const grid = document.getElementById('trends-news-grid');
+        if (grid) {
+            grid.innerHTML = '<p class="loading-news">Cargando noticias...</p>';
+        }
+
+        // Fetch news from trend_news table
+        const { data: news, error } = await supabase
+            .from('trend_news')
+            .select('*')
+            .order('scraped_at', { ascending: false })
+            .limit(100);
+
+        if (error) {
+            console.error('Error loading trend news:', error);
+            if (grid) {
+                grid.innerHTML = '<p class="no-news">Error al cargar noticias. Verifica que la tabla trend_news exista.</p>';
+            }
+            return;
+        }
+
+        trendsData.news = news || [];
+        updateTrendsStats();
+        populateTrendFilters();
+        renderTrendNews();
+
+    } catch (err) {
+        console.error('Error in loadTrendNews:', err);
+    }
+}
+
+// Update stats cards
+function updateTrendsStats() {
+    const news = trendsData.news;
+    
+    const totalCount = news.length;
+    const usedCount = news.filter(n => n.is_used).length;
+    const pendingCount = totalCount - usedCount;
+    
+    document.getElementById('total-news-count').textContent = totalCount;
+    document.getElementById('used-news-count').textContent = usedCount;
+    document.getElementById('pending-news-count').textContent = pendingCount;
+    
+    // Last scrape time
+    if (news.length > 0) {
+        const lastScrape = new Date(news[0].scraped_at);
+        const now = new Date();
+        const diffMs = now - lastScrape;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+        
+        let timeAgo;
+        if (diffDays > 0) {
+            timeAgo = `${diffDays}d`;
+        } else if (diffHours > 0) {
+            timeAgo = `${diffHours}h`;
+        } else if (diffMins > 0) {
+            timeAgo = `${diffMins}m`;
+        } else {
+            timeAgo = 'Ahora';
+        }
+        document.getElementById('last-scrape-time').textContent = timeAgo;
+    }
+}
+
+// Populate filter dropdowns
+function populateTrendFilters() {
+    const trendQuerySelect = document.getElementById('filter-trend-query');
+    if (!trendQuerySelect) return;
+    
+    // Get unique trend queries
+    const uniqueTrends = [...new Set(trendsData.news.map(n => n.trend_query).filter(Boolean))];
+    
+    // Keep selected value
+    const currentValue = trendQuerySelect.value;
+    
+    trendQuerySelect.innerHTML = '<option value="">Todos los trends</option>';
+    uniqueTrends.forEach(trend => {
+        const option = document.createElement('option');
+        option.value = trend;
+        option.textContent = trend;
+        trendQuerySelect.appendChild(option);
+    });
+    
+    // Restore selection if still valid
+    if (uniqueTrends.includes(currentValue)) {
+        trendQuerySelect.value = currentValue;
+    }
+}
+
+// Render news cards
+function renderTrendNews() {
+    const grid = document.getElementById('trends-news-grid');
+    if (!grid) return;
+    
+    // Apply filters
+    let filteredNews = trendsData.news;
+    
+    if (trendsData.filters.trendQuery) {
+        filteredNews = filteredNews.filter(n => n.trend_query === trendsData.filters.trendQuery);
+    }
+    
+    if (trendsData.filters.usedStatus === 'used') {
+        filteredNews = filteredNews.filter(n => n.is_used);
+    } else if (trendsData.filters.usedStatus === 'unused') {
+        filteredNews = filteredNews.filter(n => !n.is_used);
+    }
+    
+    if (filteredNews.length === 0) {
+        grid.innerHTML = '<p class="no-news">No se encontraron noticias con los filtros seleccionados.</p>';
+        return;
+    }
+    
+    grid.innerHTML = filteredNews.map(news => {
+        const cardClass = news.is_used ? 'news-card used' : 'news-card';
+        const dateStr = news.news_date || formatRelativeDate(news.scraped_at);
+        
+        return `
+            <div class="${cardClass}">
+                <div class="news-card-header">
+                    <span class="news-source">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                        ${escapeHtml(news.source || 'Desconocido')}
+                    </span>
+                    <span class="news-date">${escapeHtml(dateStr)}</span>
+                </div>
+                <h3 class="news-title">
+                    <a href="${escapeHtml(news.link || '#')}" target="_blank" rel="noopener">
+                        ${escapeHtml(news.title || 'Sin título')}
+                    </a>
+                </h3>
+                ${news.snippet ? `<p class="news-snippet">${escapeHtml(news.snippet)}</p>` : ''}
+                <div class="news-trend-tag">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                        <polyline points="17 6 23 6 23 12"></polyline>
+                    </svg>
+                    ${escapeHtml(news.trend_query || 'Sin trend')}
+                </div>
+                ${news.is_used && news.used_for_post_id ? `
+                    <div class="news-post-link">
+                        <a href="#" onclick="viewPostFromNews('${news.used_for_post_id}'); return false;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
+                            Ver post generado
+                        </a>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+// Format relative date
+function formatRelativeDate(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffDays > 7) {
+        return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+    } else if (diffDays > 0) {
+        return `Hace ${diffDays} día${diffDays > 1 ? 's' : ''}`;
+    } else if (diffHours > 0) {
+        return `Hace ${diffHours}h`;
+    } else if (diffMins > 0) {
+        return `Hace ${diffMins}m`;
+    }
+    return 'Ahora';
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// View post from news link
+async function viewPostFromNews(postId) {
+    try {
+        const { data: post, error } = await supabase
+            .from('social_posts')
+            .select('*')
+            .eq('id', postId)
+            .single();
+        
+        if (error || !post) {
+            showToast('Post no encontrado', 'error');
+            return;
+        }
+        
+        // Switch to publish mode and show the post
+        switchTab('publish');
+        
+        // If the post has an image, show it in preview
+        if (post.image_url) {
+            const previewContainer = document.getElementById('preview-container');
+            if (previewContainer) {
+                previewContainer.innerHTML = `
+                    <div class="preview-header">
+                        <h3>Post desde Trends</h3>
+                    </div>
+                    <img src="${post.image_url}" alt="Generated image" class="preview-image">
+                `;
+            }
+        }
+        
+        // Fill the form
+        const postTypeInput = document.getElementById('post_type');
+        if (postTypeInput && post.post_content) {
+            postTypeInput.value = post.post_content;
+        }
+        
+        showToast('Post cargado desde trends', 'success');
+        
+    } catch (err) {
+        console.error('Error viewing post:', err);
+        showToast('Error al cargar el post', 'error');
+    }
+}
+
+// Trigger trends workflow manually
+async function triggerTrendsWorkflow() {
+    const webhookUrl = CONFIG.n8n?.trendsWebhook;
+    
+    if (!webhookUrl || webhookUrl === 'YOUR_N8N_TRENDS_WEBHOOK_URL') {
+        showToast('Webhook de trends no configurado en config.js', 'error');
+        console.warn('Para usar esta función, configura n8n.trendsWebhook en config.js');
+        return;
+    }
+    
+    try {
+        showProgressAlert('Ejecutando Workflow', 'Buscando tendencias y generando contenido...');
+        
+        const response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ trigger: 'manual', timestamp: new Date().toISOString() })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        hideProgressAlert();
+        showSuccessAlert('Workflow Ejecutado', 'El workflow de trends se ejecutó correctamente. Las noticias se actualizarán pronto.');
+        
+        // Reload news after a delay
+        setTimeout(loadTrendNews, 5000);
+        
+    } catch (err) {
+        console.error('Error triggering workflow:', err);
+        hideProgressAlert();
+        showToast('Error al ejecutar el workflow', 'error');
+    }
+}
+
+// Filter event listeners
+document.getElementById('filter-trend-query')?.addEventListener('change', (e) => {
+    trendsData.filters.trendQuery = e.target.value;
+    renderTrendNews();
+});
+
+document.getElementById('filter-used-status')?.addEventListener('change', (e) => {
+    trendsData.filters.usedStatus = e.target.value;
+    renderTrendNews();
+});
+
+// Button event listeners
+document.getElementById('refresh-trends-btn')?.addEventListener('click', () => {
+    loadTrendNews();
+    showToast('Noticias actualizadas', 'success');
+});
+
+document.getElementById('trigger-trends-workflow-btn')?.addEventListener('click', triggerTrendsWorkflow);
+
+// Initialize trends when tab is clicked
+document.querySelector('.tab-btn[data-mode="trends"]')?.addEventListener('click', () => {
+    loadTrendNews();
+});
+
+// ========== END TRENDS MODE ==========
+
 // Initialize
 if (supabaseUrl === 'YOUR_SUPABASE_URL' || !supabaseUrl) {
     console.warn('⚠️ Por favor configura las credenciales de Supabase en config.js o app.js');
