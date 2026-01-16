@@ -235,7 +235,40 @@
       "id": "extract-youtube-url",
       "name": "Extract YouTube URL"
     },
-
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-has-post-id-update",
+              "leftValue": "={{ $json.post_id !== null && $json.post_id !== '' && $json.post_id !== undefined }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2660,
+        200
+      ],
+      "id": "check-has-post-id-for-db",
+      "name": "Has Post ID for DB?"
+    },
     {
       "parameters": {
         "operation": "executeQuery",
@@ -245,8 +278,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        2660,
-        200
+        2880,
+        100
       ],
       "id": "update-db-youtube",
       "name": "Update DB with YouTube",
@@ -259,19 +292,6 @@
     },
     {
       "parameters": {
-        "jsCode": "// Pass through YouTube URL without DB update\nconst data = $input.item.json;\n\nreturn [{\n  json: {\n    youtube_url: data.youtube_url,\n    youtube_video_id: data.youtube_video_id,\n    id: data.post_id,\n    prompt: data.prompt\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2880,
-        300
-      ],
-      "id": "passthrough-youtube-no-db",
-      "name": "Passthrough YouTube (No DB)"
-    },
-    {
-      "parameters": {
         "respondWith": "json",
         "responseBody": "={{ JSON.stringify({ success: true, message: 'Video uploaded to YouTube successfully', data: { youtube_url: $json.youtube_url, youtube_video_id: $json.youtube_video_id || $json.youtube_url?.split('v=')[1], post_id: $json.id || $json.post_id, prompt: $json.prompt } }) }}",
         "options": {}
@@ -279,7 +299,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        2880,
+        3100,
         200
       ],
       "id": "respond-video-success",
@@ -419,7 +439,25 @@
       "main": [
         [
           {
+            "node": "Has Post ID for DB?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Post ID for DB?": {
+      "main": [
+        [
+          {
             "node": "Update DB with YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Success",
             "type": "main",
             "index": 0
           }
