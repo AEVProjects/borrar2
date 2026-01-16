@@ -147,6 +147,7 @@ const editMode = document.getElementById('edit-mode');
 const videoMode = document.getElementById('video-mode');
 const carouselMode = document.getElementById('carousel-mode');
 const dailyMode = document.getElementById('daily-mode');
+const trendsMode = document.getElementById('trends-mode');
 const publishForm = document.getElementById('publish-form');
 const generateForm = document.getElementById('generate-form');
 const editImageForm = document.getElementById('edit-image-form');
@@ -176,6 +177,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         videoMode?.classList.remove('active');
         carouselMode?.classList.remove('active');
         dailyMode?.classList.remove('active');
+        trendsMode?.classList.remove('active');
         
         if (mode === 'publish') {
             publishMode?.classList.add('active');
@@ -191,6 +193,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         } else if (mode === 'daily') {
             dailyMode?.classList.add('active');
             initDailyMode();
+        } else if (mode === 'trends') {
+            trendsMode?.classList.add('active');
+            loadTrendNews();
         }
     });
 });
