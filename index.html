@@ -402,18 +402,14 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="video_aspect_ratio">Aspect Ratio</label>
-                            <select id="video_aspect_ratio" name="aspect_ratio">
-                                <option value="9:16" selected>9:16 (Vertical - TikTok/Reels)</option>
-                                <option value="16:9">16:9 (Horizontal - YouTube)</option>
-                                <option value="1:1">1:1 (Square - Instagram)</option>
-                                <option value="4:3">4:3 (Classic)</option>
-                            </select>
+                            <label for="video_topic">Topic (Optional)</label>
+                            <input type="text" id="video_topic" name="topic" placeholder="e.g., Cloud Computing, AI, Networking">
                         </div>
 
                         <div class="form-group">
-                            <label for="video_topic">Topic (Optional)</label>
-                            <input type="text" id="video_topic" name="topic" placeholder="e.g., Cloud Computing, AI, Networking">
+                            <label>Aspect Ratio</label>
+                            <input type="text" value="9:16 (Vertical)" disabled style="background: #f5f7fa; cursor: not-allowed;">
+                            <small class="form-hint">Videos are optimized for vertical format (TikTok, Reels, Stories)</small>
                         </div>
                     </div>
 

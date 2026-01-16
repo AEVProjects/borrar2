@@ -1764,9 +1764,9 @@ if (videoForm) {
             prompt: formData.get('prompt'),
             style: formData.get('style'),
             duration: formData.get('duration'),
-            aspect_ratio: formData.get('aspect_ratio'),
             topic: formData.get('topic') || '',
             reference_image_url: formData.get('reference_image_url') || null
+            // aspect_ratio is fixed to 9:16 in workflow
         };
         
         if (!data.prompt) {
