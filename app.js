@@ -2268,26 +2268,34 @@ if (analyzeIdeaBtn) {
                     messages: [
                         {
                             role: 'system',
-                            content: `Eres un estratega de contenido para MSI Technologies, una empresa de consultoría tecnológica.
-                            
+                            content: `Eres un estratega de contenido para MSI Technologies, una empresa de consultoría tecnológica B2B.
+
 Analiza la idea del usuario y genera una estrategia de contenido para LinkedIn.
+Si la idea incluye una tendencia (línea que dice "Tendencia:"), úsala para dar contexto actual y relevancia.
+
+REGLAS IMPORTANTES:
+- Topic: Debe ser conciso y captar la esencia (máximo 10 palabras)
+- Headline: Corto, impactante, para overlay en imagen (máximo 6 palabras)
+- Si hay noticias o snippets, extrae los datos más relevantes
+- Conecta siempre con los servicios de MSI
 
 RESPONDE ÚNICAMENTE EN ESTE FORMATO JSON (sin markdown, sin backticks):
 {
   "topic": "Título del tema (máximo 10 palabras)",
-  "headline": "Headline para la imagen (máximo 6 palabras, impactante)",
+  "headline": "Headline para imagen (máximo 6 palabras, impactante)",
   "post_type": "Educational|Thought Leadership|Case Study/Storytelling|Company News|Standard Infographic",
   "visual_style": "Infographic|Glassmorphism|Modern 3D|Isometric|Data Hero",
-  "data_points": "2-3 estadísticas o datos relevantes separados por coma",
-  "context": "Contexto adicional de 2-3 oraciones sobre por qué es relevante"
+  "data_points": "2-3 estadísticas o datos clave (si no hay, deja vacío)",
+  "context": "Contexto: por qué es relevante + cómo MSI puede ayudar (2-3 oraciones)"
 }
 
 MSI Technologies se especializa en:
 - Modernización de infraestructura IT
-- Soluciones cloud
-- Optimización de redes
-- Ciberseguridad
-- Transformación digital`
+- Soluciones cloud y migración
+- Optimización de redes empresariales
+- Ciberseguridad y Zero Trust
+- Transformación digital y automatización
+- DevOps y arquitecturas modernas`
                         },
                         {
                             role: 'user',
@@ -2351,16 +2359,76 @@ MSI Technologies se especializa en:
     });
 }
 
-// Fallback local strategy generator
+// Fallback local strategy generator - Improved version
 function generateLocalStrategy(idea) {
-    const words = idea.split(' ').slice(0, 5).join(' ');
+    // Clean and process the idea text
+    const cleanIdea = idea.trim();
+    const lines = cleanIdea.split('\n').filter(l => l.trim());
+    
+    // Try to extract meaningful parts
+    let mainTopic = '';
+    let snippet = '';
+    let trendInfo = '';
+    
+    lines.forEach(line => {
+        const trimmed = line.trim();
+        if (trimmed.toLowerCase().startsWith('tendencia:')) {
+            trendInfo = trimmed.replace(/^tendencia:\s*/i, '');
+        } else if (!mainTopic) {
+            mainTopic = trimmed;
+        } else if (!snippet) {
+            snippet = trimmed;
+        }
+    });
+    
+    // If only one line, use it as topic
+    if (!mainTopic) mainTopic = cleanIdea;
+    
+    // Generate a shorter topic (max 8 words)
+    const topicWords = mainTopic.split(' ');
+    const shortTopic = topicWords.length > 8 ? topicWords.slice(0, 8).join(' ') + '...' : mainTopic;
+    
+    // Generate headline (max 6 words, more impactful)
+    const headlineWords = mainTopic.split(' ').slice(0, 6);
+    let headline = headlineWords.join(' ');
+    if (headline.length > 50) {
+        headline = headline.substring(0, 47) + '...';
+    }
+    
+    // Determine post type based on content
+    let postType = 'Educational';
+    const lowerIdea = cleanIdea.toLowerCase();
+    if (lowerIdea.includes('caso') || lowerIdea.includes('success') || lowerIdea.includes('cliente')) {
+        postType = 'Case Study/Storytelling';
+    } else if (lowerIdea.includes('tendencia') || lowerIdea.includes('trend') || lowerIdea.includes('futuro')) {
+        postType = 'Thought Leadership';
+    } else if (lowerIdea.includes('estadística') || lowerIdea.includes('dato') || lowerIdea.includes('%')) {
+        postType = 'Standard Infographic';
+    }
+    
+    // Determine visual style based on content
+    let visualStyle = 'Infographic';
+    if (lowerIdea.includes('3d') || lowerIdea.includes('futur')) {
+        visualStyle = 'Modern 3D';
+    } else if (lowerIdea.includes('dato') || lowerIdea.includes('estadística') || lowerIdea.includes('%')) {
+        visualStyle = 'Data Hero';
+    } else if (lowerIdea.includes('arquitectura') || lowerIdea.includes('infraestructura')) {
+        visualStyle = 'Isometric';
+    }
+    
+    // Build context
+    let context = snippet || mainTopic;
+    if (trendInfo) {
+        context = `Basado en la tendencia "${trendInfo}". ${context}`;
+    }
+    
     return {
-        topic: words + '...',
-        headline: words.split(' ').slice(0, 4).join(' '),
-        post_type: 'Educational',
-        visual_style: 'Infographic',
+        topic: shortTopic,
+        headline: headline,
+        post_type: postType,
+        visual_style: visualStyle,
         data_points: '',
-        context: idea
+        context: context
     };
 }
 
@@ -2771,18 +2839,27 @@ function renderTrendNews() {
                     </svg>
                     ${escapeHtml(news.trend_query || 'Sin trend')}
                 </div>
-                ${news.is_used && news.used_for_post_id ? `
-                    <div class="news-post-link">
-                        <a href="#" onclick="viewPostFromNews('${news.used_for_post_id}'); return false;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                                <polyline points="15 3 21 3 21 9"></polyline>
-                                <line x1="10" y1="14" x2="21" y2="3"></line>
-                            </svg>
-                            Ver post generado
-                        </a>
-                    </div>
-                ` : ''}
+                <div class="news-card-actions">
+                    <button class="btn btn-send-to-daily" onclick="sendTrendToDaily('${escapeHtml(news.title || '')}', '${escapeHtml(news.snippet || '')}', '${escapeHtml(news.trend_query || '')}'); return false;" title="Enviar a Auto Daily">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        Usar en Daily
+                    </button>
+                    ${news.is_used && news.used_for_post_id ? `
+                    <a href="#" class="btn-view-post" onclick="viewPostFromNews('${news.used_for_post_id}'); return false;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                        </svg>
+                        Ver post
+                    </a>
+                    ` : ''}
+                </div>
             </div>
         `;
     }).join('');
@@ -2859,6 +2936,71 @@ async function viewPostFromNews(postId) {
     } catch (err) {
         console.error('Error viewing post:', err);
         showToast('Error al cargar el post', 'error');
+    }
+}
+
+// Send trend news to Auto Daily
+function sendTrendToDaily(title, snippet, trendQuery) {
+    // Decode HTML entities that were escaped
+    const decodeHtml = (html) => {
+        const txt = document.createElement('textarea');
+        txt.innerHTML = html;
+        return txt.value;
+    };
+    
+    const decodedTitle = decodeHtml(title);
+    const decodedSnippet = decodeHtml(snippet);
+    const decodedTrend = decodeHtml(trendQuery);
+    
+    // Build a comprehensive idea text from the trend data
+    let ideaText = '';
+    
+    if (decodedTitle) {
+        ideaText = decodedTitle;
+    }
+    
+    if (decodedSnippet) {
+        ideaText += ideaText ? '\n\n' : '';
+        ideaText += decodedSnippet;
+    }
+    
+    if (decodedTrend && decodedTrend !== decodedTitle) {
+        ideaText += ideaText ? '\n\n' : '';
+        ideaText += `Tendencia: ${decodedTrend}`;
+    }
+    
+    // Switch to Daily tab
+    switchTab('daily');
+    
+    // Wait a bit for the tab to initialize, then populate the field
+    setTimeout(() => {
+        const dailyIdeaField = document.getElementById('daily_idea');
+        if (dailyIdeaField) {
+            dailyIdeaField.value = ideaText;
+            dailyIdeaField.focus();
+            
+            // Highlight the field to show it was populated
+            dailyIdeaField.classList.add('field-highlighted');
+            setTimeout(() => {
+                dailyIdeaField.classList.remove('field-highlighted');
+            }, 2000);
+        }
+        
+        // Make sure step 1 is visible
+        const step1 = document.getElementById('daily-step-1');
+        const step2 = document.getElementById('daily-step-2');
+        if (step1) step1.style.display = 'block';
+        if (step2) step2.style.display = 'none';
+        
+        showToast('✓ Trend enviado a Auto Daily. Haz clic en "Analizar con IA" para continuar.', 'success');
+    }, 100);
+}
+
+// Helper function to switch tabs programmatically
+function switchTab(mode) {
+    const tabBtn = document.querySelector(`.tab-btn[data-mode="${mode}"]`);
+    if (tabBtn) {
+        tabBtn.click();
     }
 }
 

@@ -157,7 +157,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1340,
+        1560,
         300
       ],
       "id": "process-video-response",
@@ -165,13 +165,13 @@
     },
     {
       "parameters": {
-        "jsCode": "// Convert base64 video to binary for YouTube upload\nconst videoBase64 = $json.video_base64;\nconst prompt = $json.prompt || 'MSI Content';\nconst postId = $json.post_id;\n\nif (!videoBase64) {\n  throw new Error('No video base64 data available for YouTube upload');\n}\n\n// Convert base64 to binary\nconst binaryData = Buffer.from(videoBase64, 'base64');\n\n// Generate title (truncate if too long, YouTube max is 100 chars)\nlet title = prompt.substring(0, 97);\nif (prompt.length > 97) title += '...';\n\nconsole.log('Preparing YouTube upload:', {\n  title,\n  dataSize: binaryData.length,\n  postId\n});\n\nreturn [{\n  json: {\n    title,\n    description: `Generated with AI\\n\\nPrompt: ${prompt}\\n\\nPost ID: ${postId || 'N/A'}`,\n    post_id: postId,\n    original_prompt: prompt\n  },\n  binary: {\n    data: binaryData\n  }\n}];"
+        "jsCode": "// Convert base64 video to binary for YouTube upload\nconst videoBase64 = $json.video_base64;\nconst prompt = $json.prompt || 'MSI Content';\nconst postId = $json.post_id;\nconst mimeType = $json.mime_type || 'video/mp4';\n\nif (!videoBase64) {\n  throw new Error('No video base64 data available for YouTube upload');\n}\n\n// Convert base64 to binary buffer\nconst binaryData = Buffer.from(videoBase64, 'base64');\n\n// Generate title (truncate if too long, YouTube max is 100 chars)\nlet title = prompt.substring(0, 97);\nif (prompt.length > 97) title += '...';\n\n// Generate a filename\nconst fileName = `msi_video_${Date.now()}.mp4`;\n\nconsole.log('Preparing YouTube upload:', {\n  title,\n  dataSize: binaryData.length,\n  postId,\n  fileName\n});\n\n// Return with proper binary format for n8n YouTube node\nreturn {\n  json: {\n    title,\n    description: `Generated with AI\\n\\nPrompt: ${prompt}\\n\\nPost ID: ${postId || 'N/A'}`,\n    post_id: postId,\n    original_prompt: prompt\n  },\n  binary: {\n    data: {\n      data: binaryData.toString('base64'),\n      mimeType: mimeType,\n      fileName: fileName\n    }\n  }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2000,
-        200
+        1780,
+        300
       ],
       "id": "prepare-youtube-upload",
       "name": "Prepare YouTube Upload"
@@ -191,8 +191,8 @@
       "type": "n8n-nodes-base.youTube",
       "typeVersion": 1,
       "position": [
-        2220,
-        200
+        2000,
+        300
       ],
       "id": "upload-to-youtube",
       "name": "Upload to YouTube",
@@ -210,8 +210,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2440,
-        200
+        2220,
+        300
       ],
       "id": "extract-youtube-url",
       "name": "Extract YouTube URL"
@@ -225,8 +225,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        2660,
-        200
+        2440,
+        300
       ],
       "id": "update-db-youtube",
       "name": "Update DB with YouTube",
@@ -246,8 +246,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        2880,
-        200
+        2660,
+        300
       ],
       "id": "respond-video-success",
       "name": "Respond Success"

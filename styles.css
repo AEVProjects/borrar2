@@ -2038,6 +2038,76 @@ input[type="checkbox"].post-checkbox {
     height: 12px;
 }
 
+/* News Card Actions */
+.news-card-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+.btn-send-to-daily {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #fff;
+    background: linear-gradient(135deg, #207CE5, #004AAD);
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-send-to-daily:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(32, 124, 229, 0.3);
+}
+
+.btn-send-to-daily svg {
+    width: 14px;
+    height: 14px;
+}
+
+.btn-view-post {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--success-color);
+    text-decoration: none;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(16, 185, 129, 0.1);
+    transition: all 0.2s ease;
+}
+
+.btn-view-post:hover {
+    background: rgba(16, 185, 129, 0.2);
+    text-decoration: none;
+}
+
+/* Field Highlighted Animation */
+.field-highlighted {
+    animation: highlightPulse 0.5s ease-in-out 2;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(32, 124, 229, 0.2) !important;
+}
+
+@keyframes highlightPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 3px rgba(32, 124, 229, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(32, 124, 229, 0.1);
+    }
+}
+
 .news-post-link {
     margin-top: 12px;
     padding-top: 12px;
