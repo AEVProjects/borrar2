@@ -178,6 +178,27 @@
               },
               "renameOutput": true,
               "outputKey": "Infographic"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.visual_style }}",
+                    "rightValue": "Realistic Photography",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "RealisticPhoto"
             }
           ]
         },
@@ -243,11 +264,21 @@
     },
     {
       "parameters": {
-        "jsCode": "// DEFAULT Style Instructions (fallback)\nconst formInput = $('Save Post to DB').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = formInput.id;\nconst colorData = $('Format Form Input').item.json;\n\n// Dynamic colors from form or defaults\nconst primaryColor = colorData.color_primary || '#207CE5';\nconst secondaryColor = colorData.color_secondary || '#004AAD';\nconst accentColor = colorData.color_accent || '#FFFDF1';\nconst darkColor = colorData.color_dark || '#2B2B2B';\n\nconst styleInstructions = `\n## DEFAULT CORPORATE STYLE\n**SCENE:** Clean brand color (${primaryColor}) gradient background. Professional corporate design with abstract geometric elements. Modern, minimal aesthetic suitable for LinkedIn.\n\n**COLOR PALETTE:**\n- Primary: ${primaryColor}\n- Secondary: ${secondaryColor}\n- Accent/Text: ${accentColor}\n- Dark: ${darkColor}\n\n**VISUAL ELEMENTS:**\n1. Solid brand color background or subtle gradient to secondary\n2. Abstract geometric shapes (hexagons, circles, lines) in accent color\n3. Technology icons relevant to the topic\n4. Clean accent lines or borders (${accentColor})\n5. Professional lighting effects\n6. Subtle depth through shadows or glows\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style || 'Corporate',\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId,\n    color_primary: primaryColor,\n    color_secondary: secondaryColor,\n    color_accent: accentColor,\n    color_dark: darkColor\n  }\n}];"
+        "jsCode": "// REALISTIC PHOTOGRAPHY Style Instructions\nconst formInput = $('Save Post to DB').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = formInput.id;\nconst colorData = $('Format Form Input').item.json;\n\n// Dynamic colors from form or defaults\nconst primaryColor = colorData.color_primary || '#207CE5';\nconst secondaryColor = colorData.color_secondary || '#004AAD';\nconst accentColor = colorData.color_accent || '#FFFDF1';\nconst darkColor = colorData.color_dark || '#2B2B2B';\n\nconst styleInstructions = `\n## REALISTIC PHOTOGRAPHY STYLE - PREMIUM STOCK PHOTO AESTHETIC\n\n**OBJETIVO:** Crear una imagen de fotografía profesional de alta calidad, estilo stock photo premium, con aspecto 100% real (NO generado por IA).\n\n**ESCENA PRINCIPAL:**\n- Fotografía profesional de negocios/tecnología con personas REALES en ambiente corporativo moderno\n- Iluminación natural suave con sombras realistas (golden hour o luz de ventana)\n- Profundidad de campo: sujeto principal en foco, fondo con bokeh suave\n- Ambiente: oficina moderna, sala de reuniones, data center, o espacio de trabajo tech\n- Encuadre profesional: regla de tercios, líneas guía naturales\n\n**SUJETOS (OPCIONES):**\n- Profesional trabajando con laptop/tablet en ambiente moderno\n- Equipo diverso colaborando en reunión de negocios\n- Primer plano de manos trabajando en tecnología\n- Vista de data center o infraestructura tech con persona\n\n**ELEMENTOS TÉCNICOS:**\n- Resolución alta, nitidez profesional\n- Colores naturales, NO oversaturados\n- Iluminación realista con reflejos sutiles\n- Texturas reales (tela, piel, metal, cristal)\n- Sin efectos de IA visibles (sin deformaciones, sin dedos extra)\n\n**PALETA DE COLORES:**\n- Tonos naturales con acentos sutiles de ${primaryColor}\n- Ambiente cálido y profesional\n- El color de marca aparece en elementos del entorno (pantallas, detalles de oficina)\n\n**TEXTO OVERLAY:**\n- Headline en ${accentColor} o blanco con sombra sutil para legibilidad\n- Tipografía sans-serif moderna y limpia\n- Posición: tercio superior de la imagen\n- NUNCA cubrir rostros con texto\n\n**CALL TO ACTION (INCLUIR SIEMPRE):**\n- En la parte inferior de la imagen, incluir:\n- \"📩 contact@msitechnologiesinc.com\"\n- \"🌐 msitechnologiesinc.com\"\n- Texto pequeño pero legible (18-22pt)\n\n**LOGO MSI:**\n- Esquina inferior derecha\n- Tamaño pequeño-mediano, no intrusivo\n- Usar logo EXACTAMENTE como se proporciona\n- NO modificar colores del logo\n\n**PROHIBIDO:**\n- Rostros con aspecto artificial o plástico\n- Ojos sin vida o mirada extraña\n- Proporciones corporales incorrectas\n- Iluminación plana o artificial\n- Fondos genéricos de IA\n- Texturas suaves/borrosas típicas de IA\n- Dedos u manos deformes\n\n**REFERENCIA DE CALIDAD:**\n- Estilo: Shutterstock Premium / Getty Images\n- Mood: Profesional, confiable, innovador\n- Sensación: Como foto tomada por fotógrafo profesional\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style,\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId,\n    color_primary: primaryColor,\n    color_secondary: secondaryColor,\n    color_accent: accentColor,\n    color_dark: darkColor\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [44128, 9778],
+      "id": "style-realistic-photography",
+      "name": "Style: Realistic Photography"
+    },
+    {
+      "parameters": {
+        "jsCode": "// DEFAULT Style Instructions (fallback)\nconst formInput = $('Save Post to DB').item.json;\nconst strategy = $('Agent 1: Strategy Analyzer').item.json.output;\nconst postId = formInput.id;\nconst colorData = $('Format Form Input').item.json;\n\n// Dynamic colors from form or defaults\nconst primaryColor = colorData.color_primary || '#207CE5';\nconst secondaryColor = colorData.color_secondary || '#004AAD';\nconst accentColor = colorData.color_accent || '#FFFDF1';\nconst darkColor = colorData.color_dark || '#2B2B2B';\n\nconst styleInstructions = `\n## DEFAULT CORPORATE STYLE\n**SCENE:** Clean brand color (${primaryColor}) gradient background. Professional corporate design with abstract geometric elements. Modern, minimal aesthetic suitable for LinkedIn.\n\n**COLOR PALETTE:**\n- Primary: ${primaryColor}\n- Secondary: ${secondaryColor}\n- Accent/Text: ${accentColor}\n- Dark: ${darkColor}\n\n**VISUAL ELEMENTS:**\n1. Solid brand color background or subtle gradient to secondary\n2. Abstract geometric shapes (hexagons, circles, lines) in accent color\n3. Technology icons relevant to the topic\n4. Clean accent lines or borders (${accentColor})\n5. Professional lighting effects\n6. Subtle depth through shadows or glows\n`;\n\nreturn [{\n  json: {\n    headline: formInput.headline,\n    visual_style: formInput.visual_style || 'Corporate',\n    strategy: strategy,\n    style_instructions: styleInstructions,\n    post_id: postId,\n    color_primary: primaryColor,\n    color_secondary: secondaryColor,\n    color_accent: accentColor,\n    color_dark: darkColor\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [44128, 9928],
       "id": "style-default",
       "name": "Style: Default"
     },
@@ -639,6 +670,13 @@
         ],
         [
           {
+            "node": "Style: Realistic Photography",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
             "node": "Style: Default",
             "type": "main",
             "index": 0
@@ -691,6 +729,17 @@
       ]
     },
     "Style: Infographic": {
+      "main": [
+        [
+          {
+            "node": "Agent 3: Image Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Style: Realistic Photography": {
       "main": [
         [
           {
