@@ -220,7 +220,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=UPDATE social_posts \nSET youtube_url = '{{ $json.youtube_url }}',\n    status = 'video_completed',\n    updated_at = NOW()\nWHERE id = '{{ $json.post_id }}' AND '{{ $json.post_id }}' != '' AND '{{ $json.post_id }}' IS NOT NULL\nRETURNING *",
+        "query": "=-- Only update if post_id exists and is a valid UUID\n{{ $json.post_id && $json.post_id.length > 10 ? `UPDATE social_posts SET youtube_url = '${$json.youtube_url}', status = 'video_completed', updated_at = NOW() WHERE id = '${$json.post_id}' RETURNING *` : `SELECT '${$json.youtube_url}' as youtube_url, 'no_post_id' as status` }}",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
