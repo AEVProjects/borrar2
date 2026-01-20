@@ -123,12 +123,12 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/veo-3.1-generate-preview:predictLongRunning",
+        "url": "https://us-central1-aiplatform.googleapis.com/v1/projects/{{$env.GOOGLE_CLOUD_PROJECT_ID}}/locations/us-central1/publishers/google/models/veo-3.1-generate-preview:predictLongRunning",
         "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googlePalmApi",
+        "nodeCredentialType": "googleApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"instances\": [{\n    \"prompt\": \"{{ $json.prompt.replace(/\"/g, '\\\\\"').replace(/\\n/g, ' ') }} VERTICAL 9:16 portrait video.\"\n  }],\n  \"parameters\": {\n    \"aspectRatio\": \"9:16\",\n    \"durationSeconds\": {{ parseInt($json.duration) || 5 }},\n    \"sampleCount\": 1\n  }\n}",
+        "jsonBody": "={\n  \"instances\": [{\n    \"prompt\": \"{{ $json.prompt.replace(/\"/g, '\\\\\"').replace(/\\n/g, ' ') }} VERTICAL 9:16 portrait video with MSI logo watermark in bottom right corner.\",\n    \"referenceImages\": [{\n      \"image\": {\n        \"bytesBase64Encoded\": \"{{ $json.logo_base64 }}\",\n        \"mimeType\": \"{{ $json.logo_mime_type }}\"\n      },\n      \"referenceType\": \"asset\"\n    }]\n  }],\n  \"parameters\": {\n    \"aspectRatio\": \"9:16\",\n    \"durationSeconds\": {{ parseInt($json.duration) || 8 }},\n    \"sampleCount\": 1,\n    \"generateAudio\": true,\n    \"resolution\": \"720p\"\n  }\n}",
         "options": {
           "timeout": 300000,
           "response": {
@@ -143,17 +143,17 @@
         300
       ],
       "id": "veo-generate-video",
-      "name": "Veo 3.1 Generate Video (HTTP)",
+      "name": "Veo 3.1 Vertex AI (HTTP)",
       "credentials": {
-        "googlePalmApi": {
-          "id": "oF4jKBK0jRbwEPWt",
-          "name": "Google Gemini(PaLM) Api account"
+        "googleApi": {
+          "id": "GOOGLE_SERVICE_ACCOUNT_CREDENTIAL_ID",
+          "name": "Google Cloud Service Account"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "// Process Veo 3.1 HTTP response - handles both sync and async responses\nconst item = $input.item;\nconst response = item.json;\nconst preparedData = $('Prepare Video Request').item.json;\n\nconsole.log('==== VEO 3.1 HTTP RESPONSE ====');\nconsole.log('Response keys:', Object.keys(response));\nconsole.log('Response:', JSON.stringify(response, null, 2).substring(0, 2000));\n\nlet videoBase64 = '';\nlet mimeType = 'video/mp4';\nlet operationName = '';\n\ntry {\n  // Check for Long-Running Operation response\n  if (response.name && response.name.includes('operations/')) {\n    operationName = response.name;\n    console.log('Got async operation:', operationName);\n    // For now, we'll throw and need to implement polling\n    // In production, you'd poll GET /v1beta/{operationName} until done\n  }\n  \n  // Check for completed operation with predictions\n  if (response.predictions && response.predictions.length > 0) {\n    const prediction = response.predictions[0];\n    if (prediction.video) {\n      videoBase64 = prediction.video.bytesBase64Encoded || prediction.video;\n      mimeType = prediction.video.mimeType || 'video/mp4';\n      console.log('Found video in predictions');\n    } else if (prediction.bytesBase64Encoded) {\n      videoBase64 = prediction.bytesBase64Encoded;\n    }\n  }\n  \n  // Check for generatedSamples (Imagen-style response)\n  if (!videoBase64 && response.generatedSamples && response.generatedSamples.length > 0) {\n    const sample = response.generatedSamples[0];\n    videoBase64 = sample.video?.bytesBase64Encoded || sample.bytesBase64Encoded || '';\n    mimeType = sample.video?.mimeType || sample.mimeType || 'video/mp4';\n  }\n  \n  // Check for candidates (Gemini-style)\n  if (!videoBase64 && response.candidates && response.candidates.length > 0) {\n    const candidate = response.candidates[0];\n    if (candidate.content && candidate.content.parts) {\n      for (const part of candidate.content.parts) {\n        const inlineData = part.inlineData || part.inline_data;\n        if (inlineData && inlineData.data) {\n          videoBase64 = inlineData.data;\n          mimeType = inlineData.mimeType || inlineData.mime_type || 'video/mp4';\n          break;\n        }\n      }\n    }\n  }\n  \n  // Check for direct video field\n  if (!videoBase64 && response.video) {\n    videoBase64 = response.video.bytesBase64Encoded || response.video.data || response.video;\n    mimeType = response.video.mimeType || 'video/mp4';\n  }\n  \n} catch (e) {\n  console.error('Error parsing Veo response:', e.message);\n  throw e;\n}\n\n// If we got an operation name but no video, we need to poll\nif (operationName && !videoBase64) {\n  // Return operation info for manual polling or next step\n  return [{\n    json: {\n      is_async: true,\n      operation_name: operationName,\n      status: 'pending',\n      post_id: preparedData.post_id,\n      prompt: preparedData.prompt,\n      original_prompt: preparedData.original_prompt,\n      message: 'Video generation started. Operation: ' + operationName\n    }\n  }];\n}\n\nconsole.log('Has video base64:', !!videoBase64, videoBase64 ? `(${videoBase64.length} chars)` : '');\n\nif (!videoBase64) {\n  console.log('Full response:', JSON.stringify(response, null, 2));\n  throw new Error('No video data found. Response: ' + JSON.stringify(response).substring(0, 500));\n}\n\nconst videoDataUrl = `data:${mimeType};base64,${videoBase64}`;\n\nreturn [{\n  json: {\n    video_base64: videoBase64,\n    video_data_url: videoDataUrl,\n    mime_type: mimeType,\n    has_video: true,\n    is_async: false,\n    post_id: preparedData.post_id,\n    prompt: preparedData.prompt,\n    original_prompt: preparedData.original_prompt\n  }\n}];"
+        "jsCode": "// Process Vertex AI Veo 3.1 HTTP response - handles both sync and async responses\nconst item = $input.item;\nconst response = item.json;\nconst preparedData = $('Prepare Video Request').item.json;\nconst mergedData = $('Merge with Logo').item.json;\n\nconsole.log('==== VERTEX AI VEO 3.1 RESPONSE ====');\nconsole.log('Response keys:', Object.keys(response));\nconsole.log('Response:', JSON.stringify(response, null, 2).substring(0, 2000));\n\nlet videoBase64 = '';\nlet mimeType = 'video/mp4';\nlet operationName = '';\n\ntry {\n  // Check for Long-Running Operation response from Vertex AI\n  // Format: { \"name\": \"projects/.../operations/...\" }\n  if (response.name && response.name.includes('/operations/')) {\n    operationName = response.name;\n    console.log('Got async operation from Vertex AI:', operationName);\n    // Return operation info for polling\n    return [{\n      json: {\n        is_async: true,\n        operation_name: operationName,\n        status: 'pending',\n        post_id: preparedData.post_id || mergedData.post_id,\n        prompt: preparedData.prompt || mergedData.prompt,\n        original_prompt: preparedData.original_prompt || mergedData.original_prompt,\n        message: 'Video generation started. Poll operation: ' + operationName\n      }\n    }];\n  }\n  \n  // Check for completed operation with response.videos (Vertex AI format)\n  if (response.response && response.response.videos) {\n    const video = response.response.videos[0];\n    if (video.bytesBase64Encoded) {\n      videoBase64 = video.bytesBase64Encoded;\n      mimeType = video.mimeType || 'video/mp4';\n      console.log('Found video in response.response.videos');\n    } else if (video.gcsUri) {\n      console.log('Video stored in GCS:', video.gcsUri);\n      // Would need to download from GCS\n    }\n  }\n  \n  // Check for predictions array (alternative Vertex format)\n  if (!videoBase64 && response.predictions && response.predictions.length > 0) {\n    const prediction = response.predictions[0];\n    if (prediction.video) {\n      videoBase64 = prediction.video.bytesBase64Encoded || prediction.video;\n      mimeType = prediction.video.mimeType || 'video/mp4';\n      console.log('Found video in predictions');\n    } else if (prediction.bytesBase64Encoded) {\n      videoBase64 = prediction.bytesBase64Encoded;\n    }\n  }\n  \n  // Check for generatedSamples\n  if (!videoBase64 && response.generatedSamples && response.generatedSamples.length > 0) {\n    const sample = response.generatedSamples[0];\n    videoBase64 = sample.video?.bytesBase64Encoded || sample.bytesBase64Encoded || '';\n    mimeType = sample.video?.mimeType || sample.mimeType || 'video/mp4';\n  }\n  \n  // Check for direct video field\n  if (!videoBase64 && response.video) {\n    videoBase64 = response.video.bytesBase64Encoded || response.video.data || response.video;\n    mimeType = response.video.mimeType || 'video/mp4';\n  }\n  \n  // Check done=true with response object (polled result)\n  if (response.done === true && response.response) {\n    const videos = response.response.videos || [];\n    if (videos.length > 0 && videos[0].bytesBase64Encoded) {\n      videoBase64 = videos[0].bytesBase64Encoded;\n      mimeType = videos[0].mimeType || 'video/mp4';\n    }\n  }\n  \n} catch (e) {\n  console.error('Error parsing Vertex AI Veo response:', e.message);\n  throw e;\n}\n\nconsole.log('Has video base64:', !!videoBase64, videoBase64 ? `(${videoBase64.length} chars)` : '');\n\nif (!videoBase64) {\n  console.log('Full response:', JSON.stringify(response, null, 2));\n  throw new Error('No video data found. Response: ' + JSON.stringify(response).substring(0, 500));\n}\n\nconst videoDataUrl = `data:${mimeType};base64,${videoBase64}`;\n\nreturn [{\n  json: {\n    video_base64: videoBase64,\n    video_data_url: videoDataUrl,\n    mime_type: mimeType,\n    has_video: true,\n    is_async: false,\n    post_id: preparedData.post_id || mergedData.post_id,\n    prompt: preparedData.prompt || mergedData.prompt,\n    original_prompt: preparedData.original_prompt || mergedData.original_prompt\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -325,14 +325,14 @@
       "main": [
         [
           {
-            "node": "Veo 3.1 Generate Video (HTTP)",
+            "node": "Veo 3.1 Vertex AI (HTTP)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Veo 3.1 Generate Video (HTTP)": {
+    "Veo 3.1 Vertex AI (HTTP)": {
       "main": [
         [
           {
