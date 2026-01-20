@@ -161,7 +161,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const input = $input.first().json;\nconst prevData = $('Prepare Selected Trend').first().json;\nconst maxNews = prevData.maxNews || 5;\n\nlet newsResults = [];\n\nif (input.news_results && Array.isArray(input.news_results)) {\n  newsResults = input.news_results.slice(0, maxNews).map((news, index) => ({\n    index: index + 1,\n    title: news.title || 'No title',\n    link: news.link || '',\n    source: news.source?.name || news.source || 'Unknown',\n    date: news.date || 'Recent',\n    snippet: news.snippet || ''\n  }));\n}\n\nif (newsResults.length === 0) {\n  newsResults = [{\n    index: 1,\n    title: prevData.selectedTrend,\n    link: '',\n    source: 'Trend topic',\n    date: 'Current',\n    snippet: 'Content based on trending topic.'\n  }];\n}\n\nreturn [{\n  json: {\n    selectedTrend: prevData.selectedTrend,\n    originalQuery: prevData.originalQuery,\n    brandName: prevData.brandName,\n    brandDescription: prevData.brandDescription,\n    newsCount: newsResults.length,\n    news: newsResults,\n    newsJson: JSON.stringify(newsResults, null, 2),\n    visualStyles: prevData.visualStyles,\n    postTypes: prevData.postTypes,\n    contentWebhookUrl: prevData.contentWebhookUrl\n  }\n}];"
+        "jsCode": "const input = $input.first().json;\nconst prevData = $('Prepare Selected Trend').first().json;\nconst maxNews = prevData.maxNews || 5;\n\nlet newsResults = [];\n\nif (input.news_results && Array.isArray(input.news_results)) {\n  newsResults = input.news_results.slice(0, maxNews).map((news, index) => ({\n    index: index + 1,\n    title: news.title || 'No title',\n    link: news.link || '',\n    source: news.source?.name || news.source || 'Unknown',\n    date: news.date || 'Recent',\n    snippet: news.snippet || ''\n  }));\n}\n\nif (newsResults.length === 0) {\n  newsResults = [{\n    index: 1,\n    title: prevData.selectedTrend,\n    link: '',\n    source: 'Trend topic',\n    date: 'Current',\n    snippet: 'Content based on trending topic.'\n  }];\n}\n\n// Return each news item separately for parallel fetching\nreturn newsResults.map(news => ({\n  json: {\n    ...news,\n    selectedTrend: prevData.selectedTrend,\n    originalQuery: prevData.originalQuery,\n    brandName: prevData.brandName,\n    brandDescription: prevData.brandDescription,\n    visualStyles: prevData.visualStyles,\n    postTypes: prevData.postTypes,\n    contentWebhookUrl: prevData.contentWebhookUrl,\n    totalNews: newsResults.length\n  }\n}));"
       },
       "id": "filter-news",
       "name": "Filter Top News",
@@ -171,41 +171,81 @@
     },
     {
       "parameters": {
-        "operation": "executeQuery",
-        "query": "=WITH news_data AS (\n  SELECT * FROM (\n    VALUES \n    {{ $json.news.map((n, i) => `(${i + 1}, '${n.title.replace(/'/g, \"''\")}', '${n.link.replace(/'/g, \"''\")}', '${n.source.replace(/'/g, \"''\")}', '${n.date.replace(/'/g, \"''\")}', '${n.snippet.replace(/'/g, \"''\")}')`).join(',\\n    ') }}\n  ) AS t(idx, title, link, source, news_date, snippet)\n)\nINSERT INTO trend_news (trend_query, search_query, title, link, source, news_date, snippet, scraped_at)\nSELECT \n  '{{ $json.selectedTrend.replace(/'/g, \"''\") }}',\n  '{{ $json.originalQuery.replace(/'/g, \"''\") }}',\n  title, link, source, news_date, snippet, NOW()\nFROM news_data\nRETURNING id, title",
-        "options": {}
+        "url": "={{ $json.link }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
       },
-      "id": "save-news-to-db",
-      "name": "Save News to DB",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
+      "id": "fetch-article-content",
+      "name": "Fetch Article Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
       "position": [1980, 200],
-      "credentials": { "postgres": { "id": "WnTYs2zvPoE7hDJE", "name": "Postgres account" } },
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "continueOnFail": true
     },
     {
       "parameters": {
-        "jsCode": "const newsDbResult = $input.all();\nconst newsData = $('Filter Top News').first().json;\n\n// Get the IDs of saved news\nconst savedNewsIds = newsDbResult.map(item => item.json.id).filter(id => id);\n\nreturn [{\n  json: {\n    ...newsData,\n    savedNewsIds: savedNewsIds\n  }\n}];"
+        "jsCode": "// Extract main content from HTML\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const newsData = $('Filter Top News').all().find(n => n.json.link === item.json.link)?.json || {};\n  let articleContent = '';\n  \n  try {\n    const html = item.json.data || item.json.body || '';\n    \n    if (html && typeof html === 'string') {\n      // Remove scripts, styles, and HTML tags\n      let text = html\n        .replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, '')\n        .replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, '')\n        .replace(/<nav[^>]*>[\\s\\S]*?<\\/nav>/gi, '')\n        .replace(/<header[^>]*>[\\s\\S]*?<\\/header>/gi, '')\n        .replace(/<footer[^>]*>[\\s\\S]*?<\\/footer>/gi, '')\n        .replace(/<aside[^>]*>[\\s\\S]*?<\\/aside>/gi, '');\n      \n      // Try to find article content\n      const articleMatch = text.match(/<article[^>]*>([\\s\\S]*?)<\\/article>/i);\n      if (articleMatch) {\n        text = articleMatch[1];\n      }\n      \n      // Find paragraphs\n      const paragraphs = text.match(/<p[^>]*>([^<]+)<\\/p>/gi) || [];\n      const cleanParagraphs = paragraphs\n        .map(p => p.replace(/<[^>]+>/g, '').trim())\n        .filter(p => p.length > 50 && p.length < 1000)\n        .slice(0, 10);\n      \n      articleContent = cleanParagraphs.join('\\n\\n');\n      \n      // Fallback: just clean all HTML\n      if (!articleContent || articleContent.length < 100) {\n        articleContent = text\n          .replace(/<[^>]+>/g, ' ')\n          .replace(/\\s+/g, ' ')\n          .trim()\n          .substring(0, 2000);\n      }\n    }\n  } catch (e) {\n    articleContent = newsData.snippet || '';\n  }\n  \n  // Limit content length\n  if (articleContent.length > 2000) {\n    articleContent = articleContent.substring(0, 2000) + '...';\n  }\n  \n  results.push({\n    json: {\n      index: newsData.index || 1,\n      title: newsData.title || 'No title',\n      link: newsData.link || '',\n      source: newsData.source || 'Unknown',\n      date: newsData.date || 'Recent',\n      snippet: newsData.snippet || '',\n      content: articleContent || newsData.snippet || '',\n      selectedTrend: newsData.selectedTrend,\n      originalQuery: newsData.originalQuery,\n      brandName: newsData.brandName,\n      brandDescription: newsData.brandDescription,\n      visualStyles: newsData.visualStyles,\n      postTypes: newsData.postTypes,\n      contentWebhookUrl: newsData.contentWebhookUrl,\n      totalNews: newsData.totalNews\n    }\n  });\n}\n\nreturn results;"
       },
-      "id": "prepare-for-ai",
-      "name": "Prepare for AI",
+      "id": "extract-article-content",
+      "name": "Extract Article Content",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [2200, 200]
     },
     {
       "parameters": {
+        "jsCode": "// Aggregate all news with content into single object\nconst items = $input.all();\nconst firstItem = items[0]?.json || {};\n\nconst newsWithContent = items.map(item => ({\n  index: item.json.index,\n  title: item.json.title,\n  source: item.json.source,\n  date: item.json.date,\n  snippet: item.json.snippet,\n  content: item.json.content\n}));\n\nreturn [{\n  json: {\n    selectedTrend: firstItem.selectedTrend,\n    originalQuery: firstItem.originalQuery,\n    brandName: firstItem.brandName,\n    brandDescription: firstItem.brandDescription,\n    newsCount: newsWithContent.length,\n    news: newsWithContent,\n    newsJson: JSON.stringify(newsWithContent, null, 2),\n    visualStyles: firstItem.visualStyles,\n    postTypes: firstItem.postTypes,\n    contentWebhookUrl: firstItem.contentWebhookUrl\n  }\n}];"
+      },
+      "id": "aggregate-news",
+      "name": "Aggregate News Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2420, 200]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=WITH news_data AS (\n  SELECT * FROM (\n    VALUES \n    {{ $json.news.map((n, i) => `(${i + 1}, '${n.title.replace(/'/g, \"''\")}', '${(n.link || '').replace(/'/g, \"''\")}', '${n.source.replace(/'/g, \"''\")}', '${n.date.replace(/'/g, \"''\")}', '${n.snippet.replace(/'/g, \"''\")}', '${(n.content || '').substring(0, 2000).replace(/'/g, \"''\")}')`).join(',\\n    ') }}\n  ) AS t(idx, title, link, source, news_date, snippet, content)\n)\nINSERT INTO trend_news (trend_query, search_query, title, link, source, news_date, snippet, content, scraped_at)\nSELECT \n  '{{ $json.selectedTrend.replace(/'/g, \"''\") }}',\n  '{{ $json.originalQuery.replace(/'/g, \"''\") }}',\n  title, link, source, news_date, snippet, content, NOW()\nFROM news_data\nRETURNING id, title",
+        "options": {}
+      },
+      "id": "save-news-to-db",
+      "name": "Save News to DB",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [2640, 200],
+      "credentials": { "postgres": { "id": "WnTYs2zvPoE7hDJE", "name": "Postgres account" } },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const newsDbResult = $input.all();\nconst newsData = $('Aggregate News Content').first().json;\n\n// Get the IDs of saved news\nconst savedNewsIds = newsDbResult.map(item => item.json.id).filter(id => id);\n\nreturn [{\n  json: {\n    ...newsData,\n    savedNewsIds: savedNewsIds\n  }\n}];"
+      },
+      "id": "prepare-for-ai",
+      "name": "Prepare for AI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2860, 200]
+    },
+    {
+      "parameters": {
         "promptType": "define",
-        "text": "=# CONTENT FOR {{ $json.brandName }}\n\n## Trending: {{ $json.selectedTrend }}\n\n## Brand: {{ $json.brandDescription }}\n\n## News:\n{{ $json.newsJson }}\n\n## Visual Styles: {{ $json.visualStyles.join(', ') }}\n## Post Types: {{ $json.postTypes.join(', ') }}\n\n---\n\nGenerate ONE LinkedIn post. Respond ONLY with this JSON:\n{\n  \"topic\": \"2-3 word topic\",\n  \"post_type\": \"Educational|Industry News|Tips & Tricks|Thought Leadership\",\n  \"visual_style\": \"Glassmorphism|Modern 3D|Isometric|Data Hero|Infographic|Realistic Photography\",\n  \"headline\": \"5-8 word headline for image\",\n  \"data_points\": \"Key stats or N/A\",\n  \"context\": \"Why this matters + connection to MSI\"\n}",
+        "text": "=# CONTENT FOR {{ $json.brandName }}\n\n## Trending Topic: {{ $json.selectedTrend }}\n\n## Brand: {{ $json.brandDescription }}\n\n## NEWS ARTICLES WITH FULL CONTENT:\n{{ $json.news.map(n => `### ${n.index}. ${n.title}\\nSource: ${n.source} | Date: ${n.date}\\n\\n**Summary:** ${n.snippet}\\n\\n**Full Content:**\\n${n.content}\\n\\n---`).join('\\n\\n') }}\n\n## Visual Styles: {{ $json.visualStyles.join(', ') }}\n## Post Types: {{ $json.postTypes.join(', ') }}\n\n---\n\nBased on the FULL ARTICLE CONTENT above, generate ONE LinkedIn post that provides REAL VALUE and SPECIFIC INSIGHTS from the news. Use actual data, quotes, or specific information from the articles.\n\nRespond ONLY with this JSON:\n{\n  \"topic\": \"2-3 word topic\",\n  \"post_type\": \"Educational|Industry News|Tips & Tricks|Thought Leadership\",\n  \"visual_style\": \"Glassmorphism|Modern 3D|Isometric|Data Hero|Infographic|Realistic Photography\",\n  \"headline\": \"5-8 word headline for image (based on key insight from articles)\",\n  \"data_points\": \"Specific stats, numbers, or facts FROM the articles\",\n  \"context\": \"Key insights from the articles + how MSI Technologies helps with this\"\n}",
         "options": {
-          "systemMessage": "You are MSI Technologies content strategist. Generate B2B LinkedIn content for CTOs/IT Directors. Respond with valid JSON only."
+          "systemMessage": "You are MSI Technologies content strategist. Generate B2B LinkedIn content for CTOs/IT Directors.\n\nIMPORTANT: Use the ACTUAL CONTENT from the news articles provided. Extract real data, statistics, quotes, and insights. Do NOT make up generic content - use the specific information from the articles.\n\nRespond with valid JSON only."
         }
       },
       "id": "ai-generate-post",
       "name": "AI: Generate Post",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
-      "position": [2420, 200]
+      "position": [3080, 200]
     },
     {
       "parameters": {
@@ -216,7 +256,7 @@
       "name": "OpenAI Generate Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
-      "position": [2500, 420],
+      "position": [3160, 420],
       "credentials": { "openAiApi": { "id": "13Oqly3WdRAzZVXL", "name": "OpenAi account" } }
     },
     {
@@ -227,7 +267,7 @@
       "name": "Parse Post Data",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2640, 200]
+      "position": [3300, 200]
     },
     {
       "parameters": {
@@ -242,7 +282,7 @@
       "name": "Generate Full Content",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [2860, 200],
+      "position": [3520, 200],
       "onError": "continueRegularOutput"
     },
     {
@@ -253,7 +293,7 @@
       "name": "Extract Post ID",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3080, 200]
+      "position": [3740, 200]
     },
     {
       "parameters": {
@@ -265,7 +305,7 @@
       "name": "Mark News as Used",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [3300, 200],
+      "position": [3960, 200],
       "credentials": { "postgres": { "id": "WnTYs2zvPoE7hDJE", "name": "Postgres account" } },
       "onError": "continueRegularOutput"
     },
@@ -279,19 +319,19 @@
       "name": "Update Trend Source",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [3520, 200],
+      "position": [4180, 200],
       "credentials": { "postgres": { "id": "WnTYs2zvPoE7hDJE", "name": "Postgres account" } },
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "const dbResult = $input.first().json;\nconst webhookData = $('Extract Post ID').first().json.webhookResult;\n\nreturn [{\n  json: {\n    success: true,\n    message: 'Content generated from trends!',\n    post: {\n      id: dbResult.id,\n      topic: dbResult.topic,\n      headline: dbResult.headline,\n      image_url: dbResult.image_url,\n      status: dbResult.status\n    },\n    timestamp: new Date().toISOString()\n  }\n}];"
+        "jsCode": "const dbResult = $input.first().json;\nconst webhookData = $('Extract Post ID').first().json.webhookResult;\n\nreturn [{\n  json: {\n    success: true,\n    message: 'Content generated from trends with full article content!',\n    post: {\n      id: dbResult.id,\n      topic: dbResult.topic,\n      headline: dbResult.headline,\n      image_url: dbResult.image_url,\n      status: dbResult.status\n    },\n    timestamp: new Date().toISOString()\n  }\n}];"
       },
       "id": "final-summary",
       "name": "Final Summary",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3740, 200]
+      "position": [4400, 200]
     }
   ],
   "connections": {
@@ -306,7 +346,10 @@
     "OpenAI Select Model": { "ai_languageModel": [[{ "node": "AI: Select Best Trend", "type": "ai_languageModel", "index": 0 }]] },
     "Prepare Selected Trend": { "main": [[{ "node": "Search Google News", "type": "main", "index": 0 }]] },
     "Search Google News": { "main": [[{ "node": "Filter Top News", "type": "main", "index": 0 }]] },
-    "Filter Top News": { "main": [[{ "node": "Save News to DB", "type": "main", "index": 0 }]] },
+    "Filter Top News": { "main": [[{ "node": "Fetch Article Content", "type": "main", "index": 0 }]] },
+    "Fetch Article Content": { "main": [[{ "node": "Extract Article Content", "type": "main", "index": 0 }]] },
+    "Extract Article Content": { "main": [[{ "node": "Aggregate News Content", "type": "main", "index": 0 }]] },
+    "Aggregate News Content": { "main": [[{ "node": "Save News to DB", "type": "main", "index": 0 }]] },
     "Save News to DB": { "main": [[{ "node": "Prepare for AI", "type": "main", "index": 0 }]] },
     "Prepare for AI": { "main": [[{ "node": "AI: Generate Post", "type": "main", "index": 0 }]] },
     "AI: Generate Post": { "main": [[{ "node": "Parse Post Data", "type": "main", "index": 0 }]] },

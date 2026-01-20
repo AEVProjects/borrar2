@@ -22,6 +22,7 @@ CREATE TABLE public.trend_news (
   source text,
   news_date text,
   snippet text,
+  content text,  -- Full article content scraped from the URL
   
   -- Usage tracking
   used_for_post_id uuid,
