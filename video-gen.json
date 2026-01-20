@@ -123,8 +123,9 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://aiplatform.googleapis.com/v1/publishers/google/models/veo-3.1-generate-preview:predictLongRunning?key={{$env.GOOGLE_API_KEY}}",
-        "authentication": "none",
+        "url": "=https://aiplatform.googleapis.com/v1/publishers/google/models/veo-3.1-generate-preview:predictLongRunning?key={{ $credentials.vertexApiKey }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"instances\": [{\n    \"prompt\": \"{{ $json.prompt.replace(/\"/g, '\\\\\"').replace(/\\n/g, ' ') }} VERTICAL 9:16 portrait video with MSI logo watermark in bottom right corner.\",\n    \"referenceImages\": [{\n      \"image\": {\n        \"bytesBase64Encoded\": \"{{ $json.logo_base64 }}\",\n        \"mimeType\": \"{{ $json.logo_mime_type }}\"\n      },\n      \"referenceType\": \"asset\"\n    }]\n  }],\n  \"parameters\": {\n    \"aspectRatio\": \"9:16\",\n    \"durationSeconds\": {{ parseInt($json.duration) || 8 }},\n    \"sampleCount\": 1,\n    \"generateAudio\": true,\n    \"resolution\": \"720p\"\n  }\n}",
@@ -142,7 +143,13 @@
         300
       ],
       "id": "veo-generate-video",
-      "name": "Veo 3.1 Vertex AI (HTTP)"
+      "name": "Veo 3.1 Vertex AI (HTTP)",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CREDENTIAL_ID_PLACEHOLDER",
+          "name": "Vertex AI API Key"
+        }
+      }
     },
     {
       "parameters": {
