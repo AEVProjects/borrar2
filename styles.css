@@ -2021,6 +2021,57 @@ input[type="checkbox"].post-checkbox {
     overflow: hidden;
 }
 
+/* News Content Section */
+.news-content-section {
+    margin: 12px 0;
+    border-radius: 8px;
+    background: rgba(32, 124, 229, 0.03);
+}
+
+.news-content-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--primary-color);
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.news-content-toggle:hover {
+    background: rgba(32, 124, 229, 0.1);
+}
+
+.news-content-toggle svg {
+    width: 14px;
+    height: 14px;
+}
+
+.news-content-full {
+    padding: 12px;
+    border-top: 1px solid var(--border-color);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.news-content-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.news-no-content {
+    font-size: 0.8rem;
+    color: #999;
+    margin: 8px 0;
+    font-style: italic;
+}
+
 .news-trend-tag {
     display: inline-flex;
     align-items: center;

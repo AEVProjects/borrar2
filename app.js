@@ -2813,6 +2813,14 @@ function renderTrendNews() {
     grid.innerHTML = filteredNews.map(news => {
         const cardClass = news.is_used ? 'news-card used' : 'news-card';
         const dateStr = news.news_date || formatRelativeDate(news.scraped_at);
+        const hasContent = news.content && news.content.length > 0;
+        const contentPreview = hasContent ? news.content.substring(0, 300) + (news.content.length > 300 ? '...' : '') : '';
+        
+        // Escape content for data attribute (base64 encode to handle special chars)
+        const encodedContent = btoa(encodeURIComponent(news.content || ''));
+        const encodedSnippet = btoa(encodeURIComponent(news.snippet || ''));
+        const encodedTitle = btoa(encodeURIComponent(news.title || ''));
+        const encodedTrend = btoa(encodeURIComponent(news.trend_query || ''));
         
         return `
             <div class="${cardClass}">
@@ -2832,6 +2840,24 @@ function renderTrendNews() {
                     </a>
                 </h3>
                 ${news.snippet ? `<p class="news-snippet">${escapeHtml(news.snippet)}</p>` : ''}
+                ${hasContent ? `
+                <div class="news-content-section">
+                    <div class="news-content-toggle" onclick="toggleNewsContent(this)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        Ver contenido completo (${news.content.length} caracteres)
+                    </div>
+                    <div class="news-content-full" style="display: none;">
+                        <p class="news-content-text">${escapeHtml(news.content)}</p>
+                    </div>
+                </div>
+                ` : `
+                <div class="news-no-content">
+                    <em>Sin contenido extraído</em>
+                </div>
+                `}
                 <div class="news-trend-tag">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
@@ -2840,7 +2866,7 @@ function renderTrendNews() {
                     ${escapeHtml(news.trend_query || 'Sin trend')}
                 </div>
                 <div class="news-card-actions">
-                    <button class="btn btn-send-to-daily" onclick="sendTrendToDaily('${escapeHtml(news.title || '')}', '${escapeHtml(news.snippet || '')}', '${escapeHtml(news.trend_query || '')}'); return false;" title="Enviar a Auto Daily">
+                    <button class="btn btn-send-to-daily" onclick="sendTrendToDaily('${encodedTitle}', '${encodedSnippet}', '${encodedTrend}', '${encodedContent}'); return false;" title="Enviar a Auto Daily con contenido completo">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                             <line x1="16" y1="2" x2="16" y2="6"></line>
@@ -2940,33 +2966,42 @@ async function viewPostFromNews(postId) {
 }
 
 // Send trend news to Auto Daily
-function sendTrendToDaily(title, snippet, trendQuery) {
-    // Decode HTML entities that were escaped
-    const decodeHtml = (html) => {
-        const txt = document.createElement('textarea');
-        txt.innerHTML = html;
-        return txt.value;
+function sendTrendToDaily(encodedTitle, encodedSnippet, encodedTrend, encodedContent) {
+    // Decode from base64
+    const decodeBase64 = (str) => {
+        try {
+            return decodeURIComponent(atob(str));
+        } catch (e) {
+            return '';
+        }
     };
     
-    const decodedTitle = decodeHtml(title);
-    const decodedSnippet = decodeHtml(snippet);
-    const decodedTrend = decodeHtml(trendQuery);
+    const title = decodeBase64(encodedTitle);
+    const snippet = decodeBase64(encodedSnippet);
+    const trendQuery = decodeBase64(encodedTrend);
+    const content = decodeBase64(encodedContent);
     
-    // Build a comprehensive idea text from the trend data
+    // Build a comprehensive idea text with ALL content
     let ideaText = '';
     
-    if (decodedTitle) {
-        ideaText = decodedTitle;
+    // Title as main heading
+    if (title) {
+        ideaText = `📰 ${title}`;
     }
     
-    if (decodedSnippet) {
-        ideaText += ideaText ? '\n\n' : '';
-        ideaText += decodedSnippet;
+    // Trend query as context
+    if (trendQuery && trendQuery !== title) {
+        ideaText += `\n\n🔥 Tendencia: ${trendQuery}`;
     }
     
-    if (decodedTrend && decodedTrend !== decodedTitle) {
-        ideaText += ideaText ? '\n\n' : '';
-        ideaText += `Tendencia: ${decodedTrend}`;
+    // Snippet as summary
+    if (snippet) {
+        ideaText += `\n\n📝 Resumen:\n${snippet}`;
+    }
+    
+    // Full content if available
+    if (content && content.length > 10) {
+        ideaText += `\n\n📄 Contenido completo del artículo:\n${content}`;
     }
     
     // Switch to Daily tab
@@ -2984,6 +3019,10 @@ function sendTrendToDaily(title, snippet, trendQuery) {
             setTimeout(() => {
                 dailyIdeaField.classList.remove('field-highlighted');
             }, 2000);
+            
+            // Auto-resize textarea if needed
+            dailyIdeaField.style.height = 'auto';
+            dailyIdeaField.style.height = Math.min(dailyIdeaField.scrollHeight, 400) + 'px';
         }
         
         // Make sure step 1 is visible
@@ -2992,8 +3031,33 @@ function sendTrendToDaily(title, snippet, trendQuery) {
         if (step1) step1.style.display = 'block';
         if (step2) step2.style.display = 'none';
         
-        showToast('✓ Trend enviado a Auto Daily. Haz clic en "Analizar con IA" para continuar.', 'success');
+        const contentNote = content && content.length > 100 
+            ? `✓ Trend + contenido completo (${content.length} caracteres) enviado a Auto Daily` 
+            : '✓ Trend enviado a Auto Daily';
+        showToast(contentNote, 'success');
     }, 100);
+}
+
+// Toggle news content visibility
+function toggleNewsContent(element) {
+    const contentSection = element.parentElement;
+    const fullContent = contentSection.querySelector('.news-content-full');
+    
+    if (fullContent) {
+        const isHidden = fullContent.style.display === 'none';
+        fullContent.style.display = isHidden ? 'block' : 'none';
+        element.innerHTML = isHidden 
+            ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+               </svg>
+               Ocultar contenido`
+            : `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+               </svg>
+               Ver contenido completo`;
+    }
 }
 
 // Helper function to switch tabs programmatically
