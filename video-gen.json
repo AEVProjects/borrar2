@@ -1,5 +1,4 @@
 {
-  "name": "MSI Video Generation - Veo 3.0",
   "nodes": [
     {
       "parameters": {
@@ -10,33 +9,42 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [200, 300],
-      "id": "webhook-video-gen",
+      "position": [
+        50944,
+        3808
+      ],
+      "id": "1378b2ba-6379-44f6-865c-fa1e699928c7",
       "name": "Webhook - Video Gen",
       "webhookId": "msi-video-gen"
     },
     {
       "parameters": {
-        "jsCode": "// Extract data from web form for video generation\nconst input = $input.item.json;\n\nlet data;\nif (input.body) {\n  if (typeof input.body === 'string') {\n    try { data = JSON.parse(input.body); } catch (e) { data = input; }\n  } else if (typeof input.body === 'object') {\n    data = input.body;\n  } else { data = input; }\n} else if (input.query) {\n  data = input.query;\n} else {\n  data = input;\n}\n\nconst prompt = data.prompt || data.video_prompt || '';\nconst duration = data.duration || '8';\nconst aspect_ratio = data.aspect_ratio || '9:16';\nconst style = data.style || 'cinematic';\nconst post_id = data.post_id || null;\nconst topic = data.topic || '';\n\nif (!prompt) {\n  throw new Error('VIDEO GEN ERROR: prompt is required.');\n}\n\nreturn [{ json: { prompt, duration, aspect_ratio, style, post_id, topic } }];"
+        "jsCode": "const input = $input.item.json;\n\nconsole.log('==== RECEIVED WEBHOOK DATA ====');\nconsole.log('Full input:', JSON.stringify(input, null, 2));\n\nlet data;\n\n// Handle different input formats\nif (input.body) {\n  if (typeof input.body === 'string') {\n    try { \n      data = JSON.parse(input.body); \n      console.log('Parsed body as JSON');\n    } catch (e) { \n      data = input.body; \n      console.log('Body is string, not JSON');\n    }\n  } else if (typeof input.body === 'object') {\n    data = input.body;\n    console.log('Body is already object');\n  } else { \n    data = input; \n  }\n} else if (input.query) {\n  data = input.query;\n  console.log('Using query params');\n} else {\n  data = input;\n  console.log('Using raw input');\n}\n\n// Extract parameters with fallbacks\nconst prompt = data.prompt || data.video_prompt || data.text || '';\nconst duration = String(data.duration || '8');\nconst aspect_ratio = data.aspect_ratio || data.aspectRatio || '9:16';\nconst style = data.style || 'cinematic';\nconst post_id = data.post_id || data.postId || null;\nconst topic = data.topic || '';\nconst logo_url = data.logo_url || null;\nconst start_image_url = data.start_image_url || null;\n\nconsole.log('Extracted data:', { prompt, duration, aspect_ratio, style, post_id, topic, logo_url, start_image_url });\nconsole.log('==== END WEBHOOK DATA ====');\n\nif (!prompt || prompt.length < 3) {\n  throw new Error('VIDEO GEN ERROR: prompt is required and must be at least 3 characters.');\n}\n\nreturn [{ \n  json: { \n    prompt, \n    duration, \n    aspect_ratio, \n    style, \n    post_id, \n    topic,\n    logo_url,\n    start_image_url\n  } \n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [420, 300],
-      "id": "format-video-input",
+      "position": [
+        51168,
+        3808
+      ],
+      "id": "881e9587-56ae-4eed-8668-6bea6f900ecd",
       "name": "Format Video Input"
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "=Create a professional, REALISTIC video prompt for Veo 3.1:\n\nUser Prompt: {{ $json.prompt }}\nStyle: {{ $json.style }}\nDuration: {{ $json.duration }} seconds (STRICT - must be complete, no cuts)\nAspect Ratio: {{ $json.aspect_ratio }}\nTopic: {{ $json.topic || 'Technology/Business' }}\n\nMSI Brand Colors:\n- Primary: #207CE5 (blue)\n- Secondary: #004AAD (dark blue)  \n- Accent: #FFFDF1 (cream/white)\n- Dark: #2B2B2B\n\nGenerate a detailed video prompt with TEXT ON SCREEN and COMPLETE corporate scenes.",
+        "text": "=You are a professional video prompt engineer for Google Veo 3.1, specializing in MSI Technologies corporate content.\n\nYour task: Transform the user's video request into a photorealistic, cinematic prompt optimized for Veo 3.1.\n\n## USER REQUEST:\n{{ $json.prompt }}\n\n## TOPIC/CONTEXT:\n{{ $json.topic || 'Corporate technology content' }}\n\n## REQUIREMENTS:\n- Duration: {{ $json.duration }} seconds (complete scene, no cuts)\n- Aspect Ratio: {{ $json.aspect_ratio }}\n- Style: {{ $json.style }}\n- Brand: MSI Technologies (must be visible naturally)\n\n## YOUR INSTRUCTIONS:\n\nCreate a SINGLE, detailed prompt (no bullet points, just flowing descriptive text) that includes:\n\n1. **ENVIRONMENT & SETTING**: Specific location with depth and detail (office, data center, conference room, etc.)\n\n2. **LIGHTING** (CRITICAL - Avoid overexposure):\n   - Use: \"soft diffused lighting\", \"balanced exposure\", \"natural window light\"\n   - Add: \"controlled highlights\", \"proper shadows\", \"cinematic color grading\"\n   - AVOID: \"bright\", \"perfect lighting\", \"high-key\"\n\n3. **MSI TECHNOLOGIES BRANDING** (Natural integration):\n   - Logo visible on: wall displays, screens, signage, materials\n   - Brand colors (#207CE5 blue) in: screen interfaces, accent elements\n   - Text: \"MSI Technologies\" should appear naturally in the environment\n\n4. **CAMERA MOVEMENT**: Smooth, professional (slow push-in, gentle pan, tracking shot, crane)\n\n5. **TEXT ON SCREEN** (MANDATORY):\n   - What text appears and when (e.g., \"Text fades in at center: 'Cloud Excellence'\")\n   - Style: modern sans-serif, MSI blue (#207CE5)\n   - Animation: smooth fade-in or slide-in\n\n6. **VISUAL DETAILS**: Objects, textures, depth (3-5 elements minimum - desks, monitors, plants, equipment)\n\n7. **EXPOSURE CONTROL**: Always end with \"balanced exposure, no overexposure, controlled highlights, proper shadow detail\"\n\n## OUTPUT FORMAT:\nReturn ONLY the optimized prompt as a single paragraph of flowing descriptive text. No preamble, no explanations, no bullet points - just the video prompt itself.\n\nExample output style:\n\"Modern MSI Technologies data center with rows of server racks, soft overhead lighting creating balanced exposure and natural shadows. MSI Technologies logo prominently displayed on the entrance wall. Camera slowly tracks forward through the corridor. At 4 seconds, text fades in at lower third: 'Enterprise Infrastructure'. Monitors show real-time data dashboards with MSI blue interface elements. Cinematic color grading with rich blacks and controlled highlights, no overexposure, proper shadow detail. 8 seconds, photorealistic.\"",
         "options": {
-          "systemMessage": "# ROLE: Professional Video Prompt Engineer for Veo 3.1 - MSI Technologies\n\nReturn ONLY the optimized video prompt. Create REALISTIC, professional videos with TEXT ON SCREEN.\n\n## CRITICAL REQUIREMENTS\n1. Duration: EXACTLY 8 seconds - complete scene, NO CUTS, continuous shot\n2. TEXT ON SCREEN: Include animated text/titles related to the topic (MANDATORY)\n3. Natural, realistic aesthetic - avoid overly polished/synthetic look\n4. Smooth, subtle camera movements\n5. COMPLETE corporate environment with CONTEXT, not just logo on background\n\n## TEXT ON SCREEN (MANDATORY)\n- Include animated text/titles that appear during the video\n- Text should be relevant to the topic/message\n- Examples: key statistics, headlines, benefits, call-to-actions\n- Typography: modern, clean, sans-serif, professional\n- Animation: smooth fade-in, slide-in, or scale\n- Use MSI brand colors (#207CE5 blue for text, #FFFDF1 for backgrounds)\n- Position: usually center or lower-third\n\n## SCENE CREATION (NO EMPTY BACKGROUNDS)\nCreate a COMPLETE SCENE with environment, NOT just logo on solid background:\n\n**GOOD EXAMPLES:**\n- Modern office with glass walls, MSI logo visible, computers, text overlay: 'Cloud Solutions'\n- Tech presentation room, screen showing data, MSI branding on wall, text: '99.9% Uptime'\n- Professional data center with servers, blue lighting, MSI logo on equipment, text: 'Enterprise Ready'\n- Corporate lobby with reception desk, MSI signage, plants, text appears: 'Trusted Partner'\n- Conference room with people (optional), MSI logo on screen, animated text: 'Digital Transformation'\n\n**BAD EXAMPLES (AVOID):**\n- Just MSI logo on blue gradient background\n- Logo floating on empty space\n- Generic abstract background with only logo\n- Solid color with just branding\n\n## REALISTIC CORPORATE ENVIRONMENTS\n**Create FULL scenes with:**\n- Office spaces: desks, computers, monitors, chairs, windows\n- Meeting rooms: table, chairs, screens, whiteboards, MSI branding\n- Data centers: server racks, cables, blue lighting, equipment\n- Tech labs: devices, workstations, tools, branded elements\n- Lobbies: reception desk, seating, plants, wall signage\n- Workspaces: laptops with MSI logo, coffee cups, notepads, realistic details\n\n**Visual richness:**\n- Multiple elements in frame (3-5 objects minimum)\n- Depth and perspective (foreground, midground, background)\n- Natural lighting and shadows (soft, directional)\n- Real textures: wood, metal, glass, fabric, concrete\n- Ambient details: plants, books, devices, cables\n- Professional color grading using MSI palette\n\n## 8-SECOND ANIMATION STRUCTURE\n**Timeline breakdown:**\n- 0-2s: Establishing shot of full environment (wide)\n- 2-4s: Smooth camera movement (push-in or pan)\n- 4-6s: Text animates on screen with key message\n- 6-8s: Final shot with logo visible in scene and text visible\n\n**Camera movements:**\n- Gentle push-in (zoom in slowly)\n- Slow pan across scene (left to right or right to left)\n- Smooth tracking along elements\n- Subtle crane up or down\n- Rack focus (foreground to background)\n\n**Text animation examples:**\n- Fade in from transparency to solid\n- Slide from bottom or side\n- Scale up from small to readable\n- Letter-by-letter appearance\n- Always smooth (0.5-1 second animation)\n\n## MSI BRAND COLORS INTEGRATION\n- Primary #207CE5 (blue): text color, accent lighting, screens\n- Secondary #004AAD (dark blue): backgrounds, shadows, depth\n- Accent #FFFDF1 (cream): text backgrounds, highlights, contrast\n- Dark #2B2B2B: typography, contrast elements\n\nColors should appear naturally in: lighting, screens, furniture, branding elements, text overlays.\n\n## STYLE ADAPTATIONS\n- **cinematic**: Shallow DOF, dramatic lighting, smooth dolly shot, large text with cinematic feel\n- **professional**: Clean office, steady cam, business setting, professional text lower-third\n- **dynamic**: Active workspace, energetic movement, bold animated text, multiple layers\n- **minimal**: Simple focused scene, one key element, subtle text, clean typography\n- **artistic**: Creative angles, unique perspective, stylized text animation\n\n## PROMPT STRUCTURE (FOLLOW THIS)\n[Describe full environment with 3-5 elements] → [Camera movement description] → [Text content and animation] → [MSI logo placement in scene] → [Duration: 8 seconds continuous]\n\nExample: 'Modern corporate office with glass walls, wooden desk, multiple monitors, plants. Camera slowly pushes forward. Text fades in center: \"Enterprise Cloud Solutions\". MSI logo visible on screen display. 8 seconds, smooth and professional.'\n\nALWAYS include: environment details, camera movement, text content, logo integration, 8-second duration."
+          "systemMessage": "# ROLE: Senior Director of Photography (DoP) - MSI Technologies\n\nYou are an expert in photorealistic cinematography. Your JOB is to convert user requests into prompts that look like REAL FILM, not CGI, always featuring MSI Technologies branding naturally.\n\n## CRITICAL RULES FOR REALISM:\n1. **Kill the \"Corporate Cleanliness\":** Avoid describing scenes as \"clean\", \"perfect\", or \"modern white office\". Real offices have clutter, shadows, and mixed lighting.\n2. **Lighting Control:** NEVER ask for \"Brand Color Lighting\" (e.g., don't ask for blue lights everywhere). Use natural light sources (windows, lamps). If MSI Technologies blue is needed, put it on an object (a shirt, a mug, a screen, logo on wall), NOT the whole room's lighting.\n3. **Exposure Fix:** To stop overexposure, use terms like: \"Moody lighting\", \"Soft shadows\", \"High dynamic range\", \"Filmic tone mapping\".\n4. **Text Handling:** Veo 3.1 struggles with \"floating text\". ALWAYS place text on physical objects (Screens, Badges, Papers, Walls). This anchors the reality.\n\n## BRANDING STRATEGY - MSI TECHNOLOGIES:\nInstead of \"MSI Technologies Brand Colors everywhere\", use \"Subtle MSI Technologies branding elements in the background\". This looks professional:\n- Logo on wall displays, monitor screens, signage\n- \"MSI Technologies\" text naturally integrated into the scene\n- Brand colors in accents, not overwhelming\n- Professional, not like a cheap ad\n\nGenerate a single, dense, descriptive prompt focused on TEXTURE, LIGHTING, and natural MSI Technologies brand integration."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
-      "position": [640, 300],
-      "id": "agent-video-prompt",
+      "position": [
+        51392,
+        3808
+      ],
+      "id": "e7d67d6f-7544-4f49-bb67-fab0e554f5cf",
       "name": "Agent: Video Prompt Optimizer"
     },
     {
@@ -45,8 +53,11 @@
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
-      "position": [720, 520],
-      "id": "gemini-video-prompt",
+      "position": [
+        51472,
+        4032
+      ],
+      "id": "a16c3d98-4d61-4beb-ac0a-de1309b94019",
       "name": "Google Gemini Chat Model",
       "credentials": {
         "googlePalmApi": {
@@ -69,7 +80,7 @@
               "id": "model-version",
               "name": "MODEL_VERSION",
               "type": "string",
-              "value": "veo-3.1-generate-preview"
+              "value": "veo-3.1-generate-001"
             },
             {
               "id": "location",
@@ -112,6 +123,18 @@
               "name": "ORIGINAL_PROMPT",
               "type": "string",
               "value": "={{ $('Format Video Input').item.json.prompt }}"
+            },
+            {
+              "id": "logo-url",
+              "name": "LOGO_URL",
+              "type": "string",
+              "value": "={{ $('Format Video Input').item.json.logo_url || 'https://i.ibb.co/S7mKXdxr/MSI-Technologies-Icon.png' }}"
+            },
+            {
+              "id": "start-image-url",
+              "name": "START_IMAGE_URL",
+              "type": "string",
+              "value": "={{ $('Format Video Input').item.json.start_image_url }}"
             }
           ]
         },
@@ -119,13 +142,16 @@
       },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [860, 300],
-      "id": "settings-node",
+      "position": [
+        51744,
+        3808
+      ],
+      "id": "fb21cae3-3a90-4787-a8a5-4166157bb7b2",
       "name": "Settings"
     },
     {
       "parameters": {
-        "url": "https://i.ibb.co/S7mKXdxr/MSI-Technologies-Icon.png",
+        "url": "={{ $('Settings').item.json.LOGO_URL }}",
         "options": {
           "response": {
             "response": {
@@ -136,8 +162,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1080, 300],
-      "id": "download-msi-logo",
+      "position": [
+        51968,
+        3808
+      ],
+      "id": "4b22fd5f-7b2b-477b-9d87-cb04f0148ab5",
       "name": "Download MSI Logo"
     },
     {
@@ -147,19 +176,117 @@
       },
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
-      "position": [1300, 300],
-      "id": "logo-to-base64",
+      "position": [
+        52192,
+        3808
+      ],
+      "id": "f583ec1a-45db-4490-81a4-e57c931c68f2",
       "name": "Logo to Base64"
     },
     {
       "parameters": {
-        "jsCode": "// Merge settings with logo base64 data\nconst settings = $('Settings').item.json;\nconst logoData = $input.item.json;\n\nreturn [{\n  json: {\n    ...settings,\n    LOGO_BASE64: logoData.data,\n    LOGO_MIME_TYPE: logoData.mimeType || 'image/png'\n  }\n}];"
+        "jsCode": "// Merge settings with logo base64 data\nconst settings = $('Settings').item.json;\nconst logoData = $input.item.json;\n\n// Check if we have a start image URL\nconst hasStartImage = settings.START_IMAGE_URL && settings.START_IMAGE_URL !== 'null' && settings.START_IMAGE_URL !== '';\n\nif (hasStartImage) {\n  console.log('Start image URL provided:', settings.START_IMAGE_URL);\n  // We need to download the start image instead\n  return [{\n    json: {\n      ...settings,\n      LOGO_BASE64: logoData.data,\n      LOGO_MIME_TYPE: logoData.mimeType || 'image/png',\n      HAS_START_IMAGE: true,\n      USE_START_IMAGE_AS_BASE: true\n    }\n  }];\n} else {\n  console.log('No start image, using logo as base');\n  return [{\n    json: {\n      ...settings,\n      LOGO_BASE64: logoData.data,\n      LOGO_MIME_TYPE: logoData.mimeType || 'image/png',\n      HAS_START_IMAGE: false,\n      USE_START_IMAGE_AS_BASE: false\n    }\n  }];\n}"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1520, 300],
-      "id": "merge-settings-logo",
+      "position": [
+        52416,
+        3808
+      ],
+      "id": "c57d548e-202d-47da-8fc8-22b683058597",
       "name": "Merge Settings with Logo"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-start-image",
+              "leftValue": "={{ $json.HAS_START_IMAGE }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        52540,
+        3808
+      ],
+      "id": "check-start-image-123",
+      "name": "Check if Start Image"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.START_IMAGE_URL }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        52740,
+        3680
+      ],
+      "id": "download-start-image-456",
+      "name": "Download Start Image"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        52940,
+        3680
+      ],
+      "id": "start-image-to-base64-789",
+      "name": "Start Image to Base64"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Replace logo data with start image data\nconst settings = $('Merge Settings with Logo').item.json;\nconst startImageData = $input.item.json;\n\nconsole.log('Using start image as base for video generation');\n\nreturn [{\n  json: {\n    ...settings,\n    START_IMAGE_BASE64: startImageData.data,\n    START_IMAGE_MIME_TYPE: startImageData.mimeType || 'image/jpeg',\n    FINAL_IMAGE_BASE64: startImageData.data,\n    FINAL_IMAGE_MIME_TYPE: startImageData.mimeType || 'image/jpeg'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        53140,
+        3680
+      ],
+      "id": "merge-start-image-abc",
+      "name": "Merge Start Image Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Use logo as base image (no start image provided)\nconst settings = $input.item.json;\n\nconsole.log('No start image provided, using logo as base');\n\nreturn [{\n  json: {\n    ...settings,\n    FINAL_IMAGE_BASE64: settings.LOGO_BASE64,\n    FINAL_IMAGE_MIME_TYPE: settings.LOGO_MIME_TYPE\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        52740,
+        3920
+      ],
+      "id": "use-logo-as-base-def",
+      "name": "Use Logo as Base"
     },
     {
       "parameters": {
@@ -167,8 +294,11 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1740, 300],
-      "id": "generate-token",
+      "position": [
+        53340,
+        3808
+      ],
+      "id": "1f201578-7a1b-4259-b96e-5d49a386d65d",
       "name": "Generate Access Token"
     },
     {
@@ -190,15 +320,18 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  instances: [{\n    prompt: $json.TEXT_PROMPT,\n    image: {\n      bytesBase64Encoded: $json.LOGO_BASE64,\n      mimeType: $json.LOGO_MIME_TYPE\n    }\n  }],\n  parameters: {\n    aspectRatio: $json.ASPECT_RATIO,\n    sampleCount: 1,\n    durationSeconds: $json.DURATION,\n    personGeneration: 'allow_all',\n    addWatermark: true,\n    includeRaiReason: true,\n    generateAudio: true\n  }\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  instances: [{\n    prompt: $json.TEXT_PROMPT + \", balanced natural lighting, controlled exposure, no overexposure, cinematic color grading, 8k, photorealistic, proper shadows, rich detail\",\n    image: {\n      bytesBase64Encoded: $json.FINAL_IMAGE_BASE64,\n      mimeType: $json.FINAL_IMAGE_MIME_TYPE\n    }\n  }],\n  parameters: {\n    aspectRatio: $json.ASPECT_RATIO,\n    sampleCount: 1,\n    durationSeconds: $json.DURATION,\n    personGeneration: 'allow_all',\n    addWatermark: false,\n    includeRaiReason: true,\n    generateAudio: true,\n    negativePrompt: \"overexposed, blown highlights, washed out, too bright, high-key lighting, flat lighting, loss of detail, white crush, cartoon, 3d render, animation, anime, illustration, painting, plastic skin, mannequin, smooth skin, bad anatomy, distorted face, disfigured, cgi, blender, low quality, grainy, blurry, watermark, floating letters, distorted hands, extra fingers\"\n  }\n}) }}",
         "options": {
           "timeout": 30000
         }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1960, 300],
-      "id": "vertex-ai-veo3",
+      "position": [
+        53564,
+        3808
+      ],
+      "id": "3c59b4d2-4d69-43c9-b55a-9b23fa87c8ea",
       "name": "Vertex AI - VEO3"
     },
     {
@@ -208,8 +341,11 @@
       },
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [2180, 300],
-      "id": "wait-for-video",
+      "position": [
+        53788,
+        3808
+      ],
+      "id": "d383491f-a08c-441d-820b-b7634d159697",
       "name": "Wait 2 Minutes",
       "webhookId": "veo3-wait"
     },
@@ -239,8 +375,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2400, 300],
-      "id": "vertex-ai-fetch",
+      "position": [
+        54012,
+        3808
+      ],
+      "id": "b439cc64-66b2-47fb-844f-5c01ccfbd633",
       "name": "Vertex AI - Fetch Result"
     },
     {
@@ -249,8 +388,11 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2620, 300],
-      "id": "process-video-response",
+      "position": [
+        54236,
+        3808
+      ],
+      "id": "cfc6823f-3365-439c-a2c2-b8e2492d3b88",
       "name": "Process Video Response"
     },
     {
@@ -259,8 +401,11 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2840, 300],
-      "id": "prepare-youtube-upload",
+      "position": [
+        54460,
+        3808
+      ],
+      "id": "31f57c79-326a-40d6-87db-8f6750e7dc80",
       "name": "Prepare YouTube Upload"
     },
     {
@@ -277,8 +422,11 @@
       },
       "type": "n8n-nodes-base.youTube",
       "typeVersion": 1,
-      "position": [3060, 300],
-      "id": "upload-to-youtube",
+      "position": [
+        53984,
+        3808
+      ],
+      "id": "93459fd3-48fc-4ac0-828f-3b9f1ecc7440",
       "name": "Upload to YouTube",
       "credentials": {
         "youTubeOAuth2Api": {
@@ -293,8 +441,11 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3280, 300],
-      "id": "extract-youtube-url",
+      "position": [
+        54208,
+        3808
+      ],
+      "id": "f918bf55-0ad0-4516-bfa9-e9d744865de9",
       "name": "Extract YouTube URL"
     },
     {
@@ -305,8 +456,11 @@
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [3500, 300],
-      "id": "update-db-youtube",
+      "position": [
+        54432,
+        3808
+      ],
+      "id": "0535f5d2-5671-44f3-b413-af5c03dda82a",
       "name": "Update DB with YouTube",
       "credentials": {
         "postgres": {
@@ -323,66 +477,268 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [3720, 300],
-      "id": "respond-video-success",
+      "position": [
+        54656,
+        3808
+      ],
+      "id": "ae7b52a4-4c0b-4bdd-afb4-935e8b8bed81",
       "name": "Respond Success"
     }
   ],
   "connections": {
     "Webhook - Video Gen": {
-      "main": [[{"node": "Format Video Input", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Format Video Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Format Video Input": {
-      "main": [[{"node": "Agent: Video Prompt Optimizer", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Agent: Video Prompt Optimizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Agent: Video Prompt Optimizer": {
-      "main": [[{"node": "Settings", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Google Gemini Chat Model": {
-      "ai_languageModel": [[{"node": "Agent: Video Prompt Optimizer", "type": "ai_languageModel", "index": 0}]]
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent: Video Prompt Optimizer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Settings": {
-      "main": [[{"node": "Download MSI Logo", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Download MSI Logo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Download MSI Logo": {
-      "main": [[{"node": "Logo to Base64", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Logo to Base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Logo to Base64": {
-      "main": [[{"node": "Merge Settings with Logo", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Merge Settings with Logo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Merge Settings with Logo": {
-      "main": [[{"node": "Generate Access Token", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Check if Start Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Start Image": {
+      "main": [
+        [
+          {
+            "node": "Download Start Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Use Logo as Base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Start Image": {
+      "main": [
+        [
+          {
+            "node": "Start Image to Base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Image to Base64": {
+      "main": [
+        [
+          {
+            "node": "Merge Start Image Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Start Image Data": {
+      "main": [
+        [
+          {
+            "node": "Generate Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Logo as Base": {
+      "main": [
+        [
+          {
+            "node": "Generate Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Generate Access Token": {
-      "main": [[{"node": "Vertex AI - VEO3", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Vertex AI - VEO3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Vertex AI - VEO3": {
-      "main": [[{"node": "Wait 2 Minutes", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Wait 2 Minutes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Wait 2 Minutes": {
-      "main": [[{"node": "Vertex AI - Fetch Result", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Vertex AI - Fetch Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Vertex AI - Fetch Result": {
-      "main": [[{"node": "Process Video Response", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Process Video Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Process Video Response": {
-      "main": [[{"node": "Prepare YouTube Upload", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Prepare YouTube Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Prepare YouTube Upload": {
-      "main": [[{"node": "Upload to YouTube", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Upload to YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Upload to YouTube": {
-      "main": [[{"node": "Extract YouTube URL", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Extract YouTube URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Extract YouTube URL": {
-      "main": [[{"node": "Update DB with YouTube", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Update DB with YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Update DB with YouTube": {
-      "main": [[{"node": "Respond Success", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "pinData": {},
   "meta": {
+    "templateCredsSetupCompleted": true,
     "instanceId": "b5116c87255060ddf18db8a2b1b90e34b38f50f44815cf784a0b8a92b6bb4e6e"
   }
 }

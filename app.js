@@ -1733,22 +1733,42 @@ if (document.readyState !== 'loading') {
 
 // ========== VIDEO GENERATION ==========
 
-// Reference image preview for video
-const videoReferenceInput = document.getElementById('video_reference_image');
-const videoReferencePreviewContainer = document.getElementById('video-reference-preview-container');
-const videoReferenceImg = document.getElementById('video-reference-img');
+// Logo preview for video
+const videoLogoInput = document.getElementById('video_logo_url');
+const videoLogoPreviewContainer = document.getElementById('video-logo-preview-container');
+const videoLogoImg = document.getElementById('video-logo-img');
 
-if (videoReferenceInput) {
-    videoReferenceInput.addEventListener('input', (e) => {
+if (videoLogoInput) {
+    videoLogoInput.addEventListener('input', (e) => {
         const url = e.target.value.trim();
         if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-            videoReferenceImg.src = url;
-            videoReferencePreviewContainer.style.display = 'block';
-            videoReferenceImg.onerror = () => {
-                videoReferencePreviewContainer.style.display = 'none';
+            videoLogoImg.src = url;
+            videoLogoPreviewContainer.style.display = 'block';
+            videoLogoImg.onerror = () => {
+                videoLogoPreviewContainer.style.display = 'none';
             };
         } else {
-            videoReferencePreviewContainer.style.display = 'none';
+            videoLogoPreviewContainer.style.display = 'none';
+        }
+    });
+}
+
+// Start image preview for video
+const videoStartImageInput = document.getElementById('video_start_image_url');
+const videoStartImagePreviewContainer = document.getElementById('video-start-image-preview-container');
+const videoStartImageImg = document.getElementById('video-start-image-img');
+
+if (videoStartImageInput) {
+    videoStartImageInput.addEventListener('input', (e) => {
+        const url = e.target.value.trim();
+        if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+            videoStartImageImg.src = url;
+            videoStartImagePreviewContainer.style.display = 'block';
+            videoStartImageImg.onerror = () => {
+                videoStartImagePreviewContainer.style.display = 'none';
+            };
+        } else {
+            videoStartImagePreviewContainer.style.display = 'none';
         }
     });
 }
@@ -1765,7 +1785,8 @@ if (videoForm) {
             style: formData.get('style'),
             duration: formData.get('duration'),
             topic: formData.get('topic') || '',
-            reference_image_url: formData.get('reference_image_url') || null
+            logo_url: formData.get('logo_url') || null,
+            start_image_url: formData.get('start_image_url') || null
             // aspect_ratio is fixed to 9:16 in workflow
         };
         

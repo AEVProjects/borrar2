@@ -383,15 +383,28 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="video_reference_image">Reference Image (Optional)</label>
-                        <input type="url" id="video_reference_image" name="reference_image_url" placeholder="https://i.ibb.co/S7mKXdxr/MSI-Technologies-Icon.png">
-                        <small class="form-hint">🖼️ Add your logo or reference image (optional). MSI logo is used by default.</small>
+                        <label for="video_logo_url">Logo URL (Optional)</label>
+                        <input type="url" id="video_logo_url" name="logo_url" placeholder="https://i.ibb.co/S7mKXdxr/MSI-Technologies-Icon.png">
+                        <small class="form-hint">🏢 Logo que aparecerá en el video. Por defecto se usa el logo de MSI.</small>
                     </div>
 
-                    <div class="form-group" id="video-reference-preview-container" style="display: none;">
-                        <label>Image Preview</label>
-                        <div id="video-reference-preview" class="edit-image-preview">
-                            <img id="video-reference-img" src="" alt="Image preview" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    <div class="form-group" id="video-logo-preview-container" style="display: none;">
+                        <label>Logo Preview</label>
+                        <div id="video-logo-preview" class="edit-image-preview">
+                            <img id="video-logo-img" src="" alt="Logo preview" style="max-width: 200px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="video_start_image_url">Imagen de Inicio del Video (Optional)</label>
+                        <input type="url" id="video_start_image_url" name="start_image_url" placeholder="https://example.com/mi-imagen-inicio.jpg">
+                        <small class="form-hint">🎬 Imagen que será el punto de partida del video. El video se generará a partir de esta imagen.</small>
+                    </div>
+
+                    <div class="form-group" id="video-start-image-preview-container" style="display: none;">
+                        <label>Start Image Preview</label>
+                        <div id="video-start-image-preview" class="edit-image-preview">
+                            <img id="video-start-image-img" src="" alt="Start image preview" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                         </div>
                     </div>
 
