@@ -1,5 +1,5 @@
 {
-  "name": "MSI Video Generation - Veo 3.1",
+  "name": "MSI Image Animation - Veo 3.1",
   "nodes": [
     {
       "parameters": {
@@ -10,86 +10,128 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [
-        -200,
-        300
-      ],
+      "position": [200, 300],
       "id": "webhook-video-gen",
       "name": "Webhook - Video Gen",
       "webhookId": "msi-video-gen"
     },
     {
       "parameters": {
-        "jsCode": "// Extract data from web form for video generation\nconst input = $input.item.json;\n\nconsole.log('==== VIDEO GEN WEBHOOK INPUT ====');\nconsole.log('Raw input:', JSON.stringify(input));\n\n// Parse the body if it's a JSON string\nlet data;\nif (input.body) {\n  if (typeof input.body === 'string') {\n    try {\n      data = JSON.parse(input.body);\n    } catch (e) {\n      data = input;\n    }\n  } else if (typeof input.body === 'object') {\n    data = input.body;\n  } else {\n    data = input;\n  }\n} else if (input.query) {\n  data = input.query;\n} else {\n  data = input;\n}\n\n// Extract variables for video generation\nconst prompt = data.prompt || data.video_prompt || '';\nconst duration = data.duration || '5s';\nconst aspect_ratio = data.aspect_ratio || '9:16';\nconst style = data.style || 'cinematic';\nconst reference_image_url = data.reference_image_url || null;\nconst post_id = data.post_id || null;\nconst topic = data.topic || '';\n\nconsole.log('Variables:', { prompt, duration, aspect_ratio, style, reference_image_url, post_id, topic });\n\nif (!prompt) {\n  throw new Error('VIDEO GEN ERROR: prompt is required for video generation.');\n}\n\nreturn [{\n  json: {\n    prompt,\n    duration,\n    aspect_ratio,\n    style,\n    reference_image_url,\n    post_id,\n    topic\n  }\n}];"
+        "jsCode": "// Extract data for image animation\nconst input = $input.item.json;\n\nlet data;\nif (input.body) {\n  if (typeof input.body === 'string') {\n    try { data = JSON.parse(input.body); } catch (e) { data = input; }\n  } else if (typeof input.body === 'object') {\n    data = input.body;\n  } else { data = input; }\n} else if (input.query) {\n  data = input.query;\n} else {\n  data = input;\n}\n\nconst base_image_url = data.base_image_url || data.image_url || '';\nconst prompt = data.prompt || data.animation_prompt || 'Subtle camera movement and depth';\nconst duration = data.duration || '8';\nconst aspect_ratio = data.aspect_ratio || '9:16';\nconst post_id = data.post_id || null;\n\nif (!base_image_url) {\n  throw new Error('IMAGE ANIMATION ERROR: base_image_url is required.');\n}\n\nreturn [{ json: { base_image_url, prompt, duration, aspect_ratio, post_id } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        20,
-        300
-      ],
+      "position": [420, 300],
       "id": "format-video-input",
       "name": "Format Video Input"
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "=Create a professional video prompt for Veo 3.1 based on this request:\n\nUser Prompt: {{ $json.prompt }}\nStyle: {{ $json.style }}\nDuration: {{ $json.duration }} (MUST be exactly this duration with smooth ending)\nAspect Ratio: 9:16 (Vertical)\nTopic: {{ $json.topic || 'General' }}\n\nIMPORTANT REQUIREMENTS:\n1. The video MUST be exactly {{ $json.duration }} long with a smooth, natural ending (fade out or gradual conclusion)\n2. Include a watermark logo in the bottom right corner throughout the entire video (logo will be provided as reference image)\n3. The logo should be subtle but visible, not obstructing the main content\n\nGenerate an optimized, detailed prompt for Veo 3.1 video generation.",
+        "text": "=Create an ANIMATION-ONLY prompt for Veo 3.1 image-to-video:\n\nUser Request: {{ $json.prompt }}\nDuration: {{ $json.duration }} seconds\n\n**CRITICAL:** The image already has all content (logo, text, design). DO NOT modify, add, or remove anything.\nONLY describe camera movements and subtle effects.\n\nGenerate a movement-focused prompt that PRESERVES the existing image.",
         "options": {
-          "systemMessage": "# ROLE: Video Prompt Specialist for Veo 3.1\n\nYou are an expert at creating prompts for Google's Veo 3.1 video generation model.\n\n## OUTPUT FORMAT\nReturn ONLY the optimized video prompt, nothing else. No explanations, no labels.\n\n## RULES\n1. Be specific about camera movements (pan, zoom, dolly, tracking shot)\n2. Include lighting descriptions (golden hour, studio lighting, neon, etc.)\n3. Specify the mood and atmosphere\n4. Add details about motion and dynamics\n5. Keep it under 500 characters for best results\n6. Focus on visual elements that Veo handles well:\n   - Smooth camera movements\n   - Realistic lighting and shadows\n   - Natural motion and physics\n   - Cinematic compositions\n7. CRITICAL: Always end with smooth conclusion (fade out, slow zoom, or natural ending) - NEVER abrupt cuts\n8. ALWAYS include: 'with watermark logo in bottom right corner' in the prompt\n\n## DURATION\n- Specify the exact duration requested\n- Add 'smooth fade out' or 'gradual ending' to avoid abrupt cuts\n- Example: '5 second video with smooth fade out at the end'\n\n## BRANDING\n- A watermark logo will be provided as reference image\n- Logo placement: bottom right corner, small but legible\n- Logo should not obstruct main content\n- Mention 'watermark logo in bottom right' in prompt\n\n## STYLE GUIDELINES\n- cinematic: Add film-quality elements, shallow depth of field, dramatic lighting\n- professional: Clean, corporate feel, steady shots, neutral lighting\n- dynamic: Fast cuts implied, energetic movement, bold compositions\n- minimal: Simple, clean, focused on single subject\n- artistic: Creative angles, unique compositions, experimental feel"
+          "systemMessage": "# ROLE: Image Animation Director for Veo 3.1 - MSI Social Media\n\nReturn ONLY the animation prompt. The input image ALREADY has all design elements (logo, text, graphics).\n\n## CRITICAL RULES\n1. **DO NOT** create new content, text, or objects\n2. **DO NOT** modify existing text or logo\n3. **DO NOT** add or remove visual elements\n4. **ONLY** describe camera movements and subtle atmospheric effects\n5. The image is COMPLETE - you're just adding motion\n\n## YOUR ONLY JOB: ADD MOVEMENT\nThe image is a finished social media post. Generate a prompt that:\n- Animates the EXISTING image\n- Preserves ALL text exactly as-is\n- Keeps the logo untouched\n- Adds cinematic movement for social media impact\n\n## ANIMATION TECHNIQUES\n\n**Camera Movements:**\n- **Slow Push In**: Camera slowly zooms toward the image center (most popular for social media)\n- **Parallax Effect**: Foreground and background move at different speeds creating depth\n- **Slow Pan**: Gentle horizontal movement (left-to-right or right-to-left)\n- **Tilt Up/Down**: Vertical camera movement\n- **Orbit**: Slight circular movement around the center\n- **Dolly**: Camera moves forward or backward maintaining perspective\n\n**Atmospheric Effects (subtle only):**\n- Light rays or lens flares\n- Floating particles (dust, sparkles)\n- Bokeh blur in background\n- Subtle color grading shifts\n- Depth of field changes\n- Light bloom or glow\n\n**Depth Techniques:**\n- 2.5D parallax (layers move at different speeds)\n- Rack focus (focus shifts between elements)\n- Foreground/background separation\n\n## MOVEMENT INTENSITY\n- **Subtle** (70% of cases): Gentle push-in, minimal parallax, soft particles\n- **Medium** (25%): Noticeable pan, moderate depth, visible effects\n- **Dynamic** (5%): Bold camera moves, strong parallax, dramatic effects\n\nFor social media: PREFER SUBTLE to avoid distracting from the message.\n\n## EXAMPLE PROMPTS (animation-only)\n\n**Subtle Professional:**\n'Slow camera push-in towards center. Subtle parallax effect with foreground elements slightly closer. Soft bokeh particles floating. Preserve all text and graphics exactly as shown. 8 seconds smooth.'\n\n**Medium Depth:**\n'Gentle left-to-right pan with 2.5D parallax depth. Background moves slower than foreground creating depth. Slight lens flare from top corner. All text and logo remain unchanged. 8 seconds continuous.'\n\n**Dynamic Movement:**\n'Camera orbits slowly around center point. Strong parallax effect separating layers. Floating light particles. Rack focus from foreground to background. Preserve exact text and logo. 8 seconds cinematic.'\n\n**Minimal Elegant:**\n'Very slow zoom in to center. Minimal parallax. Soft depth of field on edges. Subtle color bloom. All elements preserved exactly. 8 seconds smooth and professional.'\n\n## PROMPT STRUCTURE\n[Camera movement] + [Parallax/depth technique] + [Subtle atmospheric effects] + \"Preserve all text and logo exactly as shown\" + [Duration]\n\n## WHAT TO AVOID\n❌ \"Add text saying...\"\n❌ \"Show MSI logo...\"\n❌ \"Create a scene with...\"\n❌ \"Include elements like...\"\n❌ \"Display statistics...\"\n❌ Any mention of adding/changing content\n\n✅ \"Slow camera push forward\"\n✅ \"Parallax effect with depth\"\n✅ \"Floating particles\"\n✅ \"Preserve all existing elements\"\n✅ \"Smooth continuous movement\"\n\n## SOCIAL MEDIA BEST PRACTICES\n- Keep movement subtle - text readability is #1 priority\n- Smooth, continuous motion (no jarring cuts)\n- 8 seconds is perfect for Instagram/TikTok/LinkedIn\n- Avoid effects that obscure text or logo\n- Professional feel > flashy effects\n\n## OUTPUT FORMAT\nReturn ONLY the animation prompt, nothing else. No explanations.\n\nExample output:\n'Slow camera push-in towards center with subtle 2.5D parallax depth. Soft floating particles. Gentle lens bloom. Preserve all text and logo exactly. 8 seconds smooth and cinematic.'"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
-      "position": [
-        680,
-        300
-      ],
+      "position": [640, 300],
       "id": "agent-video-prompt",
       "name": "Agent: Video Prompt Optimizer"
     },
     {
       "parameters": {
-        "model": {
-          "__rl": true,
-          "value": "chatgpt-4o-latest",
-          "mode": "list",
-          "cachedResultName": "chatgpt-4o-latest"
-        },
-        "builtInTools": {},
         "options": {}
       },
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.3,
-      "position": [
-        760,
-        520
-      ],
-      "id": "openai-video-prompt",
-      "name": "OpenAI for Video Prompt",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [720, 520],
+      "id": "gemini-video-prompt",
+      "name": "Google Gemini Chat Model",
       "credentials": {
-        "openAiApi": {
-          "id": "13Oqly3WdRAzZVXL",
-          "name": "OpenAi account"
+        "googlePalmApi": {
+          "id": "oF4jKBK0jRbwEPWt",
+          "name": "Google Gemini(PaLM) Api account"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "// Prepare data for Veo 3.1 video generation\nconst formInput = $('Format Video Input').item.json;\nconst optimizedPrompt = $input.item.json.output;\n\nconsole.log('==== PREPARE VIDEO GEN REQUEST ====');\nconsole.log('Optimized prompt:', optimizedPrompt);\n\n// Append duration and vertical format instructions\nconst promptWithEnhancements = `${optimizedPrompt}. ${formInput.duration} video, STRICTLY VERTICAL 9:16 portrait orientation, with smooth fade out ending. Include watermark logo in bottom right corner throughout the video.`;\n\nconsole.log('Enhanced prompt:', promptWithEnhancements);\n\nreturn [{\n  json: {\n    prompt: promptWithEnhancements,\n    original_prompt: formInput.prompt,\n    duration: formInput.duration,\n    aspect_ratio: '9:16',\n    style: formInput.style,\n    post_id: formInput.post_id,\n    topic: formInput.topic\n  }\n}];"
+        "assignments": {
+          "assignments": [
+            {
+              "id": "project-id",
+              "name": "PROJECT_ID",
+              "type": "string",
+              "value": "gen-lang-client-0521438560"
+            },
+            {
+              "id": "model-version",
+              "name": "MODEL_VERSION",
+              "type": "string",
+              "value": "veo-3.1-generate-preview"
+            },
+            {
+              "id": "location",
+              "name": "LOCATION",
+              "type": "string",
+              "value": "us-central1"
+            },
+            {
+              "id": "api-endpoint",
+              "name": "API_ENDPOINT",
+              "type": "string",
+              "value": "us-central1-aiplatform.googleapis.com"
+            },
+            {
+              "id": "animation-prompt",
+              "name": "ANIMATION_PROMPT",
+              "type": "string",
+              "value": "={{ $('Agent: Video Prompt Optimizer').item.json.output }}"
+            },
+            {
+              "id": "base-image-url",
+              "name": "BASE_IMAGE_URL",
+              "type": "string",
+              "value": "={{ $('Format Video Input').item.json.base_image_url }}"
+            },
+            {
+              "id": "duration",
+              "name": "DURATION",
+              "type": "string",
+              "value": "={{ $('Format Video Input').item.json.duration }}"
+            },
+            {
+              "id": "aspect-ratio",
+              "name": "ASPECT_RATIO",
+              "type": "string",
+              "value": "={{ $('Format Video Input').item.json.aspect_ratio }}"
+            },
+            {
+              "id": "post-id",
+              "name": "POST_ID",
+              "type": "string",
+              "value": "={{ $('Format Video Input').item.json.post_id }}"
+            },
+            {
+              "id": "original-prompt",
+              "name": "ORIGINAL_PROMPT",
+              "type": "string",
+              "value": "={{ $('Format Video Input').item.json.prompt }}"
+            }
+          ]
+        },
+        "options": {}
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        900,
-        300
-      ],
-      "id": "prepare-video-request",
-      "name": "Prepare Video Request"
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [860, 300],
+      "id": "settings-node",
+      "name": "Settings"
     },
     {
       "parameters": {
-        "url": "https://i.ibb.co/S7mKXdxr/MSI-Technologies-Icon.png",
+        "url": "={{ $('Settings').item.json.BASE_IMAGE_URL }}",
         "options": {
           "response": {
             "response": {
@@ -100,78 +142,130 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        900,
-        480
-      ],
-      "id": "download-logo",
-      "name": "Download MSI Logo"
+      "position": [1080, 300],
+      "id": "download-base-image",
+      "name": "Download Base Image"
     },
     {
       "parameters": {
-        "jsCode": "// Merge video request data with logo binary and convert to base64\nconst videoData = $('Prepare Video Request').item.json;\nconst logoItem = $input.item;\n\n// ====== CONFIGURAR SERVICE ACCOUNT ======\n// TU SERVICE ACCOUNT: vertex-express@gen-lang-client-0521438560.iam.gserviceaccount.com\n// PASOS:\n// 1. Ve a: https://console.cloud.google.com/iam-admin/serviceaccounts/details/113579530477823292475?project=gen-lang-client-0521438560\n// 2. Pestaña PERMISSIONS: Verifica que tenga rol \"Vertex AI User\"\n//    (Si no: click \"GRANT ACCESS\" → Principal: vertex-express@... → Role: Vertex AI User → SAVE)\n// 3. Pestaña KEYS: Click \"ADD KEY\" → \"Create new key\" → Tipo: JSON → CREATE\n// 4. Se descarga archivo .json → Abre el archivo y COPIA TODO el contenido\n// 5. PEGA el contenido JSON completo aquí abajo (reemplaza todo el objeto):\n\nconst SERVICE_ACCOUNT_JSON = {\n  \"type\": \"service_account\",\n  \"project_id\": \"gen-lang-client-0521438560\",\n  \"private_key_id\": \"PEGA_EL_VALOR_DEL_JSON_DESCARGADO\",\n  \"private_key\": \"-----BEGIN PRIVATE KEY-----\\nPEGA_AQUI_EL_PRIVATE_KEY_COMPLETO_DEL_JSON\\n-----END PRIVATE KEY-----\\n\",\n  \"client_email\": \"vertex-express@gen-lang-client-0521438560.iam.gserviceaccount.com\",\n  \"client_id\": \"113579530477823292475\",\n  \"auth_uri\": \"https://accounts.google.com/o/oauth2/auth\",\n  \"token_uri\": \"https://oauth2.googleapis.com/token\",\n  \"auth_provider_x509_cert_url\": \"https://www.googleapis.com/oauth2/v1/certs\",\n  \"client_x509_cert_url\": \"https://www.googleapis.com/robot/v1/metadata/x509/vertex-express%40gen-lang-client-0521438560.iam.gserviceaccount.com\"\n};\n\n// Generar OAuth2 token usando Service Account\nasync function getAccessToken(serviceAccount) {\n  const crypto = require('crypto');\n  \n  // Ensure private key has proper format (replace \\n with actual newlines)\n  let privateKey = serviceAccount.private_key;\n  if (typeof privateKey === 'string' && privateKey.includes('\\\\n')) {\n    privateKey = privateKey.replace(/\\\\n/g, '\\n');\n  }\n  \n  const now = Math.floor(Date.now() / 1000);\n  const header = Buffer.from(JSON.stringify({alg: 'RS256', typ: 'JWT'})).toString('base64url');\n  const payload = Buffer.from(JSON.stringify({\n    iss: serviceAccount.client_email,\n    scope: 'https://www.googleapis.com/auth/cloud-platform',\n    aud: serviceAccount.token_uri,\n    exp: now + 3600,\n    iat: now\n  })).toString('base64url');\n  \n  const signatureInput = `${header}.${payload}`;\n  \n  // Sign with proper key object format\n  const signature = crypto.createSign('RSA-SHA256')\n    .update(signatureInput)\n    .sign({\n      key: privateKey,\n      format: 'pem',\n      type: 'pkcs8'\n    }, 'base64url');\n  \n  const jwt = `${signatureInput}.${signature}`;\n  \n  // Exchange JWT for access token\n  const res = await fetch(serviceAccount.token_uri, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },\n    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`\n  });\n  \n  const data = await res.json();\n  if (!data.access_token) {\n    console.error('OAuth2 error:', JSON.stringify(data));\n    throw new Error('Failed to get access token: ' + (data.error || 'Unknown error'));\n  }\n  return data.access_token;\n}\n\nconst accessToken = await getAccessToken(SERVICE_ACCOUNT_JSON);\n\nconsole.log('==== MERGE VIDEO DATA WITH LOGO ====');\nconsole.log('Has logo binary:', !!logoItem.binary);\nconsole.log('Logo item keys:', Object.keys(logoItem));\n\nlet logoBase64 = '';\nlet logoMimeType = 'image/png';\n\nif (logoItem.binary && Object.keys(logoItem.binary).length > 0) {\n  const binaryKey = Object.keys(logoItem.binary)[0];\n  const binaryData = logoItem.binary[binaryKey];\n  logoMimeType = binaryData.mimeType || 'image/png';\n  \n  console.log('Binary key:', binaryKey);\n  console.log('Binary data keys:', Object.keys(binaryData));\n  console.log('MIME type:', logoMimeType);\n  \n  try {\n    // Use index 0 directly, not from json\n    const buffer = await this.helpers.getBinaryDataBuffer(0, binaryKey);\n    logoBase64 = buffer.toString('base64');\n    console.log('Logo base64 extracted successfully, length:', logoBase64.length);\n  } catch (e) {\n    console.error('Failed to get logo buffer with helpers:', e.message);\n    // Fallback: try direct access\n    if (binaryData.data && typeof binaryData.data === 'string' && binaryData.data !== 'filesystem-v2') {\n      logoBase64 = binaryData.data;\n      console.log('Used fallback direct data access');\n    } else if (Buffer.isBuffer(binaryData.data)) {\n      logoBase64 = binaryData.data.toString('base64');\n      console.log('Converted buffer to base64');\n    }\n  }\n}\n\nif (!logoBase64) {\n  console.error('No logo data extracted!');\n  // Use a fallback: hardcoded small transparent PNG\n  logoBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';\n  console.log('Using fallback transparent PNG');\n}\n\nconsole.log('Final logo base64 length:', logoBase64.length);\nconsole.log('Final MIME type:', logoMimeType);\n\nreturn [{\n  json: {\n    prompt: videoData.prompt,\n    original_prompt: videoData.original_prompt,\n    duration: videoData.duration,\n    aspect_ratio: videoData.aspect_ratio,\n    style: videoData.style,\n    post_id: videoData.post_id,\n    topic: videoData.topic,\n    logo_base64: logoBase64,\n    logo_mime_type: logoMimeType,\n    access_token: accessToken\n  }\n}];"
+        "operation": "binaryToPropery",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [1300, 300],
+      "id": "image-to-base64",
+      "name": "Image to Base64"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge settings with base image data\nconst settings = $('Settings').item.json;\nconst imageData = $input.item.json;\n\nreturn [{\n  json: {\n    ...settings,\n    IMAGE_BASE64: imageData.data,\n    IMAGE_MIME_TYPE: imageData.mimeType || 'image/png'\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1120,
-        480
-      ],
-      "id": "merge-with-logo",
-      "name": "Merge with Logo"
+      "position": [1520, 300],
+      "id": "merge-settings-image",
+      "name": "Merge Settings with Image"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate OAuth2 Access Token from Service Account\nconst crypto = require('crypto');\n\n// ========== SERVICE ACCOUNT CREDENTIALS ==========\nconst serviceAccount = {\n  \"type\": \"service_account\",\n  \"project_id\": \"gen-lang-client-0521438560\",\n  \"private_key_id\": \"353528a978e83fdd043e74b03d0096604b3ccd77\",\n  \"private_key\": \"-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCc8VpJosYd8D0N\\nmFLmh1b7UOsHgm5ZZBvjSkPUhcFXXoEnOoouhWPD5hEl7ziA+3vWpbHLWb5sm0dv\\nqUhHJWwMMbE5eBxmR7m/Cacpy5ZiOVw+180aZqq6e1AsKlEzRvdz66FSgpCeYtmS\\n2nnc8fGwxfB06qpXsxLVQYnwnKzOlKOv9cfXC/29vrbXoPwez9lkVyySa11iGtYA\\nzMU2LjiPrxvcDTbhb1JYD/050fT/m3z2NgclsV6uCEQxNLXOJriJxNuSKhmZufis\\nsoO/rlj/V+RFTrHEQ8zn3nbm6/W2ZANZt94AOo31t5TR6Idt9PxgjodSHJYLEm+0\\nOXC6bAf3AgMBAAECggEASvGn81Ti9YX0qarNH5+OZkmASmA7EL3Q4Wtj07chmfab\\nhx+Zv9hbyT7yfmJrYZB11Qzfx6Lt35AQ/13fkXXp0DLklfRo32Ct7u+Nn1REVlhc\\n1/eWTl6rdYyQPt7gUrO3U+g3655EsBW1Hz7sBZmVmBwVlMdAm8t8GVEILVmr3aN1\\n5CzVUaLtk9UNQDApUfxgdD2kutWTjqM2j3jsgceST6p98dqV2U8HiOXonpMgt02+\\n3PqApJNu4HQhdMzYwX67vKLuqanlZllLlBp8TWvbP3Roo2p57pD8oamT0BKWDUcX\\nfwT19NJOXqRTim6oalvGklTuwhI9+EJJPlAwN7+rAQKBgQDc+sNzQC4Eph4we6g5\\nBQe5QGIchou/ey1vJ+UGbM8vy6bkuy9dPbDZ/XUZTPOYkTPHKvRu544DTIQzH0qJ\\nfG5NKUIYdOInJm8y+r0JybMrrKl0b04/Nrlueb4RjesASMSq3BTVMK5+6Mb4vx7y\\nLS3mYUc8TF+kBEEaw0H4Fwlu9wKBgQC10JcC0kbtCF/MmHwSq9w0PfgbHT3NoZH7\\nyOWeXPfRLybn+I4MMYW3y5KSL5RM3Gxtve2I/HjJPpprZSUJXfMgRLrVkFRV1iFp\\nA/v1vAxoMlYGk3Oh74rwmmMmU7hhPSNL5HxIDHdXVZb5jrOvqIIBcZ6n2qhaCVXH\\nmtjl3QbvAQKBgBxiUWyiV8bdF4+espLwZHeVH4UOezDTP5jBhRd4LnyzKfLDYGgX\\nnnnBpqLjUX7NV9tDVzZPo9wkne57HHXgd8KNhCHkEZB5zVq8/j8dm1gGy5VbHq/b\\n9aGNHa7fjcnxjuFrd3mS0TcX60bUNcNhrj2jTSUfokFNEpe/cN/PBbUtAoGAaSms\\nnyonciT83Gd6pIYZiXIqluxT+iOxP7SU9AOMJ8ehNl2zM+RVFtk9/yZcHhUE9nj7\\n8tctuiFmyiWnxYI9BXYbpzmjPj7r9kUisKFDf+VVktoo8QqQD9kM7ndQV5Y4W0Ze\\niIIFaVONTu22iyzpfZJNlYNJC0MJBbpQKKyuvQECgYEA2q4N8oL3VJwZAuyIVXOm\\ng9SH9dq4pRunQbXJpxaP2mklGNEbLV1YURVGA0oyQE5oh3/4s/LdMERUFkaYBBnl\\nyrcLRELtnjswAy3b2tEp4ULP/rx5MRY4qjNonUrzoXAs937zDIcyjO6/ekxE28sO\\nXk4daXQsjz4PY3lVvJcnKFA=\\n-----END PRIVATE KEY-----\\n\",\n  \"client_email\": \"vertex-express@gen-lang-client-0521438560.iam.gserviceaccount.com\",\n  \"client_id\": \"113579530477823292475\",\n  \"token_uri\": \"https://oauth2.googleapis.com/token\"\n};\n\nconst settings = $input.item.json;\n\n// ========== JWT GENERATION ==========\nfunction base64url(str) {\n  return Buffer.from(str).toString('base64')\n    .replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=/g, '');\n}\n\nfunction base64urlBuffer(buffer) {\n  return buffer.toString('base64')\n    .replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=/g, '');\n}\n\nconst now = Math.floor(Date.now() / 1000);\nconst header = { alg: 'RS256', typ: 'JWT' };\nconst payload = {\n  iss: serviceAccount.client_email,\n  sub: serviceAccount.client_email,\n  aud: serviceAccount.token_uri,\n  iat: now,\n  exp: now + 3600,\n  scope: 'https://www.googleapis.com/auth/cloud-platform'\n};\n\nconst headerB64 = base64url(JSON.stringify(header));\nconst payloadB64 = base64url(JSON.stringify(payload));\nconst signatureInput = `${headerB64}.${payloadB64}`;\n\n// Sign the JWT\nconst privateKey = serviceAccount.private_key;\nconst sign = crypto.createSign('RSA-SHA256');\nsign.update(signatureInput);\nconst signature = sign.sign(privateKey);\nconst signatureB64 = base64urlBuffer(signature);\nconst jwt = `${signatureInput}.${signatureB64}`;\n\n// ========== EXCHANGE JWT FOR ACCESS TOKEN ==========\nconst tokenResponse = await this.helpers.httpRequest({\n  method: 'POST',\n  url: serviceAccount.token_uri,\n  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },\n  body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`\n});\n\nif (!tokenResponse.access_token) {\n  throw new Error('Failed to get access token: ' + JSON.stringify(tokenResponse));\n}\n\nconsole.log('Access token generated successfully');\n\nreturn [{\n  json: {\n    ...settings,\n    ACCESS_TOKEN: tokenResponse.access_token\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1740, 300],
+      "id": "generate-token",
+      "name": "Generate Access Token"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://us-central1-aiplatform.googleapis.com/v1/projects/gen-lang-client-0521438560/locations/us-central1/publishers/google/models/veo-3.1-generate-001:generateVideos",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "httpHeaderAuth": {
-          "name": "Authorization",
-          "value": "=Bearer {{ $json.access_token }}"
+        "url": "=https://{{ $json.API_ENDPOINT }}/v1/projects/{{ $json.PROJECT_ID }}/locations/{{ $json.LOCATION }}/publishers/google/models/{{ $json.MODEL_VERSION }}:predictLongRunning",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.ACCESS_TOKEN }}"
+            }
+          ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"instances\": [{\n    \"prompt\": \"{{ $json.prompt.replace(/\"/g, '\\\\\"').replace(/\\n/g, ' ') }} VERTICAL 9:16 portrait video with MSI logo watermark in bottom right corner.\",\n    \"referenceImages\": [{\n      \"image\": {\n        \"bytesBase64Encoded\": \"{{ $json.logo_base64 }}\",\n        \"mimeType\": \"{{ $json.logo_mime_type }}\"\n      },\n      \"referenceType\": \"asset\"\n    }]\n  }],\n  \"parameters\": {\n    \"aspectRatio\": \"9:16\",\n    \"durationSeconds\": {{ parseInt($json.duration) || 8 }},\n    \"sampleCount\": 1,\n    \"generateAudio\": true,\n    \"resolution\": \"720p\"\n  }\n}",
+        "jsonBody": "={{ JSON.stringify({\n  instances: [{\n    prompt: $json.ANIMATION_PROMPT,\n    image: {\n      bytesBase64Encoded: $json.IMAGE_BASE64,\n      mimeType: $json.IMAGE_MIME_TYPE\n    }\n  }],\n  parameters: {\n    aspectRatio: $json.ASPECT_RATIO,\n    sampleCount: 1,\n    durationSeconds: $json.DURATION,\n    personGeneration: 'allow_all',\n    addWatermark: false,\n    includeRaiReason: true,\n    generateAudio: false\n  }\n}) }}",
         "options": {
-          "timeout": 300000,
-          "response": {
-            "response": {}
-          }
+          "timeout": 30000
         }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        1340,
-        300
-      ],
-      "id": "veo-generate-video",
-      "name": "Veo 3.1 Vertex AI (HTTP)"
+      "position": [1960, 300],
+      "id": "vertex-ai-veo3",
+      "name": "Vertex AI - VEO3"
     },
     {
       "parameters": {
-        "jsCode": "// Process Vertex AI Veo 3.1 HTTP response - handles both sync and async responses\nconst item = $input.item;\nconst response = item.json;\nconst preparedData = $('Prepare Video Request').item.json;\nconst mergedData = $('Merge with Logo').item.json;\n\nconsole.log('==== VERTEX AI VEO 3.1 RESPONSE ====');\nconsole.log('Response keys:', Object.keys(response));\nconsole.log('Response:', JSON.stringify(response, null, 2).substring(0, 2000));\n\nlet videoBase64 = '';\nlet mimeType = 'video/mp4';\nlet operationName = '';\n\ntry {\n  // Check for Long-Running Operation response from Vertex AI\n  // Format: { \"name\": \"projects/.../operations/...\" }\n  if (response.name && response.name.includes('/operations/')) {\n    operationName = response.name;\n    console.log('Got async operation from Vertex AI:', operationName);\n    // Return operation info for polling\n    return [{\n      json: {\n        is_async: true,\n        operation_name: operationName,\n        status: 'pending',\n        post_id: preparedData.post_id || mergedData.post_id,\n        prompt: preparedData.prompt || mergedData.prompt,\n        original_prompt: preparedData.original_prompt || mergedData.original_prompt,\n        message: 'Video generation started. Poll operation: ' + operationName\n      }\n    }];\n  }\n  \n  // Check for completed operation with response.videos (Vertex AI format)\n  if (response.response && response.response.videos) {\n    const video = response.response.videos[0];\n    if (video.bytesBase64Encoded) {\n      videoBase64 = video.bytesBase64Encoded;\n      mimeType = video.mimeType || 'video/mp4';\n      console.log('Found video in response.response.videos');\n    } else if (video.gcsUri) {\n      console.log('Video stored in GCS:', video.gcsUri);\n      // Would need to download from GCS\n    }\n  }\n  \n  // Check for predictions array (alternative Vertex format)\n  if (!videoBase64 && response.predictions && response.predictions.length > 0) {\n    const prediction = response.predictions[0];\n    if (prediction.video) {\n      videoBase64 = prediction.video.bytesBase64Encoded || prediction.video;\n      mimeType = prediction.video.mimeType || 'video/mp4';\n      console.log('Found video in predictions');\n    } else if (prediction.bytesBase64Encoded) {\n      videoBase64 = prediction.bytesBase64Encoded;\n    }\n  }\n  \n  // Check for generatedSamples\n  if (!videoBase64 && response.generatedSamples && response.generatedSamples.length > 0) {\n    const sample = response.generatedSamples[0];\n    videoBase64 = sample.video?.bytesBase64Encoded || sample.bytesBase64Encoded || '';\n    mimeType = sample.video?.mimeType || sample.mimeType || 'video/mp4';\n  }\n  \n  // Check for direct video field\n  if (!videoBase64 && response.video) {\n    videoBase64 = response.video.bytesBase64Encoded || response.video.data || response.video;\n    mimeType = response.video.mimeType || 'video/mp4';\n  }\n  \n  // Check done=true with response object (polled result)\n  if (response.done === true && response.response) {\n    const videos = response.response.videos || [];\n    if (videos.length > 0 && videos[0].bytesBase64Encoded) {\n      videoBase64 = videos[0].bytesBase64Encoded;\n      mimeType = videos[0].mimeType || 'video/mp4';\n    }\n  }\n  \n} catch (e) {\n  console.error('Error parsing Vertex AI Veo response:', e.message);\n  throw e;\n}\n\nconsole.log('Has video base64:', !!videoBase64, videoBase64 ? `(${videoBase64.length} chars)` : '');\n\nif (!videoBase64) {\n  console.log('Full response:', JSON.stringify(response, null, 2));\n  throw new Error('No video data found. Response: ' + JSON.stringify(response).substring(0, 500));\n}\n\nconst videoDataUrl = `data:${mimeType};base64,${videoBase64}`;\n\nreturn [{\n  json: {\n    video_base64: videoBase64,\n    video_data_url: videoDataUrl,\n    mime_type: mimeType,\n    has_video: true,\n    is_async: false,\n    post_id: preparedData.post_id || mergedData.post_id,\n    prompt: preparedData.prompt || mergedData.prompt,\n    original_prompt: preparedData.original_prompt || mergedData.original_prompt\n  }\n}];"
+        "amount": 2,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [2180, 300],
+      "id": "wait-for-video",
+      "name": "Wait 2 Minutes",
+      "webhookId": "veo3-wait"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $('Generate Access Token').item.json.API_ENDPOINT }}/v1/projects/{{ $('Generate Access Token').item.json.PROJECT_ID }}/locations/{{ $('Generate Access Token').item.json.LOCATION }}/publishers/google/models/{{ $('Generate Access Token').item.json.MODEL_VERSION }}:fetchPredictOperation",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Generate Access Token').item.json.ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"operationName\": \"{{ $('Vertex AI - VEO3').item.json.name }}\"\n}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2400, 300],
+      "id": "vertex-ai-fetch",
+      "name": "Vertex AI - Fetch Result"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process Vertex AI response\nconst response = $input.item.json;\nconst settings = $('Generate Access Token').item.json;\n\nconsole.log('==== PROCESS VEO3 RESPONSE ====');\nconsole.log('Response keys:', Object.keys(response));\n\n// Check if operation is still running\nif (response.done === false) {\n  return [{\n    json: {\n      is_async: true,\n      operation_name: $('Vertex AI - VEO3').item.json.name,\n      status: 'still_processing',\n      post_id: settings.POST_ID,\n      prompt: settings.TEXT_PROMPT,\n      original_prompt: settings.ORIGINAL_PROMPT,\n      message: 'Video still processing. Try fetching again later.'\n    }\n  }];\n}\n\nlet videoBase64 = '';\nlet mimeType = 'video/mp4';\n\n// Try different response formats from Veo 3.0\nif (response.response?.videos?.[0]?.bytesBase64Encoded) {\n  videoBase64 = response.response.videos[0].bytesBase64Encoded;\n  mimeType = response.response.videos[0].mimeType || 'video/mp4';\n} else if (response.response?.generatedSamples?.[0]?.video?.bytesBase64Encoded) {\n  videoBase64 = response.response.generatedSamples[0].video.bytesBase64Encoded;\n} else if (response.predictions?.[0]?.bytesBase64Encoded) {\n  videoBase64 = response.predictions[0].bytesBase64Encoded;\n} else if (response.generatedSamples?.[0]?.video?.bytesBase64Encoded) {\n  videoBase64 = response.generatedSamples[0].video.bytesBase64Encoded;\n}\n\nif (!videoBase64) {\n  console.log('Full response:', JSON.stringify(response));\n  throw new Error('No video data found. Response: ' + JSON.stringify(response).substring(0, 1000));\n}\n\nconsole.log('Video extracted successfully, size:', videoBase64.length);\nconsole.log('==== END PROCESS ====');\n\nreturn [{\n  json: {\n    video_base64: videoBase64,\n    video_data_url: `data:${mimeType};base64,${videoBase64}`,\n    mime_type: mimeType,\n    has_video: true,\n    is_async: false,\n    post_id: settings.POST_ID,\n    prompt: settings.TEXT_PROMPT,\n    original_prompt: settings.ORIGINAL_PROMPT\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1560,
-        300
-      ],
+      "position": [2620, 300],
       "id": "process-video-response",
       "name": "Process Video Response"
     },
     {
       "parameters": {
-        "jsCode": "// Convert base64 video to binary for YouTube upload\nconst videoBase64 = $json.video_base64;\nconst prompt = $json.prompt || 'MSI Content';\nconst postId = $json.post_id;\nconst mimeType = $json.mime_type || 'video/mp4';\n\nif (!videoBase64) {\n  throw new Error('No video base64 data available for YouTube upload');\n}\n\n// Convert base64 to binary buffer\nconst binaryData = Buffer.from(videoBase64, 'base64');\n\n// Generate title (truncate if too long, YouTube max is 100 chars)\nlet title = prompt.substring(0, 97);\nif (prompt.length > 97) title += '...';\n\n// Generate a filename\nconst fileName = `msi_video_${Date.now()}.mp4`;\n\nconsole.log('Preparing YouTube upload:', {\n  title,\n  dataSize: binaryData.length,\n  postId,\n  fileName\n});\n\n// Return with proper binary format for n8n YouTube node\nreturn {\n  json: {\n    title,\n    description: `Generated with AI\\n\\nPrompt: ${prompt}\\n\\nPost ID: ${postId || 'N/A'}`,\n    post_id: postId,\n    original_prompt: prompt\n  },\n  binary: {\n    data: {\n      data: binaryData.toString('base64'),\n      mimeType: mimeType,\n      fileName: fileName\n    }\n  }\n};"
+        "jsCode": "// Convert base64 video to binary for YouTube upload\nconst videoBase64 = $json.video_base64;\nconst prompt = $json.animation_prompt || 'MSI Animated Content';\nconst postId = $json.post_id;\nconst mimeType = $json.mime_type || 'video/mp4';\n\nif (!videoBase64) {\n  throw new Error('No video base64 data available');\n}\n\nconst binaryData = Buffer.from(videoBase64, 'base64');\nlet title = prompt.substring(0, 97);\nif (prompt.length > 97) title += '...';\nconst fileName = `msi_video_${Date.now()}.mp4`;\n\nreturn {\n  json: {\n    title,\n    description: `Animated with Vertex AI Veo 3.1 by MSI Technologies\\n\\nAnimation: ${prompt}\\n\\nPost ID: ${postId || 'N/A'}`,\n    post_id: postId,\n    original_prompt: prompt\n  },\n  binary: {\n    data: {\n      data: binaryData.toString('base64'),\n      mimeType: mimeType,\n      fileName: fileName\n    }\n  }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1780,
-        300
-      ],
+      "position": [2840, 300],
       "id": "prepare-youtube-upload",
       "name": "Prepare YouTube Upload"
     },
@@ -184,15 +278,12 @@
         "options": {
           "description": "={{ $json.description }}",
           "privacyStatus": "unlisted",
-          "tags": "ai,content,msi"
+          "tags": "ai,content,msi,technology"
         }
       },
       "type": "n8n-nodes-base.youTube",
       "typeVersion": 1,
-      "position": [
-        2000,
-        300
-      ],
+      "position": [3060, 300],
       "id": "upload-to-youtube",
       "name": "Upload to YouTube",
       "credentials": {
@@ -204,29 +295,23 @@
     },
     {
       "parameters": {
-        "jsCode": "// Extract YouTube URL from response\nconst response = $input.item.json;\nconst preparedData = $('Prepare YouTube Upload').item.json;\n\nconsole.log('==== YOUTUBE UPLOAD RESPONSE ====');\nconsole.log('Response keys:', Object.keys(response));\n\n// YouTube response structure: { id: 'video_id', uploadId: 'video_id', snippet: { ... }, status: { ... } }\nconst videoId = response.id || response.uploadId;\nconst youtubeUrl = `https://youtu.be/${videoId}`;\n\nconsole.log('YouTube URL:', youtubeUrl);\nconsole.log('Video ID:', videoId);\n\nreturn [{\n  json: {\n    youtube_url: youtubeUrl,\n    youtube_video_id: videoId,\n    post_id: preparedData.post_id,\n    title: preparedData.title,\n    prompt: preparedData.original_prompt\n  }\n}];"
+        "jsCode": "const response = $input.item.json;\nconst preparedData = $('Prepare YouTube Upload').item.json;\n\nconst videoId = response.id || response.uploadId;\nconst youtubeUrl = `https://youtu.be/${videoId}`;\n\nreturn [{\n  json: {\n    youtube_url: youtubeUrl,\n    youtube_video_id: videoId,\n    post_id: preparedData.post_id,\n    title: preparedData.title,\n    animation_prompt: preparedData.original_prompt\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        2220,
-        300
-      ],
+      "position": [3280, 300],
       "id": "extract-youtube-url",
       "name": "Extract YouTube URL"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=-- Only update if post_id exists and is a valid UUID\n{{ $json.post_id && $json.post_id.length > 10 ? `UPDATE social_posts SET youtube_url = '${$json.youtube_url}', status = 'video_completed', updated_at = NOW() WHERE id = '${$json.post_id}' RETURNING *` : `SELECT '${$json.youtube_url}' as youtube_url, 'no_post_id' as status` }}",
+        "query": "={{ $json.post_id && $json.post_id.length > 10 ? `UPDATE social_posts SET youtube_url = '${$json.youtube_url}', status = 'animated_completed', updated_at = NOW() WHERE id = '${$json.post_id}' RETURNING *` : `SELECT '${$json.youtube_url}' as youtube_url, 'no_post_id' as status` }}",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [
-        2440,
-        300
-      ],
+      "position": [3500, 300],
       "id": "update-db-youtube",
       "name": "Update DB with YouTube",
       "credentials": {
@@ -239,162 +324,67 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, message: 'Video uploaded to YouTube successfully', data: { youtube_url: $json.youtube_url, youtube_video_id: $json.youtube_video_id || $json.youtube_url?.split('v=')[1], post_id: $json.id || $json.post_id, prompt: $json.prompt } }) }}",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Animated video uploaded to YouTube successfully', data: { youtube_url: $json.youtube_url, youtube_video_id: $json.youtube_video_id, post_id: $json.post_id, animation_prompt: $json.animation_prompt } }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        2660,
-        300
-      ],
+      "position": [3720, 300],
       "id": "respond-video-success",
       "name": "Respond Success"
     }
   ],
   "connections": {
     "Webhook - Video Gen": {
-      "main": [
-        [
-          {
-            "node": "Format Video Input",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Format Video Input", "type": "main", "index": 0}]]
     },
     "Format Video Input": {
-      "main": [
-        [
-          {
-            "node": "Agent: Video Prompt Optimizer",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Agent: Video Prompt Optimizer", "type": "main", "index": 0}]]
     },
     "Agent: Video Prompt Optimizer": {
-      "main": [
-        [
-          {
-            "node": "Prepare Video Request",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Settings", "type": "main", "index": 0}]]
     },
-    "OpenAI for Video Prompt": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Agent: Video Prompt Optimizer",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [[{"node": "Agent: Video Prompt Optimizer", "type": "ai_languageModel", "index": 0}]]
     },
-    "Prepare Video Request": {
-      "main": [
-        [
-          {
-            "node": "Download MSI Logo",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Settings": {
+      "main": [[{"node": "Download Base Image", "type": "main", "index": 0}]]
     },
-    "Download MSI Logo": {
-      "main": [
-        [
-          {
-            "node": "Merge with Logo",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Download Base Image": {
+      "main": [[{"node": "Image to Base64", "type": "main", "index": 0}]]
     },
-    "Merge with Logo": {
-      "main": [
-        [
-          {
-            "node": "Veo 3.1 Vertex AI (HTTP)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Image to Base64": {
+      "main": [[{"node": "Merge Settings with Image", "type": "main", "index": 0}]]
     },
-    "Veo 3.1 Vertex AI (HTTP)": {
-      "main": [
-        [
-          {
-            "node": "Process Video Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Merge Settings with Image": {
+      "main": [[{"node": "Generate Access Token", "type": "main", "index": 0}]]
+    },
+    "Generate Access Token": {
+      "main": [[{"node": "Vertex AI - VEO3", "type": "main", "index": 0}]]
+    },
+    "Vertex AI - VEO3": {
+      "main": [[{"node": "Wait 2 Minutes", "type": "main", "index": 0}]]
+    },
+    "Wait 2 Minutes": {
+      "main": [[{"node": "Vertex AI - Fetch Result", "type": "main", "index": 0}]]
+    },
+    "Vertex AI - Fetch Result": {
+      "main": [[{"node": "Process Video Response", "type": "main", "index": 0}]]
     },
     "Process Video Response": {
-      "main": [
-        [
-          {
-            "node": "Prepare YouTube Upload",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Prepare YouTube Upload", "type": "main", "index": 0}]]
     },
     "Prepare YouTube Upload": {
-      "main": [
-        [
-          {
-            "node": "Upload to YouTube",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Upload to YouTube", "type": "main", "index": 0}]]
     },
     "Upload to YouTube": {
-      "main": [
-        [
-          {
-            "node": "Extract YouTube URL",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Extract YouTube URL", "type": "main", "index": 0}]]
     },
     "Extract YouTube URL": {
-      "main": [
-        [
-          {
-            "node": "Update DB with YouTube",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Update DB with YouTube", "type": "main", "index": 0}]]
     },
     "Update DB with YouTube": {
-      "main": [
-        [
-          {
-            "node": "Respond Success",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Respond Success", "type": "main", "index": 0}]]
     }
   },
   "pinData": {},

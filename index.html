@@ -369,69 +369,51 @@
         <!-- Video Generation Mode -->
         <div id="video-mode" class="mode-content">
             <div class="card form-card">
-                <h2>Generate Video with AI (Veo 3)</h2>
+                <h2>Animate Social Media Images (Veo 3.1)</h2>
+                <p style="color: #718096; margin-bottom: 24px;">Transform your social media images into animated videos with cinematic camera movements. Perfect for Instagram, TikTok, LinkedIn.</p>
+                
                 <form id="video-form">
                     <div class="form-group">
-                        <label for="video_prompt">Video Description *</label>
-                        <textarea id="video_prompt" name="prompt" rows="4" required placeholder="Describe the video you want to create...&#10;&#10;Examples:&#10;- A futuristic data center with glowing blue servers and smooth camera movement&#10;- Abstract technology particles flowing through a neural network&#10;- Professional business meeting in a modern glass office"></textarea>
-                        <small class="form-hint">Be specific about the scene, movement, lighting, and mood you want.</small>
+                        <label for="video_reference_image">Base Image URL * <span style="color: #e53e3e;">REQUIRED</span></label>
+                        <input type="url" id="video_reference_image" name="base_image_url" required placeholder="https://i.ibb.co/your-image.png">
+                        <small class="form-hint">⚠️ Your image must already have all text, logos, and design complete. We only add animation.</small>
+                    </div>
+
+                    <div class="form-group" id="video-reference-preview-container" style="display: none;">
+                        <label>Image Preview</label>
+                        <div id="video-reference-preview" class="edit-image-preview">
+                            <img id="video-reference-img" src="" alt="Image preview" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="video_prompt">Animation Style (Optional)</label>
+                        <textarea id="video_prompt" name="prompt" rows="3" placeholder="Leave empty for automatic animation, or describe movement...&#10;&#10;Examples:&#10;- Slow camera push-in with parallax depth&#10;- Gentle left-to-right pan with floating particles&#10;- Subtle zoom with bokeh background blur"></textarea>
+                        <small class="form-hint">If empty, we'll apply a professional camera push-in with subtle effects.</small>
                     </div>
 
                     <div class="form-row">
-                        <div class="form-group">
-                            <label for="video_style">Video Style *</label>
-                            <select id="video_style" name="style" required>
-                                <option value="cinematic" selected>Cinematic</option>
-                                <option value="professional">Professional/Corporate</option>
-                                <option value="dynamic">Dynamic/Energetic</option>
-                                <option value="minimal">Minimal/Clean</option>
-                                <option value="artistic">Artistic/Creative</option>
-                            </select>
-                        </div>
-
                         <div class="form-group">
                             <label for="video_duration">Duration</label>
                             <select id="video_duration" name="duration">
-                                <option value="5s" selected>5 seconds</option>
-                                <option value="8s">8 seconds</option>
-                                <option value="10s">10 seconds</option>
-                                <option value="15s">15 seconds</option>
+                                <option value="5">5 seconds</option>
+                                <option value="8" selected>8 seconds</option>
+                                <option value="10">10 seconds</option>
                             </select>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="video_topic">Topic (Optional)</label>
-                            <input type="text" id="video_topic" name="topic" placeholder="e.g., Cloud Computing, AI, Networking">
                         </div>
 
                         <div class="form-group">
                             <label>Aspect Ratio</label>
                             <input type="text" value="9:16 (Vertical)" disabled style="background: #f5f7fa; cursor: not-allowed;">
-                            <small class="form-hint">Videos are optimized for vertical format (TikTok, Reels, Stories)</small>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="video_reference_image">Reference Image URL (Optional)</label>
-                        <input type="url" id="video_reference_image" name="reference_image_url" placeholder="https://i.ibb.co/...">
-                        <small class="form-hint">Provide an image URL to create an image-to-video animation. Leave empty for text-to-video.</small>
-                    </div>
-
-                    <div class="form-group" id="video-reference-preview-container" style="display: none;">
-                        <label>Reference Image Preview</label>
-                        <div id="video-reference-preview" class="edit-image-preview">
-                            <img id="video-reference-img" src="" alt="Reference preview" style="max-width: 100%; border-radius: 8px;">
+                            <small class="form-hint">Optimized for social media stories</small>
                         </div>
                     </div>
 
                     <button type="submit" class="btn btn-primary btn-video">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polygon points="23 7 16 12 23 17 23 7"></polygon>
-                            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
                         </svg>
-                        Generate Video
+                        Animate Image
                     </button>
                 </form>
             </div>
@@ -440,14 +422,14 @@
             <div id="video-results" class="generated-results" style="display: none;">
                 <div class="card">
                     <h2>Generated Video</h2>
+                    <divAnimated Video Ready! 🎬</h2>
                     <div class="result-section">
                         <div id="video-player" class="video-player">
-                            <video id="generated-video" controls style="width: 100%; max-height: 500px; border-radius: 8px;">
+                            <video id="generated-video" controls autoplay loop style="width: 100%; max-height: 600px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
                                 Your browser does not support the video tag.
                             </video>
                         </div>
-                        <div id="video-prompt-used" class="video-prompt-used" style="margin-top: 16px;"></div>
-                    </div>
+                        <div id="video-prompt-used" class="video-prompt-used" style="margin-top: 16px; padding: 16px; background: #f7fafc; border-radius: 8px; border-left: 4px solid #207CE5
                     <div class="result-actions">
                         <a id="download-video" href="#" download="generated-video.mp4" class="btn btn-primary">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

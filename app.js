@@ -1760,34 +1760,34 @@ if (videoForm) {
         
         const formData = new FormData(e.target);
         
-        const data = {
-            prompt: formData.get('prompt'),
-            style: formData.get('style'),
-            duration: formData.get('duration'),
-            topic: formData.get('topic') || '',
-            reference_image_url: formData.get('reference_image_url') || null
-            // aspect_ratio is fixed to 9:16 in workflow
-        };
+        const base_image_url = formData.get('base_image_url');
         
-        if (!data.prompt) {
-            showToast('Please enter a video description', 'error');
+        if (!base_image_url) {
+            showToast('Please provide a base image URL', 'error');
             return;
         }
+        
+        const data = {
+            base_image_url: base_image_url,
+            prompt: formData.get('prompt') || 'Subtle camera movement and depth',
+            duration: formData.get('duration') || '8',
+            aspect_ratio: '9:16'
+        };
         
         const btn = e.target.querySelector('button[type="submit"]');
         const originalText = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span> Generating...';
+        btn.innerHTML = '<span class="spinner"></span> Animating...';
         
         // Show progress
         showProgressAlert(
-            'Generating Video',
-            'Creating your video with Veo 3 AI...',
-            'Initializing video generation...'
+            'Animating Image',
+            'Adding cinematic movement to your image with Veo 3.1...',
+            'Downloading base image...'
         );
         
         try {
-            updateProgress(10, 'Sending request to Veo 3...');
+            updateProgress(10, 'Sending request to Veo 3.1...');
             
             const response = await fetch(n8nVideoWebhook, {
                 method: 'POST',
@@ -1797,7 +1797,7 @@ if (videoForm) {
                 body: JSON.stringify(data)
             });
             
-            updateProgress(30, 'Processing prompt...');
+            updateProgress(30, 'Processing animation prompt...');
             
             // Video generation takes time - poll or wait for response
             let result;
@@ -1805,23 +1805,24 @@ if (videoForm) {
                 result = await response.json();
             } catch (parseError) {
                 // If response is not JSON, assume it's processing
-                updateProgress(50, 'Video is being generated (this may take a few minutes)...');
+                updateProgress(50, 'Animation in progress (this takes ~2 minutes)...');
                 
                 // Wait and show progress updates
-                for (let i = 0; i < 12; i++) {
+                for (let i = 0; i < 24; i++) {
                     await new Promise(resolve => setTimeout(resolve, 5000));
-                    updateProgress(50 + (i * 4), `Still generating... (${(i + 1) * 5}s elapsed)`);
+                    const elapsed = (i + 1) * 5;
+                    updateProgress(50 + (i * 2), `Animating... (${elapsed}s elapsed)`);
                 }
                 
                 hideProgressAlert();
-                showToast('Video generation submitted. It may take a few minutes to complete.', 'warning');
+                showToast('Animation submitted. Check back in a few minutes.', 'warning');
                 btn.disabled = false;
                 btn.innerHTML = originalText;
                 return;
             }
             
             if (result.success && result.data?.youtube_url) {
-                updateProgress(100, 'Video uploaded to YouTube!');
+                updateProgress(100, 'Animated video uploaded to YouTube!');
                 
                 setTimeout(() => {
                     hideProgressAlert();
@@ -1834,16 +1835,16 @@ if (videoForm) {
                     
                     if (videoPlayerContainer) {
                         // Replace video player with YouTube iframe
-                        const youtubeId = result.data.youtube_video_id || result.data.youtube_url.split('v=')[1]?.split('&')[0];
+                        const youtubeId = result.data.youtube_video_id || result.data.youtube_url.split('youtu.be/')[1]?.split('?')[0] || result.data.youtube_url.split('v=')[1]?.split('&')[0];
                         videoPlayerContainer.innerHTML = `
                             <iframe 
                                 width="100%" 
                                 height="500" 
-                                src="https://www.youtube.com/embed/${youtubeId}" 
+                                src="https://www.youtube.com/embed/${youtubeId}?autoplay=1&loop=1&playlist=${youtubeId}" 
                                 frameborder="0" 
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                                 allowfullscreen
-                                style="border-radius: 8px;">
+                                style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
                             </iframe>
                         `;
                     }
@@ -1863,8 +1864,15 @@ if (videoForm) {
                         downloadLink.removeAttribute('download');
                     }
                     
-                    if (promptUsed && result.data.prompt) {
-                        promptUsed.innerHTML = `<strong>Optimized Prompt:</strong> ${result.data.prompt}`;
+                    if (promptUsed && result.data.animation_prompt) {
+                        promptUsed.innerHTML = `
+                            <div style="margin-bottom: 8px;">
+                                <strong style="color: #207CE5;">🎬 Animation Applied:</strong>
+                            </div>
+                            <div style="color: #4a5568; font-size: 14px; line-height: 1.6;">
+                                ${result.data.animation_prompt}
+                            </div>
+                        `;
                     }
                     
                     if (videoResults) {
@@ -1872,17 +1880,17 @@ if (videoForm) {
                         videoResults.scrollIntoView({ behavior: 'smooth' });
                     }
                     
-                    showSuccessAlert('Video Uploaded!', 'Your AI video has been uploaded to YouTube successfully.');
+                    showSuccessAlert('Animation Complete! 🎉', 'Your animated video has been uploaded to YouTube successfully.');
                 }, 500);
             } else {
                 hideProgressAlert();
-                showToast(result.message || 'Video generation failed', 'error');
+                showToast(result.message || 'Animation failed', 'error');
             }
             
         } catch (error) {
-            console.error('Video generation error:', error);
+            console.error('Animation error:', error);
             hideProgressAlert();
-            showToast('Error generating video: ' + error.message, 'error');
+            showToast('Error animating image: ' + error.message, 'error');
         } finally {
             btn.disabled = false;
             btn.innerHTML = originalText;

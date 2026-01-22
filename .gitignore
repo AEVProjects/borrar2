@@ -7,6 +7,9 @@ node_modules/
 # Configuración con valores reales (NO subir a Git)
 config.js
 
+# Workflows con credenciales embebidas (NO subir a Git)
+video-gen.json
+
 # Nota: .env NO se usa en esta app porque es frontend puro
 # Si alguien crea un .env por error, también ignorarlo:
 .env
