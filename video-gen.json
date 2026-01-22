@@ -1,5 +1,5 @@
 {
-  "name": "MSI Image Animation - Veo 3.1",
+  "name": "MSI Video Generation - Veo 3.0",
   "nodes": [
     {
       "parameters": {
@@ -17,7 +17,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Extract data for image animation\nconst input = $input.item.json;\n\nlet data;\nif (input.body) {\n  if (typeof input.body === 'string') {\n    try { data = JSON.parse(input.body); } catch (e) { data = input; }\n  } else if (typeof input.body === 'object') {\n    data = input.body;\n  } else { data = input; }\n} else if (input.query) {\n  data = input.query;\n} else {\n  data = input;\n}\n\nconst base_image_url = data.base_image_url || data.image_url || '';\nconst prompt = data.prompt || data.animation_prompt || 'Minimal motion: subtle parallax depth only, no zoom, people frozen';\nconst duration = data.duration || '8';\nconst aspect_ratio = data.aspect_ratio || '9:16';\nconst post_id = data.post_id || null;\n\nif (!base_image_url) {\n  throw new Error('IMAGE ANIMATION ERROR: base_image_url is required.');\n}\n\nreturn [{ json: { base_image_url, prompt, duration, aspect_ratio, post_id } }];"
+        "jsCode": "// Extract data from web form for video generation\nconst input = $input.item.json;\n\nlet data;\nif (input.body) {\n  if (typeof input.body === 'string') {\n    try { data = JSON.parse(input.body); } catch (e) { data = input; }\n  } else if (typeof input.body === 'object') {\n    data = input.body;\n  } else { data = input; }\n} else if (input.query) {\n  data = input.query;\n} else {\n  data = input;\n}\n\nconst prompt = data.prompt || data.video_prompt || '';\nconst duration = data.duration || '8';\nconst aspect_ratio = data.aspect_ratio || '9:16';\nconst style = data.style || 'cinematic';\nconst post_id = data.post_id || null;\nconst topic = data.topic || '';\n\nif (!prompt) {\n  throw new Error('VIDEO GEN ERROR: prompt is required.');\n}\n\nreturn [{ json: { prompt, duration, aspect_ratio, style, post_id, topic } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -28,9 +28,9 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=Create an ANIMATION-ONLY prompt for Veo 3.1 image-to-video:\n\nUser Request: {{ $json.prompt }}\nDuration: {{ $json.duration }} seconds\n\n**CRITICAL:** The image already has all content (logo, text, design). DO NOT modify, add, or remove anything.\nONLY describe camera movements and subtle effects.\n\nGenerate a movement-focused prompt that PRESERVES the existing image.",
+        "text": "=Create a professional, REALISTIC video prompt for Veo 3.1:\n\nUser Prompt: {{ $json.prompt }}\nStyle: {{ $json.style }}\nDuration: {{ $json.duration }} seconds (STRICT - must be complete, no cuts)\nAspect Ratio: {{ $json.aspect_ratio }}\nTopic: {{ $json.topic || 'Technology/Business' }}\n\nMSI Brand Colors:\n- Primary: #207CE5 (blue)\n- Secondary: #004AAD (dark blue)  \n- Accent: #FFFDF1 (cream/white)\n- Dark: #2B2B2B\n\nGenerate a detailed video prompt with TEXT ON SCREEN and COMPLETE corporate scenes.",
         "options": {
-          "systemMessage": "# ROLE: Subtle Animation Director for Veo 3.1 - MSI Social Media\n\nReturn ONLY the animation prompt. The input image is a STATIC social media post design.\n\n## CRITICAL RULES - READ CAREFULLY\n1. **KEEP PEOPLE COMPLETELY STILL** - If there are people/faces in the image, they MUST remain frozen (static photos, not moving)\n2. **NO ZOOM** - Camera stays at fixed distance, no zooming in or out\n3. **MINIMAL MOVEMENT** - Only subtle parallax depth and atmospheric effects\n4. **NO TEXT ANIMATION** - Text is part of the image, it stays exactly as-is\n5. **NO FACE/BODY ANIMATION** - People in images are frozen in time\n\n## WHAT GOES WRONG (AVOID THESE)\n❌ \"Animate the person\" → Creates uncanny valley effects\n❌ \"Zoom in\" → Too aggressive, distracting\n❌ \"Pan across\" → Can distort people/text\n❌ \"Person gestures/smiles\" → Looks unnatural in still photos\n❌ \"Text appears/transitions\" → Text is already in image, can't animate it\n\n## WHAT WORKS WELL (USE THESE)\n✅ Subtle parallax depth (background moves slightly slower than foreground)\n✅ Floating particles/dust in air (very subtle)\n✅ Gentle light bloom/glow effects\n✅ Minimal depth of field shifts\n✅ Atmospheric haze/mist movement\n\n## YOUR ONLY JOB\nAdd MINIMAL motion that makes the image feel \"alive\" without moving people, text, or logos.\n\n## ANIMATION APPROACH FOR SOCIAL MEDIA POSTS\n\n**If image has PEOPLE:**\n'Subtle 2.5D parallax with background elements slightly drifting. Soft atmospheric particles floating in space. People and faces remain completely still. All text preserved exactly. 8 seconds smooth.'\n\n**If image is GRAPHICS/ABSTRACT:**\n'Gentle parallax depth effect with background layers moving slower. Soft floating particles. Subtle light bloom. No zoom. All text and elements preserved exactly. 8 seconds continuous.'\n\n**If image has TECHNOLOGY/PRODUCTS:**\n'Minimal parallax creating depth. Background elements drift very slightly. Soft bokeh particles. Products and text remain sharp and still. 8 seconds professional.'\n\n**MINIMAL MOTION (ALWAYS USE THIS APPROACH):**\n- Camera: LOCKED (no zoom, no pan, no movement)\n- People: FROZEN (100% static if present)\n- Text: UNCHANGED (part of the image)\n- Background: Very slight drift (parallax depth only)\n- Effects: Subtle particles, soft glow, minimal bloom\n\n## CORRECT PROMPT STRUCTURE\n\"Subtle 2.5D parallax effect with [describe background type] drifting slightly. [Atmospheric effect like particles/glow]. All people, faces, text, and logos remain completely still and unchanged. 8 seconds smooth and minimal.\"\n\n## EXAMPLES OF CORRECT PROMPTS\n\n**With person in image:**\n'Subtle 2.5D parallax with background drifting very slightly. Soft floating dust particles in air. Person's face and body remain completely frozen. All text unchanged. 8 seconds minimal motion.'\n\n**With graphics/text:**\n'Minimal parallax depth, background layers drift gently. Soft atmospheric glow. No zoom or camera movement. All text and graphics stay exact. 8 seconds smooth.'\n\n**With product/technology:**\n'Subtle parallax creating depth, background slightly slower. Gentle bokeh particles. Product and text completely still. 8 seconds professional and minimal.'\n\n## KEY REQUIREMENTS\n- NO camera zoom (stay locked)\n- NO person animation (faces/bodies frozen)\n- NO text transitions (text is in image already)\n- ONLY subtle background parallax + atmospheric effects\n- Duration: always 8 seconds\n- Motion level: MINIMAL (10-20% movement, not 100%)\n\n## OUTPUT FORMAT\nReturn ONLY the animation prompt in plain text. No explanations, no formatting.\n\nExample:\n'Subtle 2.5D parallax effect with background elements drifting slightly. Soft atmospheric particles floating. All people, text, and logos remain completely frozen and unchanged. 8 seconds smooth and minimal.'"
+          "systemMessage": "# ROLE: Professional Video Prompt Engineer for Veo 3.1 - MSI Technologies\n\nReturn ONLY the optimized video prompt. Create REALISTIC, professional videos with TEXT ON SCREEN.\n\n## CRITICAL REQUIREMENTS\n1. Duration: EXACTLY 8 seconds - complete scene, NO CUTS, continuous shot\n2. TEXT ON SCREEN: Include animated text/titles related to the topic (MANDATORY)\n3. Natural, realistic aesthetic - avoid overly polished/synthetic look\n4. Smooth, subtle camera movements\n5. COMPLETE corporate environment with CONTEXT, not just logo on background\n\n## TEXT ON SCREEN (MANDATORY)\n- Include animated text/titles that appear during the video\n- Text should be relevant to the topic/message\n- Examples: key statistics, headlines, benefits, call-to-actions\n- Typography: modern, clean, sans-serif, professional\n- Animation: smooth fade-in, slide-in, or scale\n- Use MSI brand colors (#207CE5 blue for text, #FFFDF1 for backgrounds)\n- Position: usually center or lower-third\n\n## SCENE CREATION (NO EMPTY BACKGROUNDS)\nCreate a COMPLETE SCENE with environment, NOT just logo on solid background:\n\n**GOOD EXAMPLES:**\n- Modern office with glass walls, MSI logo visible, computers, text overlay: 'Cloud Solutions'\n- Tech presentation room, screen showing data, MSI branding on wall, text: '99.9% Uptime'\n- Professional data center with servers, blue lighting, MSI logo on equipment, text: 'Enterprise Ready'\n- Corporate lobby with reception desk, MSI signage, plants, text appears: 'Trusted Partner'\n- Conference room with people (optional), MSI logo on screen, animated text: 'Digital Transformation'\n\n**BAD EXAMPLES (AVOID):**\n- Just MSI logo on blue gradient background\n- Logo floating on empty space\n- Generic abstract background with only logo\n- Solid color with just branding\n\n## REALISTIC CORPORATE ENVIRONMENTS\n**Create FULL scenes with:**\n- Office spaces: desks, computers, monitors, chairs, windows\n- Meeting rooms: table, chairs, screens, whiteboards, MSI branding\n- Data centers: server racks, cables, blue lighting, equipment\n- Tech labs: devices, workstations, tools, branded elements\n- Lobbies: reception desk, seating, plants, wall signage\n- Workspaces: laptops with MSI logo, coffee cups, notepads, realistic details\n\n**Visual richness:**\n- Multiple elements in frame (3-5 objects minimum)\n- Depth and perspective (foreground, midground, background)\n- Natural lighting and shadows (soft, directional)\n- Real textures: wood, metal, glass, fabric, concrete\n- Ambient details: plants, books, devices, cables\n- Professional color grading using MSI palette\n\n## 8-SECOND ANIMATION STRUCTURE\n**Timeline breakdown:**\n- 0-2s: Establishing shot of full environment (wide)\n- 2-4s: Smooth camera movement (push-in or pan)\n- 4-6s: Text animates on screen with key message\n- 6-8s: Final shot with logo visible in scene and text visible\n\n**Camera movements:**\n- Gentle push-in (zoom in slowly)\n- Slow pan across scene (left to right or right to left)\n- Smooth tracking along elements\n- Subtle crane up or down\n- Rack focus (foreground to background)\n\n**Text animation examples:**\n- Fade in from transparency to solid\n- Slide from bottom or side\n- Scale up from small to readable\n- Letter-by-letter appearance\n- Always smooth (0.5-1 second animation)\n\n## MSI BRAND COLORS INTEGRATION\n- Primary #207CE5 (blue): text color, accent lighting, screens\n- Secondary #004AAD (dark blue): backgrounds, shadows, depth\n- Accent #FFFDF1 (cream): text backgrounds, highlights, contrast\n- Dark #2B2B2B: typography, contrast elements\n\nColors should appear naturally in: lighting, screens, furniture, branding elements, text overlays.\n\n## STYLE ADAPTATIONS\n- **cinematic**: Shallow DOF, dramatic lighting, smooth dolly shot, large text with cinematic feel\n- **professional**: Clean office, steady cam, business setting, professional text lower-third\n- **dynamic**: Active workspace, energetic movement, bold animated text, multiple layers\n- **minimal**: Simple focused scene, one key element, subtle text, clean typography\n- **artistic**: Creative angles, unique perspective, stylized text animation\n\n## PROMPT STRUCTURE (FOLLOW THIS)\n[Describe full environment with 3-5 elements] → [Camera movement description] → [Text content and animation] → [MSI logo placement in scene] → [Duration: 8 seconds continuous]\n\nExample: 'Modern corporate office with glass walls, wooden desk, multiple monitors, plants. Camera slowly pushes forward. Text fades in center: \"Enterprise Cloud Solutions\". MSI logo visible on screen display. 8 seconds, smooth and professional.'\n\nALWAYS include: environment details, camera movement, text content, logo integration, 8-second duration."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -84,16 +84,10 @@
               "value": "us-central1-aiplatform.googleapis.com"
             },
             {
-              "id": "animation-prompt",
-              "name": "ANIMATION_PROMPT",
+              "id": "text-prompt",
+              "name": "TEXT_PROMPT",
               "type": "string",
-              "value": "={{ $('Agent: Video Prompt Optimizer').item.json.output }}"
-            },
-            {
-              "id": "base-image-url",
-              "name": "BASE_IMAGE_URL",
-              "type": "string",
-              "value": "={{ $('Format Video Input').item.json.base_image_url }}"
+              "value": "={{ $('Agent: Video Prompt Optimizer').item.json.output }}. {{ $('Format Video Input').item.json.duration }} second video, {{ $('Format Video Input').item.json.aspect_ratio }} aspect ratio, professional quality."
             },
             {
               "id": "duration",
@@ -131,7 +125,7 @@
     },
     {
       "parameters": {
-        "url": "={{ $('Settings').item.json.BASE_IMAGE_URL }}",
+        "url": "https://i.ibb.co/S7mKXdxr/MSI-Technologies-Icon.png",
         "options": {
           "response": {
             "response": {
@@ -143,8 +137,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [1080, 300],
-      "id": "download-base-image",
-      "name": "Download Base Image"
+      "id": "download-msi-logo",
+      "name": "Download MSI Logo"
     },
     {
       "parameters": {
@@ -154,18 +148,18 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
       "position": [1300, 300],
-      "id": "image-to-base64",
-      "name": "Image to Base64"
+      "id": "logo-to-base64",
+      "name": "Logo to Base64"
     },
     {
       "parameters": {
-        "jsCode": "// Merge settings with base image data\nconst settings = $('Settings').item.json;\nconst imageData = $input.item.json;\n\nreturn [{\n  json: {\n    ...settings,\n    IMAGE_BASE64: imageData.data,\n    IMAGE_MIME_TYPE: imageData.mimeType || 'image/png'\n  }\n}];"
+        "jsCode": "// Merge settings with logo base64 data\nconst settings = $('Settings').item.json;\nconst logoData = $input.item.json;\n\nreturn [{\n  json: {\n    ...settings,\n    LOGO_BASE64: logoData.data,\n    LOGO_MIME_TYPE: logoData.mimeType || 'image/png'\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [1520, 300],
-      "id": "merge-settings-image",
-      "name": "Merge Settings with Image"
+      "id": "merge-settings-logo",
+      "name": "Merge Settings with Logo"
     },
     {
       "parameters": {
@@ -196,7 +190,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  instances: [{\n    prompt: $json.ANIMATION_PROMPT,\n    image: {\n      bytesBase64Encoded: $json.IMAGE_BASE64,\n      mimeType: $json.IMAGE_MIME_TYPE\n    }\n  }],\n  parameters: {\n    aspectRatio: $json.ASPECT_RATIO,\n    sampleCount: 1,\n    durationSeconds: $json.DURATION,\n    personGeneration: 'allow_all',\n    addWatermark: false,\n    includeRaiReason: true,\n    generateAudio: false\n  }\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  instances: [{\n    prompt: $json.TEXT_PROMPT,\n    image: {\n      bytesBase64Encoded: $json.LOGO_BASE64,\n      mimeType: $json.LOGO_MIME_TYPE\n    }\n  }],\n  parameters: {\n    aspectRatio: $json.ASPECT_RATIO,\n    sampleCount: 1,\n    durationSeconds: $json.DURATION,\n    personGeneration: 'allow_all',\n    addWatermark: true,\n    includeRaiReason: true,\n    generateAudio: true\n  }\n}) }}",
         "options": {
           "timeout": 30000
         }
@@ -261,7 +255,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Convert base64 video to binary for YouTube upload\nconst videoBase64 = $json.video_base64;\nconst prompt = $json.animation_prompt || 'MSI Animated Content';\nconst postId = $json.post_id;\nconst mimeType = $json.mime_type || 'video/mp4';\n\nif (!videoBase64) {\n  throw new Error('No video base64 data available');\n}\n\nconst binaryData = Buffer.from(videoBase64, 'base64');\nlet title = prompt.substring(0, 97);\nif (prompt.length > 97) title += '...';\nconst fileName = `msi_video_${Date.now()}.mp4`;\n\nreturn {\n  json: {\n    title,\n    description: `Animated with Vertex AI Veo 3.1 by MSI Technologies\\n\\nAnimation: ${prompt}\\n\\nPost ID: ${postId || 'N/A'}`,\n    post_id: postId,\n    original_prompt: prompt\n  },\n  binary: {\n    data: {\n      data: binaryData.toString('base64'),\n      mimeType: mimeType,\n      fileName: fileName\n    }\n  }\n};"
+        "jsCode": "// Convert base64 video to binary for YouTube upload\nconst videoBase64 = $json.video_base64;\nconst prompt = $json.original_prompt || $json.prompt || 'MSI Content';\nconst postId = $json.post_id;\nconst mimeType = $json.mime_type || 'video/mp4';\n\nif (!videoBase64) {\n  throw new Error('No video base64 data available');\n}\n\nconst binaryData = Buffer.from(videoBase64, 'base64');\nlet title = prompt.substring(0, 97);\nif (prompt.length > 97) title += '...';\nconst fileName = `msi_video_${Date.now()}.mp4`;\n\nreturn {\n  json: {\n    title,\n    description: `Generated with AI by MSI Technologies\\n\\nPrompt: ${prompt}\\n\\nPost ID: ${postId || 'N/A'}`,\n    post_id: postId,\n    original_prompt: prompt\n  },\n  binary: {\n    data: {\n      data: binaryData.toString('base64'),\n      mimeType: mimeType,\n      fileName: fileName\n    }\n  }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -295,7 +289,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.item.json;\nconst preparedData = $('Prepare YouTube Upload').item.json;\n\nconst videoId = response.id || response.uploadId;\nconst youtubeUrl = `https://youtu.be/${videoId}`;\n\nreturn [{\n  json: {\n    youtube_url: youtubeUrl,\n    youtube_video_id: videoId,\n    post_id: preparedData.post_id,\n    title: preparedData.title,\n    animation_prompt: preparedData.original_prompt\n  }\n}];"
+        "jsCode": "const response = $input.item.json;\nconst preparedData = $('Prepare YouTube Upload').item.json;\n\nconst videoId = response.id || response.uploadId;\nconst youtubeUrl = `https://youtu.be/${videoId}`;\n\nreturn [{\n  json: {\n    youtube_url: youtubeUrl,\n    youtube_video_id: videoId,\n    post_id: preparedData.post_id,\n    title: preparedData.title,\n    prompt: preparedData.original_prompt\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -306,7 +300,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "={{ $json.post_id && $json.post_id.length > 10 ? `UPDATE social_posts SET youtube_url = '${$json.youtube_url}', status = 'animated_completed', updated_at = NOW() WHERE id = '${$json.post_id}' RETURNING *` : `SELECT '${$json.youtube_url}' as youtube_url, 'no_post_id' as status` }}",
+        "query": "={{ $json.post_id && $json.post_id.length > 10 ? `UPDATE social_posts SET youtube_url = '${$json.youtube_url}', status = 'video_completed', updated_at = NOW() WHERE id = '${$json.post_id}' RETURNING *` : `SELECT '${$json.youtube_url}' as youtube_url, 'no_post_id' as status` }}",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -324,7 +318,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, message: 'Animated video uploaded to YouTube successfully', data: { youtube_url: $json.youtube_url, youtube_video_id: $json.youtube_video_id, post_id: $json.post_id, animation_prompt: $json.animation_prompt } }) }}",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Video uploaded to YouTube successfully', data: { youtube_url: $json.youtube_url, youtube_video_id: $json.youtube_video_id, post_id: $json.post_id, prompt: $json.prompt } }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
@@ -348,15 +342,15 @@
       "ai_languageModel": [[{"node": "Agent: Video Prompt Optimizer", "type": "ai_languageModel", "index": 0}]]
     },
     "Settings": {
-      "main": [[{"node": "Download Base Image", "type": "main", "index": 0}]]
+      "main": [[{"node": "Download MSI Logo", "type": "main", "index": 0}]]
     },
-    "Download Base Image": {
-      "main": [[{"node": "Image to Base64", "type": "main", "index": 0}]]
+    "Download MSI Logo": {
+      "main": [[{"node": "Logo to Base64", "type": "main", "index": 0}]]
     },
-    "Image to Base64": {
-      "main": [[{"node": "Merge Settings with Image", "type": "main", "index": 0}]]
+    "Logo to Base64": {
+      "main": [[{"node": "Merge Settings with Logo", "type": "main", "index": 0}]]
     },
-    "Merge Settings with Image": {
+    "Merge Settings with Logo": {
       "main": [[{"node": "Generate Access Token", "type": "main", "index": 0}]]
     },
     "Generate Access Token": {
