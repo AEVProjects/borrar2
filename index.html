@@ -369,18 +369,23 @@
         <!-- Video Generation Mode -->
         <div id="video-mode" class="mode-content">
             <div class="card form-card">
-                <h2>Animate Social Media Images (Veo 3.1)</h2>
+                <h2>🎬 Generate AI Video (Veo 3.1)</h2>
                 <p style="color: #718096; margin-bottom: 24px;">
-                    Transform your social media images into animated videos with <strong>minimal motion</strong>. 
-                    Perfect for posts with people, text, or graphics. 
-                    <span style="color: #e53e3e; font-weight: 600;">⚠️ People will stay frozen, only background/atmosphere animates.</span>
+                    Create professional corporate videos with AI using Google's Veo 3.1. 
+                    Videos are <strong>hyper-realistic</strong> with natural scenes, text on screen, and MSI branding.
                 </p>
                 
                 <form id="video-form">
                     <div class="form-group">
-                        <label for="video_reference_image">Base Image URL * <span style="color: #e53e3e;">REQUIRED</span></label>
-                        <input type="url" id="video_reference_image" name="base_image_url" required placeholder="https://i.ibb.co/your-image.png">
-                        <small class="form-hint">⚠️ Your image must already have all text, logos, and design complete. We only add animation.</small>
+                        <label for="video_prompt">Video Description *</label>
+                        <textarea id="video_prompt" name="prompt" rows="4" required placeholder="Describe the video you want to create...&#10;&#10;Examples:&#10;- Professional office with cloud technology dashboard&#10;- Data center with servers and blue lighting&#10;- Modern conference room with team collaboration"></textarea>
+                        <small class="form-hint">💡 Be specific! Our AI will create complete corporate scenes with text, lighting, and your MSI branding.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="video_reference_image">Reference Image (Optional)</label>
+                        <input type="url" id="video_reference_image" name="reference_image_url" placeholder="https://i.ibb.co/S7mKXdxr/MSI-Technologies-Icon.png">
+                        <small class="form-hint">🖼️ Add your logo or reference image (optional). MSI logo is used by default.</small>
                     </div>
 
                     <div class="form-group" id="video-reference-preview-container" style="display: none;">
@@ -390,10 +395,22 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="video_prompt">Animation Style (Optional)</label>
-                        <textarea id="video_prompt" name="prompt" rows="3" placeholder="Leave empty for automatic MINIMAL animation...&#10;&#10;Examples:&#10;- Very subtle parallax, no zoom, people frozen&#10;- Minimal background drift with soft particles&#10;- Atmospheric depth only, no camera movement"></textarea>
-                        <small class="form-hint">⚠️ If your image has people, we'll keep them completely still. Only background/atmospheric effects will animate.</small>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="video_topic">Topic / Category</label>
+                            <input type="text" id="video_topic" name="topic" placeholder="e.g., Cloud Solutions, Cybersecurity, IT Services">
+                            <small class="form-hint">📝 Helps the AI understand the context</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="video_style">Video Style</label>
+                            <select id="video_style" name="style">
+                                <option value="cinematic" selected>Cinematic</option>
+                                <option value="professional">Professional</option>
+                                <option value="dynamic">Dynamic</option>
+                                <option value="minimal">Minimal</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="form-row">
@@ -409,7 +426,7 @@
                         <div class="form-group">
                             <label>Aspect Ratio</label>
                             <input type="text" value="9:16 (Vertical)" disabled style="background: #f5f7fa; cursor: not-allowed;">
-                            <small class="form-hint">Optimized for social media stories</small>
+                            <small class="form-hint">📱 Optimized for social media stories</small>
                         </div>
                     </div>
 
@@ -417,7 +434,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polygon points="5 3 19 12 5 21 5 3"></polygon>
                         </svg>
-                        Animate Image
+                        Generate Video
                     </button>
                 </form>
             </div>
@@ -425,15 +442,15 @@
             <!-- Video Results -->
             <div id="video-results" class="generated-results" style="display: none;">
                 <div class="card">
-                    <h2>Generated Video</h2>
-                    <divAnimated Video Ready! 🎬</h2>
+                    <h2>✅ Video Generated Successfully!</h2>
                     <div class="result-section">
                         <div id="video-player" class="video-player">
                             <video id="generated-video" controls autoplay loop style="width: 100%; max-height: 600px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
                                 Your browser does not support the video tag.
                             </video>
                         </div>
-                        <div id="video-prompt-used" class="video-prompt-used" style="margin-top: 16px; padding: 16px; background: #f7fafc; border-radius: 8px; border-left: 4px solid #207CE5
+                        <div id="video-prompt-used" class="video-prompt-used" style="margin-top: 16px; padding: 16px; background: #f7fafc; border-radius: 8px; border-left: 4px solid #207CE5;"></div>
+                    </div>
                     <div class="result-actions">
                         <a id="download-video" href="#" download="generated-video.mp4" class="btn btn-primary">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
