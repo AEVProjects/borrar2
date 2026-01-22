@@ -1769,7 +1769,7 @@ if (videoForm) {
         
         const data = {
             base_image_url: base_image_url,
-            prompt: formData.get('prompt') || 'Subtle camera movement and depth',
+            prompt: formData.get('prompt') || 'Minimal motion: subtle parallax depth only, no zoom, people frozen',
             duration: formData.get('duration') || '8',
             aspect_ratio: '9:16'
         };

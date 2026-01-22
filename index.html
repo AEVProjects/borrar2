@@ -370,7 +370,11 @@
         <div id="video-mode" class="mode-content">
             <div class="card form-card">
                 <h2>Animate Social Media Images (Veo 3.1)</h2>
-                <p style="color: #718096; margin-bottom: 24px;">Transform your social media images into animated videos with cinematic camera movements. Perfect for Instagram, TikTok, LinkedIn.</p>
+                <p style="color: #718096; margin-bottom: 24px;">
+                    Transform your social media images into animated videos with <strong>minimal motion</strong>. 
+                    Perfect for posts with people, text, or graphics. 
+                    <span style="color: #e53e3e; font-weight: 600;">⚠️ People will stay frozen, only background/atmosphere animates.</span>
+                </p>
                 
                 <form id="video-form">
                     <div class="form-group">
@@ -388,8 +392,8 @@
 
                     <div class="form-group">
                         <label for="video_prompt">Animation Style (Optional)</label>
-                        <textarea id="video_prompt" name="prompt" rows="3" placeholder="Leave empty for automatic animation, or describe movement...&#10;&#10;Examples:&#10;- Slow camera push-in with parallax depth&#10;- Gentle left-to-right pan with floating particles&#10;- Subtle zoom with bokeh background blur"></textarea>
-                        <small class="form-hint">If empty, we'll apply a professional camera push-in with subtle effects.</small>
+                        <textarea id="video_prompt" name="prompt" rows="3" placeholder="Leave empty for automatic MINIMAL animation...&#10;&#10;Examples:&#10;- Very subtle parallax, no zoom, people frozen&#10;- Minimal background drift with soft particles&#10;- Atmospheric depth only, no camera movement"></textarea>
+                        <small class="form-hint">⚠️ If your image has people, we'll keep them completely still. Only background/atmospheric effects will animate.</small>
                     </div>
 
                     <div class="form-row">
