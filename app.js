@@ -2723,12 +2723,16 @@ async function loadTrendNews() {
             grid.innerHTML = '<p class="loading-news">Cargando noticias...</p>';
         }
 
-        // Fetch news from trend_news table
-        const { data: news, error } = await supabaseClient
-            .from('trend_news')
-            .select('*')
-            .order('scraped_at', { ascending: false })
-            .limit(100);
+        // Determinar si mostrar solo noticias de las últimas 24 horas
+        const showRecentOnly = window.trendsShowRecentOnly === true;
+        let query = supabaseClient.from('trend_news').select('*').order('scraped_at', { ascending: false }).limit(100);
+        if (showRecentOnly) {
+            // Filtrar por las últimas 24 horas
+            const now = new Date();
+            const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            query = query.gte('scraped_at', yesterday.toISOString());
+        }
+        const { data: news, error } = await query;
 
         if (error) {
             console.error('Error loading trend news:', error);
@@ -2815,19 +2819,22 @@ function renderTrendNews() {
     const grid = document.getElementById('trends-news-grid');
     if (!grid) return;
 
-    // Apply filters
+    // Filtro de noticias recientes
     let filteredNews = trendsData.news;
-
     if (trendsData.filters.trendQuery) {
         filteredNews = filteredNews.filter(n => n.trend_query === trendsData.filters.trendQuery);
     }
-
     if (trendsData.filters.usedStatus === 'used') {
         filteredNews = filteredNews.filter(n => n.is_used);
     } else if (trendsData.filters.usedStatus === 'unused') {
         filteredNews = filteredNews.filter(n => !n.is_used);
     }
-
+    // Si está activado mostrar solo recientes, filtrar por las últimas 24 horas
+    if (window.trendsShowRecentOnly === true) {
+        const now = new Date();
+        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        filteredNews = filteredNews.filter(n => new Date(n.scraped_at) >= yesterday);
+    }
     if (filteredNews.length === 0) {
         grid.innerHTML = '<p class="no-news">No se encontraron noticias con los filtros seleccionados.</p>';
         return;
@@ -3218,6 +3225,18 @@ document.querySelector('.tab-btn[data-mode="trends"]')?.addEventListener('click'
 });
 
 // ========== END TRENDS MODE ==========
+// Toggle entre mostrar tendencias y solo noticias recientes
+window.trendsShowRecentOnly = false;
+const toggleRecentBtn = document.getElementById('toggle-recent-news-btn');
+if (toggleRecentBtn) {
+    toggleRecentBtn.addEventListener('click', () => {
+        window.trendsShowRecentOnly = !window.trendsShowRecentOnly;
+        toggleRecentBtn.textContent = window.trendsShowRecentOnly ? 'Mostrar todas las tendencias' : 'Mostrar solo noticias últimas 24h';
+        loadTrendNews();
+    });
+    // Estado inicial
+    toggleRecentBtn.textContent = window.trendsShowRecentOnly ? 'Mostrar todas las tendencias' : 'Mostrar solo noticias últimas 24h';
+}
 
 // Initialize
 if (supabaseUrl === 'YOUR_SUPABASE_URL' || !supabaseUrl) {
