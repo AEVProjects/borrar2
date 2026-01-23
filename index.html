@@ -9,10 +9,14 @@
 <body>
             <div class="card">
                 <div class="trends-header">
-                    <h2>Tendencias y Noticias</h2>
-                    <button id="refresh-trends-btn" class="btn btn-secondary">Actualizar</button>
-                    <button id="trigger-trends-workflow-btn" class="btn btn-secondary">Ejecutar Workflow</button>
-                    <button id="toggle-recent-news-btn" class="btn btn-secondary" style="margin-left:12px;">Mostrar solo noticias últimas 24h</button>
+                    <div class="trends-title-group">
+                        <h2>Tendencias y Noticias</h2>
+                    </div>
+                    <div class="trends-actions">
+                        <button id="refresh-trends-btn" class="btn btn-secondary">Actualizar</button>
+                        <button id="trigger-trends-workflow-btn" class="btn btn-secondary">Ejecutar Workflow</button>
+                        <button id="toggle-recent-news-btn" class="btn btn-secondary">Mostrar solo noticias últimas 24h</button>
+                    </div>
                 </div>
                 <div class="trends-stats">
                     <span>Total: <span id="total-news-count">0</span></span>
