@@ -2808,44 +2808,45 @@ function populateTrendFilters() {
     }
 }
 
-// Render news cards
+// ========== Selección de noticias para carrusel ==========
+let selectedNewsForCarousel = [];
+
 function renderTrendNews() {
     const grid = document.getElementById('trends-news-grid');
     if (!grid) return;
-    
+
     // Apply filters
     let filteredNews = trendsData.news;
-    
+
     if (trendsData.filters.trendQuery) {
         filteredNews = filteredNews.filter(n => n.trend_query === trendsData.filters.trendQuery);
     }
-    
+
     if (trendsData.filters.usedStatus === 'used') {
         filteredNews = filteredNews.filter(n => n.is_used);
     } else if (trendsData.filters.usedStatus === 'unused') {
         filteredNews = filteredNews.filter(n => !n.is_used);
     }
-    
+
     if (filteredNews.length === 0) {
         grid.innerHTML = '<p class="no-news">No se encontraron noticias con los filtros seleccionados.</p>';
         return;
     }
-    
-    grid.innerHTML = filteredNews.map(news => {
+
+    // Render cards with checkboxes
+    grid.innerHTML = filteredNews.map((news, idx) => {
         const cardClass = news.is_used ? 'news-card used' : 'news-card';
         const dateStr = news.news_date || formatRelativeDate(news.scraped_at);
         const hasContent = news.content && news.content.length > 0;
-        const contentPreview = hasContent ? news.content.substring(0, 300) + (news.content.length > 300 ? '...' : '') : '';
-        
-        // Escape content for data attribute (base64 encode to handle special chars)
         const encodedContent = btoa(encodeURIComponent(news.content || ''));
         const encodedSnippet = btoa(encodeURIComponent(news.snippet || ''));
         const encodedTitle = btoa(encodeURIComponent(news.title || ''));
         const encodedTrend = btoa(encodeURIComponent(news.trend_query || ''));
-        
+        const isChecked = selectedNewsForCarousel.some(n => n.id === news.id);
         return `
             <div class="${cardClass}">
                 <div class="news-card-header">
+                    <input type="checkbox" class="news-select-checkbox" data-news-idx="${news.id}" ${isChecked ? 'checked' : ''} ${selectedNewsForCarousel.length >= 3 && !isChecked ? 'disabled' : ''} title="Seleccionar para carrusel (máx 3)">
                     <span class="news-source">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
@@ -2910,6 +2911,73 @@ function renderTrendNews() {
             </div>
         `;
     }).join('');
+
+    // Agregar botón para enviar al carrusel
+    let btnHtml = `<div style="margin:24px 0;text-align:center;">
+        <button id="send-to-carousel-btn" class="btn btn-primary" style="font-size:1.1rem;padding:12px 32px;" disabled>Generar Carrusel con 3 noticias</button>
+        <div id="carousel-news-warning" style="color:#e53e3e;margin-top:8px;display:none;">Selecciona exactamente 3 noticias.</div>
+    </div>`;
+    grid.insertAdjacentHTML('afterend', btnHtml);
+
+    // Listeners para checkboxes
+    setTimeout(() => {
+        document.querySelectorAll('.news-select-checkbox').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const newsId = e.target.getAttribute('data-news-idx');
+                const newsObj = trendsData.news.find(n => n.id == newsId);
+                if (!newsObj) return;
+                if (e.target.checked) {
+                    if (selectedNewsForCarousel.length < 3) {
+                        selectedNewsForCarousel.push(newsObj);
+                    }
+                } else {
+                    selectedNewsForCarousel = selectedNewsForCarousel.filter(n => n.id != newsObj.id);
+                }
+                // Rerender para actualizar estados
+                renderTrendNews();
+            });
+        });
+        // Botón enviar
+        const btn = document.getElementById('send-to-carousel-btn');
+        if (btn) {
+            btn.disabled = selectedNewsForCarousel.length !== 3;
+            btn.addEventListener('click', async () => {
+                if (selectedNewsForCarousel.length !== 3) {
+                    document.getElementById('carousel-news-warning').style.display = 'block';
+                    return;
+                }
+                document.getElementById('carousel-news-warning').style.display = 'none';
+                // Enviar al webhook de carrusel
+                try {
+                    btn.disabled = true;
+                    btn.textContent = 'Enviando...';
+                    const slides = selectedNewsForCarousel.map(n => ({
+                        headline: n.title,
+                        subtext: n.snippet || '',
+                        content: n.content || ''
+                    }));
+                    const payload = {
+                        topic: 'Noticias seleccionadas',
+                        visual_style: 'Infographic', // O permitir elegir
+                        context: 'Carrusel generado a partir de 3 noticias seleccionadas',
+                        slides
+                    };
+                    const resp = await fetch(n8nCarouselWebhook, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    btn.textContent = 'Generar Carrusel con 3 noticias';
+                    btn.disabled = false;
+                    showToast('Enviado al generador de carrusel', 'success');
+                } catch (err) {
+                    btn.textContent = 'Generar Carrusel con 3 noticias';
+                    btn.disabled = false;
+                    showToast('Error al enviar al generador de carrusel', 'error');
+                }
+            });
+        }
+    }, 100);
 }
 
 // Format relative date
