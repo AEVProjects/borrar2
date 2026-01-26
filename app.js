@@ -665,6 +665,7 @@ function renderPost(post) {
     });
     
     const isCompleted = post.status === 'completed';
+    const isCarousel = post.post_type === 'Carousel';
     
     // Determine published platforms
     const platforms = [];
@@ -699,8 +700,21 @@ function renderPost(post) {
     return `
         <div class="post-item" data-post-id="${post.id}">
             <div class="post-header">
-                <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
                     <span class="post-meta">${date}</span>
+                    ${isCarousel ? `
+                        <span class="post-type-badge" style="background: linear-gradient(135deg, #207CE5, #004AAD); color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                                <rect x="2" y="3" width="6" height="6" rx="1"/>
+                                <rect x="9" y="3" width="6" height="6" rx="1"/>
+                                <rect x="16" y="3" width="6" height="6" rx="1"/>
+                                <rect x="2" y="15" width="20" height="6" rx="1"/>
+                            </svg>
+                            Carrusel
+                        </span>
+                    ` : `
+                        <span class="post-type-badge" style="background: #10b981; color: white; padding: 4px 8px; border-radius: 8px; font-size: 11px; font-weight: 600;">${post.post_type || 'Post'}</span>
+                    `}
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     ${platforms.length > 0 ? `
@@ -713,11 +727,46 @@ function renderPost(post) {
                 </div>
             </div>
             
-            ${post.post_type ? `
-                <div class="post-content" style="margin: 16px 0; font-size: 15px; line-height: 1.6; color: #1d2129; white-space: pre-wrap; word-wrap: break-word;">${escapeHtml(post.post_type)}</div>
+            ${post.headline ? `
+                <div class="post-headline" style="margin: 12px 0; font-size: 18px; font-weight: 700; color: #1d2129; line-height: 1.4;">${escapeHtml(post.headline)}</div>
+            ` : ''}
+            
+            ${post.context && isCarousel ? `
+                <div class="carousel-context" style="margin: 12px 0; font-size: 14px; line-height: 1.5; color: #65676b; background: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 4px solid #207CE5;">${escapeHtml(post.context)}</div>
+            ` : ''}
+            
+            ${post.post_copy && isCarousel ? `
+                <div class="carousel-slides" style="margin: 16px 0;">
+                    <div style="font-size: 13px; font-weight: 600; color: #65676b; margin-bottom: 8px;">📑 Contenido del Carrusel:</div>
+                    <div style="background: white; border: 1px solid #e4e6ea; border-radius: 8px; padding: 12px; font-size: 14px; line-height: 1.5; color: #1d2129; white-space: pre-wrap;">${escapeHtml(post.post_copy)}</div>
+                </div>
+            ` : post.post_copy ? `
+                <div class="post-content" style="margin: 16px 0; font-size: 15px; line-height: 1.6; color: #1d2129; white-space: pre-wrap; word-wrap: break-word;">${escapeHtml(post.post_copy)}</div>
             ` : ''}
             
             ${imageUrls.length > 0 ? `
+                <div class="post-images-grid" style="display: grid; grid-template-columns: ${imageUrls.length === 1 ? '1fr' : imageUrls.length === 2 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(200px, 1fr))'}; gap: 8px; margin-top: 12px;">
+                    ${imageUrls.map((url, idx) => {
+                        const cleanUrl = url.trim().replace(/'/g, '%27');
+                        return `
+                        <div class="image-container" style="position: relative; width: 100%; aspect-ratio: 4/5; background: linear-gradient(135deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%); background-size: 200% 200%; animation: shimmer 1.5s infinite; border-radius: 8px; overflow: hidden;">
+                            <img 
+                                src="${cleanUrl}" 
+                                alt="${isCarousel ? `Carrusel slide ${idx + 1}` : `Post image ${idx + 1}`}" 
+                                loading="lazy"
+                                class="post-grid-image"
+                                data-url="${cleanUrl}"
+                                onload="this.style.opacity='1'; this.parentElement.style.background='none'; this.parentElement.style.animation='none';"
+                                onerror="this.style.display='none'; this.parentElement.classList.add('image-error');"
+                            >
+                            ${isCarousel ? `<div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${idx + 1}</div>` : ''}
+                        </div>
+                    `;
+                    }).join('')}
+                </div>
+            ` : ''}
+            
+            ${platforms.length === 0 ? `
                 <div class="post-images-grid" style="display: grid; grid-template-columns: ${imageUrls.length === 1 ? '1fr' : imageUrls.length === 2 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(200px, 1fr))'}; gap: 8px; margin-top: 12px;">
                     ${imageUrls.map((url, idx) => {
                         const cleanUrl = url.trim().replace(/'/g, '%27');

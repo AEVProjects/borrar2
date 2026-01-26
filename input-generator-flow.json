@@ -90,46 +90,19 @@
     },
     {
       "parameters": {
-        "authentication": "serviceAccount",
-        "serviceAccountKey": {
-          "type": "string",
-          "data": "{\n  \"type\": \"service_account\",\n  \"project_id\": \"your-project\",\n  \"private_key_id\": \"your-key-id\",\n  \"private_key\": \"your-private-key\",\n  \"client_email\": \"your-service-account@your-project.iam.gserviceaccount.com\",\n  \"client_id\": \"your-client-id\",\n  \"auth_uri\": \"https://accounts.google.com/o/oauth2/auth\",\n  \"token_uri\": \"https://oauth2.googleapis.com/token\"\n}"
-        },
-        "projectId": "your-supabase-project",
-        "operation": "insert",
-        "table": {
-          "__rl": true,
-          "value": "social_posts",
-          "mode": "list"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "topic": "={{ $json.db_data.topic }}",
-            "post_type": "={{ $json.db_data.post_type }}",
-            "visual_style": "={{ $json.db_data.visual_style }}",
-            "orientation": "={{ $json.db_data.orientation }}",
-            "headline": "={{ $json.db_data.headline }}",
-            "context": "={{ $json.db_data.context }}",
-            "trend_source": "={{ $json.db_data.trend_source }}",
-            "strategy_analysis": "={{ $json.db_data.strategy_analysis }}",
-            "post_copy": "={{ $json.db_data.post_copy }}",
-            "image_prompt": "={{ $json.db_data.image_prompt }}",
-            "image_url": "={{ $json.db_data.image_url }}",
-            "status": "={{ $json.db_data.status }}"
-          }
-        },
+        "operation": "executeQuery",
+        "query": "=INSERT INTO social_posts (topic, post_type, visual_style, orientation, headline, context, trend_source, strategy_analysis, post_copy, image_prompt, image_url, status, created_at, updated_at)\nVALUES (\n  '{{ $json.db_data.topic.replace(/'/g, \"''\") }}',\n  '{{ $json.db_data.post_type.replace(/'/g, \"''\") }}',\n  '{{ $json.db_data.visual_style.replace(/'/g, \"''\") }}',\n  '{{ $json.db_data.orientation.replace(/'/g, \"''\") }}',\n  '{{ $json.db_data.headline.replace(/'/g, \"''\") }}',\n  '{{ $json.db_data.context.replace(/'/g, \"''\") }}',\n  '{{ $json.db_data.trend_source.replace(/'/g, \"''\") }}',\n  '{{ $json.db_data.strategy_analysis.replace(/'/g, \"''\") }}',\n  '{{ $json.db_data.post_copy.replace(/'/g, \"''\") }}',\n  '{{ $json.db_data.image_prompt.replace(/'/g, \"''\") }}',\n  '{{ $json.db_data.image_url || \"\" }}',\n  '{{ $json.db_data.status.replace(/'/g, \"''\") }}',\n  NOW(),\n  NOW()\n)\nRETURNING *",
         "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [1580, 300],
       "id": "save-to-db",
       "name": "Save Carousel to DB",
       "credentials": {
-        "supabaseApi": {
-          "id": "your-supabase-credential-id",
-          "name": "Supabase API"
+        "postgres": {
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
         }
       }
     },
