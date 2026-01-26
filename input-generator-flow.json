@@ -65,7 +65,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://your-n8n-instance.com/webhook/msi-carousel-gen",
+        "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-carousel-gen",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json.carousel_payload) }}",
