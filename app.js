@@ -3049,12 +3049,22 @@ function renderTrendNews() {
                     
                     if (resp.ok) {
                         const result = await resp.json();
+                        console.log('🎯 Response from Input Generator:', result); // DEBUG
+                        
                         btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><polyline points="20 6 9 17 4 12"></polyline></svg> ¡Carrusel generado!`;
                         showToast('Carrusel generado exitosamente. Revisa Content Generation.', 'success');
                         
-                        // Show carousel preview if available
+                        // Show carousel preview if available - check both possible formats
                         if (result.slides && result.slides.length > 0) {
+                            console.log('📊 Showing preview with result.slides:', result.slides);
                             showCarouselPreview(result);
+                        } else if (result.data && result.data.slides && result.data.slides.length > 0) {
+                            console.log('📊 Showing preview with result.data.slides:', result.data.slides);
+                            showCarouselPreview(result.data);
+                        } else {
+                            console.log('⚠️ No slides found in response. Available keys:', Object.keys(result));
+                            // Show a simple success message without preview
+                            showToast(`Carrusel generado: ${result.slide_count || 'unknown'} slides. Ve a Generate Content para ver el resultado.`, 'info');
                         }
                         
                         // Clear selection
