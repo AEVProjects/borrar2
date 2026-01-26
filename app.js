@@ -2706,16 +2706,25 @@ setInterval(() => {
 
 // ========== TRENDS MODE ==========
 
-// Trends state
+// Trends state with pagination
 let trendsData = {
     news: [],
+    trends: [], // Unique trend queries
     filters: {
         trendQuery: '',
         usedStatus: ''
+    },
+    pagination: {
+        currentPage: 1,
+        perPage: 10,
+        totalPages: 1
     }
 };
 
-// Load trend news from database
+// Input Generator Webhook URL (update with your n8n URL)
+const n8nInputGeneratorWebhook = CONFIG.n8nInputGeneratorWebhook || CONFIG.n8n?.inputGeneratorWebhook || 'https://your-n8n-instance.com/webhook/msi-input-generator';
+
+// Load trend news from database with pagination
 async function loadTrendNews() {
     try {
         const grid = document.getElementById('trends-news-grid');
@@ -2723,16 +2732,11 @@ async function loadTrendNews() {
             grid.innerHTML = '<p class="loading-news">Cargando noticias...</p>';
         }
 
-        // Determinar si mostrar solo noticias de las últimas 24 horas
-        const showRecentOnly = window.trendsShowRecentOnly === true;
-        let query = supabaseClient.from('trend_news').select('*').order('scraped_at', { ascending: false }).limit(100);
-        if (showRecentOnly) {
-            // Filtrar por las últimas 24 horas
-            const now = new Date();
-            const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-            query = query.gte('scraped_at', yesterday.toISOString());
-        }
-        const { data: news, error } = await query;
+        // Fetch ALL news to get total count and unique trends
+        const { data: allNews, error } = await supabaseClient
+            .from('trend_news')
+            .select('*')
+            .order('scraped_at', { ascending: false });
 
         if (error) {
             console.error('Error loading trend news:', error);
@@ -2742,7 +2746,13 @@ async function loadTrendNews() {
             return;
         }
 
-        trendsData.news = news || [];
+        trendsData.news = allNews || [];
+        // Extract unique trends
+        trendsData.trends = [...new Set(allNews.map(n => n.trend_query).filter(Boolean))];
+        
+        // Calculate total pages
+        trendsData.pagination.totalPages = Math.ceil(trendsData.news.length / trendsData.pagination.perPage);
+        
         updateTrendsStats();
         populateTrendFilters();
         renderTrendNews();
@@ -2819,29 +2829,38 @@ function renderTrendNews() {
     const grid = document.getElementById('trends-news-grid');
     if (!grid) return;
 
-    // Filtro de noticias recientes
+    // Apply filters
     let filteredNews = trendsData.news;
+
     if (trendsData.filters.trendQuery) {
         filteredNews = filteredNews.filter(n => n.trend_query === trendsData.filters.trendQuery);
     }
+
     if (trendsData.filters.usedStatus === 'used') {
         filteredNews = filteredNews.filter(n => n.is_used);
     } else if (trendsData.filters.usedStatus === 'unused') {
         filteredNews = filteredNews.filter(n => !n.is_used);
     }
-    // Si está activado mostrar solo recientes, filtrar por las últimas 24 horas
-    if (window.trendsShowRecentOnly === true) {
-        const now = new Date();
-        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        filteredNews = filteredNews.filter(n => new Date(n.scraped_at) >= yesterday);
-    }
+
     if (filteredNews.length === 0) {
         grid.innerHTML = '<p class="no-news">No se encontraron noticias con los filtros seleccionados.</p>';
+        // Remove old pagination and buttons
+        const oldPagination = document.querySelector('.trends-pagination');
+        if (oldPagination) oldPagination.remove();
+        const oldBtn = document.getElementById('send-to-carousel-btn')?.parentElement;
+        if (oldBtn) oldBtn.remove();
         return;
     }
 
-    // Render cards with checkboxes
-    grid.innerHTML = filteredNews.map((news, idx) => {
+    // Calculate pagination
+    const { currentPage, perPage } = trendsData.pagination;
+    trendsData.pagination.totalPages = Math.ceil(filteredNews.length / perPage);
+    const startIdx = (currentPage - 1) * perPage;
+    const endIdx = startIdx + perPage;
+    const paginatedNews = filteredNews.slice(startIdx, endIdx);
+
+    // Render cards with checkboxes - PAGINATED (10 per page)
+    grid.innerHTML = paginatedNews.map((news, idx) => {
         const cardClass = news.is_used ? 'news-card used' : 'news-card';
         const dateStr = news.news_date || formatRelativeDate(news.scraped_at);
         const hasContent = news.content && news.content.length > 0;
@@ -2919,14 +2938,59 @@ function renderTrendNews() {
         `;
     }).join('');
 
-    // Agregar botón para enviar al carrusel
+    // Remove old pagination and buttons first
+    const oldPagination = document.querySelector('.trends-pagination');
+    if (oldPagination) oldPagination.remove();
+    const oldBtnContainer = document.getElementById('send-to-carousel-btn')?.parentElement;
+    if (oldBtnContainer) oldBtnContainer.remove();
+
+    // Add pagination controls
+    const { totalPages } = trendsData.pagination;
+    if (totalPages > 1) {
+        const paginationHtml = `
+        <div class="trends-pagination" style="display:flex;justify-content:center;align-items:center;gap:12px;margin:20px 0;">
+            <button class="btn btn-secondary btn-small" onclick="changeTrendsPage(-1)" ${currentPage === 1 ? 'disabled' : ''}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                Anterior
+            </button>
+            <span style="font-size:14px;color:#64748b;">Página ${currentPage} de ${totalPages} (${filteredNews.length} noticias)</span>
+            <button class="btn btn-secondary btn-small" onclick="changeTrendsPage(1)" ${currentPage === totalPages ? 'disabled' : ''}>
+                Siguiente
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
+        </div>`;
+        grid.insertAdjacentHTML('afterend', paginationHtml);
+    }
+
+    // Add button for sending to Input Generator → Carousel
     let btnHtml = `<div style="margin:24px 0;text-align:center;">
-        <button id="send-to-carousel-btn" class="btn btn-primary" style="font-size:1.1rem;padding:12px 32px;" disabled>Generar Carrusel con 3 noticias</button>
+        <div style="margin-bottom:12px;">
+            <span style="background:#e0f2fe;color:#0369a1;padding:4px 12px;border-radius:12px;font-size:13px;">
+                ${selectedNewsForCarousel.length}/3 noticias seleccionadas
+            </span>
+        </div>
+        <button id="send-to-carousel-btn" class="btn btn-primary" style="font-size:1.1rem;padding:12px 32px;" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;">
+                <rect x="2" y="3" width="6" height="18" rx="1"></rect>
+                <rect x="9" y="3" width="6" height="18" rx="1"></rect>
+                <rect x="16" y="3" width="6" height="18" rx="1"></rect>
+            </svg>
+            Generar Carrusel con 3 noticias
+        </button>
         <div id="carousel-news-warning" style="color:#e53e3e;margin-top:8px;display:none;">Selecciona exactamente 3 noticias.</div>
     </div>`;
-    grid.insertAdjacentHTML('afterend', btnHtml);
+    const paginationEl = document.querySelector('.trends-pagination');
+    if (paginationEl) {
+        paginationEl.insertAdjacentHTML('afterend', btnHtml);
+    } else {
+        grid.insertAdjacentHTML('afterend', btnHtml);
+    }
 
-    // Listeners para checkboxes
+    // Listeners for checkboxes
     setTimeout(() => {
         document.querySelectorAll('.news-select-checkbox').forEach(cb => {
             cb.addEventListener('change', (e) => {
@@ -2940,11 +3004,11 @@ function renderTrendNews() {
                 } else {
                     selectedNewsForCarousel = selectedNewsForCarousel.filter(n => n.id != newsObj.id);
                 }
-                // Rerender para actualizar estados
+                // Rerender to update states
                 renderTrendNews();
             });
         });
-        // Botón enviar
+        // Send button - now sends to Input Generator instead of directly to Carousel
         const btn = document.getElementById('send-to-carousel-btn');
         if (btn) {
             btn.disabled = selectedNewsForCarousel.length !== 3;
@@ -2954,33 +3018,60 @@ function renderTrendNews() {
                     return;
                 }
                 document.getElementById('carousel-news-warning').style.display = 'none';
-                // Enviar al webhook de carrusel
+                
+                // Send to INPUT GENERATOR first (which will then call Carousel Generator)
                 try {
                     btn.disabled = true;
-                    btn.textContent = 'Enviando...';
-                    const slides = selectedNewsForCarousel.map(n => ({
-                        headline: n.title,
-                        subtext: n.snippet || '',
-                        content: n.content || ''
+                    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin" style="margin-right:8px;animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> Generando inputs coherentes...`;
+                    
+                    // Prepare news items for Input Generator
+                    const newsItems = selectedNewsForCarousel.map(n => ({
+                        id: n.id,
+                        title: n.title,
+                        source: n.source || 'Unknown',
+                        snippet: n.snippet || '',
+                        content: n.content || n.snippet || '',
+                        trend_query: n.trend_query || ''
                     }));
+                    
                     const payload = {
-                        topic: 'Noticias seleccionadas',
-                        visual_style: 'Infographic', // O permitir elegir
-                        context: 'Carrusel generado a partir de 3 noticias seleccionadas',
-                        slides
+                        news_items: newsItems,
+                        visual_style: 'Glassmorphism' // Default style, can be customized
                     };
-                    const resp = await fetch(n8nCarouselWebhook, {
+                    
+                    showToast('Enviando al generador de inputs...', 'info');
+                    
+                    const resp = await fetch(n8nInputGeneratorWebhook, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
-                    btn.textContent = 'Generar Carrusel con 3 noticias';
-                    btn.disabled = false;
-                    showToast('Enviado al generador de carrusel', 'success');
+                    
+                    if (resp.ok) {
+                        const result = await resp.json();
+                        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><polyline points="20 6 9 17 4 12"></polyline></svg> ¡Carrusel generado!`;
+                        showToast('Carrusel generado exitosamente. Revisa Content Generation.', 'success');
+                        
+                        // Show carousel preview if available
+                        if (result.slides && result.slides.length > 0) {
+                            showCarouselPreview(result);
+                        }
+                        
+                        // Clear selection
+                        selectedNewsForCarousel = [];
+                        setTimeout(() => {
+                            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><rect x="2" y="3" width="6" height="18" rx="1"></rect><rect x="9" y="3" width="6" height="18" rx="1"></rect><rect x="16" y="3" width="6" height="18" rx="1"></rect></svg> Generar Carrusel con 3 noticias`;
+                            btn.disabled = true;
+                            renderTrendNews();
+                        }, 2000);
+                    } else {
+                        throw new Error('Error en respuesta del servidor');
+                    }
                 } catch (err) {
-                    btn.textContent = 'Generar Carrusel con 3 noticias';
+                    console.error('Error sending to input generator:', err);
+                    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><rect x="2" y="3" width="6" height="18" rx="1"></rect><rect x="9" y="3" width="6" height="18" rx="1"></rect><rect x="16" y="3" width="6" height="18" rx="1"></rect></svg> Generar Carrusel con 3 noticias`;
                     btn.disabled = false;
-                    showToast('Error al enviar al generador de carrusel', 'error');
+                    showToast('Error al generar carrusel: ' + err.message, 'error');
                 }
             });
         }
@@ -3156,6 +3247,73 @@ function toggleNewsContent(element) {
     }
 }
 
+// Change page in trends pagination
+function changeTrendsPage(delta) {
+    const { currentPage, totalPages } = trendsData.pagination;
+    const newPage = currentPage + delta;
+    
+    if (newPage >= 1 && newPage <= totalPages) {
+        trendsData.pagination.currentPage = newPage;
+        renderTrendNews();
+        
+        // Scroll to top of news grid
+        const grid = document.getElementById('trend-news-grid');
+        if (grid) {
+            grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+}
+
+// Show carousel preview modal
+function showCarouselPreview(result) {
+    // Remove existing modal if any
+    const existingModal = document.getElementById('carousel-preview-modal');
+    if (existingModal) existingModal.remove();
+    
+    const slides = result.slides || [];
+    const slidesHtml = slides.map((slide, idx) => `
+        <div class="carousel-slide-preview" style="background:linear-gradient(135deg,#207CE5 0%,#004AAD 100%);border-radius:12px;padding:20px;margin-bottom:12px;color:white;">
+            <div style="font-size:11px;opacity:0.8;margin-bottom:8px;">Slide ${idx + 1}</div>
+            <h4 style="font-family:'ITC Avant Garde',sans-serif;font-weight:bold;font-size:18px;margin:0 0 8px 0;">${escapeHtml(slide.headline || '')}</h4>
+            <p style="font-family:'Poppins',sans-serif;font-size:13px;margin:0;opacity:0.9;">${escapeHtml(slide.subtext || '')}</p>
+            ${slide.image_url ? `<img src="${slide.image_url}" style="width:100%;border-radius:8px;margin-top:12px;" alt="Slide image">` : ''}
+        </div>
+    `).join('');
+    
+    const modalHtml = `
+    <div id="carousel-preview-modal" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:10000;" onclick="if(event.target===this)this.remove()">
+        <div style="background:white;border-radius:16px;max-width:500px;max-height:80vh;overflow-y:auto;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <h3 style="margin:0;font-size:20px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#207CE5" stroke-width="2" style="vertical-align:middle;margin-right:8px;">
+                        <rect x="2" y="3" width="6" height="18" rx="1"></rect>
+                        <rect x="9" y="3" width="6" height="18" rx="1"></rect>
+                        <rect x="16" y="3" width="6" height="18" rx="1"></rect>
+                    </svg>
+                    Carrusel Generado
+                </h3>
+                <button onclick="this.closest('#carousel-preview-modal').remove()" style="background:none;border:none;cursor:pointer;padding:4px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            ${result.theme ? `<div style="background:#e0f2fe;color:#0369a1;padding:8px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;"><strong>Tema:</strong> ${escapeHtml(result.theme)}</div>` : ''}
+            <div class="carousel-slides-container">
+                ${slidesHtml}
+            </div>
+            <div style="text-align:center;margin-top:16px;">
+                <button onclick="this.closest('#carousel-preview-modal').remove()" class="btn btn-primary" style="padding:10px 24px;">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>`;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
 // Helper function to switch tabs programmatically
 function switchTab(mode) {
     const tabBtn = document.querySelector(`.tab-btn[data-mode="${mode}"]`);
@@ -3225,18 +3383,6 @@ document.querySelector('.tab-btn[data-mode="trends"]')?.addEventListener('click'
 });
 
 // ========== END TRENDS MODE ==========
-// Toggle entre mostrar tendencias y solo noticias recientes
-window.trendsShowRecentOnly = false;
-const toggleRecentBtn = document.getElementById('toggle-recent-news-btn');
-if (toggleRecentBtn) {
-    toggleRecentBtn.addEventListener('click', () => {
-        window.trendsShowRecentOnly = !window.trendsShowRecentOnly;
-        toggleRecentBtn.textContent = window.trendsShowRecentOnly ? 'Mostrar todas las tendencias' : 'Mostrar solo noticias últimas 24h';
-        loadTrendNews();
-    });
-    // Estado inicial
-    toggleRecentBtn.textContent = window.trendsShowRecentOnly ? 'Mostrar todas las tendencias' : 'Mostrar solo noticias últimas 24h';
-}
 
 // Initialize
 if (supabaseUrl === 'YOUR_SUPABASE_URL' || !supabaseUrl) {

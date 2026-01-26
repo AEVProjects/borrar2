@@ -7,33 +7,28 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-            <div class="card">
-                <div class="trends-header">
-                    <div class="trends-title-group">
-                        <h2>Tendencias y Noticias</h2>
-                    </div>
-                    <div class="trends-actions">
-                        <button id="refresh-trends-btn" class="btn btn-secondary">Actualizar</button>
-                        <button id="trigger-trends-workflow-btn" class="btn btn-secondary">Ejecutar Workflow</button>
-                        <button id="toggle-recent-news-btn" class="btn btn-secondary">Mostrar solo noticias últimas 24h</button>
-                    </div>
-                </div>
-                <div class="trends-stats">
-                    <span>Total: <span id="total-news-count">0</span></span>
-                    <span>Usadas: <span id="used-news-count">0</span></span>
-                    <span>Pendientes: <span id="pending-news-count">0</span></span>
-                    <span>Última actualización: <span id="last-scrape-time">-</span></span>
-                </div>
-                <div class="trends-filters">
-                    <select id="filter-trend-query" class="filter-select"></select>
-                    <select id="filter-used-status" class="filter-select">
-                        <option value="">Todas</option>
-                        <option value="used">Usadas</option>
-                        <option value="unused">No usadas</option>
-                    </select>
-                </div>
-                <div id="trends-news-grid" class="trends-news-grid"></div>
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="main-nav">
+            <div class="nav-brand">
+                <img src="https://i.ibb.co/S7mKXdxr/MSI-Technologies-Icon.png" alt="MSI Technologies" class="nav-logo">
+                <h1>MSI Social Media Manager</h1>
             </div>
+            <div class="nav-tabs">
+                <button class="tab-btn active" data-mode="publish">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                        <polyline points="16 6 12 2 8 6"></polyline>
+                        <line x1="12" y1="2" x2="12" y2="15"></line>
+                    </svg>
+                    Publish
+                </button>
+                <button class="tab-btn" data-mode="generate">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
                     Generate Content
                 </button>
                 <button class="tab-btn" data-mode="edit">
