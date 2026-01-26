@@ -697,6 +697,9 @@ function renderPost(post) {
         }
     }
     
+    // Get display content - for simple posts it's post_type, for carousels it's post_copy
+    const displayContent = isCarousel ? post.post_copy : post.post_type;
+    
     return `
         <div class="post-item" data-post-id="${post.id}">
             <div class="post-header">
@@ -712,9 +715,7 @@ function renderPost(post) {
                             </svg>
                             Carrusel
                         </span>
-                    ` : `
-                        <span class="post-type-badge" style="background: #10b981; color: white; padding: 4px 8px; border-radius: 8px; font-size: 11px; font-weight: 600;">${post.post_type || 'Post'}</span>
-                    `}
+                    ` : ''}
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     ${platforms.length > 0 ? `
@@ -727,21 +728,16 @@ function renderPost(post) {
                 </div>
             </div>
             
-            ${post.headline ? `
+            ${isCarousel && post.headline ? `
                 <div class="post-headline" style="margin: 12px 0; font-size: 18px; font-weight: 700; color: #1d2129; line-height: 1.4;">${escapeHtml(post.headline)}</div>
             ` : ''}
             
-            ${post.context && isCarousel ? `
+            ${isCarousel && post.context ? `
                 <div class="carousel-context" style="margin: 12px 0; font-size: 14px; line-height: 1.5; color: #65676b; background: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 4px solid #207CE5;">${escapeHtml(post.context)}</div>
             ` : ''}
             
-            ${post.post_copy && isCarousel ? `
-                <div class="carousel-slides" style="margin: 16px 0;">
-                    <div style="font-size: 13px; font-weight: 600; color: #65676b; margin-bottom: 8px;">📑 Contenido del Carrusel:</div>
-                    <div style="background: white; border: 1px solid #e4e6ea; border-radius: 8px; padding: 12px; font-size: 14px; line-height: 1.5; color: #1d2129; white-space: pre-wrap;">${escapeHtml(post.post_copy)}</div>
-                </div>
-            ` : post.post_copy ? `
-                <div class="post-content" style="margin: 16px 0; font-size: 15px; line-height: 1.6; color: #1d2129; white-space: pre-wrap; word-wrap: break-word;">${escapeHtml(post.post_copy)}</div>
+            ${displayContent ? `
+                <div class="post-content" style="margin: 16px 0; font-size: 15px; line-height: 1.6; color: #1d2129; white-space: pre-wrap; word-wrap: break-word;">${escapeHtml(displayContent)}</div>
             ` : ''}
             
             ${imageUrls.length > 0 ? `
@@ -760,27 +756,6 @@ function renderPost(post) {
                                 onerror="this.style.display='none'; this.parentElement.classList.add('image-error');"
                             >
                             ${isCarousel ? `<div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${idx + 1}</div>` : ''}
-                        </div>
-                    `;
-                    }).join('')}
-                </div>
-            ` : ''}
-            
-            ${platforms.length === 0 ? `
-                <div class="post-images-grid" style="display: grid; grid-template-columns: ${imageUrls.length === 1 ? '1fr' : imageUrls.length === 2 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(200px, 1fr))'}; gap: 8px; margin-top: 12px;">
-                    ${imageUrls.map((url, idx) => {
-                        const cleanUrl = url.trim().replace(/'/g, '%27');
-                        return `
-                        <div class="image-container" style="position: relative; width: 100%; aspect-ratio: 4/5; background: linear-gradient(135deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%); background-size: 200% 200%; animation: shimmer 1.5s infinite; border-radius: 8px; overflow: hidden;">
-                            <img 
-                                src="${cleanUrl}" 
-                                alt="Post image ${idx + 1}" 
-                                loading="lazy"
-                                class="post-grid-image"
-                                data-url="${cleanUrl}"
-                                onload="this.style.opacity='1'; this.parentElement.style.background='none'; this.parentElement.style.animation='none';"
-                                onerror="this.style.display='none'; this.parentElement.classList.add('image-error');"
-                            >
                         </div>
                     `;
                     }).join('')}
@@ -973,9 +948,16 @@ async function useInCreatePost(postId) {
         
         if (error) throw error;
         
-        // Fill the Post Content textarea
-        if (postTypeInput && post.post_type) {
-            postTypeInput.value = post.post_type;
+        // Detect if it's a carousel
+        const isCarousel = post.post_type === 'Carousel';
+        
+        // Fill the Post Content textarea - use post_copy for carousels, post_type for simple posts
+        if (postTypeInput) {
+            if (isCarousel && post.post_copy) {
+                postTypeInput.value = post.post_copy;
+            } else if (post.post_type) {
+                postTypeInput.value = post.post_type;
+            }
         }
         
         // Handle images - download and add to file input preview
@@ -1015,10 +997,13 @@ async function useInCreatePost(postId) {
             imageUrls.forEach((url, index) => {
                 const imgContainer = document.createElement('div');
                 imgContainer.className = 'preview-item';
+                imgContainer.style.cursor = 'pointer';
                 imgContainer.innerHTML = `
                     <img src="${url}" alt="Preview ${index + 1}" onerror="this.parentElement.style.display='none'">
                     <span class="preview-number">${index + 1}</span>
-                    <span class="preview-url-indicator" style="position: absolute; bottom: 4px; left: 4px; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">From URL</span>
+                    ${isCarousel ? `<span class="preview-url-indicator" style="position: absolute; bottom: 4px; left: 4px; background: linear-gradient(135deg, #207CE5, #004AAD); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">Slide ${index + 1}</span>` : 
+                    `<span class="preview-url-indicator" style="position: absolute; bottom: 4px; left: 4px; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">From URL</span>`}
+                    <button class="remove-image-btn" onclick="removePreviewImage(${index})" style="position: absolute; top: 4px; right: 4px; background: rgba(255,0,0,0.8); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center;">×</button>
                 `;
                 previewArea.appendChild(imgContainer);
             });
@@ -1033,13 +1018,41 @@ async function useInCreatePost(postId) {
         // Scroll to form
         document.getElementById('publish-form').scrollIntoView({ behavior: 'smooth' });
         
-        showToast('Content loaded! Select platforms and publish.', 'success');
+        showToast(isCarousel ? 'Carousel loaded! Select platforms and publish.' : 'Content loaded! Select platforms and publish.', 'success');
         
     } catch (error) {
         console.error('Error loading post:', error);
         showToast('Error loading post: ' + error.message, 'error');
     }
 }
+
+// Function to remove an image from preview
+window.removePreviewImage = function(index) {
+    if (window.pendingImageUrls && window.pendingImageUrls.length > index) {
+        window.pendingImageUrls.splice(index, 1);
+        
+        const previewArea = document.getElementById('image-preview');
+        const items = previewArea.querySelectorAll('.preview-item');
+        if (items[index]) {
+            items[index].remove();
+        }
+        
+        // Re-number remaining items
+        const remainingItems = previewArea.querySelectorAll('.preview-item');
+        remainingItems.forEach((item, i) => {
+            const numberSpan = item.querySelector('.preview-number');
+            if (numberSpan) numberSpan.textContent = i + 1;
+            const removeBtn = item.querySelector('.remove-image-btn');
+            if (removeBtn) removeBtn.setAttribute('onclick', `removePreviewImage(${i})`);
+        });
+        
+        if (window.pendingImageUrls.length === 0) {
+            previewArea.classList.remove('active');
+        }
+        
+        showToast('Image removed', 'info');
+    }
+};
 
 // Publish Single Post
 async function publishPost(postId) {
