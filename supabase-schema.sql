@@ -139,6 +139,70 @@ CREATE TABLE public.post_versions (
   CONSTRAINT post_versions_post_id_version_unique UNIQUE (post_id, version_number)
 );
 
+-- =============================================
+-- CAROUSEL SLIDES TABLE
+-- Stores individual slides for carousel posts
+-- =============================================
+CREATE TABLE public.carousel_slides (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  
+  -- Link to parent carousel/post
+  carousel_id uuid NOT NULL,
+  
+  -- Slide position and content
+  slide_number integer NOT NULL CHECK (slide_number > 0),
+  headline text NOT NULL,
+  subtext text,
+  body_text text,
+  
+  -- Image data
+  image_url text,
+  image_prompt text,
+  
+  -- Visual consistency parameters (MSI Brand)
+  visual_style jsonb DEFAULT '{
+    "font_headline": "ITC Avant Garde Bold",
+    "font_headline_size": "48-56pt",
+    "font_subtext": "Poppins SemiBold", 
+    "font_subtext_size": "24-32pt",
+    "font_body": "Quicksand Medium",
+    "font_body_size": "16-20pt",
+    "primary_color": "#207CE5",
+    "secondary_color": "#004AAD",
+    "accent_color": "#FFFDF1",
+    "dark_color": "#2B2B2B",
+    "logo_position": "bottom-right",
+    "background_style": "gradient"
+  }'::jsonb,
+  
+  -- Generation metadata
+  generation_service character varying DEFAULT 'gemini',
+  generation_time_seconds numeric,
+  
+  -- Timestamps
+  created_at timestamp with time zone DEFAULT now() NOT NULL,
+  updated_at timestamp with time zone DEFAULT now() NOT NULL,
+  
+  CONSTRAINT carousel_slides_pkey PRIMARY KEY (id),
+  CONSTRAINT carousel_slides_carousel_fkey FOREIGN KEY (carousel_id) REFERENCES public.social_posts(id) ON DELETE CASCADE,
+  CONSTRAINT carousel_slides_unique_position UNIQUE (carousel_id, slide_number)
+);
+
+-- Indexes for carousel slides
+CREATE INDEX idx_carousel_slides_carousel_id ON public.carousel_slides(carousel_id);
+CREATE INDEX idx_carousel_slides_slide_number ON public.carousel_slides(slide_number);
+
+-- Trigger to auto-update updated_at on carousel_slides
+CREATE TRIGGER update_carousel_slides_updated_at
+    BEFORE UPDATE ON public.carousel_slides
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Comments for carousel_slides
+COMMENT ON TABLE public.carousel_slides IS 'Individual slides for Instagram/LinkedIn carousel posts';
+COMMENT ON COLUMN public.carousel_slides.visual_style IS 'JSON containing MSI brand visual parameters for consistency';
+COMMENT ON COLUMN public.carousel_slides.slide_number IS 'Position of slide in carousel (1-indexed)';
+
 -- Indexes for better query performance
 CREATE INDEX idx_social_posts_status ON public.social_posts(status);
 CREATE INDEX idx_social_posts_created_at ON public.social_posts(created_at DESC);

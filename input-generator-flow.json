@@ -1,0 +1,118 @@
+{
+  "name": "News Input Generator for Carousel",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "msi-input-generator",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [260, 300],
+      "id": "webhook-input",
+      "name": "Webhook Trigger",
+      "webhookId": "msi-input-generator",
+      "notes": "Recibe 3 noticias seleccionadas desde la plataforma"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse incoming news data from web platform\nconst webhookData = $input.first().json;\n\nlet data = webhookData;\nif (webhookData.body) {\n  if (typeof webhookData.body === 'string') {\n    try { data = JSON.parse(webhookData.body); } catch(e) { data = webhookData; }\n  } else {\n    data = webhookData.body;\n  }\n}\n\nconst newsItems = data.news_items || [];\nif (newsItems.length === 0 || newsItems.length > 3) {\n  throw new Error('Se requieren entre 1 y 3 noticias para generar el carrusel');\n}\n\n// MSI Brand Colors (fixed)\nconst brandColors = {\n  primary: '#207CE5',\n  secondary: '#004AAD',\n  accent: '#FFFDF1',\n  dark: '#2B2B2B'\n};\n\n// Visual style from request or default\nconst visualStyle = data.visual_style || 'Glassmorphism';\n\n// Prepare news content summary for AI\nconst newsSummary = newsItems.map((n, i) => {\n  return `NOTICIA ${i+1}:\\nTítulo: ${n.title}\\nFuente: ${n.source || 'Desconocido'}\\nContenido: ${(n.content || n.snippet || '').substring(0, 1500)}\\n---`;\n}).join('\\n\\n');\n\nreturn [{\n  json: {\n    news_items: newsItems,\n    news_count: newsItems.length,\n    news_summary: newsSummary,\n    visual_style: visualStyle,\n    brand_colors: brandColors,\n    request_id: Date.now().toString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300],
+      "id": "parse-input",
+      "name": "Parse News Input"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Genera inputs coherentes para un carrusel de Instagram de MSI Technologies basado en estas {{ $json.news_count }} noticias de tecnología:\n\n{{ $json.news_summary }}\n\nCREA UN CARRUSEL COHERENTE donde:\n1. Slide 1: Hook - Titular impactante que combine la esencia de las noticias\n2. Slides intermedios: Un punto clave de cada noticia\n3. Slide final: CTA con valor de MSI Technologies\n\nResponde SOLO con este JSON (sin markdown, sin emojis):\n{\n  \"topic\": \"tema principal en 2-3 palabras\",\n  \"headline_main\": \"titular principal del carrusel de 5-8 palabras\",\n  \"context\": \"contexto unificado de las 3 noticias en 50-80 palabras, explicando la relevancia para CTOs y directores IT\",\n  \"slides\": [\n    { \"headline\": \"slide 1 headline\", \"subtext\": \"subtexto breve\" },\n    { \"headline\": \"slide 2 headline\", \"subtext\": \"subtexto breve\" },\n    { \"headline\": \"slide 3 headline\", \"subtext\": \"subtexto breve\" }\n  ],\n  \"key_insights\": \"3 insights principales separados por |\",\n  \"cta_text\": \"llamada a la acción final\"\n}",
+        "options": {
+          "systemMessage": "Eres un estratega de contenido B2B para MSI Technologies. Tu trabajo es crear inputs coherentes para carrusels de Instagram que conecten múltiples noticias de tecnología en una narrativa unificada.\n\nREGLAS ESTRICTAS:\n1. NO uses emojis en ningún campo - texto profesional únicamente\n2. Los headlines deben ser concisos (5-8 palabras máximo)\n3. El context debe explicar POR QUÉ estas noticias importan a CTOs/IT Directors\n4. Cada slide debe fluir naturalmente al siguiente\n5. El tono debe ser de experto senior compartiendo insights\n6. NO uses frases genéricas como 'En el panorama digital actual'\n7. Sé específico con datos y tendencias mencionadas en las noticias\n8. El headline_main debe ser un gancho que detenga el scroll\n\nTEMAS VÁLIDOS: Cloud computing, ciberseguridad, IA/ML, DevOps, infraestructura IT, transformación digital.\n\nResponde SOLO con JSON válido, sin bloques de código markdown."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [700, 300],
+      "id": "ai-generate-inputs",
+      "name": "AI: Generate Carousel Inputs"
+    },
+    {
+      "parameters": {
+        "model": { "__rl": true, "value": "gpt-4o-mini", "mode": "list", "cachedResultName": "gpt-4o-mini" },
+        "options": { "temperature": 0.5, "maxTokens": 1500 }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [780, 520],
+      "id": "openai-inputs",
+      "name": "OpenAI Model",
+      "credentials": { "openAiApi": { "id": "13Oqly3WdRAzZVXL", "name": "OpenAi account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI output and prepare carousel payload\nconst aiOutput = $input.first().json.output;\nconst inputData = $('Parse News Input').first().json;\n\nlet carouselData;\ntry {\n  // Clean JSON from markdown if present\n  let cleanOutput = aiOutput.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  const jsonMatch = cleanOutput.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) cleanOutput = jsonMatch[0];\n  carouselData = JSON.parse(cleanOutput);\n} catch (e) {\n  // Fallback structure if parsing fails\n  carouselData = {\n    topic: 'Technology Update',\n    headline_main: 'Latest Tech Insights',\n    context: 'Key technology updates for enterprise leaders.',\n    slides: inputData.news_items.map((n, i) => ({\n      headline: n.title.substring(0, 50),\n      subtext: n.source || ''\n    })),\n    key_insights: 'Cloud | Security | Innovation',\n    cta_text: 'Partner with MSI Technologies'\n  };\n}\n\n// Remove any emojis that might have slipped through\nconst removeEmojis = (str) => {\n  if (!str) return '';\n  return str.replace(/[\\u{1F600}-\\u{1F64F}\\u{1F300}-\\u{1F5FF}\\u{1F680}-\\u{1F6FF}\\u{1F1E0}-\\u{1F1FF}\\u{2600}-\\u{26FF}\\u{2700}-\\u{27BF}\\u{1F900}-\\u{1F9FF}\\u{1FA00}-\\u{1FA6F}\\u{1FA70}-\\u{1FAFF}]/gu, '').trim();\n};\n\n// Clean all text fields\ncarouselData.topic = removeEmojis(carouselData.topic);\ncarouselData.headline_main = removeEmojis(carouselData.headline_main);\ncarouselData.context = removeEmojis(carouselData.context);\ncarouselData.key_insights = removeEmojis(carouselData.key_insights);\ncarouselData.cta_text = removeEmojis(carouselData.cta_text);\ncarouselData.slides = carouselData.slides.map(s => ({\n  headline: removeEmojis(s.headline),\n  subtext: removeEmojis(s.subtext)\n}));\n\n// Build carousel webhook payload with MSI brand colors\nconst carouselPayload = {\n  topic: carouselData.topic,\n  visual_style: inputData.visual_style,\n  context: carouselData.context,\n  slides: carouselData.slides,\n  // MSI Brand Colors - MANDATORY for consistency\n  color_primary: inputData.brand_colors.primary,\n  color_secondary: inputData.brand_colors.secondary,\n  color_accent: inputData.brand_colors.accent,\n  color_dark: inputData.brand_colors.dark,\n  // Visual consistency parameters\n  font_headline: 'ITC Avant Garde Bold',\n  font_subtext: 'Poppins SemiBold',\n  font_body: 'Quicksand Medium',\n  font_size_headline: '48-56pt',\n  font_size_subtext: '24-32pt',\n  logo_position: 'bottom-right',\n  background_style: 'solid_primary',\n  // Source data for tracking\n  source_news_ids: inputData.news_items.map(n => n.id).filter(Boolean),\n  generated_from: 'input-generator-flow'\n};\n\nreturn [{\n  json: {\n    carousel_payload: carouselPayload,\n    generated_inputs: carouselData,\n    request_id: inputData.request_id\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 300],
+      "id": "prepare-carousel-payload",
+      "name": "Prepare Carousel Payload"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://your-n8n-instance.com/webhook/msi-carousel-gen",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.carousel_payload) }}",
+        "options": { "timeout": 180000 }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1140, 300],
+      "id": "call-carousel-webhook",
+      "name": "Call Carousel Generator",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process carousel response and prepare final output\nconst carouselResponse = $input.first().json;\nconst preparedData = $('Prepare Carousel Payload').first().json;\n\n// Extract slides from carousel response\nlet slides = [];\nif (carouselResponse.slides && Array.isArray(carouselResponse.slides)) {\n  slides = carouselResponse.slides;\n} else if (carouselResponse.results && Array.isArray(carouselResponse.results)) {\n  slides = carouselResponse.results;\n}\n\nreturn [{\n  json: {\n    success: true,\n    message: 'Carousel generated successfully from selected news',\n    carousel_id: carouselResponse.carousel_id || preparedData.request_id,\n    topic: preparedData.generated_inputs.topic,\n    slides: slides,\n    slide_count: slides.length,\n    generated_inputs: preparedData.generated_inputs,\n    visual_style: preparedData.carousel_payload.visual_style,\n    brand_colors: {\n      primary: preparedData.carousel_payload.color_primary,\n      secondary: preparedData.carousel_payload.color_secondary,\n      accent: preparedData.carousel_payload.color_accent\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1360, 300],
+      "id": "format-response",
+      "name": "Format Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1580, 300],
+      "id": "respond-webhook",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": { "main": [[{ "node": "Parse News Input", "type": "main", "index": 0 }]] },
+    "Parse News Input": { "main": [[{ "node": "AI: Generate Carousel Inputs", "type": "main", "index": 0 }]] },
+    "AI: Generate Carousel Inputs": { "main": [[{ "node": "Prepare Carousel Payload", "type": "main", "index": 0 }]] },
+    "OpenAI Model": { "ai_languageModel": [[{ "node": "AI: Generate Carousel Inputs", "type": "ai_languageModel", "index": 0 }]] },
+    "Prepare Carousel Payload": { "main": [[{ "node": "Call Carousel Generator", "type": "main", "index": 0 }]] },
+    "Call Carousel Generator": { "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]] },
+    "Format Response": { "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "meta": { "instanceId": "b5116c87255060ddf18db8a2b1b90e34b38f50f44815cf784a0b8a92b6bb4e6e" },
+  "tags": []
+}

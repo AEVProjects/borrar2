@@ -1821,6 +1821,31 @@ input[type="checkbox"].post-checkbox {
     border-radius: 12px;
     box-shadow: var(--shadow-sm);
 }
+.trends-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.trends-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+@media (max-width: 768px) {
+    .trends-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .trends-actions {
+        justify-content: stretch;
+        width: 100%;
+        margin-top: 12px;
+    }
+    .trends-actions .btn {
+        flex: 1;
+        min-width: 120px;
+    }
+}
 
 .trends-title-group h2 {
     display: flex;
@@ -2241,4 +2266,106 @@ input[type="checkbox"].post-checkbox {
     .trends-news-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* Trends Pagination Styles */
+.trends-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin: 24px 0;
+    padding: 16px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+}
+
+.trends-pagination .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.trends-pagination .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-small {
+    padding: 8px 16px;
+    font-size: 0.875rem;
+}
+
+/* Selected news counter badge */
+.selected-news-badge {
+    background: #e0f2fe;
+    color: #0369a1;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* Carousel Preview Modal Styles */
+#carousel-preview-modal {
+    animation: fadeIn 0.2s ease;
+}
+
+#carousel-preview-modal > div {
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.carousel-slide-preview {
+    transition: transform 0.2s ease;
+}
+
+.carousel-slide-preview:hover {
+    transform: scale(1.02);
+}
+
+/* News checkbox styles */
+.news-select-checkbox {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+    margin-right: 8px;
+}
+
+.news-select-checkbox:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* Spin animation for loading state */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Field highlighted animation (for Auto Daily) */
+.field-highlighted {
+    animation: highlightPulse 0.5s ease;
+    box-shadow: 0 0 0 3px rgba(32, 124, 229, 0.3);
+}
+
+@keyframes highlightPulse {
+    0% { box-shadow: 0 0 0 0 rgba(32, 124, 229, 0.5); }
+    50% { box-shadow: 0 0 0 6px rgba(32, 124, 229, 0.3); }
+    100% { box-shadow: 0 0 0 3px rgba(32, 124, 229, 0.3); }
 }
