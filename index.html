@@ -408,11 +408,25 @@
                         </div>
                     </div>
 
+                    <div class="form-group">
+                        <label for="video_service">MSI Service Focus *</label>
+                        <select id="video_service" name="service" required>
+                            <option value="company_intro" selected>Introduce the Company</option>
+                            <option value="data_security">Data Security and Cloud Computing</option>
+                            <option value="bpo">Business Process Outsourcing (BPO)</option>
+                            <option value="it_cybersecurity">IT Management and Cybersecurity</option>
+                            <option value="it_outsourcing">IT Outsourcing Solutions</option>
+                            <option value="ai_solutions">AI and Smart Business Solutions</option>
+                            <option value="executive_consulting">Executive Consulting</option>
+                        </select>
+                        <small class="form-hint">🎯 Select the MSI service to highlight in the video</small>
+                    </div>
+
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="video_topic">Topic / Category</label>
-                            <input type="text" id="video_topic" name="topic" placeholder="e.g., Cloud Solutions, Cybersecurity, IT Services">
-                            <small class="form-hint">📝 Helps the AI understand the context</small>
+                            <label for="video_topic">Additional Context (Optional)</label>
+                            <input type="text" id="video_topic" name="topic" placeholder="e.g., Enterprise clients, Fortune 500, SMBs">
+                            <small class="form-hint">📝 Extra details about target audience or use case</small>
                         </div>
 
                         <div class="form-group">
