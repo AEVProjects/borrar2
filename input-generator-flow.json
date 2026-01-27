@@ -69,7 +69,7 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json.carousel_payload) }}",
-        "options": { "timeout": 180000 }
+        "options": { "timeout": 300000 }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
@@ -80,7 +80,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Process carousel response and prepare final output\nconst carouselResponse = $input.first().json;\nconst preparedData = $('Prepare Carousel Payload').first().json;\n\n// Check if carousel generation failed\nif (carouselResponse.error || carouselResponse.message?.includes('error') || carouselResponse.status === 'error') {\n  console.log('⚠️ Carousel generation failed:', carouselResponse);\n  return [{\n    json: {\n      success: false,\n      message: 'Carousel inputs generated successfully, but image generation failed. Check Carousel Generator workflow.',\n      carousel_id: preparedData.request_id,\n      topic: preparedData.generated_inputs.topic,\n      slides: preparedData.generated_inputs.slides, // Return text slides without images\n      slide_count: preparedData.generated_inputs.slides.length,\n      generated_inputs: preparedData.generated_inputs,\n      visual_style: preparedData.carousel_payload.visual_style,\n      brand_colors: {\n        primary: preparedData.carousel_payload.color_primary,\n        secondary: preparedData.carousel_payload.color_secondary,\n        accent: preparedData.carousel_payload.color_accent\n      },\n      error_details: carouselResponse\n    }\n  }];\n}\n\n// Extract slides from carousel response\nlet slides = [];\nif (carouselResponse.slides && Array.isArray(carouselResponse.slides)) {\n  slides = carouselResponse.slides;\n} else if (carouselResponse.data?.slides && Array.isArray(carouselResponse.data.slides)) {\n  slides = carouselResponse.data.slides;\n} else if (carouselResponse.results && Array.isArray(carouselResponse.results)) {\n  slides = carouselResponse.results;\n} else {\n  console.log('⚠️ No slides found in carousel response, using text-only slides');\n  slides = preparedData.generated_inputs.slides.map((slide, i) => ({\n    slide_number: i + 1,\n    headline: slide.headline,\n    subtext: slide.subtext,\n    image_url: null // No image generated\n  }));\n}\n\nreturn [{\n  json: {\n    success: true,\n    message: slides.some(s => s.image_url) ? 'Carousel generated successfully from selected news' : 'Carousel inputs generated (images may be processing)',\n    carousel_id: carouselResponse.carousel_id || preparedData.request_id,\n    topic: preparedData.generated_inputs.topic,\n    slides: slides,\n    slide_count: slides.length,\n    generated_inputs: preparedData.generated_inputs,\n    visual_style: preparedData.carousel_payload.visual_style,\n    brand_colors: {\n      primary: preparedData.carousel_payload.color_primary,\n      secondary: preparedData.carousel_payload.color_secondary,\n      accent: preparedData.carousel_payload.color_accent\n    }\n  }\n}];"
+        "jsCode": "// Process carousel response - the carousel-gen workflow saves directly to DB now\nconst carouselResponse = $input.first().json;\nconst preparedData = $('Prepare Carousel Payload').first().json;\n\n// Check if there was an error (timeout, network, etc)\nconst hasError = carouselResponse.error || carouselResponse.code || carouselResponse.status === 'error' || (carouselResponse.name && carouselResponse.name.includes('Error'));\n\nif (hasError) {\n  // If there was a timeout/error, the carousel might still be processing in the background\n  // The carousel-gen workflow will save to DB when it completes\n  return [{\n    json: {\n      success: true,\n      message: 'Carousel generation started! The images are being generated in the background and will appear in your Posts tab when ready. This typically takes 2-3 minutes.',\n      status: 'processing',\n      topic: preparedData.generated_inputs.topic,\n      slides: preparedData.generated_inputs.slides,\n      generated_inputs: preparedData.generated_inputs,\n      visual_style: preparedData.carousel_payload.visual_style\n    }\n  }];\n}\n\n// If we got a successful response, the carousel was saved by carousel-gen\nreturn [{\n  json: {\n    success: true,\n    message: 'Carousel generated successfully! Check your Posts tab to see it.',\n    status: 'completed',\n    carousel_id: carouselResponse.carousel_id,\n    topic: preparedData.generated_inputs.topic,\n    slides: preparedData.generated_inputs.slides,\n    generated_inputs: preparedData.generated_inputs,\n    visual_style: preparedData.carousel_payload.visual_style\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -90,31 +90,13 @@
     },
     {
       "parameters": {
-        "operation": "executeQuery",
-        "query": "=INSERT INTO social_posts (topic, post_type, visual_style, orientation, headline, context, trend_source, strategy_analysis, post_copy, image_prompt, image_url, status, created_at, updated_at)\nVALUES (\n  '{{ $json.topic || \"Carousel Generated\" }}',\n  'Carousel',\n  '{{ $json.visual_style || \"Glassmorphism\" }}',\n  '4:5',\n  '{{ $json.generated_inputs.headline_main || $json.topic || \"Generated Carousel\" }}',\n  '{{ $json.generated_inputs.context || \"Carousel generated from selected news\" }}',\n  'Generated from selected news articles',\n  '{{ ($json.generated_inputs.topic + \" - \" + $json.generated_inputs.key_insights + \" - \" + $json.generated_inputs.cta_text) || \"AI-generated carousel content\" }}',\n  '{{ $json.slides.map(s => s.headline + (s.subtext ? \" - \" + s.subtext : \"\")).join(\"\\n\") || \"Carousel content\" }}',\n  '{{ (\"Carousel for \" + $json.topic + \" with \" + $json.slide_count + \" slides\") || \"Carousel visual content\" }}',\n  '{{ $json.slides.filter(s => s.image_url).map(s => s.image_url).join(\",\") || \"\" }}',\n  '{{ $json.slides.some(s => s.image_url) ? \"completed\" : \"image_generated\" }}',\n  NOW(),\n  NOW()\n)\nRETURNING *",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [1580, 300],
-      "id": "save-to-db",
-      "name": "Save Carousel to DB",
-      "credentials": {
-        "postgres": {
-          "id": "WnTYs2zvPoE7hDJE",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify($('Format Response').item.json) }}",
+        "responseBody": "={{ JSON.stringify($json) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1800, 300],
+      "position": [1580, 300],
       "id": "respond-webhook",
       "name": "Respond to Webhook"
     }
@@ -126,8 +108,7 @@
     "OpenAI Model": { "ai_languageModel": [[{ "node": "AI: Generate Carousel Inputs", "type": "ai_languageModel", "index": 0 }]] },
     "Prepare Carousel Payload": { "main": [[{ "node": "Call Carousel Generator", "type": "main", "index": 0 }]] },
     "Call Carousel Generator": { "main": [[{ "node": "Format Response", "type": "main", "index": 0 }]] },
-    "Format Response": { "main": [[{ "node": "Save Carousel to DB", "type": "main", "index": 0 }]] },
-    "Save Carousel to DB": { "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]] }
+    "Format Response": { "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]] }
   },
   "pinData": {},
   "settings": { "executionOrder": "v1" },

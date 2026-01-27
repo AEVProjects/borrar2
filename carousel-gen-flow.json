@@ -472,7 +472,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.item.json;\nconst slides = data.results.sort((a, b) => a.slide_number - b.slide_number);\n\nreturn [{ json: { success: true, message: `Generated ${slides.length} carousel slides`, data: { total_slides: slides.length, slides: slides } } }];"
+        "jsCode": "const data = $input.item.json;\nconst inputData = $('Parse Input').item.json;\nconst slides = data.results.sort((a, b) => a.slide_number - b.slide_number);\n\n// Helper to escape single quotes for PostgreSQL\nconst escapeSQL = (str) => str ? String(str).replace(/'/g, \"''\") : '';\n\n// Pre-compute values for DB insertion\nconst imageUrls = slides.filter(s => s.image_url).map(s => s.image_url);\nconst allImageUrls = imageUrls.join(',');\nconst hasImages = imageUrls.length > 0;\nconst postCopy = escapeSQL(slides.map(s => s.headline + (s.subtext ? ' - ' + s.subtext : '')).join(' | '));\nconst topic = escapeSQL(inputData.topic || 'Carousel Generated');\nconst context = escapeSQL(inputData.context || 'Carousel generated from news');\nconst headline = escapeSQL(slides[0]?.headline || inputData.topic || 'Generated Carousel');\n\nreturn [{ json: { \n  success: true, \n  message: `Generated ${slides.length} carousel slides`, \n  data: { total_slides: slides.length, slides: slides },\n  // DB fields pre-computed\n  topic: topic,\n  headline: headline,\n  context: context,\n  post_copy: postCopy,\n  all_image_urls: allImageUrls,\n  has_images: hasImages,\n  visual_style: inputData.visual_style || 'Glassmorphism',\n  slide_count: slides.length\n} }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -482,13 +482,31 @@
     },
     {
       "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO social_posts (topic, post_type, visual_style, orientation, headline, context, trend_source, strategy_analysis, post_copy, image_prompt, image_url, status, created_at, updated_at)\nVALUES (\n  '{{ $json.topic }}',\n  'Carousel',\n  '{{ $json.visual_style }}',\n  '4:5',\n  '{{ $json.headline }}',\n  '{{ $json.context }}',\n  'Generated from selected news articles',\n  '{{ $json.topic }} carousel with {{ $json.slide_count }} slides',\n  '{{ $json.post_copy }}',\n  'Carousel images for {{ $json.topic }}',\n  '{{ $json.all_image_urls }}',\n  '{{ $json.has_images ? \"completed\" : \"image_generated\" }}',\n  NOW(),\n  NOW()\n)\nRETURNING *",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [5760, 300],
+      "id": "save-carousel-db",
+      "name": "Save Carousel to DB",
+      "credentials": {
+        "postgres": {
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify($json) }}",
+        "responseBody": "={{ JSON.stringify({ success: $json.success || true, message: 'Carousel saved to database', carousel_id: $json.id }) }}",
         "options": { "responseHeaders": { "entries": [{ "name": "Access-Control-Allow-Origin", "value": "*" }, { "name": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" }, { "name": "Access-Control-Allow-Headers", "value": "Content-Type" }] } }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [5760, 300],
+      "position": [5980, 300],
       "id": "respond",
       "name": "Respond"
     }
@@ -545,7 +563,8 @@
     "Extract 3": { "main": [[{ "node": "Upload 3", "type": "main", "index": 0 }]] },
     "Upload 3": { "main": [[{ "node": "Collect 3", "type": "main", "index": 0 }]] },
     "Collect 3": { "main": [[{ "node": "Format Final", "type": "main", "index": 0 }]] },
-    "Format Final": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
+    "Format Final": { "main": [[{ "node": "Save Carousel to DB", "type": "main", "index": 0 }]] },
+    "Save Carousel to DB": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
   },
   "pinData": {},
   "meta": { "instanceId": "b5116c87255060ddf18db8a2b1b90e34b38f50f44815cf784a0b8a92b6bb4e6e" }
