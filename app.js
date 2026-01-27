@@ -2183,14 +2183,31 @@ if (carouselForm) {
                     
                     if (carouselPreview) {
                         carouselPreview.innerHTML = '';
+                        const totalSlides = result.data.slides.length;
                         
                         result.data.slides.forEach((slide, index) => {
+                            const isFirst = index === 0;
+                            const isLast = index === totalSlides - 1;
                             const slideEl = document.createElement('div');
-                            slideEl.className = 'carousel-slide';
+                            
+                            // Add special class for cover and CTA slides
+                            let slideClass = 'carousel-slide';
+                            let labelBadge = '';
+                            
+                            if (isFirst) {
+                                slideClass += ' carousel-slide-cover';
+                                labelBadge = '<span class="slide-label-badge">PORTADA</span>';
+                            } else if (isLast && totalSlides > 1) {
+                                slideClass += ' carousel-slide-cta';
+                                labelBadge = '<span class="slide-label-badge slide-label-cta">CTA</span>';
+                            }
+                            
+                            slideEl.className = slideClass;
                             slideEl.innerHTML = `
                                 <div class="slide-image-container">
                                     <img src="${slide.image_url}" alt="Slide ${index + 1}" class="slide-image">
                                     <span class="slide-badge">${index + 1}</span>
+                                    ${labelBadge}
                                 </div>
                                 <div class="slide-info">
                                     <h4>${slide.headline || ''}</h4>
