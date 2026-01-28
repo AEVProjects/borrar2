@@ -2801,7 +2801,7 @@ let trendsData = {
 };
 
 // Input Generator Webhook URL (update with your n8n URL)
-const n8nInputGeneratorWebhook = CONFIG.n8n?.inputGeneratorWebhook || 'https://n8nmsi.app.n8n.cloud/webhook/msi-input-generator';
+const n8nInputGeneratorWebhook = CONFIG.n8n?.inputGeneratorWebhook || 'https://n8nmsi.app.n8n.cloud/webhook/msi-carousel-v12';
 
 // Load trend news from database with pagination
 async function loadTrendNews() {
