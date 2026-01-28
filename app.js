@@ -2811,7 +2811,7 @@ async function loadTrendNews() {
             grid.innerHTML = '<p class="loading-news">Cargando noticias...</p>';
         }
 
-        // Fetch ALL news to get total count and unique trends
+        // Fetch ALL news to get total count and unique trends, sorted by scrape time descending
         const { data: allNews, error } = await supabaseClient
             .from('trend_news')
             .select('*')
