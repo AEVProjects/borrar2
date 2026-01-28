@@ -230,28 +230,31 @@ Transformar el flujo de carousels de 3 slides genéricos a **5 slides optimizado
 
 ### 📊 Estructura de 5 Slides para Noticias
 
-| Slide | Tipo | Contenido |
-|-------|------|-----------|
-| **1** | INTRO/HOOK | Título principal + teaser ("3 historias que debes conocer") |
-| **2** | News Story #1 | Primera noticia con imagen relacionada |
-| **3** | News Story #2 | Segunda noticia con imagen relacionada |
-| **4** | News Story #3 | Tercera noticia con imagen relacionada |
-| **5** | CTA | Llamada a la acción + contacto de MSI |
+| Slide | Tipo          | Contenido                                                   |
+| ----- | ------------- | ----------------------------------------------------------- |
+| **1** | INTRO/HOOK    | Título principal + teaser ("3 historias que debes conocer") |
+| **2** | News Story #1 | Primera noticia con imagen relacionada                      |
+| **3** | News Story #2 | Segunda noticia con imagen relacionada                      |
+| **4** | News Story #3 | Tercera noticia con imagen relacionada                      |
+| **5** | CTA           | Llamada a la acción + contacto de MSI                       |
 
 ---
 
 ### 🎨 Requisitos de Diseño Implementados
 
 #### Elementos en CADA Slide:
+
 - ✅ **Bloque de texto sólido** (NO texto flotante) - Fondo azul #207CE5 a 90% opacidad
 - ✅ **Número de página** - "X/5" en esquina superior
 - ✅ **Logo MSI** - Esquina inferior derecha
 - ✅ **Imagen relacionada** - Específica a cada noticia
 
 #### Elementos en Slides 1-4:
+
 - ✅ **Indicador de swipe** - "→ Swipe" o flecha en área inferior
 
 #### Variedad Visual:
+
 - ✅ Posición del bloque de texto varía (bottom, left sidebar, right sidebar)
 - ✅ Mantiene consistencia de marca pero evita monotonía
 
@@ -260,22 +263,26 @@ Transformar el flujo de carousels de 3 slides genéricos a **5 slides optimizado
 ### 📁 Nodos Actualizados en carousel-gen-flow.json
 
 #### Agentes (Prompts):
+
 1. **Agent 1: Carousel Strategy** - Ahora genera estructura de 5 slides NEWS
 2. **Agent 2: Carousel Copy Writer** - Headlines + subtexts estilo noticias con swipe indicators
 3. **Agent 3: Image Prompts** - Prompts para imágenes NEWS con layout específico
 
 #### Estilos (Style Nodes):
+
 4. **Style: Glassmorphism** - Adaptado para news layout
 5. **Style: Modern 3D** - Adaptado para news layout
 6. **Style: Default** - Adaptado para news layout
 
 #### Procesamiento de Slides (Collect Nodes):
+
 7. **Slide 1 Prompt** - Genera slide INTRO/HOOK
 8. **Collect 1** - Prepara slide 2 (News Story #1)
 9. **Collect 2** - Prepara slide 3 (News Story #2)
 10. **Collect 3** - Prepara slide 4 (News Story #3) ← Ya no termina aquí
 
 #### NUEVOS Nodos Agregados:
+
 11. **Done? 3** (IF node) - Verifica si hay más slides
 12. **Gemini 4** - Genera imagen slide 4
 13. **Extract 4** - Extrae imagen generada
@@ -312,6 +319,7 @@ Format Final → Save to DB → Respond
 ### 📝 Formato de Output de Agentes
 
 #### Agent 1 Output (Strategy):
+
 ```json
 {
   "strategy": "...",
@@ -326,6 +334,7 @@ Format Final → Save to DB → Respond
 ```
 
 #### Agent 2 Output (Copy):
+
 ```
 **SLIDE 1**: [Hook Headline] →
 **SLIDE 2**: [News 1 Headline] →
@@ -335,6 +344,7 @@ Format Final → Save to DB → Respond
 ```
 
 #### Agent 3 Output (Image Prompts):
+
 ```
 **SLIDE 1 PROMPT:** [Intro visual prompt with text block requirements]
 **SLIDE 2 PROMPT:** [News 1 prompt with bottom text block]

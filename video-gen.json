@@ -397,13 +397,152 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "needs-extension-check",
+              "leftValue": "={{ $json.needs_extension }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        58112,
+        3984
+      ],
+      "id": "a1b2c3d4-5678-90ab-cdef-123456789abc",
+      "name": "Check if Needs Extension"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare video extension request\nconst videoData = $input.item.json;\nconst settings = $('Generate Access Token').item.json;\n\nconsole.log('==== PREPARE EXTENSION REQUEST ====');\nconsole.log('Extension seconds:', videoData.extension_seconds);\nconsole.log('Base video size:', videoData.video_base64 ? videoData.video_base64.length : 0);\n\n// Create a continuation prompt that maintains the corporate theme\nconst extensionPrompt = `Continue the professional corporate scene naturally. Maintain the same visual style, lighting, and atmosphere. Keep MSI Technologies branding consistent. The scene should flow seamlessly from the previous segment. End with a professional call to action showing contact@msitechnologiesinc.com and an elegant smooth fade to black in the final 2 seconds. Cinematic quality, balanced exposure, photorealistic.`;\n\nreturn [{\n  json: {\n    ...settings,\n    BASE_VIDEO_B64: videoData.video_base64,\n    BASE_VIDEO_MIME: videoData.mime_type || 'video/mp4',\n    EXTENSION_SECONDS: videoData.extension_seconds,\n    PROMPT_EXTENSION: extensionPrompt,\n    POST_ID: videoData.post_id,\n    ORIGINAL_PROMPT: videoData.original_prompt,\n    REQUESTED_DURATION: videoData.requested_duration\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        58336,
+        3888
+      ],
+      "id": "b2c3d4e5-6789-01bc-def0-234567890bcd",
+      "name": "Prepare Extension Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $json.API_ENDPOINT }}/v1/projects/{{ $json.PROJECT_ID }}/locations/{{ $json.LOCATION }}/publishers/google/models/{{ $json.MODEL_VERSION }}:predictLongRunning",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  instances: [{\n    prompt: $json.PROMPT_EXTENSION,\n    video: {\n      bytesBase64Encoded: $json.BASE_VIDEO_B64,\n      mimeType: $json.BASE_VIDEO_MIME\n    }\n  }],\n  parameters: {\n    aspectRatio: $json.ASPECT_RATIO,\n    sampleCount: 1,\n    durationSeconds: parseInt($json.EXTENSION_SECONDS),\n    addWatermark: false,\n    includeRaiReason: true,\n    generateAudio: true,\n    negativePrompt: \"abrupt cut, hard stop, overexposed, washed out, static, frozen, different style, inconsistent lighting\"\n  }\n}) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        58560,
+        3888
+      ],
+      "id": "c3d4e5f6-7890-12cd-ef01-345678901cde",
+      "name": "Vertex AI - Extend Video"
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        58784,
+        3888
+      ],
+      "id": "d4e5f6a7-8901-23de-f012-456789012def",
+      "name": "Wait for Extension",
+      "webhookId": "veo3-extend-wait"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $('Prepare Extension Request').item.json.API_ENDPOINT }}/v1/projects/{{ $('Prepare Extension Request').item.json.PROJECT_ID }}/locations/{{ $('Prepare Extension Request').item.json.LOCATION }}/publishers/google/models/{{ $('Prepare Extension Request').item.json.MODEL_VERSION }}:fetchPredictOperation",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Prepare Extension Request').item.json.ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"operationName\": \"{{ $('Vertex AI - Extend Video').item.json.name }}\"\n}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        59008,
+        3888
+      ],
+      "id": "e5f6a7b8-9012-34ef-0123-567890123ef0",
+      "name": "Fetch Extended Video"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process extended video response\nconst response = $input.item.json;\nconst settings = $('Prepare Extension Request').item.json;\n\nconsole.log('==== PROCESS EXTENDED VIDEO ====');\nconsole.log('Response keys:', Object.keys(response));\n\n// Check if operation is still running\nif (response.done === false) {\n  throw new Error('Video extension still processing. Operation: ' + $('Vertex AI - Extend Video').item.json.name);\n}\n\nlet videoBase64 = '';\nlet mimeType = 'video/mp4';\n\n// Try different response formats\nif (response.response?.videos?.[0]?.bytesBase64Encoded) {\n  videoBase64 = response.response.videos[0].bytesBase64Encoded;\n  mimeType = response.response.videos[0].mimeType || 'video/mp4';\n} else if (response.response?.generatedSamples?.[0]?.video?.bytesBase64Encoded) {\n  videoBase64 = response.response.generatedSamples[0].video.bytesBase64Encoded;\n} else if (response.predictions?.[0]?.bytesBase64Encoded) {\n  videoBase64 = response.predictions[0].bytesBase64Encoded;\n} else if (response.generatedSamples?.[0]?.video?.bytesBase64Encoded) {\n  videoBase64 = response.generatedSamples[0].video.bytesBase64Encoded;\n}\n\nif (!videoBase64) {\n  console.log('Full response:', JSON.stringify(response));\n  throw new Error('No extended video data found. Response: ' + JSON.stringify(response).substring(0, 1000));\n}\n\nconsole.log('Extended video extracted, size:', videoBase64.length);\nconsole.log('Final duration:', settings.REQUESTED_DURATION, 'seconds');\nconsole.log('==== END EXTENDED VIDEO ====');\n\nreturn [{\n  json: {\n    video_base64: videoBase64,\n    video_data_url: `data:${mimeType};base64,${videoBase64}`,\n    mime_type: mimeType,\n    has_video: true,\n    post_id: settings.POST_ID,\n    prompt: settings.TEXT_PROMPT,\n    original_prompt: settings.ORIGINAL_PROMPT,\n    final_duration: settings.REQUESTED_DURATION\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        59232,
+        3888
+      ],
+      "id": "f6a7b8c9-0123-45f0-1234-678901234f01",
+      "name": "Process Extended Video"
+    },
+    {
+      "parameters": {
         "jsCode": "// Convert base64 video to binary for YouTube upload\nconst videoBase64 = $json.video_base64;\nconst prompt = $json.original_prompt || $json.prompt || 'MSI Content';\nconst postId = $json.post_id;\nconst mimeType = $json.mime_type || 'video/mp4';\n\nif (!videoBase64) {\n  throw new Error('No video base64 data available');\n}\n\nconst binaryData = Buffer.from(videoBase64, 'base64');\nlet title = prompt.substring(0, 97);\nif (prompt.length > 97) title += '...';\nconst fileName = `msi_video_${Date.now()}.mp4`;\n\nreturn {\n  json: {\n    title,\n    description: `Generated with AI by MSI Technologies\\n\\nPrompt: ${prompt}\\n\\nPost ID: ${postId || 'N/A'}`,\n    post_id: postId,\n    original_prompt: prompt\n  },\n  binary: {\n    data: {\n      data: binaryData.toString('base64'),\n      mimeType: mimeType,\n      fileName: fileName\n    }\n  }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        58112,
-        3984
+        59456,
+        4080
       ],
       "id": "b20c704d-31a1-44d8-8604-928796857331",
       "name": "Prepare YouTube Upload"
@@ -423,8 +562,8 @@
       "type": "n8n-nodes-base.youTube",
       "typeVersion": 1,
       "position": [
-        58336,
-        3984
+        59680,
+        4080
       ],
       "id": "d4ce1245-6a71-451d-9cfe-04aa52f2b9a1",
       "name": "Upload to YouTube",
@@ -442,8 +581,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        58560,
-        3984
+        59904,
+        4080
       ],
       "id": "199e7456-8736-4a5b-9f75-f1a6e58541c5",
       "name": "Extract YouTube URL"
@@ -457,8 +596,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        58784,
-        3984
+        60128,
+        4080
       ],
       "id": "22d68c5a-db47-482e-b22b-ac6be9671832",
       "name": "Update DB with YouTube",
@@ -478,8 +617,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        59008,
-        3984
+        60352,
+        4080
       ],
       "id": "690a9620-96e9-4fc1-9e3b-30b4ac368543",
       "name": "Respond Success"
@@ -681,6 +820,79 @@
       ]
     },
     "Process Video Response": {
+      "main": [
+        [
+          {
+            "node": "Check if Needs Extension",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Needs Extension": {
+      "main": [
+        [
+          {
+            "node": "Prepare Extension Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare YouTube Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Extension Request": {
+      "main": [
+        [
+          {
+            "node": "Vertex AI - Extend Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vertex AI - Extend Video": {
+      "main": [
+        [
+          {
+            "node": "Wait for Extension",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Extension": {
+      "main": [
+        [
+          {
+            "node": "Fetch Extended Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Extended Video": {
+      "main": [
+        [
+          {
+            "node": "Process Extended Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Extended Video": {
       "main": [
         [
           {

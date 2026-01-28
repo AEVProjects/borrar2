@@ -1,5 +1,5 @@
 {
-  "name": "MSI Carousel Generator v7",
+  "name": "MSI Carousel Generator v10 - Memory Optimized",
   "nodes": [
     {
       "parameters": {
@@ -28,7 +28,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Parse input and get logo\nconst webhookData = $('Webhook').item.json;\nconst logoItem = $input.item;\n\n// Get logo base64\nlet logoBase64 = '';\nif (logoItem.binary) {\n  const binaryKey = Object.keys(logoItem.binary)[0];\n  try {\n    const buffer = await this.helpers.getBinaryDataBuffer(0, binaryKey);\n    logoBase64 = buffer.toString('base64');\n  } catch (e) {\n    const bd = logoItem.binary[binaryKey];\n    if (bd.data && bd.data !== 'filesystem-v2') logoBase64 = bd.data;\n  }\n}\nif (!logoBase64) throw new Error('Failed to get logo');\n\n// Parse webhook body\nlet data = webhookData;\nif (webhookData.body) {\n  if (typeof webhookData.body === 'string') {\n    try { data = JSON.parse(webhookData.body); } catch(e) { data = webhookData; }\n  } else {\n    data = webhookData.body;\n  }\n}\n\nconst slides = data.slides || [];\nif (slides.length === 0) throw new Error('No slides provided');\n\n// MSI Brand Colors - MANDATORY for visual consistency\nconst brandColors = {\n  primary: data.color_primary || '#207CE5',\n  secondary: data.color_secondary || '#004AAD',\n  accent: data.color_accent || '#FFFDF1',\n  dark: data.color_dark || '#2B2B2B'\n};\n\n// Visual consistency parameters\nconst visualConsistency = {\n  font_headline: data.font_headline || 'ITC Avant Garde Bold',\n  font_subtext: data.font_subtext || 'Poppins SemiBold',\n  font_body: data.font_body || 'Quicksand Medium',\n  font_size_headline: data.font_size_headline || '48-56pt',\n  font_size_subtext: data.font_size_subtext || '24-32pt',\n  logo_position: data.logo_position || 'bottom-right',\n  background_style: data.background_style || 'solid_primary'\n};\n\nreturn [{\n  json: {\n    slides: slides,\n    total: slides.length,\n    visual_style: data.visual_style || 'Modern 3D',\n    topic: data.topic || 'Technology',\n    context: data.context || '',\n    color_primary: brandColors.primary,\n    color_secondary: brandColors.secondary,\n    color_accent: brandColors.accent,\n    color_dark: brandColors.dark,\n    brand_colors: brandColors,\n    visual_consistency: visualConsistency,\n    logo_base64: logoBase64\n  }\n}];"
+        "jsCode": "const wh = $('Webhook').item.json;\nconst li = $input.item;\nlet logo = '';\nif (li.binary) {\n  const k = Object.keys(li.binary)[0];\n  logo = (await this.helpers.getBinaryDataBuffer(0, k)).toString('base64');\n}\nconst d = wh.body ? (typeof wh.body === 'string' ? JSON.parse(wh.body) : wh.body) : wh;\nconst sl = d.slides || [];\nreturn [{ json: { slides: sl, total: sl.length, topic: d.topic || 'Technology', context: d.context || '', logo } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -39,249 +39,62 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=Create an Instagram carousel strategy for:\n\nTopic: {{ $json.topic }}\nNumber of Slides: {{ $json.total }}\nVisual Style: {{ $json.visual_style }}\nContext: {{ $json.context || 'None provided' }}\n\nSlide Headlines:\n{{ $json.slides.map((s, i) => `Slide ${i+1}: ${s.headline}`).join('\\n') }}\n\nNote: All images will be in 4:5 portrait format for Instagram.",
+        "text": "=Topic: {{ $json.topic }}\nSlides: {{ $json.total }}\nStyle: Photorealistic\n\nHeadlines:\n{{ $json.slides.map((s, i) => `${i+1}. ${s.headline}`).join('\\n') }}",
         "options": {
-          "systemMessage": "# LANGUAGE REQUIREMENT\nALWAYS respond in English regardless of input language.\n\n# ROLE: Strategic News Content Analyst for MSI Technologies - NEWS CAROUSEL SPECIALIST\n\nYou are creating a 5-SLIDE NEWS CAROUSEL from tech news articles. The carousel structure MUST be:\n\n## MANDATORY 5-SLIDE STRUCTURE FOR NEWS\n- **SLIDE 1**: TOPIC OVERVIEW - Hook that introduces the overall news theme\n- **SLIDES 2-4**: INDIVIDUAL NEWS STORIES - Each news item gets its own slide\n- **SLIDE 5**: CALL TO ACTION - Clear CTA with MSI contact info\n\n## OUTPUT FORMAT\n---CAROUSEL STRATEGY---\nTheme: [Overarching news topic connecting all articles]\nHook (Slide 1): [Attention-grabbing intro about today's tech news theme]\nNews Stories: [Brief summary of what each news slide will cover]\nCTA (Slide 5): [What should they do next - contact MSI]\nHashtags: [5-7 hashtags including #MSITechnologies #TechNews]\n\n---VISUAL CONSISTENCY NOTES---\nUser's Visual Style: [Copy exactly from user input]\nNEWS LAYOUT REQUIREMENTS:\n- Each slide MUST have a SOLID color block for text (semi-transparent overlay for legibility)\n- Swipe indicator arrows (→) on slides 1-4\n- Page indicators (1/5, 2/5, etc.) on all slides\n- Image on TOP or SIDE, text block on BOTTOM or opposite side\n- Vary image position between slides for visual interest\nFormat: 4:5 Portrait Instagram Carousel\n\n---SLIDE BREAKDOWN---\nSlide 1 (INTRO): [Topic hook - what's the big news theme today?]\nSlide 2 (NEWS 1): [First news story - key headline, why it matters]\nSlide 3 (NEWS 2): [Second news story - key headline, why it matters]\nSlide 4 (NEWS 3): [Third news story - key headline, why it matters]\nSlide 5 (CTA): [Call to action - stay informed with MSI]\n\n## MSI CONTEXT\nMSI Technologies helps businesses modernize infrastructure and implement innovative technology solutions. We curate tech news to keep our audience informed.\n\n## NEWS CAROUSEL RULES\n1. Slide 1 = Pattern interrupt with compelling news hook\n2. Slides 2-4 = Each news gets DEDICATED slide with related imagery\n3. Slide 5 = Clear CTA with contact@msitechnologiesinc.com and msitechnologiesinc.com\n4. Visual style MUST be identical across all slides (same overlay style, same fonts)\n5. Brand blue #207CE5 as primary accent color\n6. SWIPE INDICATOR (→ Swipe) must appear on slides 1-4"
+          "systemMessage": "# NEWS CAROUSEL STRATEGIST - MSI Technologies\n\nCreate strategy for a 5-SLIDE Instagram carousel:\n- SLIDE 1: Topic hook/intro\n- SLIDES 2-4: Individual news stories\n- SLIDE 5: CTA with contact@msitechnologiesinc.com\n\nOutput format:\n---STRATEGY---\nTheme: [topic]\nHook: [attention grabber]\nHashtags: #MSITechnologies #TechNews [+5 relevant]\n\n---SLIDES---\nSlide 1: [intro hook]\nSlide 2-4: [news summaries]\nSlide 5: [CTA message]"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
       "position": [920, 300],
       "id": "agent-strategy",
-      "name": "Agent 1: Carousel Strategy"
+      "name": "Agent 1: Strategy"
     },
     {
       "parameters": {
-        "model": {
-          "__rl": true,
-          "value": "chatgpt-4o-latest",
-          "mode": "list",
-          "cachedResultName": "chatgpt-4o-latest"
-        },
         "options": {}
       },
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.3,
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
       "position": [1000, 520],
-      "id": "openai-strategy",
-      "name": "OpenAI for Strategy",
-      "credentials": {
-        "openAiApi": {
-          "id": "13Oqly3WdRAzZVXL",
-          "name": "OpenAi account"
-        }
-      }
+      "id": "gemini-strategy",
+      "name": "Gemini Strategy",
+      "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "={{ $('Agent 1: Carousel Strategy').item.json.output }}\n\n---SLIDES TO WRITE COPY FOR---\n{{ $('Parse Input').item.json.slides.map((s, i) => `Slide ${i+1}: ${s.headline}`).join('\\n') }}",
+        "text": "={{ $('Agent 1: Strategy').item.json.output }}\n\nSlides:\n{{ $('Parse Input').item.json.slides.map((s, i) => `${i+1}. ${s.headline}`).join('\\n') }}",
         "options": {
-          "systemMessage": "# LANGUAGE REQUIREMENT\nALWAYS respond in English.\n\n# ROLE: News Carousel Copy Writer for MSI Technologies\n\nWrite compelling NEWS copy for a 5-SLIDE carousel.\n\n## MANDATORY 5-SLIDE STRUCTURE\n\n**SLIDE 1: TOPIC INTRO**\nHeadline: [Attention-grabbing hook about the news theme - e.g., 'This Week in Tech' or 'Breaking: AI Transforms Enterprise']\nCaption: [2 sentences setting up what's coming in the carousel]\nSubtext: SWIPE TO DISCOVER →\n\n**SLIDE 2: NEWS STORY #1**\nHeadline: [News headline - punchy, newsworthy]\nCaption: [What happened and why it matters - 2-3 sentences]\nSubtext: [Source or date if available]\n\n**SLIDE 3: NEWS STORY #2**\nHeadline: [News headline - punchy, newsworthy]\nCaption: [What happened and why it matters - 2-3 sentences]\nSubtext: [Source or date if available]\n\n**SLIDE 4: NEWS STORY #3**\nHeadline: [News headline - punchy, newsworthy]\nCaption: [What happened and why it matters - 2-3 sentences]\nSubtext: [Source or date if available]\n\n**SLIDE 5: CALL TO ACTION**\nHeadline: Stay Ahead of the Curve\nCaption: MSI Technologies keeps you informed on the tech trends that matter for your business.\nSubtext: Let's talk: contact@msitechnologiesinc.com | msitechnologiesinc.com\n\n## NEWS WRITING RULES\n- Headlines: Maximum 8 words, impactful, newsworthy tone\n- Use active voice: 'Company Launches' not 'New Product Launched by Company'\n- Each news slide must stand alone but connect to the theme\n- NO fluff words: 'revolutionary', 'game-changing', 'cutting-edge'\n- Include SWIPE indicator text (→) on slides 1-4\n\n## VOICE\n- Senior tech analyst sharing insights\n- Informative but accessible\n- Confident, direct, factual\n\n## PAGE INDICATORS\nInclude page number format: 1/5, 2/5, 3/5, 4/5, 5/5"
+          "systemMessage": "# CAROUSEL COPYWRITER - MSI Technologies\n\nWrite copy for 5-slide news carousel:\n\n**SLIDE 1 (INTRO)**\nHeadline: [8 words max, hook]\nSubtext: SWIPE →\n\n**SLIDES 2-4 (NEWS)**\nHeadline: [newsworthy, 8 words]\nSubtext: [source/date]\n\n**SLIDE 5 (CTA)**\nHeadline: Stay Ahead\nSubtext: contact@msitechnologiesinc.com\n\nRules: Active voice, no fluff, include → on slides 1-4"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
       "position": [1140, 300],
-      "id": "agent-copywriter",
-      "name": "Agent 2: Carousel Copy Writer"
+      "id": "agent-copy",
+      "name": "Agent 2: Copy"
     },
     {
       "parameters": {
-        "model": {
-          "__rl": true,
-          "value": "chatgpt-4o-latest",
-          "mode": "list",
-          "cachedResultName": "chatgpt-4o-latest"
-        },
         "options": {}
       },
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.3,
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
       "position": [1220, 520],
-      "id": "openai-copywriter",
-      "name": "OpenAI for Copy Writer",
-      "credentials": {
-        "openAiApi": {
-          "id": "13Oqly3WdRAzZVXL",
-          "name": "OpenAi account"
-        }
-      }
+      "id": "gemini-copy",
+      "name": "Gemini Copy",
+      "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
     },
     {
       "parameters": {
-        "jsCode": "// Merge agent outputs with original data (WITHOUT logo to save memory)\nconst parseInput = $('Parse Input').item.json;\nconst strategy = $('Agent 1: Carousel Strategy').item.json.output;\nconst copy = $('Agent 2: Carousel Copy Writer').item.json.output;\n\n// Don't pass logo_base64 through agents - it's too heavy\nconst { logo_base64, ...dataWithoutLogo } = parseInput;\n\nreturn [{\n  json: {\n    ...dataWithoutLogo,\n    strategy: strategy,\n    carousel_copy: copy\n  }\n}];"
+        "jsCode": "const i = $('Parse Input').item.json;\nconst t = i.topic, n = i.slides.slice(0,3);\nconst s = [{ h: t, x: 'Your Weekly Tech Digest', t: 'intro' }, ...n.map(x => ({ h: x.headline, x: x.subtext||'', t: 'news' })), { h: 'Stay Informed with MSI', x: 'contact@msitechnologiesinc.com', t: 'cta' }];\nwhile (s.length < 5) s.splice(-1, 0, { h: 'More updates soon', x: '', t: 'news' });\nconst ph = { intro: 'Professional business team in modern glass office, natural lighting, shallow depth of field, corporate meeting room with city skyline view', news: 'Close-up of professional using laptop/tablet, tech workspace with monitors, server room with blue LED lights', cta: 'Confident business professional smiling, handshake moment, modern office reception' };\nconst pr = s.map((v,j) => { const num=j+1, last=num===5, pt=ph[v.t]||ph.news; return `4:5 portrait Instagram slide PHOTOREALISTIC.\\n\\nPHOTO: ${pt}, 85mm f/1.8, shallow DOF, natural light, Getty quality. NO illustrations, NO 3D.\\n\\nLAYOUT: TOP 60% photo, BOTTOM 40% #207CE5 90% opacity.\\n\\nTEXT: \"${v.h}\" ITC Avant Garde Bold WHITE. \"${v.x}\" Poppins #FFFDF1. FLAT no shadows.\\n\\nBRANDING: MSI Logo TOP-LEFT unchanged. Page \"${num}\".${!last ? ' Arrow → bottom-right.' : ''}`; });\nreturn [{ json: { prompts: pr, meta: s.map(v => ({ h: v.h, x: v.x, t: v.t })), topic: t, context: i.context } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [1360, 300],
-      "id": "merge-agent-outputs",
-      "name": "Merge Agent Outputs"
-    },
-    {
-      "parameters": {
-        "rules": {
-          "values": [
-            {
-              "conditions": {
-                "options": { "caseSensitive": false, "typeValidation": "loose" },
-                "conditions": [{ "leftValue": "={{ $json.visual_style }}", "rightValue": "Glassmorphism", "operator": { "type": "string", "operation": "equals" } }],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "Glassmorphism"
-            },
-            {
-              "conditions": {
-                "options": { "caseSensitive": false, "typeValidation": "loose" },
-                "conditions": [{ "leftValue": "={{ $json.visual_style }}", "rightValue": "Modern 3D", "operator": { "type": "string", "operation": "equals" } }],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "Modern3D"
-            },
-            {
-              "conditions": {
-                "options": { "caseSensitive": false, "typeValidation": "loose" },
-                "conditions": [{ "leftValue": "={{ $json.visual_style }}", "rightValue": "Isometric", "operator": { "type": "string", "operation": "equals" } }],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "Isometric"
-            },
-            {
-              "conditions": {
-                "options": { "caseSensitive": false, "typeValidation": "loose" },
-                "conditions": [{ "leftValue": "={{ $json.visual_style }}", "rightValue": "Data Hero", "operator": { "type": "string", "operation": "equals" } }],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "DataHero"
-            },
-            {
-              "conditions": {
-                "options": { "caseSensitive": false, "typeValidation": "loose" },
-                "conditions": [{ "leftValue": "={{ $json.visual_style }}", "rightValue": "Realistic", "operator": { "type": "string", "operation": "contains" } }],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "Realistic"
-            }
-          ]
-        },
-        "options": { "fallbackOutput": "extra" }
-      },
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3,
-      "position": [1580, 300],
-      "id": "route-style",
-      "name": "Route by Visual Style"
-    },
-    {
-      "parameters": {
-        "jsCode": "// GLASSMORPHISM Style Instructions for NEWS\nconst input = $input.item.json;\nconst pc = input.color_primary;\nconst sc = input.color_secondary;\nconst ac = input.color_accent;\nconst dc = input.color_dark;\n\nconst styleInstructions = `## MSI BRAND CAROUSEL STYLE\n**PHOTOGRAPHY:** Professional photography backgrounds.\n\n**MSI LOGO RULE:**\n- Place the PROVIDED logo image EXACTLY as-is in TOP-LEFT corner\n- DO NOT modify, redraw, or change the logo - use it unchanged\n- SAME logo placement on ALL slides\n\n**TYPOGRAPHY (MSI BRAND):**\n- Headlines: ITC Avant Garde Gothic Bold, WHITE color\n- Subtext: Poppins SemiBold, cream (#FFFDF1)\n- FLAT text - NO shadows, NO outlines, NO effects\n\n**LAYOUT:**\n- TOP 60%: Professional photo background\n- BOTTOM 40%: Solid color text block (${pc} at 90% opacity)\n- SWIPE INDICATOR: Arrow (→) in white on slides 1-4\n- PAGE NUMBER: Single digit only (1, 2, 3, 4, 5) with creative style\n\n**DESIGN RULES:**\n- NO shadows anywhere\n- FLAT solid colors only\n- Clean minimal design\n- Logo TOP-LEFT unchanged\n\n**TEXT BLOCK VARIATIONS:**\n- Slide 1: Full-width bottom bar\n- Slide 2: Left-side vertical column\n- Slide 3: Full-width bottom bar\n- Slide 4: Right-side vertical column\n- Slide 5: Centered CTA block\n\n**COLOR PALETTE:**\n- Primary: ${pc}\n- Secondary: ${sc}\n- Accent/Text: ${ac}\n- Dark: ${dc}`;\n\n// Pre-format slides list for the agent prompt\nconst slides = input.slides || [];\nconst slidesList = slides.map((s, i) => `Slide ${i+1}: ${s.headline}`).join('\\n');\n\nreturn [{ json: { ...input, style_instructions: styleInstructions, slides_list: slidesList } }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1800, 100],
-      "id": "style-glass",
-      "name": "Style: Glassmorphism"
-    },
-    {
-      "parameters": {
-        "jsCode": "// MODERN 3D Style Instructions for NEWS\nconst input = $input.item.json;\nconst pc = input.color_primary;\nconst sc = input.color_secondary;\nconst ac = input.color_accent;\nconst dc = input.color_dark;\n\nconst styleInstructions = `## MSI BRAND CAROUSEL STYLE\n**PHOTOGRAPHY:** Professional photography backgrounds.\n\n**MSI LOGO RULE:**\n- Place the PROVIDED logo image EXACTLY as-is in TOP-LEFT corner\n- DO NOT modify, redraw, or change the logo - use it unchanged\n- SAME logo placement on ALL slides\n\n**TYPOGRAPHY (MSI BRAND):**\n- Headlines: ITC Avant Garde Gothic Bold, WHITE color\n- Subtext: Poppins SemiBold, cream (#FFFDF1)\n- FLAT text - NO shadows, NO outlines, NO effects\n\n**LAYOUT:**\n- TOP/SIDE 60%: Professional photo background\n- TEXT AREA 40%: Solid color block (${pc} at 90% opacity)\n- SWIPE INDICATOR: Arrow (→) on slides 1-4\n- PAGE NUMBER: Single digit only (1, 2, 3, 4, 5) with creative placement\n\n**DESIGN RULES:**\n- NO shadows anywhere\n- FLAT solid colors only\n- Clean edges, minimal design\n- Logo TOP-LEFT unchanged\n\n**TEXT BLOCK VARIATIONS:**\n- Slide 1: Bottom horizontal bar with 3D depth\n- Slide 2: Left column with shadow\n- Slide 3: Bottom bar offset\n- Slide 4: Right column with shadow\n- Slide 5: Centered CTA with 3D frame\n\n**COLOR PALETTE:**\n- Primary: ${pc}\n- Secondary: ${sc}\n- Accent/Text: ${ac}\n- Dark: ${dc}`;\n\n// Pre-format slides list for the agent prompt\nconst slides = input.slides || [];\nconst slidesList = slides.map((s, i) => `Slide ${i+1}: ${s.headline}`).join('\\n');\n\nreturn [{ json: { ...input, style_instructions: styleInstructions, slides_list: slidesList } }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1800, 220],
-      "id": "style-modern3d",
-      "name": "Style: Modern 3D"
-    },
-    {
-      "parameters": {
-        "jsCode": "// ISOMETRIC Style Instructions\nconst input = $input.item.json;\nconst pc = input.color_primary;\nconst sc = input.color_secondary;\nconst ac = input.color_accent;\nconst dc = input.color_dark;\n\nconst styleInstructions = `## ISOMETRIC ARCHITECTURE STYLE\n**SCENE:** Brand color (${pc}) background with isometric 3D architecture. Clean geometric buildings, server rooms, or tech infrastructure in isometric perspective. Flat colors with subtle gradients. Professional technical illustration style.\n\n**COLOR PALETTE:**\n- Primary: ${pc}\n- Secondary: ${sc}\n- Accent/Text: ${ac}\n- Dark: ${dc}\n\n**VISUAL ELEMENTS:**\n1. Isometric buildings or server structures\n2. Clean geometric shapes in isometric view\n3. Network connection lines between structures (${ac})\n4. Small human figures for scale (optional)\n5. Subtle shadows for depth\n6. Technical grid or blueprint elements`;\n\n// Pre-format slides list for the agent prompt\nconst slides = input.slides || [];\nconst slidesList = slides.map((s, i) => `Slide ${i+1}: ${s.headline}`).join('\\n');\n\nreturn [{ json: { ...input, style_instructions: styleInstructions, slides_list: slidesList } }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1800, 340],
-      "id": "style-iso",
-      "name": "Style: Isometric"
-    },
-    {
-      "parameters": {
-        "jsCode": "// DATA HERO Style Instructions\nconst input = $input.item.json;\nconst pc = input.color_primary;\nconst sc = input.color_secondary;\nconst ac = input.color_accent;\nconst dc = input.color_dark;\n\nconst styleInstructions = `## DATA HERO / VISUALIZATION STYLE\n**SCENE:** Brand color (${pc}) background with prominent data visualizations as hero element. Charts, graphs, dashboards, or data flow diagrams as main visual. Clean, modern infographic aesthetic with professional corporate feel.\n\n**COLOR PALETTE:**\n- Primary: ${pc}\n- Secondary: ${sc}\n- Accent/Text: ${ac}\n- Dark: ${dc}\n\n**VISUAL ELEMENTS:**\n1. Large chart or graph as hero element (bar, line, pie, or dashboard)\n2. Data points and nodes with connection lines (${ac})\n3. Glowing data indicators and metrics\n4. Abstract data flow visualization\n5. Clean grid or axis lines\n6. Subtle animated feel (arrows, flow indicators)`;\n\n// Pre-format slides list for the agent prompt\nconst slides = input.slides || [];\nconst slidesList = slides.map((s, i) => `Slide ${i+1}: ${s.headline}`).join('\\n');\n\nreturn [{ json: { ...input, style_instructions: styleInstructions, slides_list: slidesList } }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1800, 460],
-      "id": "style-data",
-      "name": "Style: Data Hero"
-    },
-    {
-      "parameters": {
-        "jsCode": "// REALISTIC PHOTOGRAPHY Style Instructions (NO GRADIENT)\nconst input = $input.item.json;\nconst pc = input.color_primary;\nconst sc = input.color_secondary;\nconst ac = input.color_accent;\nconst dc = input.color_dark;\n\nconst styleInstructions = `## PHOTOREALISTIC STOCK PHOTOGRAPHY\nGenerate a professional stock photograph that looks EXACTLY like it was shot by a commercial photographer for Getty Images or Shutterstock. This must be indistinguishable from real photography.\n\n**COLOR PALETTE TO USE:**\n- Primary Brand Color: ${pc}\n- Secondary Color: ${sc}\n- Accent/Text Color: ${ac}\n- Dark Color: ${dc}\n\n### ABSOLUTE PROHIBITIONS FOR THIS STYLE\n- NO glowing effects of ANY kind\n- NO luminous or light-emitting elements\n- NO light rays, god rays, or beam effects\n- NO surreal or fantasy elements whatsoever\n- NO floating objects (everything must obey gravity)\n- NO neon colors or oversaturated hues\n- NO dreamy, ethereal, or mystical atmosphere\n- NO abstract distortions or warping\n- NO lens flares or bloom effects\n- NO magical elements or impossible physics\n- NO futuristic holograms or sci-fi elements\n- NO glowing screens or monitors (realistic brightness only)\n- NO supernatural lighting\n- EVERYTHING must look like it could exist in a real photograph\n\n### SUBJECT & APPEARANCE\n- 1-2 professional people, age 30-42, tech industry professionals\n- Expression: genuine micro-expressions - slight asymmetry in smile, natural eye crinkles, relaxed brow\n- Skin: visible pores, natural texture variations, subtle imperfections\n- Hair: individual strands visible, natural flyaways, realistic shine patterns\n- Professional clothing: oxford shirts, quality sweaters, blazers\n\n### ENVIRONMENT\n- Background: shallow depth of field (f/1.8-2.8 bokeh)\n- Setting: modern office with glass partitions (blurred), neutral wall, bright workspace\n- Props if visible: realistic laptop, quality notebook, coffee cup\n\n### LIGHTING\n- Primary: soft natural window light from camera-left (45-degree angle)\n- Shadows: soft gradual transitions, visible but not harsh\n- Color temperature: slightly warm (5500-6000K)\n\n### CAMERA SPECS\n- 85mm f/1.4 portrait lens simulation\n- Shallow depth of field, subtle film grain\n- Natural, slightly desaturated colors`;\n\n// Pre-format slides list for the agent prompt\nconst slides = input.slides || [];\nconst slidesList = slides.map((s, i) => `Slide ${i+1}: ${s.headline}`).join('\\n');\n\nreturn [{ json: { ...input, style_instructions: styleInstructions, slides_list: slidesList } }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1800, 580],
-      "id": "style-realistic",
-      "name": "Style: Realistic"
-    },
-    {
-      "parameters": {
-        "jsCode": "// DEFAULT CORPORATE Style Instructions for NEWS\nconst input = $input.item.json;\nconst pc = input.color_primary;\nconst sc = input.color_secondary;\nconst ac = input.color_accent;\nconst dc = input.color_dark;\n\nconst styleInstructions = `## MSI BRAND CAROUSEL STYLE\n**PHOTOGRAPHY:** Professional photography backgrounds.\n\n**MSI LOGO RULE:**\n- Place the PROVIDED logo image EXACTLY as-is in TOP-LEFT corner\n- DO NOT modify, redraw, or change the logo - use it unchanged\n- SAME logo placement on ALL slides\n\n**TYPOGRAPHY (MSI BRAND):**\n- Headlines: ITC Avant Garde Gothic Bold, WHITE color\n- Subtext: Poppins SemiBold, cream (#FFFDF1)\n- FLAT text - NO shadows, NO outlines, NO effects\n\n**LAYOUT:**\n- IMAGE AREA (60%): Professional photo background\n- TEXT BLOCK (40%): Solid color overlay (${pc} at 90% opacity)\n- SWIPE INDICATOR: Arrow (→) in white on slides 1-4\n- PAGE NUMBER: Single digit only (1, 2, 3, 4, 5) creative style\n\n**DESIGN RULES:**\n- NO shadows anywhere\n- FLAT solid colors only\n- Clean minimal design\n- Logo TOP-LEFT unchanged\n\n**TEXT BLOCK VARIATIONS:**\n- Slide 1: Full-width bottom bar (intro hook)\n- Slide 2: Left-side column (news 1)\n- Slide 3: Full-width bottom bar (news 2)\n- Slide 4: Right-side column (news 3)\n- Slide 5: Centered block (CTA)\n\n**COLOR PALETTE:**\n- Primary: ${pc}\n- Secondary: ${sc}\n- Accent/Text: ${ac}\n- Dark: ${dc}`;\n\n// Pre-format slides list for the agent prompt\nconst slides = input.slides || [];\nconst slidesList = slides.map((s, i) => `Slide ${i+1}: ${s.headline}`).join('\\n');\n\nreturn [{ json: { ...input, style_instructions: styleInstructions, slides_list: slidesList } }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1800, 700],
-      "id": "style-default",
-      "name": "Style: Default"
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "=CAROUSEL STRATEGY:\n{{ $json.strategy }}\n\nCARROUSEL COPY:\n{{ $json.carousel_copy }}\n\nVISUAL STYLE: {{ $json.visual_style }}\nNUMBER OF SLIDES: {{ $json.total }}\n\nCOLOR PALETTE TO USE:\n- Primary Color: {{ $json.color_primary }}\n- Secondary Color: {{ $json.color_secondary }}\n- Accent/Text Color: {{ $json.color_accent }}\n- Dark Color: {{ $json.color_dark }}\n\nSTYLE INSTRUCTIONS:\n{{ $json.style_instructions }}\n\nSLIDES TO CREATE:\n{{ $json.slides_list }}",
-        "options": {
-          "systemMessage": "# ROLE: News Image Prompt Engineer for MSI Technologies - NEWS CAROUSEL SPECIALIST\n\nCreate Gemini 3 Pro image generation prompts for a 5-SLIDE NEWS CAROUSEL.\n\n## CRITICAL: BRAND CONSISTENCY REQUIREMENTS\n\n### MSI LOGO - ABSOLUTE RULE\n- The provided MSI logo image MUST be placed EXACTLY as-is in TOP-LEFT corner\n- DO NOT redraw, recreate, modify, resize, or alter the logo in ANY way\n- Simply place the provided logo file unchanged\n- SAME exact logo on ALL 5 slides\n\n### TYPOGRAPHY - MSI BRAND FONTS\n- Headlines: ITC Avant Garde Gothic Bold, white color\n- Subtext: Poppins SemiBold, white or cream (#FFFDF1)\n- FLAT text only - NO shadows, NO outlines, NO effects on text\n- Clean, modern, professional typography\n\n### PAGE NUMBERS - CREATIVE SINGLE DIGITS\n- Show ONLY the number (1, 2, 3, 4, 5) - NOT fractions like 1/5\n- Creative placement: vary position per slide (top-right, bottom-left, etc.)\n- Style: Large bold number, subtle design accent\n- Can be: circled, in a small colored block, or standalone with style\n\n### VISUAL STYLE\n- Professional photography backgrounds\n- FLAT design elements - NO shadows anywhere\n- Clean solid color text blocks\n- NO gradients on text, NO glow effects\n\n### LAYOUT STRUCTURE\n1. **IMAGE AREA** (60%): Related photo background\n2. **TEXT BLOCK** (40%): Solid blue (#207CE5) at 90% opacity\n3. **SWIPE INDICATOR**: Arrow (→) on slides 1-4\n4. **PAGE NUMBER**: Single digit with creative style\n5. **MSI LOGO**: TOP-LEFT, unchanged from provided image\n\n## CRITICAL PROHIBITIONS\n- NO shadows on text or elements\n- NO modifying the MSI logo\n- NO page fractions (use single numbers only)\n- NO glowing effects\n- NO 3D or depth effects\n\n## OUTPUT FORMAT\nFor EACH slide:\n\n**SLIDE [N] PROMPT:**\n[Include: photo description, text block, headline in ITC Avant Garde Bold, page number as single digit with creative placement, MSI logo TOP-LEFT unchanged]"
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 1.7,
-      "position": [2020, 300],
-      "id": "agent-image-prompt",
-      "name": "Agent 3: Image Prompts"
-    },
-    {
-      "parameters": {
-        "model": {
-          "__rl": true,
-          "value": "chatgpt-4o-latest",
-          "mode": "list",
-          "cachedResultName": "chatgpt-4o-latest"
-        },
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.3,
-      "position": [2100, 520],
-      "id": "openai-image-prompt",
-      "name": "OpenAI for Image Prompts",
-      "credentials": {
-        "openAiApi": {
-          "id": "13Oqly3WdRAzZVXL",
-          "name": "OpenAi account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Generate SLIDE 1 Prompt - MEMORY OPTIMIZED\n// Logo is fetched directly in Gemini nodes from Parse Input\nconst mergeData = $('Merge Agent Outputs').item.json;\nconst parseInput = $('Parse Input').item.json;\nconst agentOutput = $input.item.json.output || '';\n\nconst originalSlides = mergeData.slides;\nconst styleInstructions = mergeData.style_instructions || $input.item.json.style_instructions || '';\nconst topic = mergeData.topic;\n\n// Transform to 5-slide structure: INTRO + up to 3 NEWS + CTA\nconst newsSlides = originalSlides.slice(0, 3);\nconst introHeadline = topic || 'Tech News Update';\n\nconst allSlides = [\n  { headline: introHeadline, subtext: 'Your Weekly Tech Digest', type: 'intro' },\n  ...newsSlides.map(s => ({ headline: s.headline, subtext: s.subtext || '', type: 'news' })),\n  { headline: 'Stay Informed with MSI', subtext: 'contact@msitechnologiesinc.com', type: 'cta' }\n];\n\nwhile (allSlides.length < 5) {\n  allSlides.splice(allSlides.length - 1, 0, { headline: 'More updates coming soon', subtext: '', type: 'news' });\n}\n\nconst slide = allSlides[0];\nconst total = allSlides.length;\n\n// Pre-generate ALL prompts now to avoid passing large strings through flow\nconst prompts = allSlides.map((s, i) => {\n  const num = i + 1;\n  const isLast = num === total;\n  const slideType = s.type === 'intro' ? 'INTRO/PORTADA' : s.type === 'cta' ? 'CALL TO ACTION' : `NEWS STORY #${num - 1}`;\n  return `Create a 4:5 portrait Instagram carousel slide.\n\n${styleInstructions}\n\nSLIDE ${num} - ${slideType}\nHEADLINE: \"${s.headline}\"\nSUBTEXT: \"${s.subtext || ''}\"\n\n## MSI LOGO - CRITICAL\nThe attached logo image MUST be placed EXACTLY as-is in TOP-LEFT corner.\nDO NOT redraw, modify, or alter the logo. Use the provided image file unchanged.\n\n## TYPOGRAPHY\n- Headline: ITC Avant Garde Gothic Bold, WHITE, FLAT (no shadows)\n- Subtext: Poppins SemiBold, cream color\n- NO text shadows, NO outlines, NO effects\n\n## LAYOUT\n1. BACKGROUND (60%): Professional photo\n2. TEXT BLOCK (40%): Solid blue (#207CE5) at 90% opacity\n3. HEADLINE: \"${s.headline}\" in white\n4. ${!isLast ? 'SWIPE INDICATOR: Arrow (→) bottom-right' : 'NO swipe indicator - final slide'}\n5. PAGE NUMBER: Just \"${num}\" - bold number\n6. LOGO: PROVIDED image in TOP-LEFT - DO NOT MODIFY\n\n## PROHIBITIONS\n- NO shadows anywhere\n- NO modifying the logo\n- FLAT design only`;\n});\n\nreturn [{ json: { \n  slide_num: 1, \n  headline: slide.headline, \n  subtext: slide.subtext || '', \n  prompt: prompts[0], \n  remaining_slides: allSlides.slice(1).map((s, i) => ({ ...s, prompt: prompts[i + 1] })), \n  total: total, \n  topic: topic,\n  results: [] \n} }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [2240, 300],
-      "id": "slide1-prompt",
-      "name": "Slide 1 Prompt"
+      "id": "build-slides",
+      "name": "Build 5 Slides"
     },
     {
       "parameters": {
@@ -291,64 +104,40 @@
         "nodeCredentialType": "googlePalmApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }, { inline_data: { mime_type: 'image/png', data: $('Parse Input').item.json.logo_base64 } }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '4:5', imageSize: '2K' } } }) }}",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompts[0] }, { inline_data: { mime_type: 'image/png', data: $('Parse Input').item.json.logo } }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '4:5', imageSize: '2K' } } }) }}",
         "options": { "timeout": 120000 }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2460, 300],
+      "position": [1580, 300],
       "id": "gemini1",
       "name": "Gemini 1",
       "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
     },
     {
       "parameters": {
-        "jsCode": "// MEMORY OPTIMIZED - only pass essential data\nconst prev = $('Slide 1 Prompt').item.json;\nconst resp = $input.item.json;\n\nlet imgData = '';\nconst candidates = resp.candidates || [];\nfor (const c of candidates) {\n  for (const p of (c?.content?.parts || [])) {\n    const d = p.inline_data || p.inlineData;\n    if (d && d.data) { imgData = d.data; break; }\n  }\n  if (imgData) break;\n}\nif (!imgData) throw new Error('No image for slide 1');\n\nreturn [{ json: { \n  headline: prev.headline, \n  subtext: prev.subtext, \n  remaining_slides: prev.remaining_slides, \n  total: prev.total, \n  topic: prev.topic, \n  results: prev.results,\n  img_data: imgData \n} }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [2680, 300],
-      "id": "extract1",
-      "name": "Extract 1"
-    },
-    {
-      "parameters": {
         "method": "POST",
         "url": "https://api.imgbb.com/1/upload",
         "sendBody": true,
         "contentType": "multipart-form-data",
-        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "name": "image", "value": "={{ $json.img_data }}" }] },
+        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "name": "image", "value": "={{ $json.candidates?.[0]?.content?.parts?.find(p => p.inline_data || p.inlineData)?.inline_data?.data || $json.candidates?.[0]?.content?.parts?.find(p => p.inline_data || p.inlineData)?.inlineData?.data || '' }}" }] },
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2900, 300],
+      "position": [1800, 300],
       "id": "upload1",
       "name": "Upload 1"
     },
     {
       "parameters": {
-        "jsCode": "// MEMORY OPTIMIZED - prompts pre-generated, no logo/agent_output passed\\nconst prev = $('Extract 1').item.json;\\nconst upload = $input.item.json;\\nconst url = upload.data?.url || upload.data?.display_url;\\n\\nconst results = [{ slide_number: 1, headline: prev.headline, subtext: prev.subtext, image_url: url, type: 'intro' }];\\n\\nif (prev.remaining_slides.length === 0) {\\n  return [{ json: { done: true, results: results } }];\\n}\\n\\nconst next = prev.remaining_slides[0];\\n\\nreturn [{ json: { \\n  done: false, \\n  slide_num: 2, \\n  headline: next.headline, \\n  subtext: next.subtext || '', \\n  prompt: next.prompt, \\n  remaining_slides: prev.remaining_slides.slice(1), \\n  total: prev.total, \\n  topic: prev.topic, \\n  results: results, \\n  slide_type: next.type || 'news' \\n} }];"
+        "jsCode": "const b = $('Build 5 Slides').item.json, m = b.meta[0], u = $input.item.json.data?.url || '';\nreturn [{ json: { prompts: b.prompts, meta: b.meta, topic: b.topic, context: b.context, r: [{ n: 1, h: m.h, x: m.x, u, t: m.t }] } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3120, 300],
+      "position": [2020, 300],
       "id": "collect1",
       "name": "Collect 1"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
-          "conditions": [{ "leftValue": "={{ $json.done }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }],
-          "combinator": "and"
-        }
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [3340, 300],
-      "id": "check1",
-      "name": "Done?"
     },
     {
       "parameters": {
@@ -358,64 +147,40 @@
         "nodeCredentialType": "googlePalmApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }, { inline_data: { mime_type: 'image/png', data: $('Parse Input').item.json.logo_base64 } }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '4:5', imageSize: '2K' } } }) }}",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompts[1] }, { inline_data: { mime_type: 'image/png', data: $('Parse Input').item.json.logo } }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '4:5', imageSize: '2K' } } }) }}",
         "options": { "timeout": 120000 }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [3560, 420],
+      "position": [2240, 300],
       "id": "gemini2",
       "name": "Gemini 2",
       "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
     },
     {
       "parameters": {
-        "jsCode": "// MEMORY OPTIMIZED\nconst prev = $('Collect 1').item.json;\nconst resp = $input.item.json;\n\nlet imgData = '';\nconst candidates = resp.candidates || [];\nfor (const c of candidates) {\n  for (const p of (c?.content?.parts || [])) {\n    const d = p.inline_data || p.inlineData;\n    if (d && d.data) { imgData = d.data; break; }\n  }\n  if (imgData) break;\n}\nif (!imgData) throw new Error('No image for slide 2');\n\nreturn [{ json: { \n  headline: prev.headline, \n  subtext: prev.subtext, \n  remaining_slides: prev.remaining_slides, \n  total: prev.total, \n  topic: prev.topic, \n  results: prev.results,\n  slide_type: prev.slide_type,\n  img_data: imgData \n} }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [3780, 420],
-      "id": "extract2",
-      "name": "Extract 2"
-    },
-    {
-      "parameters": {
         "method": "POST",
         "url": "https://api.imgbb.com/1/upload",
         "sendBody": true,
         "contentType": "multipart-form-data",
-        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "name": "image", "value": "={{ $json.img_data }}" }] },
+        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "name": "image", "value": "={{ $json.candidates?.[0]?.content?.parts?.find(p => p.inline_data || p.inlineData)?.inline_data?.data || $json.candidates?.[0]?.content?.parts?.find(p => p.inline_data || p.inlineData)?.inlineData?.data || '' }}" }] },
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [4000, 420],
+      "position": [2460, 300],
       "id": "upload2",
       "name": "Upload 2"
     },
     {
       "parameters": {
-        "jsCode": "// MEMORY OPTIMIZED\nconst prev = $('Extract 2').item.json;\nconst upload = $input.item.json;\nconst url = upload.data?.url || upload.data?.display_url;\n\nconst results = [...prev.results, { slide_number: 2, headline: prev.headline, subtext: prev.subtext, image_url: url, type: prev.slide_type || 'news' }];\n\nif (prev.remaining_slides.length === 0) {\n  return [{ json: { done: true, results: results } }];\n}\n\nconst next = prev.remaining_slides[0];\n\nreturn [{ json: { \n  done: false, \n  slide_num: 3, \n  headline: next.headline, \n  subtext: next.subtext || '', \n  prompt: next.prompt, \n  remaining_slides: prev.remaining_slides.slice(1), \n  total: prev.total, \n  topic: prev.topic, \n  results: results, \n  slide_type: next.type || 'news' \n} }];"
+        "jsCode": "const p = $('Collect 1').item.json, m = p.meta[1], u = $input.item.json.data?.url || '';\nreturn [{ json: { prompts: p.prompts, meta: p.meta, topic: p.topic, context: p.context, r: [...p.r, { n: 2, h: m.h, x: m.x, u, t: m.t }] } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4220, 420],
+      "position": [2680, 300],
       "id": "collect2",
       "name": "Collect 2"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
-          "conditions": [{ "leftValue": "={{ $json.done }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }],
-          "combinator": "and"
-        }
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [4440, 420],
-      "id": "check2",
-      "name": "Done? 2"
     },
     {
       "parameters": {
@@ -425,64 +190,40 @@
         "nodeCredentialType": "googlePalmApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }, { inline_data: { mime_type: 'image/png', data: $('Parse Input').item.json.logo_base64 } }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '4:5', imageSize: '2K' } } }) }}",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompts[2] }, { inline_data: { mime_type: 'image/png', data: $('Parse Input').item.json.logo } }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '4:5', imageSize: '2K' } } }) }}",
         "options": { "timeout": 120000 }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [4660, 540],
+      "position": [2900, 300],
       "id": "gemini3",
       "name": "Gemini 3",
       "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
     },
     {
       "parameters": {
-        "jsCode": "// MEMORY OPTIMIZED\nconst prev = $('Collect 2').item.json;\nconst resp = $input.item.json;\n\nlet imgData = '';\nconst candidates = resp.candidates || [];\nfor (const c of candidates) {\n  for (const p of (c?.content?.parts || [])) {\n    const d = p.inline_data || p.inlineData;\n    if (d && d.data) { imgData = d.data; break; }\n  }\n  if (imgData) break;\n}\nif (!imgData) throw new Error('No image for slide 3');\n\nreturn [{ json: { \n  headline: prev.headline, \n  subtext: prev.subtext, \n  remaining_slides: prev.remaining_slides, \n  total: prev.total, \n  topic: prev.topic, \n  results: prev.results,\n  slide_type: prev.slide_type,\n  img_data: imgData \n} }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [4880, 540],
-      "id": "extract3",
-      "name": "Extract 3"
-    },
-    {
-      "parameters": {
         "method": "POST",
         "url": "https://api.imgbb.com/1/upload",
         "sendBody": true,
         "contentType": "multipart-form-data",
-        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "name": "image", "value": "={{ $json.img_data }}" }] },
+        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "name": "image", "value": "={{ $json.candidates?.[0]?.content?.parts?.find(p => p.inline_data || p.inlineData)?.inline_data?.data || $json.candidates?.[0]?.content?.parts?.find(p => p.inline_data || p.inlineData)?.inlineData?.data || '' }}" }] },
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [5100, 540],
+      "position": [3120, 300],
       "id": "upload3",
       "name": "Upload 3"
     },
     {
       "parameters": {
-        "jsCode": "// MEMORY OPTIMIZED\nconst prev = $('Extract 3').item.json;\nconst upload = $input.item.json;\nconst url = upload.data?.url || upload.data?.display_url;\n\nconst results = [...prev.results, { slide_number: 3, headline: prev.headline, subtext: prev.subtext, image_url: url, type: prev.slide_type || 'news' }];\n\nif (prev.remaining_slides.length === 0) {\n  return [{ json: { done: true, results: results } }];\n}\n\nconst next = prev.remaining_slides[0];\n\nreturn [{ json: { \n  done: false, \n  slide_num: 4, \n  headline: next.headline, \n  subtext: next.subtext || '', \n  prompt: next.prompt, \n  remaining_slides: prev.remaining_slides.slice(1), \n  total: prev.total, \n  topic: prev.topic, \n  results: results, \n  slide_type: next.type || 'news' \n} }];"
+        "jsCode": "const p = $('Collect 2').item.json, m = p.meta[2], u = $input.item.json.data?.url || '';\nreturn [{ json: { prompts: p.prompts, meta: p.meta, topic: p.topic, context: p.context, r: [...p.r, { n: 3, h: m.h, x: m.x, u, t: m.t }] } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [5320, 540],
+      "position": [3340, 300],
       "id": "collect3",
       "name": "Collect 3"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
-          "conditions": [{ "leftValue": "={{ $json.done }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }],
-          "combinator": "and"
-        }
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [5540, 540],
-      "id": "check3",
-      "name": "Done? 3"
     },
     {
       "parameters": {
@@ -492,64 +233,40 @@
         "nodeCredentialType": "googlePalmApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }, { inline_data: { mime_type: 'image/png', data: $('Parse Input').item.json.logo_base64 } }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '4:5', imageSize: '2K' } } }) }}",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompts[3] }, { inline_data: { mime_type: 'image/png', data: $('Parse Input').item.json.logo } }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '4:5', imageSize: '2K' } } }) }}",
         "options": { "timeout": 120000 }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [5760, 660],
+      "position": [3560, 300],
       "id": "gemini4",
       "name": "Gemini 4",
       "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
     },
     {
       "parameters": {
-        "jsCode": "// MEMORY OPTIMIZED\nconst prev = $('Collect 3').item.json;\nconst resp = $input.item.json;\n\nlet imgData = '';\nconst candidates = resp.candidates || [];\nfor (const c of candidates) {\n  for (const p of (c?.content?.parts || [])) {\n    const d = p.inline_data || p.inlineData;\n    if (d && d.data) { imgData = d.data; break; }\n  }\n  if (imgData) break;\n}\nif (!imgData) throw new Error('No image for slide 4');\n\nreturn [{ json: { \n  headline: prev.headline, \n  subtext: prev.subtext, \n  remaining_slides: prev.remaining_slides, \n  total: prev.total, \n  topic: prev.topic, \n  results: prev.results,\n  slide_type: prev.slide_type,\n  img_data: imgData \n} }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [5980, 660],
-      "id": "extract4",
-      "name": "Extract 4"
-    },
-    {
-      "parameters": {
         "method": "POST",
         "url": "https://api.imgbb.com/1/upload",
         "sendBody": true,
         "contentType": "multipart-form-data",
-        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "name": "image", "value": "={{ $json.img_data }}" }] },
+        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "name": "image", "value": "={{ $json.candidates?.[0]?.content?.parts?.find(p => p.inline_data || p.inlineData)?.inline_data?.data || $json.candidates?.[0]?.content?.parts?.find(p => p.inline_data || p.inlineData)?.inlineData?.data || '' }}" }] },
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [6200, 660],
+      "position": [3780, 300],
       "id": "upload4",
       "name": "Upload 4"
     },
     {
       "parameters": {
-        "jsCode": "// MEMORY OPTIMIZED\nconst prev = $('Extract 4').item.json;\nconst upload = $input.item.json;\nconst url = upload.data?.url || upload.data?.display_url;\n\nconst results = [...prev.results, { slide_number: 4, headline: prev.headline, subtext: prev.subtext, image_url: url, type: prev.slide_type || 'news' }];\n\nif (prev.remaining_slides.length === 0) {\n  return [{ json: { done: true, results: results } }];\n}\n\nconst next = prev.remaining_slides[0];\n\nreturn [{ json: { \n  done: false, \n  slide_num: 5, \n  headline: next.headline, \n  subtext: next.subtext || '', \n  prompt: next.prompt, \n  remaining_slides: prev.remaining_slides.slice(1), \n  total: prev.total, \n  topic: prev.topic, \n  results: results, \n  slide_type: next.type || 'cta' \n} }];"
+        "jsCode": "const p = $('Collect 3').item.json, m = p.meta[3], u = $input.item.json.data?.url || '';\nreturn [{ json: { prompts: p.prompts, meta: p.meta, topic: p.topic, context: p.context, r: [...p.r, { n: 4, h: m.h, x: m.x, u, t: m.t }] } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [6420, 660],
+      "position": [4000, 300],
       "id": "collect4",
       "name": "Collect 4"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
-          "conditions": [{ "leftValue": "={{ $json.done }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }],
-          "combinator": "and"
-        }
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [6640, 660],
-      "id": "check4",
-      "name": "Done? 4"
     },
     {
       "parameters": {
@@ -559,25 +276,15 @@
         "nodeCredentialType": "googlePalmApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }, { inline_data: { mime_type: 'image/png', data: $('Parse Input').item.json.logo_base64 } }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '4:5', imageSize: '2K' } } }) }}",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompts[4] }, { inline_data: { mime_type: 'image/png', data: $('Parse Input').item.json.logo } }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '4:5', imageSize: '2K' } } }) }}",
         "options": { "timeout": 120000 }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [6860, 780],
+      "position": [4220, 300],
       "id": "gemini5",
       "name": "Gemini 5",
       "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
-    },
-    {
-      "parameters": {
-        "jsCode": "// MEMORY OPTIMIZED\nconst prev = $('Collect 4').item.json;\nconst resp = $input.item.json;\n\nlet imgData = '';\nconst candidates = resp.candidates || [];\nfor (const c of candidates) {\n  for (const p of (c?.content?.parts || [])) {\n    const d = p.inline_data || p.inlineData;\n    if (d && d.data) { imgData = d.data; break; }\n  }\n  if (imgData) break;\n}\nif (!imgData) throw new Error('No image for slide 5 (CTA)');\n\nreturn [{ json: { \n  headline: prev.headline, \n  subtext: prev.subtext, \n  remaining_slides: prev.remaining_slides, \n  total: prev.total, \n  topic: prev.topic, \n  results: prev.results,\n  slide_type: prev.slide_type,\n  img_data: imgData \n} }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [7080, 780],
-      "id": "extract5",
-      "name": "Extract 5"
     },
     {
       "parameters": {
@@ -585,62 +292,47 @@
         "url": "https://api.imgbb.com/1/upload",
         "sendBody": true,
         "contentType": "multipart-form-data",
-        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "name": "image", "value": "={{ $json.img_data }}" }] },
+        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "name": "image", "value": "={{ $json.candidates?.[0]?.content?.parts?.find(p => p.inline_data || p.inlineData)?.inline_data?.data || $json.candidates?.[0]?.content?.parts?.find(p => p.inline_data || p.inlineData)?.inlineData?.data || '' }}" }] },
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [7300, 780],
+      "position": [4440, 300],
       "id": "upload5",
       "name": "Upload 5"
     },
     {
       "parameters": {
-        "jsCode": "const prev = $('Extract 5').item.json;\nconst upload = $input.item.json;\nconst url = upload.data?.url || upload.data?.display_url;\nconst currentType = prev.slide_type || 'cta';\n\nconst results = [...prev.results, { slide_number: 5, headline: prev.headline, subtext: prev.subtext, image_url: url, type: currentType }];\n\nreturn [{ json: { done: true, results: results } }];"
+        "jsCode": "const p = $('Collect 4').item.json, m = p.meta[4], u = $input.item.json.data?.url || '';\nconst r = [...p.r, { n: 5, h: m.h, x: m.x, u, t: m.t }].sort((a,b) => a.n - b.n);\nconst sl = r.map(v => ({ slide_number: v.n, headline: v.h, subtext: v.x, image_url: v.u, type: v.t }));\nreturn [{ json: { success: true, message: 'Generated 5 slides', data: { total_slides: 5, slides: sl }, topic: p.topic, headline: sl[0]?.h || p.topic, context: p.context, post_copy: sl.map(s => s.headline).join(' | '), all_image_urls: sl.map(s => s.image_url).filter(Boolean).join(','), visual_style: 'Realistic', slide_count: 5 } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [7520, 780],
-      "id": "collect5",
-      "name": "Collect 5"
-    },
-    {
-      "parameters": {
-        "jsCode": "const data = $input.item.json;\nconst inputData = $('Parse Input').item.json;\nconst slides = data.results.sort((a, b) => a.slide_number - b.slide_number);\n\n// Helper to escape single quotes for PostgreSQL\nconst escapeSQL = (str) => str ? String(str).replace(/'/g, \"''\") : '';\n\n// Pre-compute values for DB insertion\nconst imageUrls = slides.filter(s => s.image_url).map(s => s.image_url);\nconst allImageUrls = imageUrls.join(',');\nconst hasImages = imageUrls.length > 0;\nconst postCopy = escapeSQL(slides.map(s => s.headline + (s.subtext ? ' - ' + s.subtext : '')).join(' | '));\nconst topic = escapeSQL(inputData.topic || 'Carousel Generated');\nconst context = escapeSQL(inputData.context || 'Carousel generated from news');\nconst headline = escapeSQL(slides[0]?.headline || inputData.topic || 'Generated Carousel');\n\nreturn [{ json: { \n  success: true, \n  message: `Generated ${slides.length} carousel slides`, \n  data: { total_slides: slides.length, slides: slides },\n  // DB fields pre-computed\n  topic: topic,\n  headline: headline,\n  context: context,\n  post_copy: postCopy,\n  all_image_urls: allImageUrls,\n  has_images: hasImages,\n  visual_style: inputData.visual_style || 'Glassmorphism',\n  slide_count: slides.length\n} }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [5540, 300],
+      "position": [4660, 300],
       "id": "format-final",
       "name": "Format Final"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=INSERT INTO social_posts (topic, post_type, visual_style, orientation, headline, context, trend_source, strategy_analysis, post_copy, image_prompt, image_url, status, created_at, updated_at)\nVALUES (\n  '{{ $json.topic }}',\n  'Carousel',\n  '{{ $json.visual_style }}',\n  '4:5',\n  '{{ $json.headline }}',\n  '{{ $json.context }}',\n  'Generated from selected news articles',\n  '{{ $json.topic }} carousel with {{ $json.slide_count }} slides',\n  '{{ $json.post_copy }}',\n  'Carousel images for {{ $json.topic }}',\n  '{{ $json.all_image_urls }}',\n  '{{ $json.has_images ? \"completed\" : \"image_generated\" }}',\n  NOW(),\n  NOW()\n)\nRETURNING *",
+        "query": "=INSERT INTO social_posts (topic, post_type, visual_style, orientation, headline, context, trend_source, strategy_analysis, post_copy, image_prompt, image_url, status, created_at, updated_at)\nVALUES (\n  '{{ $json.topic.replace(/'/g, \"''\") }}',\n  'Carousel',\n  '{{ $json.visual_style }}',\n  '4:5',\n  '{{ $json.headline.replace(/'/g, \"''\") }}',\n  '{{ ($json.context || '').replace(/'/g, \"''\") }}',\n  'Generated carousel',\n  '{{ $json.slide_count }} slides',\n  '{{ $json.post_copy.replace(/'/g, \"''\") }}',\n  'Carousel',\n  '{{ $json.all_image_urls }}',\n  'completed',\n  NOW(),\n  NOW()\n)\nRETURNING *",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [5760, 300],
-      "id": "save-carousel-db",
-      "name": "Save Carousel to DB",
-      "credentials": {
-        "postgres": {
-          "id": "WnTYs2zvPoE7hDJE",
-          "name": "Postgres account"
-        }
-      }
+      "position": [4880, 300],
+      "id": "save-db",
+      "name": "Save to DB",
+      "credentials": { "postgres": { "id": "WnTYs2zvPoE7hDJE", "name": "Postgres account" } }
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: $json.success || true, message: 'Carousel saved to database', carousel_id: $json.id }) }}",
-        "options": { "responseHeaders": { "entries": [{ "name": "Access-Control-Allow-Origin", "value": "*" }, { "name": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" }, { "name": "Access-Control-Allow-Headers", "value": "Content-Type" }] } }
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Carousel saved', carousel_id: $json.id, slides: $('Format Final').item.json.data.slides }) }}",
+        "options": { "responseHeaders": { "entries": [{ "name": "Access-Control-Allow-Origin", "value": "*" }] } }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [5980, 300],
+      "position": [5100, 300],
       "id": "respond",
       "name": "Respond"
     }
@@ -648,77 +340,28 @@
   "connections": {
     "Webhook": { "main": [[{ "node": "Download Logo", "type": "main", "index": 0 }]] },
     "Download Logo": { "main": [[{ "node": "Parse Input", "type": "main", "index": 0 }]] },
-    "Parse Input": { "main": [[{ "node": "Agent 1: Carousel Strategy", "type": "main", "index": 0 }]] },
-    "Agent 1: Carousel Strategy": { "main": [[{ "node": "Agent 2: Carousel Copy Writer", "type": "main", "index": 0 }]] },
-    "Agent 2: Carousel Copy Writer": { "main": [[{ "node": "Merge Agent Outputs", "type": "main", "index": 0 }]] },
-    "Merge Agent Outputs": { "main": [[{ "node": "Route by Visual Style", "type": "main", "index": 0 }]] },
-    "OpenAI for Strategy": { "ai_languageModel": [[{ "node": "Agent 1: Carousel Strategy", "type": "ai_languageModel", "index": 0 }]] },
-    "OpenAI for Copy Writer": { "ai_languageModel": [[{ "node": "Agent 2: Carousel Copy Writer", "type": "ai_languageModel", "index": 0 }]] },
-    "OpenAI for Image Prompts": { "ai_languageModel": [[{ "node": "Agent 3: Image Prompts", "type": "ai_languageModel", "index": 0 }]] },
-    "Route by Visual Style": { 
-      "main": [
-        [{ "node": "Style: Glassmorphism", "type": "main", "index": 0 }],
-        [{ "node": "Style: Modern 3D", "type": "main", "index": 0 }],
-        [{ "node": "Style: Isometric", "type": "main", "index": 0 }],
-        [{ "node": "Style: Data Hero", "type": "main", "index": 0 }],
-        [{ "node": "Style: Realistic", "type": "main", "index": 0 }],
-        [{ "node": "Style: Default", "type": "main", "index": 0 }]
-      ] 
-    },
-    "Style: Glassmorphism": { "main": [[{ "node": "Agent 3: Image Prompts", "type": "main", "index": 0 }]] },
-    "Style: Modern 3D": { "main": [[{ "node": "Agent 3: Image Prompts", "type": "main", "index": 0 }]] },
-    "Style: Isometric": { "main": [[{ "node": "Agent 3: Image Prompts", "type": "main", "index": 0 }]] },
-    "Style: Data Hero": { "main": [[{ "node": "Agent 3: Image Prompts", "type": "main", "index": 0 }]] },
-    "Style: Realistic": { "main": [[{ "node": "Agent 3: Image Prompts", "type": "main", "index": 0 }]] },
-    "Style: Default": { "main": [[{ "node": "Agent 3: Image Prompts", "type": "main", "index": 0 }]] },
-    "Agent 3: Image Prompts": { "main": [[{ "node": "Slide 1 Prompt", "type": "main", "index": 0 }]] },
-    "Slide 1 Prompt": { "main": [[{ "node": "Gemini 1", "type": "main", "index": 0 }]] },
-    "Gemini 1": { "main": [[{ "node": "Extract 1", "type": "main", "index": 0 }]] },
-    "Extract 1": { "main": [[{ "node": "Upload 1", "type": "main", "index": 0 }]] },
+    "Parse Input": { "main": [[{ "node": "Agent 1: Strategy", "type": "main", "index": 0 }]] },
+    "Agent 1: Strategy": { "main": [[{ "node": "Agent 2: Copy", "type": "main", "index": 0 }]] },
+    "Agent 2: Copy": { "main": [[{ "node": "Build 5 Slides", "type": "main", "index": 0 }]] },
+    "Gemini Strategy": { "ai_languageModel": [[{ "node": "Agent 1: Strategy", "type": "ai_languageModel", "index": 0 }]] },
+    "Gemini Copy": { "ai_languageModel": [[{ "node": "Agent 2: Copy", "type": "ai_languageModel", "index": 0 }]] },
+    "Build 5 Slides": { "main": [[{ "node": "Gemini 1", "type": "main", "index": 0 }]] },
+    "Gemini 1": { "main": [[{ "node": "Upload 1", "type": "main", "index": 0 }]] },
     "Upload 1": { "main": [[{ "node": "Collect 1", "type": "main", "index": 0 }]] },
-    "Collect 1": { "main": [[{ "node": "Done?", "type": "main", "index": 0 }]] },
-    "Done?": { 
-      "main": [
-        [{ "node": "Format Final", "type": "main", "index": 0 }],
-        [{ "node": "Gemini 2", "type": "main", "index": 0 }]
-      ] 
-    },
-    "Gemini 2": { "main": [[{ "node": "Extract 2", "type": "main", "index": 0 }]] },
-    "Extract 2": { "main": [[{ "node": "Upload 2", "type": "main", "index": 0 }]] },
+    "Collect 1": { "main": [[{ "node": "Gemini 2", "type": "main", "index": 0 }]] },
+    "Gemini 2": { "main": [[{ "node": "Upload 2", "type": "main", "index": 0 }]] },
     "Upload 2": { "main": [[{ "node": "Collect 2", "type": "main", "index": 0 }]] },
-    "Collect 2": { "main": [[{ "node": "Done? 2", "type": "main", "index": 0 }]] },
-    "Done? 2": { 
-      "main": [
-        [{ "node": "Format Final", "type": "main", "index": 0 }],
-        [{ "node": "Gemini 3", "type": "main", "index": 0 }]
-      ] 
-    },
-    "Gemini 3": { "main": [[{ "node": "Extract 3", "type": "main", "index": 0 }]] },
-    "Extract 3": { "main": [[{ "node": "Upload 3", "type": "main", "index": 0 }]] },
+    "Collect 2": { "main": [[{ "node": "Gemini 3", "type": "main", "index": 0 }]] },
+    "Gemini 3": { "main": [[{ "node": "Upload 3", "type": "main", "index": 0 }]] },
     "Upload 3": { "main": [[{ "node": "Collect 3", "type": "main", "index": 0 }]] },
-    "Collect 3": { "main": [[{ "node": "Done? 3", "type": "main", "index": 0 }]] },
-    "Done? 3": { 
-      "main": [
-        [{ "node": "Format Final", "type": "main", "index": 0 }],
-        [{ "node": "Gemini 4", "type": "main", "index": 0 }]
-      ] 
-    },
-    "Gemini 4": { "main": [[{ "node": "Extract 4", "type": "main", "index": 0 }]] },
-    "Extract 4": { "main": [[{ "node": "Upload 4", "type": "main", "index": 0 }]] },
+    "Collect 3": { "main": [[{ "node": "Gemini 4", "type": "main", "index": 0 }]] },
+    "Gemini 4": { "main": [[{ "node": "Upload 4", "type": "main", "index": 0 }]] },
     "Upload 4": { "main": [[{ "node": "Collect 4", "type": "main", "index": 0 }]] },
-    "Collect 4": { "main": [[{ "node": "Done? 4", "type": "main", "index": 0 }]] },
-    "Done? 4": { 
-      "main": [
-        [{ "node": "Format Final", "type": "main", "index": 0 }],
-        [{ "node": "Gemini 5", "type": "main", "index": 0 }]
-      ] 
-    },
-    "Gemini 5": { "main": [[{ "node": "Extract 5", "type": "main", "index": 0 }]] },
-    "Extract 5": { "main": [[{ "node": "Upload 5", "type": "main", "index": 0 }]] },
-    "Upload 5": { "main": [[{ "node": "Collect 5", "type": "main", "index": 0 }]] },
-    "Collect 5": { "main": [[{ "node": "Format Final", "type": "main", "index": 0 }]] },
-    "Format Final": { "main": [[{ "node": "Save Carousel to DB", "type": "main", "index": 0 }]] },
-    "Save Carousel to DB": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
+    "Collect 4": { "main": [[{ "node": "Gemini 5", "type": "main", "index": 0 }]] },
+    "Gemini 5": { "main": [[{ "node": "Upload 5", "type": "main", "index": 0 }]] },
+    "Upload 5": { "main": [[{ "node": "Format Final", "type": "main", "index": 0 }]] },
+    "Format Final": { "main": [[{ "node": "Save to DB", "type": "main", "index": 0 }]] },
+    "Save to DB": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
   },
   "pinData": {},
   "meta": { "instanceId": "b5116c87255060ddf18db8a2b1b90e34b38f50f44815cf784a0b8a92b6bb4e6e" }
