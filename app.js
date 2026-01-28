@@ -2805,20 +2805,10 @@ const n8nInputGeneratorWebhook = CONFIG.n8n?.inputGeneratorWebhook || 'https://n
 
 // Test webhook connectivity
 async function testWebhookConnectivity(webhookUrl) {
-    try {
-        console.log('🔍 Testing webhook connectivity:', webhookUrl);
-        const response = await fetch(webhookUrl, {
-            method: 'OPTIONS',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
-        console.log('✅ Webhook connectivity test result:', response.status, response.statusText);
-        return true;
-    } catch (err) {
-        console.error('❌ Webhook connectivity test failed:', err.message);
-        return false;
-    }
+    // Skip connectivity test - n8n webhooks don't respond to OPTIONS properly
+    // The actual POST request will handle errors if webhook is unavailable
+    console.log('🔍 Webhook URL to be used:', webhookUrl);
+    return true;
 }
 
 // Load trend news from database with pagination
@@ -3190,13 +3180,14 @@ function renderTrendNews() {
                     console.error('Error details:', {
                         message: err.message,
                         name: err.name,
-                        stack: err.stack
+                        stack: err.stack,
+                        webhookUrl: n8nInputGeneratorWebhook
                     });
                     
                     // More detailed error message based on error type
                     let errorMessage = 'Error al generar carrusel: ';
                     if (err.message === 'Failed to fetch') {
-                        errorMessage += 'No se pudo conectar al servidor n8n. Verifica tu conexión a internet y que el webhook esté activo.';
+                        errorMessage += `No se pudo conectar al servidor n8n. URL: ${n8nInputGeneratorWebhook}`;
                     } else if (err.message.includes('CORS')) {
                         errorMessage += 'Error de CORS. El servidor n8n puede estar bloqueando las solicitudes desde el navegador.';
                     } else {
