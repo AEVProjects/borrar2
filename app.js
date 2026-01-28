@@ -2803,6 +2803,24 @@ let trendsData = {
 // Input Generator Webhook URL (update with your n8n URL)
 const n8nInputGeneratorWebhook = CONFIG.n8n?.inputGeneratorWebhook || 'https://n8nmsi.app.n8n.cloud/webhook/msi-carousel-v12';
 
+// Test webhook connectivity
+async function testWebhookConnectivity(webhookUrl) {
+    try {
+        console.log('🔍 Testing webhook connectivity:', webhookUrl);
+        const response = await fetch(webhookUrl, {
+            method: 'OPTIONS',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        console.log('✅ Webhook connectivity test result:', response.status, response.statusText);
+        return true;
+    } catch (err) {
+        console.error('❌ Webhook connectivity test failed:', err.message);
+        return false;
+    }
+}
+
 // Load trend news from database with pagination
 async function loadTrendNews() {
     try {
@@ -3103,6 +3121,10 @@ function renderTrendNews() {
                     btn.disabled = true;
                     btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin" style="margin-right:8px;animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> Generando inputs coherentes...`;
                     
+                    // Debug: Log the webhook URL being used
+                    console.log('🔗 Using webhook URL:', n8nInputGeneratorWebhook);
+                    console.log('🔗 CONFIG object:', CONFIG.n8n);
+                    
                     // Prepare news items for Input Generator
                     const newsItems = selectedNewsForCarousel.map(n => ({
                         id: n.id,
@@ -3118,7 +3140,14 @@ function renderTrendNews() {
                         visual_style: 'Glassmorphism' // Default style, can be customized
                     };
                     
+                    console.log('📦 Sending payload:', payload);
                     showToast('Enviando al generador de inputs...', 'info');
+                    
+                    // Test connectivity first
+                    const isConnected = await testWebhookConnectivity(n8nInputGeneratorWebhook);
+                    if (!isConnected) {
+                        throw new Error('No se pudo conectar al webhook. Verifica que n8n esté ejecutándose y el webhook esté activo.');
+                    }
                     
                     const resp = await fetch(n8nInputGeneratorWebhook, {
                         method: 'POST',
@@ -3158,9 +3187,25 @@ function renderTrendNews() {
                     }
                 } catch (err) {
                     console.error('Error sending to input generator:', err);
+                    console.error('Error details:', {
+                        message: err.message,
+                        name: err.name,
+                        stack: err.stack
+                    });
+                    
+                    // More detailed error message based on error type
+                    let errorMessage = 'Error al generar carrusel: ';
+                    if (err.message === 'Failed to fetch') {
+                        errorMessage += 'No se pudo conectar al servidor n8n. Verifica tu conexión a internet y que el webhook esté activo.';
+                    } else if (err.message.includes('CORS')) {
+                        errorMessage += 'Error de CORS. El servidor n8n puede estar bloqueando las solicitudes desde el navegador.';
+                    } else {
+                        errorMessage += err.message;
+                    }
+                    
                     btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><rect x="2" y="3" width="6" height="18" rx="1"></rect><rect x="9" y="3" width="6" height="18" rx="1"></rect><rect x="16" y="3" width="6" height="18" rx="1"></rect></svg> Generar Carrusel con 3 noticias`;
                     btn.disabled = false;
-                    showToast('Error al generar carrusel: ' + err.message, 'error');
+                    showToast(errorMessage, 'error');
                 }
             });
         }
