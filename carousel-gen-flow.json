@@ -112,16 +112,26 @@
     },
     {
       "parameters": {
+        "jsCode": "// Extract image from Gemini response for slide 1\nvar item = $input.item;\nvar parts = null;\nif (item.json && item.json.candidates && item.json.candidates[0] && item.json.candidates[0].content && item.json.candidates[0].content.parts) {\n  parts = item.json.candidates[0].content.parts[0];\n}\nvar inlineData = null;\nif (parts) {\n  inlineData = parts.inline_data || parts.inlineData;\n}\nif (inlineData && inlineData.data) {\n  return [{\n    json: { slide: 1 },\n    binary: {\n      data: {\n        data: inlineData.data,\n        mimeType: inlineData.mime_type || inlineData.mimeType || 'image/png',\n        fileName: 'slide1.png'\n      }\n    }\n  }];\n}\nreturn [{ json: { error: true, message: 'No image generated for slide 1' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1740, 300],
+      "id": "check1",
+      "name": "Check Binary 1"
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "https://api.imgbb.com/1/upload",
         "sendBody": true,
         "contentType": "multipart-form-data",
-        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "name": "image", "value": "={{ $json.candidates && $json.candidates[0] && $json.candidates[0].content && $json.candidates[0].content.parts && $json.candidates[0].content.parts[0] && $json.candidates[0].content.parts[0].inline_data ? $json.candidates[0].content.parts[0].inline_data.data : '' }}" }] },
+        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "parameterType": "formBinaryData", "name": "image", "inputDataFieldName": "=data" }] },
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1740, 300],
+      "position": [1960, 300],
       "id": "upload1",
       "name": "Upload 1"
     },
@@ -138,10 +148,20 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1960, 300],
+      "position": [2180, 300],
       "id": "gemini2",
       "name": "Gemini 2",
       "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract image from Gemini response for slide 2\nvar item = $input.item;\nvar parts = null;\nif (item.json && item.json.candidates && item.json.candidates[0] && item.json.candidates[0].content && item.json.candidates[0].content.parts) {\n  parts = item.json.candidates[0].content.parts[0];\n}\nvar inlineData = null;\nif (parts) {\n  inlineData = parts.inline_data || parts.inlineData;\n}\nif (inlineData && inlineData.data) {\n  return [{\n    json: { slide: 2 },\n    binary: {\n      data: {\n        data: inlineData.data,\n        mimeType: inlineData.mime_type || inlineData.mimeType || 'image/png',\n        fileName: 'slide2.png'\n      }\n    }\n  }];\n}\nreturn [{ json: { error: true, message: 'No image generated for slide 2' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2400, 300],
+      "id": "check2",
+      "name": "Check Binary 2"
     },
     {
       "parameters": {
@@ -149,12 +169,12 @@
         "url": "https://api.imgbb.com/1/upload",
         "sendBody": true,
         "contentType": "multipart-form-data",
-        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "name": "image", "value": "={{ $json.candidates && $json.candidates[0] && $json.candidates[0].content && $json.candidates[0].content.parts && $json.candidates[0].content.parts[0] && $json.candidates[0].content.parts[0].inline_data ? $json.candidates[0].content.parts[0].inline_data.data : '' }}" }] },
+        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "parameterType": "formBinaryData", "name": "image", "inputDataFieldName": "=data" }] },
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2180, 300],
+      "position": [2620, 300],
       "id": "upload2",
       "name": "Upload 2"
     },
@@ -171,10 +191,20 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2400, 300],
+      "position": [2840, 300],
       "id": "gemini3",
       "name": "Gemini 3",
       "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract image from Gemini response for slide 3\nvar item = $input.item;\nvar parts = null;\nif (item.json && item.json.candidates && item.json.candidates[0] && item.json.candidates[0].content && item.json.candidates[0].content.parts) {\n  parts = item.json.candidates[0].content.parts[0];\n}\nvar inlineData = null;\nif (parts) {\n  inlineData = parts.inline_data || parts.inlineData;\n}\nif (inlineData && inlineData.data) {\n  return [{\n    json: { slide: 3 },\n    binary: {\n      data: {\n        data: inlineData.data,\n        mimeType: inlineData.mime_type || inlineData.mimeType || 'image/png',\n        fileName: 'slide3.png'\n      }\n    }\n  }];\n}\nreturn [{ json: { error: true, message: 'No image generated for slide 3' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3060, 300],
+      "id": "check3",
+      "name": "Check Binary 3"
     },
     {
       "parameters": {
@@ -182,12 +212,12 @@
         "url": "https://api.imgbb.com/1/upload",
         "sendBody": true,
         "contentType": "multipart-form-data",
-        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "name": "image", "value": "={{ $json.candidates && $json.candidates[0] && $json.candidates[0].content && $json.candidates[0].content.parts && $json.candidates[0].content.parts[0] && $json.candidates[0].content.parts[0].inline_data ? $json.candidates[0].content.parts[0].inline_data.data : '' }}" }] },
+        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "parameterType": "formBinaryData", "name": "image", "inputDataFieldName": "=data" }] },
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2620, 300],
+      "position": [3280, 300],
       "id": "upload3",
       "name": "Upload 3"
     },
@@ -204,10 +234,20 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2840, 300],
+      "position": [3500, 300],
       "id": "gemini4",
       "name": "Gemini 4",
       "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract image from Gemini response for slide 4\nvar item = $input.item;\nvar parts = null;\nif (item.json && item.json.candidates && item.json.candidates[0] && item.json.candidates[0].content && item.json.candidates[0].content.parts) {\n  parts = item.json.candidates[0].content.parts[0];\n}\nvar inlineData = null;\nif (parts) {\n  inlineData = parts.inline_data || parts.inlineData;\n}\nif (inlineData && inlineData.data) {\n  return [{\n    json: { slide: 4 },\n    binary: {\n      data: {\n        data: inlineData.data,\n        mimeType: inlineData.mime_type || inlineData.mimeType || 'image/png',\n        fileName: 'slide4.png'\n      }\n    }\n  }];\n}\nreturn [{ json: { error: true, message: 'No image generated for slide 4' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3720, 300],
+      "id": "check4",
+      "name": "Check Binary 4"
     },
     {
       "parameters": {
@@ -215,12 +255,12 @@
         "url": "https://api.imgbb.com/1/upload",
         "sendBody": true,
         "contentType": "multipart-form-data",
-        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "name": "image", "value": "={{ $json.candidates && $json.candidates[0] && $json.candidates[0].content && $json.candidates[0].content.parts && $json.candidates[0].content.parts[0] && $json.candidates[0].content.parts[0].inline_data ? $json.candidates[0].content.parts[0].inline_data.data : '' }}" }] },
+        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "parameterType": "formBinaryData", "name": "image", "inputDataFieldName": "=data" }] },
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [3060, 300],
+      "position": [3940, 300],
       "id": "upload4",
       "name": "Upload 4"
     },
@@ -237,10 +277,20 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [3280, 300],
+      "position": [4160, 300],
       "id": "gemini5",
       "name": "Gemini 5",
       "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract image from Gemini response for slide 5\nvar item = $input.item;\nvar parts = null;\nif (item.json && item.json.candidates && item.json.candidates[0] && item.json.candidates[0].content && item.json.candidates[0].content.parts) {\n  parts = item.json.candidates[0].content.parts[0];\n}\nvar inlineData = null;\nif (parts) {\n  inlineData = parts.inline_data || parts.inlineData;\n}\nif (inlineData && inlineData.data) {\n  return [{\n    json: { slide: 5 },\n    binary: {\n      data: {\n        data: inlineData.data,\n        mimeType: inlineData.mime_type || inlineData.mimeType || 'image/png',\n        fileName: 'slide5.png'\n      }\n    }\n  }];\n}\nreturn [{ json: { error: true, message: 'No image generated for slide 5' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4380, 300],
+      "id": "check5",
+      "name": "Check Binary 5"
     },
     {
       "parameters": {
@@ -248,12 +298,12 @@
         "url": "https://api.imgbb.com/1/upload",
         "sendBody": true,
         "contentType": "multipart-form-data",
-        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "name": "image", "value": "={{ $json.candidates && $json.candidates[0] && $json.candidates[0].content && $json.candidates[0].content.parts && $json.candidates[0].content.parts[0] && $json.candidates[0].content.parts[0].inline_data ? $json.candidates[0].content.parts[0].inline_data.data : '' }}" }] },
+        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "parameterType": "formBinaryData", "name": "image", "inputDataFieldName": "=data" }] },
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [3500, 300],
+      "position": [4600, 300],
       "id": "upload5",
       "name": "Upload 5"
     },
@@ -263,7 +313,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3720, 300],
+      "position": [4820, 300],
       "id": "format-final",
       "name": "Format Final"
     },
@@ -275,7 +325,7 @@
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [3940, 300],
+      "position": [5040, 300],
       "id": "save-db",
       "name": "Save to DB",
       "credentials": { "postgres": { "id": "WnTYs2zvPoE7hDJE", "name": "Postgres account" } }
@@ -288,7 +338,7 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [4160, 300],
+      "position": [5260, 300],
       "id": "respond",
       "name": "Respond"
     }
@@ -302,15 +352,20 @@
     "Gemini Copy": { "ai_languageModel": [[{ "node": "AI: Copywriting", "type": "ai_languageModel", "index": 0 }]] },
     "Download Logo": { "main": [[{ "node": "Prepare Carousel", "type": "main", "index": 0 }]] },
     "Prepare Carousel": { "main": [[{ "node": "Gemini 1", "type": "main", "index": 0 }]] },
-    "Gemini 1": { "main": [[{ "node": "Upload 1", "type": "main", "index": 0 }]] },
+    "Gemini 1": { "main": [[{ "node": "Check Binary 1", "type": "main", "index": 0 }]] },
+    "Check Binary 1": { "main": [[{ "node": "Upload 1", "type": "main", "index": 0 }]] },
     "Upload 1": { "main": [[{ "node": "Gemini 2", "type": "main", "index": 0 }]] },
-    "Gemini 2": { "main": [[{ "node": "Upload 2", "type": "main", "index": 0 }]] },
+    "Gemini 2": { "main": [[{ "node": "Check Binary 2", "type": "main", "index": 0 }]] },
+    "Check Binary 2": { "main": [[{ "node": "Upload 2", "type": "main", "index": 0 }]] },
     "Upload 2": { "main": [[{ "node": "Gemini 3", "type": "main", "index": 0 }]] },
-    "Gemini 3": { "main": [[{ "node": "Upload 3", "type": "main", "index": 0 }]] },
+    "Gemini 3": { "main": [[{ "node": "Check Binary 3", "type": "main", "index": 0 }]] },
+    "Check Binary 3": { "main": [[{ "node": "Upload 3", "type": "main", "index": 0 }]] },
     "Upload 3": { "main": [[{ "node": "Gemini 4", "type": "main", "index": 0 }]] },
-    "Gemini 4": { "main": [[{ "node": "Upload 4", "type": "main", "index": 0 }]] },
+    "Gemini 4": { "main": [[{ "node": "Check Binary 4", "type": "main", "index": 0 }]] },
+    "Check Binary 4": { "main": [[{ "node": "Upload 4", "type": "main", "index": 0 }]] },
     "Upload 4": { "main": [[{ "node": "Gemini 5", "type": "main", "index": 0 }]] },
-    "Gemini 5": { "main": [[{ "node": "Upload 5", "type": "main", "index": 0 }]] },
+    "Gemini 5": { "main": [[{ "node": "Check Binary 5", "type": "main", "index": 0 }]] },
+    "Check Binary 5": { "main": [[{ "node": "Upload 5", "type": "main", "index": 0 }]] },
     "Upload 5": { "main": [[{ "node": "Format Final", "type": "main", "index": 0 }]] },
     "Format Final": { "main": [[{ "node": "Save to DB", "type": "main", "index": 0 }]] },
     "Save to DB": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
