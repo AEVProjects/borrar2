@@ -1,375 +1,741 @@
-{
-  "name": "MSI Carousel v12",
-  "nodes": [
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "msi-carousel-v12",
-        "responseMode": "responseNode",
-        "options": {}
+  {
+    "name": "MSI Carousel Gen Flow v13",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "msi-carousel-v12",
+          "responseMode": "lastNode",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          0,
+          0
+        ],
+        "id": "webhook",
+        "name": "Webhook - Carousel Gen"
       },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [200, 300],
-      "id": "webhook-v12",
-      "name": "Webhook",
-      "webhookId": "msi-carousel-v12"
-    },
-    {
-      "parameters": {
-        "jsCode": "var wh = $input.first().json;\nvar data = wh;\nif (wh.body) {\n  if (typeof wh.body === 'string') {\n    try { data = JSON.parse(wh.body); } catch(e) { data = wh; }\n  } else { data = wh.body; }\n}\nvar newsItems = data.news_items || [];\nif (newsItems.length === 0 || newsItems.length > 3) {\n  return [{ json: { error: true, message: 'Se requieren entre 1 y 3 noticias' } }];\n}\nvar newsSummary = newsItems.map(function(n, i) {\n  return 'NOTICIA ' + (i+1) + ':\\nTitulo: ' + n.title + '\\nFuente: ' + (n.source || 'Desconocido') + '\\nContenido: ' + (n.content || n.snippet || '').substring(0, 1500);\n}).join('\\n\\n');\nreturn [{ json: { news_items: newsItems, news_count: newsItems.length, news_summary: newsSummary, visual_style: data.visual_style || 'Realistic', request_id: Date.now().toString() } }];"
+      {
+        "parameters": {
+          "jsCode": "// Format Input & Parse News\nconst input = $('Webhook - Carousel Gen').item.json;\nlet data = input.body || input;\nif (typeof data === 'string') {\n  try { data = JSON.parse(data); } catch(e) { data = input; }\n}\n\n// Handle news content specifically if present\nconst newsItems = data.news_items || [];\n// If individual fields are passed instead of array\nif (newsItems.length === 0 && (data.news_title || data.news_content)) {\n    newsItems.push({\n        title: data.news_title,\n        content: data.news_content,\n        source: data.news_source\n    });\n}\n\n// Extract rich content\nconst news1 = newsItems[0] || {};\nconst news2 = newsItems[1] || {};\nconst news3 = newsItems[2] || {};\n\nconst getContent = function(n) {\n  return (n.content || n.snippet || n.description || '').substring(0, 500);\n};\n\nreturn [{\n  json: {\n    // Original fields\n    topic: data.topic || news1.title || 'Tech Trends',\n    visual_style: 'Realistic Photography', // FORCE Realistic Photography\n    headline: data.headline || news1.title || '',\n    \n    // News Parsing\n    news_count: newsItems.length,\n    n1_title: news1.title || '',\n    n1_source: news1.source || '',\n    n1_content: getContent(news1),\n    n2_title: news2.title || '',\n    n2_source: news2.source || '',\n    n2_content: getContent(news2),\n    n3_title: news3.title || '',\n    n3_source: news3.source || '',\n    n3_content: getContent(news3),\n    \n    color_primary: data.color_primary || '#207CE5',\n    color_secondary: data.color_secondary || '#004AAD'\n  }\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          220,
+          0
+        ],
+        "id": "format-input",
+        "name": "Format Input"
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [420, 300],
-      "id": "parse-news",
-      "name": "Parse News"
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "=Create strategy for MSI Technologies Instagram carousel from {{ $json.news_count }} tech news:\n\n{{ $json.news_summary }}\n\nProvide: 1) Unified TOPIC (2-3 words), 2) HOOK phrase, 3) 3 HEADLINES for slides 2-4, 4) 5 HASHTAGS, 5) CONTEXT (50 words connecting all news)",
-        "options": {
-          "systemMessage": "B2B content strategist for MSI Technologies (IT services company).\nCreate carousel strategy connecting tech news into unified narrative for LinkedIn/Instagram.\nRULES: NO emojis, headlines 5-8 words max, English only, professional B2B tone.\nFocus on business value and industry insights."
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=ANALYZE THESE NEWS ITEMS:\n\nNEWS 1: {{ $json.n1_title }}\nSource: {{ $json.n1_source }}\nContent: {{ $json.n1_content }}\n\nNEWS 2: {{ $json.n2_title }}\nSource: {{ $json.n2_source }}\nContent: {{ $json.n2_content }}\n\nNEWS 3: {{ $json.n3_title }}\nSource: {{ $json.n3_source }}\nContent: {{ $json.n3_content }}\n\nTOPIC: {{ $json.topic }}\n\nTASK:\n1. Identify a unified theme connecting these news.\n2. Create a high-impact HOOK for Slide 1.\n3. Summarize EACH news item into a key insight.\n4. Define the CTA for Slide 5.\n\nOUTPUT:\n- Theme: [Unified Theme]\n- Hook: [Slide 1 Hook]\n- Insight 1: [News 1 insight]\n- Insight 2: [News 2 insight]\n- Insight 3: [News 3 insight]\n- CTA: [Call to Action]",
+          "options": {
+            "systemMessage": "# ROLE: News Strategy Analyst\nAnalyze the 1-3 input news items and distill them into a cohesive narrative for a MSI Technologies LinkedIn Carousel.\nFocus on Enterprise Technology, Modernization, and ROI."
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 1.7,
+        "position": [
+          440,
+          0
+        ],
+        "id": "agent-strategy",
+        "name": "Agent 1: Strategy Analyst"
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=STRATEGY INPUT:\n{{ $('Agent 1: Strategy Analyst').item.json.output }}\n\nCONTEXT:\nTheme: {{ $json.Theme }}\nNews 1: {{ $('Format Input').item.json.n1_title }}\nSource: {{ $('Format Input').item.json.n1_source }}\nContent: {{ $('Format Input').item.json.n1_content }}\n\nNews 2: {{ $('Format Input').item.json.n2_title }}\nSource: {{ $('Format Input').item.json.n2_source }}\nContent: {{ $('Format Input').item.json.n2_content }}\n\nNews 3: {{ $('Format Input').item.json.n3_title }}\nSource: {{ $('Format Input').item.json.n3_source }}\nContent: {{ $('Format Input').item.json.n3_content }}\n\nTASK:\nCreate a 5-slide Instagram Carousel structure (4:5 format).\nALL OUTPUT MUST BE IN ENGLISH.\n\nSLIDE 1 (COVER): \n- Headline: HIGH-IMPACT HOOK. Must be INSTANTLY UNDERSTANDABLE and grab attention. Use simple, powerful language. Focus on the main benefit or the biggest news. AVOID COMPLEX JARGON. NO COLONS (:). NO SEMICOLONS (;).\n- Subtext: LEAVE EMPTY.\n- Body: LEAVE EMPTY.\n\nSLIDE 2-4 (NEWS): \n- Headline: ENGAGING NEWS TITLE (NO COLONS OR SEMICOLONS). Clear and Descriptive. DO NOT INCLUDE THE SOURCE NAME IN THE HEADLINE.\n- Body: VALUE-ADD SUCCESSION of the Headline. DO NOT REPEAT/EXPLAIN THE HEADLINE.\n  * CONCEPT: Treat the Headline as the \"What\" and the Body as the \"Specific Detail/Nuance\".\n  * LENGTH: EXACTLY 3 LINES MAX (approx 16-20 words).\n  * CRITICAL: Use the 'Content' field for specific facts.\n- Source: MANDATORY FIELD - Extract the EXACT source name from input (n1_source, n2_source, n3_source). If source is empty, missing, or contains only whitespace, use 'Industry Report' as default. NEVER use 'source' or 'Source' as the actual source name. Examples: 'TechCrunch', 'Reuters', 'Bloomberg', etc.\n\nSLIDE 5 (CTA): \n- Headline: SPECIFIC, ACTION-ORIENTED CTA that directly connects to the carousel's main topic. MUST VARY based on content.\n  * EXAMPLES (adapt to topic): 'Ready to Modernize?' / 'Let's Build Your AI Strategy' / 'Upgrade Your Security Today' / 'Start Your Cloud Journey' / 'Transform Your Operations'\n  * NEVER use generic phrases like 'Contact Us' or 'Learn More' alone.\n- Body: SHORT sentence (MAX 12 words) that creates URGENCY or VALUE specific to the news covered.\n  * MUST reference the specific topic/benefit from the carousel.\n  * VARY the structure - don't always start the same way.\n  * EXAMPLES: 'Your competitors are already adopting AI. Don't fall behind.' / 'One integration. Endless possibilities for your enterprise.' / 'Security breaches cost millions. Prevention costs less.'\n- Contact Info: \"contact@msitechnologiesinc.com | msitechnologiesinc.com\"\n\nCRITICAL REQUIREMENTS:\n- TITLES: NO COLONS (:). NO SEMICOLONS (;). Real News style. NO SOURCE NAMES IN TITLES.\n- TEXT: MAX 3 LINES. USE FACTUAL CONTENT FROM INPUT.\n- TONE: Journalistic, Professional.\n\nOUTPUT JSON ARRAY:\n[\n  {\n    \"slide_number\": 1,\n    \"headline\": \"...\",\n    \"subtext\": \"...\",\n    \"body\": \"...\"\n  },\n  {\n    \"slide_number\": 2,\n    \"headline\": \"...\",\n    \"body\": \"...\",\n    \"source\": \"...\"\n  },\n  ... (5 slides total)\n]",
+          "options": {
+            "systemMessage": "# ROLE: Expert News Editor for Instagram\nCraft journalistic, ULTRA-SHORT content for Instagram carousels in ENGLISH.\n- Headlines must sound like REAL NEWS, not marketing.\n- Keep body text UNDER 16 WORDS per news slide (Max 3 lines).\n- FOCUS ON VALUE/FACTS. Don't say something happened; say WHY/WHAT.\n- Tone: Journalistic and informative.\n- CTAs must be SPECIFIC to the topic."
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 1.7,
+        "position": [
+          760,
+          0
+        ],
+        "id": "agent-copywriter",
+        "name": "Agent 2: Copywriter"
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=INPUT FROM COPYWRITER AGENT:\\n{{ $('Agent 2: Copywriter').item.json.output }}\\n\\nTASK:\\nFor EACH slide in the JSON array, create a detailed 'image_prompt' field.\\n\\nIMPORTANT: \\n- Add ONLY the 'image_prompt' field to each existing slide object\\n- Do NOT modify existing fields\\n- Return the EXACT same JSON structure with added image_prompt fields\\n\\nMSI BRAND GUIDELINES:\\n- COLORS: MSI Blue (#207CE5), Dark Blue (#004AAD), Cream (#FFFDF1)\\n- TYPOGRAPHY: ITC Avant Garde (headlines), Poppins (subheadings), Quicksand (body)\\n- LAYOUT: Split layout with 55% image top, 45% text bottom\\n- CONSISTENCY: All slides must look like MSI brand family\\n\\nFor each slide, create realistic photography prompts. Return valid JSON.",
+          "options": {
+            "systemMessage": "# ROLE: Expert Brand Designer (Instagram Visual Specialist)\nYour goal is CLEAN MINIMALISM & PROFESSIONALISM.\n- MINIMIZE PEOPLE in visuals. Use Tech/Architecture/Concepts.\n- NO TEXT SHADOWS. FLAT DESIGN.\n- SMALLER FONT for body text to guarantee 3 lines.\n- Slide Indicator must be REGULAR weight (NOT BOLD).\n- Slide 1 must be eye-catching but CLEAN.\n- Slides 2-4 must balance visuals with SHORT text (max 16 words).\n\nERROR HANDLING:\n- Always expect a JSON array input\n- If input is not valid JSON, return error message\n- If slides are missing required fields, use defaults\n- Always return valid JSON structure"
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 1.7,
+        "position": [
+          1080,
+          0
+        ],
+        "id": "agent-visual",
+        "name": "Agent 3: Visual Director"
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "value": "chatgpt-4o-latest",
+            "mode": "list",
+            "cachedResultName": "chatgpt-4o-latest"
+          },
+          "builtInTools": {},
+          "options": {
+            "responseFormat": "json_object"
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.3,
+        "position": [
+          860,
+          -240
+        ],
+        "id": "openai-model",
+        "name": "OpenAI Model",
+        "credentials": {
+          "openAiApi": {
+            "id": "13Oqly3WdRAzZVXL",
+            "name": "OpenAi account"
+          }
         }
       },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 1.7,
-      "position": [640, 300],
-      "id": "agent-strategy",
-      "name": "AI: Strategy"
-    },
-    {
-      "parameters": { "options": {} },
-      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-      "typeVersion": 1,
-      "position": [720, 520],
-      "id": "gemini-strategy",
-      "name": "Gemini Strategy",
-      "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "=Based on this strategy:\n{{ $json.output }}\n\nWrite the COPY for each slide:\nSLIDE 1: Hook headline with \"SWIPE\" CTA\nSLIDES 2-4: News headlines with brief insight\nSLIDE 5: CTA with contact@msitechnologiesinc.com\n\nRespond ONLY with JSON:\n{\"topic\":\"2-3 words\",\"hook\":\"hook phrase\",\"slides\":[{\"headline\":\"slide 2\"},{\"headline\":\"slide 3\"},{\"headline\":\"slide 4\"}],\"hashtags\":[\"tag1\",\"tag2\",\"tag3\",\"tag4\",\"tag5\"],\"context\":\"50 words\",\"caption\":\"Instagram caption 150 words\"}",
-        "options": {
-          "systemMessage": "Expert social media copywriter for B2B tech company.\nWrite engaging, professional copy. NO emojis. Headlines max 8 words.\nCaption should include hashtags and call-to-action.\nRespond ONLY valid JSON, no markdown."
+      {
+        "parameters": {
+          "jsCode": "// Parse Final JSON Output\nconst rawOutput = $('Agent 3: Visual Director').item.json.output;\nconst cleanedOutput = rawOutput.replace(/```json/g, '').replace(/```/g, '').trim();\nconst generated = JSON.parse(cleanedOutput);\nconst originalInput = $('Format Input').item.json;\n\n// Add metadata to each slide\nconst slides = generated.map(slide => ({\n    ...slide,\n    visual_style: originalInput.visual_style,\n    carousel_id: null\n}));\n\nreturn [{\n    json: {\n        slides: slides,\n        parent_post: {\n            topic: originalInput.topic,\n            headline: slides[0].headline,\n            visual_style: originalInput.visual_style,\n            post_type: 'Carousel',\n            status: 'generating_images'\n        }\n    }\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1340,
+          0
+        ],
+        "id": "parse-output",
+        "name": "Parse Output"
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "=INSERT INTO social_posts (topic, post_type, visual_style, orientation, headline, status, created_at)\nVALUES ('{{ $json.parent_post.topic.replace(/'/g, \"''\") }}', 'Carousel', '{{ $json.parent_post.visual_style }}', '4:5', '{{ $json.parent_post.headline.replace(/'/g, \"''\") }}', 'generating', NOW())\nRETURNING id",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          1560,
+          0
+        ],
+        "id": "create-post",
+        "name": "Create Post Record",
+        "credentials": {
+          "postgres": {
+            "id": "WnTYs2zvPoE7hDJE",
+            "name": "Postgres account"
+          }
         }
       },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 1.7,
-      "position": [860, 300],
-      "id": "agent-copy",
-      "name": "AI: Copywriting"
-    },
-    {
-      "parameters": { "options": {} },
-      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-      "typeVersion": 1,
-      "position": [940, 520],
-      "id": "gemini-copy",
-      "name": "Gemini Copy",
-      "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
-    },
-    {
-      "parameters": {
-        "url": "https://i.ibb.co/S7mKXdxr/MSI-Technologies-Icon.png",
-        "options": { "response": { "response": { "responseFormat": "file" } } }
+      {
+        "parameters": {
+          "jsCode": "// Prepare Slides for Insert\nconst postId = $('Create Post Record').item.json.id;\nconst slides = $('Parse Output').item.json.slides;\n\nreturn slides.map(slide => ({\n    json: {\n        carousel_id: postId,\n        slide_number: slide.slide_number,\n        headline: slide.headline,\n        subtext: slide.subtext || '',\n        body_text: slide.body || slide.body_text || '',\n        image_prompt: slide.image_prompt,\n        visual_style: JSON.stringify({ style: slide.visual_style })\n    }\n}));"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1700,
+          0
+        ],
+        "id": "prepare-slides",
+        "name": "Prepare Slides"
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1080, 300],
-      "id": "download-logo",
-      "name": "Download Logo"
-    },
-    {
-      "parameters": {
-        "jsCode": "var aiOut = $('AI: Copywriting').first().json.output;\nvar newsData = $('Parse News').first().json;\nvar logoItem = $input.item;\nvar logo = '';\nif (logoItem.binary) {\n  var k = Object.keys(logoItem.binary)[0];\n  var buf = await this.helpers.getBinaryDataBuffer(0, k);\n  logo = buf.toString('base64');\n}\nvar parsed;\ntry {\n  var clean = aiOut.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  var match = clean.match(/\\{[\\s\\S]*\\}/);\n  if (match) clean = match[0];\n  parsed = JSON.parse(clean);\n} catch(e) {\n  parsed = { topic: 'Technology Update', hook: 'Tech News You Need', slides: newsData.news_items.map(function(n) { return { headline: n.title.substring(0, 40) }; }), hashtags: ['TechNews', 'MSITechnologies', 'B2BTech', 'Innovation', 'DigitalTransformation'], context: '', caption: '' };\n}\nvar removeEmoji = function(s) { return s ? s.replace(/[\\u{1F600}-\\u{1F64F}\\u{1F300}-\\u{1F5FF}\\u{1F680}-\\u{1F6FF}\\u{2600}-\\u{26FF}]/gu, '').trim() : ''; };\nvar t = removeEmoji(parsed.topic || 'Technology');\nvar hook = removeEmoji(parsed.hook || 'Your Weekly Tech Digest');\nvar sl = parsed.slides || [];\nvar h1 = t;\nvar h2 = sl[0] ? removeEmoji(sl[0].headline) : 'Tech Update';\nvar h3 = sl[1] ? removeEmoji(sl[1].headline) : 'Industry News';\nvar h4 = sl[2] ? removeEmoji(sl[2].headline) : 'Latest Trends';\nvar h5 = 'Stay Informed with MSI';\nvar ctx = removeEmoji(parsed.context || '');\nvar caption = removeEmoji(parsed.caption || '');\nvar hashtags = parsed.hashtags || [];\nreturn [{ json: { topic: t, hook: hook, context: ctx, logo: logo, h1: h1, h2: h2, h3: h3, h4: h4, h5: h5, caption: caption, hashtags: hashtags, request_id: newsData.request_id } }];"
+      {
+        "parameters": {
+          "operation": "insert",
+          "schema": {
+            "__rl": true,
+            "value": "public",
+            "mode": "list",
+            "cachedResultName": "public"
+          },
+          "table": {
+            "__rl": true,
+            "value": "carousel_slides",
+            "mode": "list",
+            "cachedResultName": "carousel_slides"
+          },
+          "columns": {
+            "mappingMode": "autoMapInputData",
+            "value": {},
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "carousel_id",
+                "displayName": "carousel_id",
+                "required": false,
+                "defaultMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": false
+              },
+              {
+                "id": "slide_number",
+                "displayName": "slide_number",
+                "required": false,
+                "defaultMatch": true,
+                "display": true,
+                "type": "integer",
+                "readOnly": false,
+                "removed": false
+              },
+              {
+                "id": "headline",
+                "displayName": "headline",
+                "required": false,
+                "defaultMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": false
+              },
+              {
+                "id": "subtext",
+                "displayName": "subtext",
+                "required": false,
+                "defaultMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": false
+              },
+              {
+                "id": "body_text",
+                "displayName": "body_text",
+                "required": false,
+                "defaultMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": false
+              },
+              {
+                "id": "image_prompt",
+                "displayName": "image_prompt",
+                "required": false,
+                "defaultMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": false
+              }
+            ]
+          },
+          "options": {
+            "returnFields": "*"
+          }
+        },
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          1850,
+          0
+        ],
+        "id": "insert-slides",
+        "name": "Insert Slides",
+        "credentials": {
+          "postgres": {
+            "id": "WnTYs2zvPoE7hDJE",
+            "name": "Postgres account"
+          }
+        }
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1300, 300],
-      "id": "prepare-carousel",
-      "name": "Prepare Carousel"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googlePalmApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: 'Create 4:5 Instagram carousel SLIDE 1. STYLE: Photorealistic, professional. PHOTO (top 60%): Diverse business team in modern glass office, 85mm lens, natural light. NO surreal elements. COLORS: MSI Blue #207CE5, White, Cream #F5F5DC. LAYOUT: Top 60% photo, bottom 40% solid #207CE5. TEXT ON BLUE: 1) HEADLINE \"' + $json.h1 + '\" - LARGEST, bold sans-serif, WHITE, centered, 50% width. 2) SUBHEADLINE \"' + $json.hook + '\" - MEDIUM, cream, below. LOGO: DO NOT MODIFY MSI logo - place EXACTLY as provided top-left, small 8% width. CAROUSEL: \"1/5\" SMALL white bottom-left, arrow bottom-right. Edge-to-edge.' }, { inline_data: { mime_type: 'image/png', data: $json.logo } }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '4:5' } } }) }}",
-        "options": { "timeout": 120000 }
+      {
+        "parameters": {
+          "jsCode": "return [ $('Insert Slides').all()[0] ];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2050,
+          -100
+        ],
+        "id": "get-slide-1",
+        "name": "Get Slide 1"
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1520, 300],
-      "id": "gemini1",
-      "name": "Gemini 1",
-      "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Extract image from Gemini response for slide 1\nvar item = $input.item;\nvar parts = null;\nif (item.json && item.json.candidates && item.json.candidates[0] && item.json.candidates[0].content && item.json.candidates[0].content.parts) {\n  parts = item.json.candidates[0].content.parts[0];\n}\nvar inlineData = null;\nif (parts) {\n  inlineData = parts.inline_data || parts.inlineData;\n}\nif (inlineData && inlineData.data) {\n  return [{\n    json: { slide: 1 },\n    binary: {\n      data: {\n        data: inlineData.data,\n        mimeType: inlineData.mime_type || inlineData.mimeType || 'image/png',\n        fileName: 'slide1.png'\n      }\n    }\n  }];\n}\nreturn [{ json: { error: true, message: 'No image generated for slide 1' } }];"
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt, carousel_id: $json.carousel_id }) }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2200,
+          -100
+        ],
+        "id": "gen-slide-1",
+        "name": "Gen Slide 1"
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1740, 300],
-      "id": "check1",
-      "name": "Check Binary 1"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.imgbb.com/1/upload",
-        "sendBody": true,
-        "contentType": "multipart-form-data",
-        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "parameterType": "formBinaryData", "name": "image", "inputDataFieldName": "=data" }] },
-        "options": {}
+      {
+        "parameters": {
+          "amount": 5,
+          "unit": "seconds"
+        },
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          2350,
+          -100
+        ],
+        "id": "wait-1",
+        "name": "Wait 1"
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1960, 300],
-      "id": "upload1",
-      "name": "Upload 1"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googlePalmApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: 'Create 4:5 Instagram carousel SLIDE 2. STYLE: Photorealistic tech news. PHOTO (top 60%): REALISTIC image MATCHING headline \"' + $('Prepare Carousel').item.json.h2 + '\". CONTEXT: If AI = robotics lab. If cloud = data center blue LEDs. If cybersecurity = security ops center. If software = developers coding. 85mm lens. NO surreal. COLORS: #207CE5, White, #F5F5DC. LAYOUT: Top 60% contextual photo, bottom 40% solid #207CE5. TEXT: HEADLINE \"' + $('Prepare Carousel').item.json.h2 + '\" - LARGE, bold, WHITE, 60% width, max 2 lines. LOGO: MSI logo EXACTLY as provided top-left, 6% width. CAROUSEL: \"2/5\" SMALL bottom-left, arrow bottom-right. Edge-to-edge.' }, { inline_data: { mime_type: 'image/png', data: $('Prepare Carousel').item.json.logo } }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '4:5' } } }) }}",
-        "options": { "timeout": 120000 }
+      {
+        "parameters": {
+          "jsCode": "return [ $('Insert Slides').all()[1] ];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2500,
+          -100
+        ],
+        "id": "get-slide-2",
+        "name": "Get Slide 2"
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2180, 300],
-      "id": "gemini2",
-      "name": "Gemini 2",
-      "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Extract image from Gemini response for slide 2\nvar item = $input.item;\nvar parts = null;\nif (item.json && item.json.candidates && item.json.candidates[0] && item.json.candidates[0].content && item.json.candidates[0].content.parts) {\n  parts = item.json.candidates[0].content.parts[0];\n}\nvar inlineData = null;\nif (parts) {\n  inlineData = parts.inline_data || parts.inlineData;\n}\nif (inlineData && inlineData.data) {\n  return [{\n    json: { slide: 2 },\n    binary: {\n      data: {\n        data: inlineData.data,\n        mimeType: inlineData.mime_type || inlineData.mimeType || 'image/png',\n        fileName: 'slide2.png'\n      }\n    }\n  }];\n}\nreturn [{ json: { error: true, message: 'No image generated for slide 2' } }];"
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt, carousel_id: $json.carousel_id }) }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2650,
+          -100
+        ],
+        "id": "gen-slide-2",
+        "name": "Gen Slide 2"
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [2400, 300],
-      "id": "check2",
-      "name": "Check Binary 2"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.imgbb.com/1/upload",
-        "sendBody": true,
-        "contentType": "multipart-form-data",
-        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "parameterType": "formBinaryData", "name": "image", "inputDataFieldName": "=data" }] },
-        "options": {}
+      {
+        "parameters": {
+          "amount": 5,
+          "unit": "seconds"
+        },
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          2800,
+          -100
+        ],
+        "id": "wait-2",
+        "name": "Wait 2"
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2620, 300],
-      "id": "upload2",
-      "name": "Upload 2"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googlePalmApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: 'Create 4:5 Instagram carousel SLIDE 3. STYLE: Photorealistic tech news. PHOTO (top 60%): REALISTIC image MATCHING headline \"' + $('Prepare Carousel').item.json.h3 + '\". CONTEXT: If servers = data center. If software = agile workspace. If networking = NOC. If transformation = executives tablets. 85mm lens. NO surreal. COLORS: #207CE5, White, #F5F5DC. LAYOUT: Top 60% contextual photo, bottom 40% solid #207CE5. TEXT: HEADLINE \"' + $('Prepare Carousel').item.json.h3 + '\" - LARGE, bold, WHITE, 60% width, max 2 lines. LOGO: MSI logo EXACTLY as provided top-left, 6% width. CAROUSEL: \"3/5\" SMALL bottom-left, arrow bottom-right. Edge-to-edge.' }, { inline_data: { mime_type: 'image/png', data: $('Prepare Carousel').item.json.logo } }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '4:5' } } }) }}",
-        "options": { "timeout": 120000 }
+      {
+        "parameters": {
+          "jsCode": "return [ $('Insert Slides').all()[2] ];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2950,
+          -100
+        ],
+        "id": "get-slide-3",
+        "name": "Get Slide 3"
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2840, 300],
-      "id": "gemini3",
-      "name": "Gemini 3",
-      "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Extract image from Gemini response for slide 3\nvar item = $input.item;\nvar parts = null;\nif (item.json && item.json.candidates && item.json.candidates[0] && item.json.candidates[0].content && item.json.candidates[0].content.parts) {\n  parts = item.json.candidates[0].content.parts[0];\n}\nvar inlineData = null;\nif (parts) {\n  inlineData = parts.inline_data || parts.inlineData;\n}\nif (inlineData && inlineData.data) {\n  return [{\n    json: { slide: 3 },\n    binary: {\n      data: {\n        data: inlineData.data,\n        mimeType: inlineData.mime_type || inlineData.mimeType || 'image/png',\n        fileName: 'slide3.png'\n      }\n    }\n  }];\n}\nreturn [{ json: { error: true, message: 'No image generated for slide 3' } }];"
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt, carousel_id: $json.carousel_id }) }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          3100,
+          -100
+        ],
+        "id": "gen-slide-3",
+        "name": "Gen Slide 3"
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [3060, 300],
-      "id": "check3",
-      "name": "Check Binary 3"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.imgbb.com/1/upload",
-        "sendBody": true,
-        "contentType": "multipart-form-data",
-        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "parameterType": "formBinaryData", "name": "image", "inputDataFieldName": "=data" }] },
-        "options": {}
+      {
+        "parameters": {
+          "amount": 5,
+          "unit": "seconds"
+        },
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          3250,
+          -100
+        ],
+        "id": "wait-3",
+        "name": "Wait 3"
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [3280, 300],
-      "id": "upload3",
-      "name": "Upload 3"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googlePalmApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: 'Create 4:5 Instagram carousel SLIDE 4. STYLE: Photorealistic tech news. PHOTO (top 60%): REALISTIC image MATCHING headline \"' + $('Prepare Carousel').item.json.h4 + '\". CONTEXT: If innovation = R&D lab. If conference = professional event. If enterprise = boardroom. If trends = modern office. 85mm lens. NO surreal. COLORS: #207CE5, White, #F5F5DC. LAYOUT: Top 60% contextual photo, bottom 40% solid #207CE5. TEXT: HEADLINE \"' + $('Prepare Carousel').item.json.h4 + '\" - LARGE, bold, WHITE, 60% width, max 2 lines. LOGO: MSI logo EXACTLY as provided top-left, 6% width. CAROUSEL: \"4/5\" SMALL bottom-left, arrow bottom-right. Edge-to-edge.' }, { inline_data: { mime_type: 'image/png', data: $('Prepare Carousel').item.json.logo } }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '4:5' } } }) }}",
-        "options": { "timeout": 120000 }
+      {
+        "parameters": {
+          "jsCode": "return [ $('Insert Slides').all()[3] ];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          3400,
+          -100
+        ],
+        "id": "get-slide-4",
+        "name": "Get Slide 4"
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [3500, 300],
-      "id": "gemini4",
-      "name": "Gemini 4",
-      "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Extract image from Gemini response for slide 4\nvar item = $input.item;\nvar parts = null;\nif (item.json && item.json.candidates && item.json.candidates[0] && item.json.candidates[0].content && item.json.candidates[0].content.parts) {\n  parts = item.json.candidates[0].content.parts[0];\n}\nvar inlineData = null;\nif (parts) {\n  inlineData = parts.inline_data || parts.inlineData;\n}\nif (inlineData && inlineData.data) {\n  return [{\n    json: { slide: 4 },\n    binary: {\n      data: {\n        data: inlineData.data,\n        mimeType: inlineData.mime_type || inlineData.mimeType || 'image/png',\n        fileName: 'slide4.png'\n      }\n    }\n  }];\n}\nreturn [{ json: { error: true, message: 'No image generated for slide 4' } }];"
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt, carousel_id: $json.carousel_id }) }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          3550,
+          -100
+        ],
+        "id": "gen-slide-4",
+        "name": "Gen Slide 4"
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [3720, 300],
-      "id": "check4",
-      "name": "Check Binary 4"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.imgbb.com/1/upload",
-        "sendBody": true,
-        "contentType": "multipart-form-data",
-        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "parameterType": "formBinaryData", "name": "image", "inputDataFieldName": "=data" }] },
-        "options": {}
+      {
+        "parameters": {
+          "amount": 5,
+          "unit": "seconds"
+        },
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          3700,
+          -100
+        ],
+        "id": "wait-4",
+        "name": "Wait 4"
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [3940, 300],
-      "id": "upload4",
-      "name": "Upload 4"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googlePalmApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: 'Create 4:5 Instagram carousel SLIDE 5 - FINAL CTA. STYLE: Photorealistic, warm. PHOTO (top 60%): Professional extending handshake, warm smile, bright office with plants, 85mm portrait, soft light. NO surreal. COLORS: #207CE5, White, #F5F5DC. LAYOUT: Top 60% handshake photo, bottom 40% solid #207CE5. TEXT HIERARCHY: 1) CTA \"Stay Informed with MSI\" - LARGEST, bold, WHITE, 70% width. 2) \"contact@msitechnologiesinc.com\" - MEDIUM, cream, email icon. 3) \"msitechnologiesinc.com\" - SMALL-MEDIUM, cream, globe icon. LOGO: MSI logo EXACTLY as provided top-left, 8% width. CAROUSEL: \"5/5\" SMALL bottom-left, NO arrow. \"Follow Us\" SMALL cream bottom-right. Edge-to-edge.' }, { inline_data: { mime_type: 'image/png', data: $('Prepare Carousel').item.json.logo } }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '4:5' } } }) }}",
-        "options": { "timeout": 120000 }
+      {
+        "parameters": {
+          "jsCode": "return [ $('Insert Slides').all()[4] ];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          3850,
+          -100
+        ],
+        "id": "get-slide-5",
+        "name": "Get Slide 5"
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [4160, 300],
-      "id": "gemini5",
-      "name": "Gemini 5",
-      "credentials": { "googlePalmApi": { "id": "oF4jKBK0jRbwEPWt", "name": "Google Gemini(PaLM) Api account" } }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Extract image from Gemini response for slide 5\nvar item = $input.item;\nvar parts = null;\nif (item.json && item.json.candidates && item.json.candidates[0] && item.json.candidates[0].content && item.json.candidates[0].content.parts) {\n  parts = item.json.candidates[0].content.parts[0];\n}\nvar inlineData = null;\nif (parts) {\n  inlineData = parts.inline_data || parts.inlineData;\n}\nif (inlineData && inlineData.data) {\n  return [{\n    json: { slide: 5 },\n    binary: {\n      data: {\n        data: inlineData.data,\n        mimeType: inlineData.mime_type || inlineData.mimeType || 'image/png',\n        fileName: 'slide5.png'\n      }\n    }\n  }];\n}\nreturn [{ json: { error: true, message: 'No image generated for slide 5' } }];"
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt, carousel_id: $json.carousel_id }) }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          4000,
+          -100
+        ],
+        "id": "gen-slide-5",
+        "name": "Gen Slide 5"
+      }
+    ],
+    "connections": {
+      "Webhook - Carousel Gen": {
+        "main": [
+          [
+            {
+              "node": "Format Input",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [4380, 300],
-      "id": "check5",
-      "name": "Check Binary 5"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.imgbb.com/1/upload",
-        "sendBody": true,
-        "contentType": "multipart-form-data",
-        "bodyParameters": { "parameters": [{ "name": "key", "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447" }, { "parameterType": "formBinaryData", "name": "image", "inputDataFieldName": "=data" }] },
-        "options": {}
+      "Format Input": {
+        "main": [
+          [
+            {
+              "node": "Agent 1: Strategy Analyst",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [4600, 300],
-      "id": "upload5",
-      "name": "Upload 5"
-    },
-    {
-      "parameters": {
-        "jsCode": "var p = $('Prepare Carousel').item.json;\nvar u1 = $('Upload 1').item.json.data ? $('Upload 1').item.json.data.url : '';\nvar u2 = $('Upload 2').item.json.data ? $('Upload 2').item.json.data.url : '';\nvar u3 = $('Upload 3').item.json.data ? $('Upload 3').item.json.data.url : '';\nvar u4 = $('Upload 4').item.json.data ? $('Upload 4').item.json.data.url : '';\nvar u5 = $input.item.json.data ? $input.item.json.data.url : '';\nvar slides = [\n  { slide_number: 1, headline: p.h1, image_url: u1 },\n  { slide_number: 2, headline: p.h2, image_url: u2 },\n  { slide_number: 3, headline: p.h3, image_url: u3 },\n  { slide_number: 4, headline: p.h4, image_url: u4 },\n  { slide_number: 5, headline: p.h5, image_url: u5 }\n];\nvar urls = '';\nif (u1) urls += u1;\nif (u2) urls += (urls ? ',' : '') + u2;\nif (u3) urls += (urls ? ',' : '') + u3;\nif (u4) urls += (urls ? ',' : '') + u4;\nif (u5) urls += (urls ? ',' : '') + u5;\nvar hashtagStr = p.hashtags ? p.hashtags.map(function(h) { return '#' + h; }).join(' ') : '';\nreturn [{ json: { success: true, data: { total_slides: 5, slides: slides }, topic: p.topic, headline: p.h1, hook: p.hook, context: p.context, caption: p.caption, hashtags: hashtagStr, post_copy: p.caption || (p.h1 + ' | ' + p.h2 + ' | ' + p.h3 + ' | ' + p.h4 + ' | ' + p.h5), all_image_urls: urls, visual_style: 'Realistic', slide_count: 5, request_id: p.request_id } }];"
+      "OpenAI Model": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Agent 1: Strategy Analyst",
+              "type": "ai_languageModel",
+              "index": 0
+            },
+            {
+              "node": "Agent 2: Copywriter",
+              "type": "ai_languageModel",
+              "index": 0
+            },
+            {
+              "node": "Agent 3: Visual Director",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [4820, 300],
-      "id": "format-final",
-      "name": "Format Final"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "=INSERT INTO social_posts (topic, post_type, visual_style, orientation, headline, context, trend_source, strategy_analysis, post_copy, image_prompt, image_url, status, created_at, updated_at)\nVALUES (\n  '{{ $json.topic.replace(/'/g, \"''\") }}',\n  'Carousel',\n  '{{ $json.visual_style }}',\n  '4:5',\n  '{{ $json.headline.replace(/'/g, \"''\") }}',\n  '{{ ($json.context || '').replace(/'/g, \"''\") }}',\n  'Generated carousel',\n  '{{ $json.hashtags.replace(/'/g, \"''\") }}',\n  '{{ $json.post_copy.replace(/'/g, \"''\") }}',\n  '{{ ($json.hook || '').replace(/'/g, \"''\") }}',\n  '{{ $json.all_image_urls }}',\n  'completed',\n  NOW(),\n  NOW()\n)\nRETURNING *",
-        "options": {}
+      "Agent 1: Strategy Analyst": {
+        "main": [
+          [
+            {
+              "node": "Agent 2: Copywriter",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [5040, 300],
-      "id": "save-db",
-      "name": "Save to DB",
-      "credentials": { "postgres": { "id": "WnTYs2zvPoE7hDJE", "name": "Postgres account" } }
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, message: 'Carousel generated and saved', carousel_id: $json.id, topic: $('Format Final').item.json.topic, caption: $('Format Final').item.json.caption, hashtags: $('Format Final').item.json.hashtags, slides: $('Format Final').item.json.data.slides }) }}",
-        "options": { "responseHeaders": { "entries": [{ "name": "Access-Control-Allow-Origin", "value": "*" }] } }
+      "Agent 2: Copywriter": {
+        "main": [
+          [
+            {
+              "node": "Agent 3: Visual Director",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [5260, 300],
-      "id": "respond",
-      "name": "Respond"
+      "Agent 3: Visual Director": {
+        "main": [
+          [
+            {
+              "node": "Parse Output",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parse Output": {
+        "main": [
+          [
+            {
+              "node": "Create Post Record",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create Post Record": {
+        "main": [
+          [
+            {
+              "node": "Prepare Slides",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare Slides": {
+        "main": [
+          [
+            {
+              "node": "Insert Slides",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Insert Slides": {
+        "main": [
+          [
+            {
+              "node": "Get Slide 1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Slide 1": {
+        "main": [
+          [
+            {
+              "node": "Gen Slide 1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Gen Slide 1": {
+        "main": [
+          [
+            {
+              "node": "Wait 1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Wait 1": {
+        "main": [
+          [
+            {
+              "node": "Get Slide 2",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Slide 2": {
+        "main": [
+          [
+            {
+              "node": "Gen Slide 2",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Gen Slide 2": {
+        "main": [
+          [
+            {
+              "node": "Wait 2",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Wait 2": {
+        "main": [
+          [
+            {
+              "node": "Get Slide 3",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Slide 3": {
+        "main": [
+          [
+            {
+              "node": "Gen Slide 3",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Gen Slide 3": {
+        "main": [
+          [
+            {
+              "node": "Wait 3",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Wait 3": {
+        "main": [
+          [
+            {
+              "node": "Get Slide 4",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Slide 4": {
+        "main": [
+          [
+            {
+              "node": "Gen Slide 4",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Gen Slide 4": {
+        "main": [
+          [
+            {
+              "node": "Wait 4",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Wait 4": {
+        "main": [
+          [
+            {
+              "node": "Get Slide 5",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Slide 5": {
+        "main": [
+          [
+            {
+              "node": "Gen Slide 5",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "settings": {
+      "executionOrder": "v1"
     }
-  ],
-  "connections": {
-    "Webhook": { "main": [[{ "node": "Parse News", "type": "main", "index": 0 }]] },
-    "Parse News": { "main": [[{ "node": "AI: Strategy", "type": "main", "index": 0 }]] },
-    "AI: Strategy": { "main": [[{ "node": "AI: Copywriting", "type": "main", "index": 0 }]] },
-    "AI: Copywriting": { "main": [[{ "node": "Download Logo", "type": "main", "index": 0 }]] },
-    "Gemini Strategy": { "ai_languageModel": [[{ "node": "AI: Strategy", "type": "ai_languageModel", "index": 0 }]] },
-    "Gemini Copy": { "ai_languageModel": [[{ "node": "AI: Copywriting", "type": "ai_languageModel", "index": 0 }]] },
-    "Download Logo": { "main": [[{ "node": "Prepare Carousel", "type": "main", "index": 0 }]] },
-    "Prepare Carousel": { "main": [[{ "node": "Gemini 1", "type": "main", "index": 0 }]] },
-    "Gemini 1": { "main": [[{ "node": "Check Binary 1", "type": "main", "index": 0 }]] },
-    "Check Binary 1": { "main": [[{ "node": "Upload 1", "type": "main", "index": 0 }]] },
-    "Upload 1": { "main": [[{ "node": "Gemini 2", "type": "main", "index": 0 }]] },
-    "Gemini 2": { "main": [[{ "node": "Check Binary 2", "type": "main", "index": 0 }]] },
-    "Check Binary 2": { "main": [[{ "node": "Upload 2", "type": "main", "index": 0 }]] },
-    "Upload 2": { "main": [[{ "node": "Gemini 3", "type": "main", "index": 0 }]] },
-    "Gemini 3": { "main": [[{ "node": "Check Binary 3", "type": "main", "index": 0 }]] },
-    "Check Binary 3": { "main": [[{ "node": "Upload 3", "type": "main", "index": 0 }]] },
-    "Upload 3": { "main": [[{ "node": "Gemini 4", "type": "main", "index": 0 }]] },
-    "Gemini 4": { "main": [[{ "node": "Check Binary 4", "type": "main", "index": 0 }]] },
-    "Check Binary 4": { "main": [[{ "node": "Upload 4", "type": "main", "index": 0 }]] },
-    "Upload 4": { "main": [[{ "node": "Gemini 5", "type": "main", "index": 0 }]] },
-    "Gemini 5": { "main": [[{ "node": "Check Binary 5", "type": "main", "index": 0 }]] },
-    "Check Binary 5": { "main": [[{ "node": "Upload 5", "type": "main", "index": 0 }]] },
-    "Upload 5": { "main": [[{ "node": "Format Final", "type": "main", "index": 0 }]] },
-    "Format Final": { "main": [[{ "node": "Save to DB", "type": "main", "index": 0 }]] },
-    "Save to DB": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
-  },
-  "pinData": {},
-  "meta": { "instanceId": "b5116c87255060ddf18db8a2b1b90e34b38f50f44815cf784a0b8a92b6bb4e6e" }
-}
+  }

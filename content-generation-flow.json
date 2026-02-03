@@ -5,7 +5,10 @@
         "httpMethod": "POST",
         "path": "70738d02-4bd8-4dac-853f-ba4836aafaf5",
         "responseMode": "responseNode",
-        "options": {}
+        "options": {
+          "allowedOrigins": "*",
+          "rawBody": false
+        }
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -466,7 +469,24 @@
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ { \"success\": true, \"message\": \"Content generated successfully\", \"data\": $json } }}",
-        "options": {}
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, GET, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,

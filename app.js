@@ -335,15 +335,37 @@ publishForm.addEventListener('submit', async (e) => {
         btn.disabled = true;
         btn.textContent = 'Publishing...';
         
-        // Send to n8n webhook
-        fetch(n8nPublishWebhook, {
+        console.log('=== PUBLISH DEBUG ===');
+        console.log('Webhook URL:', n8nPublishWebhook);
+        console.log('Data keys:', Object.keys(data));
+        console.log('Has Image?:', !!data.Image);
+        console.log('Has Images array?:', !!data.Images);
+        if (data.Images) {
+            console.log('Images count:', data.Images.length);
+        }
+        
+        // Send to n8n webhook - use cors mode for better debugging
+        const response = await fetch(n8nPublishWebhook, {
             method: 'POST',
-            mode: 'no-cors',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(data)
+        }).catch(err => {
+            // If CORS fails, retry with no-cors
+            console.warn('CORS failed, retrying with no-cors:', err.message);
+            return fetch(n8nPublishWebhook, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
         });
+        
+        console.log('Fetch response status:', response?.status || 'no-cors mode');
+        console.log('=== END PUBLISH DEBUG ===');
         
         // Clear pending URLs
         window.pendingImageUrls = null;
@@ -481,15 +503,31 @@ generateForm.addEventListener('submit', async (e) => {
         );
         updateProgress(10, 'Sending request to AI...');
         
-        // Send to n8n webhook
-        fetch(n8nGenerateWebhook, {
+        // Send to n8n webhook with better error handling
+        console.log('=== GENERATE CONTENT DEBUG ===');
+        console.log('Webhook URL:', n8nGenerateWebhook);
+        console.log('Data:', JSON.stringify(data, null, 2));
+        
+        const genResponse = await fetch(n8nGenerateWebhook, {
             method: 'POST',
-            mode: 'no-cors',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(data)
+        }).catch(err => {
+            console.warn('CORS failed for generate, retrying with no-cors:', err.message);
+            return fetch(n8nGenerateWebhook, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
         });
+        
+        console.log('Generate response status:', genResponse?.status || 'no-cors mode');
+        console.log('=== END GENERATE CONTENT DEBUG ===');
         
         updateProgress(20, 'AI is analyzing topic...');
         

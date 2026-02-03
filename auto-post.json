@@ -4,8 +4,25 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ { \"success\": true, \"message\": \"Post published successfully\" } }}",
-        "options": {}
+        "responseBody": "={{ { \"success\": true, \"message\": \"Post published successfully\", \"timestamp\": new Date().toISOString() } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, GET, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
@@ -1036,7 +1053,10 @@
         "httpMethod": "POST",
         "path": "025d6de3-6b46-41c2-839d-58a8b18b649f",
         "responseMode": "responseNode",
-        "options": {}
+        "options": {
+          "allowedOrigins": "*",
+          "rawBody": false
+        }
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,

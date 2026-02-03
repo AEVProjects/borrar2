@@ -1,0 +1,229 @@
+{
+    "name": "MSI Slide Image Gen",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "msi-slide-gen",
+                "responseMode": "onReceived",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                0,
+                0
+            ],
+            "id": "webhook-slide-gen",
+            "name": "Webhook - Slide Gen",
+            "webhookId": "msi-slide-gen-webhook"
+        },
+        {
+            "parameters": {
+                "url": "https://i.ibb.co/S7mKXdxr/MSI-Technologies-Icon.png",
+                "options": {
+                    "response": {
+                        "response": {
+                            "responseFormat": "file"
+                        }
+                    }
+                }
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                220,
+                0
+            ],
+            "id": "download-logo",
+            "name": "Download MSI Logo"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Prepare Gemini Input with robust binary handling\nconst inputData = $('Webhook - Slide Gen').item.json;\nconst input = inputData.body || inputData;\nconst logoItem = $('Download MSI Logo').item;\n\n// Get logo base64\nlet logoBase64 = '';\nif (logoItem.binary && Object.keys(logoItem.binary).length > 0) {\n  const binaryKey = Object.keys(logoItem.binary)[0];\n  const binaryData = logoItem.binary[binaryKey];\n  \n  try {\n    // Try to get data buffer using n8n helper (works for filesystem mode)\n    // We assume index 0 since we run 1 item per execution in this child flow\n    const buffer = await this.helpers.getBinaryDataBuffer(0, binaryKey);\n    logoBase64 = buffer.toString('base64');\n  } catch (e) {\n     console.log('Simple buffer access failed, checking direct data...');\n     if (binaryData.data && binaryData.data !== 'filesystem-v2') {\n         logoBase64 = binaryData.data;\n     }\n  }\n}\n\nreturn [{\n  json: {\n    image_prompt: input.image_prompt,\n    slide_id: input.slide_id,\n    carousel_id: input.carousel_id,\n    logo_base64: logoBase64\n  }\n}];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                440,
+                0
+            ],
+            "id": "prepare-gemini",
+            "name": "Prepare Gemini Input"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "googlePalmApi",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [\n      { text: $json.image_prompt },\n      { inline_data: { mime_type: 'image/png', data: $json.logo_base64 } }\n    ]\n  }],\n  generationConfig: {\n    responseModalities: ['IMAGE'],\n    imageConfig: {\n      aspectRatio: '4:5',\n      imageSize: '2K'\n    }\n  }\n}) }}",
+                "options": {
+                    "response": {
+                        "response": {}
+                    }
+                }
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                660,
+                0
+            ],
+            "id": "generate-image",
+            "name": "Generate Image",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "oF4jKBK0jRbwEPWt",
+                    "name": "Google Gemini(PaLM) Api account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Extract image binary\nconst item = $input.item;\nconst parts = item.json?.candidates?.[0]?.content?.parts?.[0];\nconst inlineData = parts?.inline_data || parts?.inlineData;\n\nif (inlineData) {\n  return [{\n    json: item.json,\n    binary: {\n      data: {\n        data: inlineData.data,\n        mimeType: inlineData.mime_type || 'image/png',\n        fileName: 'generated_slide.png'\n      }\n    }\n  }];\n}\n\nthrow new Error('No image generated');"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                880,
+                0
+            ],
+            "id": "extract-binary",
+            "name": "Extract Binary"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.imgbb.com/1/upload",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendBody": true,
+                "contentType": "multipart-form-data",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "key",
+                            "value": "d5e3ee3c8c2fa1a29f6d6dc3c2c79447"
+                        },
+                        {
+                            "parameterType": "formBinaryData",
+                            "name": "image",
+                            "inputDataFieldName": "=data"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1100,
+                0
+            ],
+            "id": "upload-imgbb",
+            "name": "Upload to ImgBB",
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "zx6X4T7j4yDMYWKo",
+                    "name": "imgbb-api"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "=UPDATE carousel_slides \nSET image_url = '{{ $json.data.url }}', \n    updated_at = NOW()\nWHERE id = '{{ $('Prepare Gemini Input').item.json.slide_id }}'\nRETURNING *",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.5,
+            "position": [
+                1320,
+                0
+            ],
+            "id": "update-slide-db",
+            "name": "Update Slide DB",
+            "credentials": {
+                "postgres": {
+                    "id": "WnTYs2zvPoE7hDJE",
+                    "name": "Postgres account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Webhook - Slide Gen": {
+            "main": [
+                [
+                    {
+                        "node": "Download MSI Logo",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Download MSI Logo": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Gemini Input",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Gemini Input": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Image",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Image": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Binary",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Binary": {
+            "main": [
+                [
+                    {
+                        "node": "Upload to ImgBB",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Upload to ImgBB": {
+            "main": [
+                [
+                    {
+                        "node": "Update Slide DB",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "settings": {
+        "executionOrder": "v1"
+    }
+}
