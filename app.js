@@ -1910,13 +1910,38 @@ if (videoForm) {
         try {
             updateProgress(10, 'Sending request to Veo 3...');
             
-            const response = await fetch(n8nVideoWebhook, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
+            // Debug logging
+            console.log('=== VIDEO GENERATION DEBUG ===');
+            console.log('Video Webhook URL:', n8nVideoWebhook);
+            console.log('Request data:', JSON.stringify(data, null, 2));
+            
+            if (!n8nVideoWebhook) {
+                throw new Error('Video webhook URL not configured. Add videoWebhook to config.js');
+            }
+            
+            let response;
+            try {
+                // Try with CORS first
+                response = await fetch(n8nVideoWebhook, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                console.log('Video response status:', response.status);
+            } catch (corsError) {
+                console.log('CORS error, trying no-cors mode:', corsError.message);
+                // Fallback to no-cors
+                response = await fetch(n8nVideoWebhook, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+            }
             
             updateProgress(30, 'Processing prompt...');
             
