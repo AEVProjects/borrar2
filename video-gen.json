@@ -12,41 +12,32 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [
-        54400,
-        3984
-      ],
+      "position": [540, 400],
       "id": "e403b818-9dad-4efd-94f8-1eb27485f6f3",
       "name": "Webhook - Video Gen",
       "webhookId": "msi-video-gen"
     },
     {
       "parameters": {
-        "jsCode": "const input = $input.item.json;\n\nconsole.log('==== VIDEO GEN WEBHOOK ====');\n\n// Parse input data\nlet data = input.body || input;\nif (typeof data === 'string') {\n  try { data = JSON.parse(data); } catch (e) { /* keep as is */ }\n}\n\n// Extract parameters\nconst prompt = data.prompt || data.video_prompt || '';\nconst start_image_url = data.start_image_url || data.imageUrl || null;\nconst aspect_ratio = data.aspect_ratio || data.aspectRatio || '9:16';\nconst service = data.service || 'company_intro';\nconst post_id = data.post_id || data.postId || null;\nconst topic = data.topic || '';\n\n// Veo 3.1: max 8s initial, extension adds 7s = 15s max\nlet requestedDuration = Math.min(parseInt(data.duration || '15'), 15);\nconst needsExtension = requestedDuration > 8;\nconst initialDuration = needsExtension ? 8 : requestedDuration;\n\nconsole.log('Config:', { prompt: prompt.substring(0,50), needsExtension, start_image_url: !!start_image_url });\n\nif (!prompt || prompt.length < 3) {\n  throw new Error('ERROR: prompt is required (min 3 chars)');\n}\nif (!start_image_url) {\n  throw new Error('ERROR: start_image_url is required');\n}\n\nreturn [{ \n  json: { \n    prompt, \n    duration: String(initialDuration),\n    needs_extension: needsExtension,\n    final_duration: needsExtension ? 15 : initialDuration,\n    aspect_ratio, \n    service,\n    post_id, \n    topic,\n    start_image_url\n  } \n}];"
+        "jsCode": "const input = $input.item.json;\nlet data = input.body || input;\nif (typeof data === 'string') {\n  try { data = JSON.parse(data); } catch (e) { }\n}\n\nconst prompt = data.prompt || data.video_prompt || '';\nconst start_image_url = data.start_image_url || data.imageUrl || null;\nconst extension_image_url = data.extension_image_url || data.end_image_url || null;\nconst aspect_ratio = data.aspect_ratio || data.aspectRatio || '9:16';\nconst service = data.service || 'company_intro';\nconst post_id = data.post_id || data.postId || null;\nconst topic = data.topic || '';\n\n// Veo 3.1: max 8s per generation, extension adds 7s = 15s total\nlet requestedDuration = Math.min(parseInt(data.duration || '15'), 15);\nconst needsExtension = requestedDuration > 8;\nconst initialDuration = needsExtension ? 8 : requestedDuration;\n\nif (!prompt || prompt.length < 3) {\n  throw new Error('prompt is required (min 3 chars)');\n}\nif (!start_image_url) {\n  throw new Error('start_image_url is required');\n}\n\nreturn [{ \n  json: { \n    prompt, \n    duration: String(initialDuration),\n    needs_extension: needsExtension,\n    aspect_ratio, \n    service,\n    post_id, \n    topic,\n    start_image_url,\n    extension_image_url\n  } \n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54624,
-        3984
-      ],
+      "position": [760, 400],
       "id": "14619088-ccd9-406b-9376-1133b57cd1be",
       "name": "Format Video Input"
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "==\"You are a video prompt engineer for Google Veo 3.1 specialized in MSI Technologies corporate content.\n\n## ABOUT MSI TECHNOLOGIES\nMSI Technologies is a B2B technology company that helps businesses modernize their infrastructure and implement innovative technology solutions. Key services include:\n- Cloud Computing & Infrastructure Modernization\n- Cybersecurity Solutions\n- AI/ML Implementation\n- DevOps & IT Consulting\n- Digital Transformation\n\nTarget audience: CTOs, IT Directors, and enterprise decision-makers.\nBrand colors: Primary Blue #207CE5, Secondary Blue #004AAD, Accent/Text #FFFDF1, Dark #2B2B2B\nBrand fonts: ITC Avant Garde Bold (headlines), Poppins SemiBold (subtitles), Quicksand Medium (body)\nContact: contact@msitechnologiesinc.com | msitechnologiesinc.com\n\n## SELECTED SERVICE FOCUS: \" + {\n  company_intro: \"Company Introduction - Showcase MSI Technologies as a leading B2B tech partner helping enterprises modernize and innovate.\",\n  data_security: \"Data Security and Cloud Computing - We use the right tools to ensure security and modernize infrastructure. Focus on enterprise cloud solutions, data protection, and infrastructure modernization.\",\n  bpo: \"Business Process Outsourcing - Leave the non-core tasks to us so you can focus on what really matters. Highlight process optimization, workflow automation, and operational efficiency.\",\n  it_cybersecurity: \"IT Management and Cybersecurity - Advanced security to protect your business and ensure data integrity. Emphasize threat protection, security monitoring, and compliance.\",\n  it_outsourcing: \"IT Outsourcing Solutions - Tap into a global pool of talented professionals without hiring in-house. Show skilled tech teams, remote collaboration, and scalable talent solutions.\",\n  ai_solutions: \"AI and Smart Business Solutions - We empower companies to automate routine tasks and drive innovation. Focus on machine learning, intelligent automation, and AI-driven insights.\",\n  executive_consulting: \"Executive Consulting - We help organizations navigate complexity, drive performance, and stay ahead in the market. Highlight strategic planning, digital transformation roadmaps, and C-level advisory.\"\n}[$json.service] + \"\n\nUSER REQUEST: \" + $json.prompt + \"\nTOPIC: \" + ($json.topic || \"Corporate tech\") + \"\nDURATION: \" + $json.duration + \" seconds\nASPECT RATIO: \" + $json.aspect_ratio + \"\n\n\" + ($json.start_image_url ? \n\"MODE: ANIMATE THE PROVIDED IMAGE\n\nThe user uploaded an image that ALREADY contains the MSI Technologies logo. Your job is to bring this image to life with motion and animation.\n\nCRITICAL - MSI Technologies Logo:\n- The MSI Technologies logo is ALREADY in the reference image\n- Use the EXACT logo as it appears in the image as reference\n- If the logo needs to appear elsewhere in the video, use the SAME design WITHOUT modifications\n- The logo position and style from the reference image is correct - respect it\n- Do NOT move, resize, or alter the logo that's already in the image\n\nAnimation Instructions:\n- Describe how the camera moves through the scene (slow push forward, pan left to right, crane up, etc)\n- Add realistic motion: people moving naturally, talking with lips perfectly synced to dialogue, screens updating, subtle environmental movement\n- When people speak, always specify: lips synced saying [exact words]\n- Include text appearing on physical objects like monitors, wall displays, or signage - use ITC Avant Garde font for titles and Poppins for subtitles in MSI colors #207CE5 or #004AAD\n- Lighting should evolve smoothly: morning light warming, screen glow intensifying, shadows shifting\n\nMANDATORY CALL TO ACTION (LAST 3-4 SECONDS):\n- Before the fade out, display a clear CTA on screen or spoken by a person\n- CTA must include contact info: contact@msitechnologiesinc.com or msitechnologiesinc.com\n- Examples: 'Contact us today', 'Schedule your consultation', 'Let us help transform your business'\n- Use professional executive voice or clean text overlay on screen\n\n- ENDING TRANSITION: The last 1-2 seconds must include smooth fade to black or elegant cross-dissolve after the CTA, NO abrupt cuts\n- End with: balanced exposure, cinematic color grading, no overexposure, rich detail, smooth fade out\n\nExample output:\nCamera slowly dollies forward as the executive turns toward camera and speaks with lips perfectly synced: Welcome to the future of cloud infrastructure. The MSI Technologies logo remains in position. At 5 seconds, the monitor displays: ENTERPRISE SOLUTIONS in ITC Avant Garde with Poppins subtitle: Secure and Scalable in #207CE5. At 10 seconds, executive speaks: Ready to modernize? Contact MSI Technologies. At 12 seconds, screen displays contact@msitechnologiesinc.com in clean white text. Soft fade to black begins at 14 seconds. Cinematic color grading, balanced exposure, photorealistic motion, elegant fade out ending, 16 seconds.\"\n\n: \n\n\"MODE: CREATE NEW VIDEO SCENE\n\nCreate a professional corporate video scene for MSI Technologies.\n\nSCENE REQUIREMENTS:\n- Professional corporate environment (modern office, data center, conference room, or tech workspace)\n- Natural, photorealistic people with realistic movements and expressions\n- When people speak, always specify: lips perfectly synced saying [exact words]\n- Include text on physical surfaces (monitors, wall displays, signage) using MSI brand fonts and colors\n- MSI Technologies logo in bottom right corner throughout\n- Cinematic lighting: soft window light, balanced exposure, professional color grading\n\nMANDATORY CALL TO ACTION (LAST 3-4 SECONDS):\n- Before fade out, include a clear CTA - either spoken by a professional or displayed on screen\n- CTA must include: contact@msitechnologiesinc.com or msitechnologiesinc.com\n- Examples: 'Contact us today', 'Let us transform your infrastructure', 'Schedule your free consultation'\n- Professional executive voice or elegant text overlay\n\nENDING:\n- Smooth fade to black in the last 1-2 seconds after CTA\n- No abrupt cuts, elegant transition\n\nOUTPUT FORMAT:\nDense, descriptive prompt with exact camera movements, dialogue with lip sync specifications, on-screen text details, lighting evolution, CTA moment, and fade out timing. Always specify duration in seconds.\")",
+        "text": "=\"You are a creative video director for Veo 3.1 making HUMAN, EMOTIONAL content for MSI Technologies.\n\n## MSI TECHNOLOGIES - THE HUMAN SIDE\nWe help real people solve real problems with technology. We're not about cold offices - we're about:\n- The relief when your data is finally secure\n- The excitement of digital transformation\n- Real teams collaborating, laughing, succeeding\n- Human moments powered by smart tech\n\nBrand: Blue #207CE5, #004AAD | Contact: msitechnologiesinc.com\n\n## CREATIVE DIRECTION FOR: \" + {\n  company_intro: \"STORY: A day in the life - show diverse people whose work is easier because of smart tech. Coffee shops, home offices, city streets, real moments.\",\n  data_security: \"STORY: Peace of mind - a parent working from home knowing their family's future is protected. Warm lighting, genuine smiles.\",\n  bpo: \"STORY: Freedom - a business owner finally having time for what matters. Show the human benefit, not the process.\",\n  it_cybersecurity: \"STORY: The guardians - tech teams as everyday heroes. Diverse faces, determination, small victories.\",\n  it_outsourcing: \"STORY: Global connections - real people across the world working together. Video calls with genuine laughter, shared success.\",\n  ai_solutions: \"STORY: The future is friendly - AI helping humans be more human. Creative work, family time, dreams realized.\",\n  executive_consulting: \"STORY: Visionaries - leaders who dare to transform. Thoughtful moments, breakthrough ideas, team celebration.\"\n}[$json.service] + \"\n\nUSER VISION: \" + $json.prompt + \"\nTHEME: \" + ($json.topic || \"Human technology\") + \"\nDURATION: \" + $json.duration + \"s | ASPECT: \" + $json.aspect_ratio + \"\n\n## STRUCTURE YOUR PROMPT:\n\n[0-2s] HOOK: Start with emotion - a smile, a moment of connection, movement\n[2-5s] STORY: Show the human journey, NOT corporate imagery\n[5-7s] PAYOFF: The positive outcome, genuine reaction\n[LAST 1s] BRAND: Subtle msitechnologiesinc.com text overlay\n\n## AUDIO IS CRITICAL:\n- Describe ambient sounds throughout (birds, city life, keyboard clicks, laughter)\n- Include background music mood (uplifting, inspiring, warm)\n- Voice elements if needed (whispered tagline, natural conversation)\n\n## AVOID:\n- Generic office shots\n- Stiff corporate poses\n- Empty buzzwords\n- Silence at any point\n\n## LOCATIONS (be creative):\nCoffee shops, rooftops at sunset, home offices with plants, urban streets, parks, coworking spaces with character, kitchens, balconies\n\nOutput a CINEMATIC prompt with continuous audio description throughout.\"",
         "options": {
-          "systemMessage": "You are a Director of Photography specialized in MSI Technologies corporate video production.\n\n## MSI TECHNOLOGIES CONTEXT\nMSI Technologies is a B2B technology company helping enterprises modernize infrastructure. Services: Cloud Computing, Cybersecurity, AI/ML, DevOps, Digital Transformation. Audience: CTOs, IT Directors, enterprise leaders.\n\nBrand: Professional, senior expert tone. Blue #207CE5, Secondary #004AAD, Accent #FFFDF1.\n\n## YOUR ROLE\nCreate detailed video prompts that:\n1. Establish professional corporate atmosphere\n2. Include realistic people with synced lip movements when speaking\n3. Display text on physical surfaces (screens, walls) - NEVER floating text\n4. Maintain MSI brand colors and logo placement\n5. ALWAYS include a Call to Action before the ending\n6. End with smooth fade to black\n\n## CALL TO ACTION REQUIREMENT (MANDATORY)\nEvery video MUST include a CTA in the last 3-4 seconds before fade out:\n- Spoken by professional: 'Contact MSI Technologies' / 'Ready to modernize? Let's talk'\n- Or displayed on screen: contact@msitechnologiesinc.com / msitechnologiesinc.com\n- Make it natural and professional, not salesy\n\n## ANIMATION RULES\n- Describe camera movements precisely (dolly, pan, crane, push)\n- When people speak, specify: lips synced saying [exact dialogue]\n- Lighting evolution: soft natural light, balanced exposure, cinematic grading\n- Text on physical objects only (monitors, signage, badges)\n- ALWAYS end with smooth fade to black, never abrupt cuts\n\n## LOGO RULES\n- If reference image has logo, respect its position\n- If creating new scene, place logo bottom right\n- NEVER modify, distort, or redesign the MSI logo\n\nOutput dense, descriptive prompts with timing for each element. Always include CTA moment and fade out timing."
+          "systemMessage": "You are an award-winning commercial director known for EMOTIONAL, HUMAN storytelling.\n\nYour style:\n1. REAL PEOPLE in REAL MOMENTS - no stock photo vibes\n2. Warm, cinematic lighting - golden hour, soft shadows\n3. CONTINUOUS AUDIO - always describe sounds, music, ambient noise\n4. Movement with purpose - camera follows emotion, not just action\n5. Diverse faces, genuine expressions, natural body language\n6. Unexpected locations - NOT generic offices\n7. Brand appears naturally - on a laptop screen, coffee cup, subtle overlay\n\nAUDIO RULE: Every second must have sound described. Silence = failure.\n\nEnd with quiet confidence, not corporate fanfare."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
-      "position": [
-        54848,
-        3984
-      ],
+      "position": [980, 400],
       "id": "c583000c-7bac-4d4b-a2f7-7ed2c8bd622d",
       "name": "Agent: Video Prompt Optimizer"
     },
@@ -56,10 +47,7 @@
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
-      "position": [
-        54920,
-        4208
-      ],
+      "position": [1060, 620],
       "id": "535f4b45-3da5-47e3-a956-2d89ccdfb8fa",
       "name": "Google Gemini Chat Model",
       "credentials": {
@@ -96,6 +84,12 @@
               "name": "API_ENDPOINT",
               "type": "string",
               "value": "us-central1-aiplatform.googleapis.com"
+            },
+            {
+              "id": "bucket-name",
+              "name": "BUCKET_NAME",
+              "type": "string",
+              "value": "msi-veo-videos"
             },
             {
               "id": "text-prompt",
@@ -138,6 +132,12 @@
               "name": "START_IMAGE_URL",
               "type": "string",
               "value": "={{ $('Format Video Input').item.json.start_image_url }}"
+            },
+            {
+              "id": "extension-image-url",
+              "name": "EXTENSION_IMAGE_URL",
+              "type": "string",
+              "value": "={{ $('Format Video Input').item.json.extension_image_url }}"
             }
           ]
         },
@@ -145,16 +145,13 @@
       },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        55200,
-        3984
-      ],
+      "position": [1200, 400],
       "id": "afed24c1-c87b-42cd-ab16-da8cd79fc954",
       "name": "Settings"
     },
     {
       "parameters": {
-        "url": "={{ $('Settings').item.json.START_IMAGE_URL }}",
+        "url": "={{ $json.START_IMAGE_URL }}",
         "options": {
           "response": {
             "response": {
@@ -165,10 +162,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        55424,
-        3984
-      ],
+      "position": [1420, 400],
       "id": "e7a9fa03-8c56-418a-9fa6-067082c0781f",
       "name": "Download Start Image"
     },
@@ -179,36 +173,27 @@
       },
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
-      "position": [
-        55648,
-        3984
-      ],
+      "position": [1640, 400],
       "id": "56ec2a44-a310-4bb3-9e03-0fecf9b3ab70",
       "name": "Image to Base64"
     },
     {
       "parameters": {
-        "jsCode": "// Prepare data for Vertex AI request\nconst settings = $('Settings').item.json;\nconst imageData = $input.item.json;\n\nconsole.log('Image data received:', { hasData: !!imageData.data, mimeType: imageData.mimeType });\n\nreturn [{\n  json: {\n    PROJECT_ID: settings.PROJECT_ID,\n    MODEL_VERSION: settings.MODEL_VERSION,\n    LOCATION: settings.LOCATION,\n    API_ENDPOINT: settings.API_ENDPOINT,\n    TEXT_PROMPT: settings.TEXT_PROMPT,\n    DURATION: settings.DURATION,\n    ASPECT_RATIO: settings.ASPECT_RATIO,\n    POST_ID: settings.POST_ID,\n    ORIGINAL_PROMPT: settings.ORIGINAL_PROMPT,\n    NEEDS_EXTENSION: settings.NEEDS_EXTENSION,\n    IMAGE_BASE64: imageData.data,\n    IMAGE_MIME_TYPE: imageData.mimeType || 'image/jpeg'\n  }\n}];"
+        "jsCode": "const settings = $('Settings').item.json;\nconst imageData = $input.item.json;\nconst videoId = 'video_' + Date.now();\n\nreturn [{\n  json: {\n    PROJECT_ID: settings.PROJECT_ID,\n    MODEL_VERSION: settings.MODEL_VERSION,\n    LOCATION: settings.LOCATION,\n    API_ENDPOINT: settings.API_ENDPOINT,\n    BUCKET_NAME: settings.BUCKET_NAME,\n    VIDEO_ID: videoId,\n    TEXT_PROMPT: settings.TEXT_PROMPT,\n    DURATION: settings.DURATION,\n    ASPECT_RATIO: settings.ASPECT_RATIO,\n    POST_ID: settings.POST_ID,\n    ORIGINAL_PROMPT: settings.ORIGINAL_PROMPT,\n    NEEDS_EXTENSION: settings.NEEDS_EXTENSION,\n    IMAGE_BASE64: imageData.data,\n    IMAGE_MIME_TYPE: imageData.mimeType || 'image/jpeg'\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55872,
-        3984
-      ],
+      "position": [1860, 400],
       "id": "7c52b0dc-8bfc-4d3c-96e0-122e28959e6f",
       "name": "Prepare Vertex Request"
     },
     {
       "parameters": {
-        "jsCode": "// Generate OAuth2 Access Token from Service Account\nconst crypto = require('crypto');\n\nconst serviceAccount = {\n  \"type\": \"service_account\",\n  \"project_id\": \"gen-lang-client-0521438560\",\n  \"private_key_id\": \"353528a978e83fdd043e74b03d0096604b3ccd77\",\n  \"private_key\": \"-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCc8VpJosYd8D0N\\nmFLmh1b7UOsHgm5ZZBvjSkPUhcFXXoEnOoouhWPD5hEl7ziA+3vWpbHLWb5sm0dv\\nqUhHJWwMMbE5eBxmR7m/Cacpy5ZiOVw+180aZqq6e1AsKlEzRvdz66FSgpCeYtmS\\n2nnc8fGwxfB06qpXsxLVQYnwnKzOlKOv9cfXC/29vrbXoPwez9lkVyySa11iGtYA\\nzMU2LjiPrxvcDTbhb1JYD/050fT/m3z2NgclsV6uCEQxNLXOJriJxNuSKhmZufis\\nsoO/rlj/V+RFTrHEQ8zn3nbm6/W2ZANZt94AOo31t5TR6Idt9PxgjodSHJYLEm+0\\nOXC6bAf3AgMBAAECggEASvGn81Ti9YX0qarNH5+OZkmASmA7EL3Q4Wtj07chmfab\\nhx+Zv9hbyT7yfmJrYZB11Qzfx6Lt35AQ/13fkXXp0DLklfRo32Ct7u+Nn1REVlhc\\n1/eWTl6rdYyQPt7gUrO3U+g3655EsBW1Hz7sBZmVmBwVlMdAm8t8GVEILVmr3aN1\\n5CzVUaLtk9UNQDApUfxgdD2kutWTjqM2j3jsgceST6p98dqV2U8HiOXonpMgt02+\\n3PqApJNu4HQhdMzYwX67vKLuqanlZllLlBp8TWvbP3Roo2p57pD8oamT0BKWDUcX\\nfwT19NJOXqRTim6oalvGklTuwhI9+EJJPlAwN7+rAQKBgQDc+sNzQC4Eph4we6g5\\nBQe5QGIchou/ey1vJ+UGbM8vy6bkuy9dPbDZ/XUZTPOYkTPHKvRu544DTIQzH0qJ\\nfG5NKUIYdOInJm8y+r0JybMrrKl0b04/Nrlueb4RjesASMSq3BTVMK5+6Mb4vx7y\\nLS3mYUc8TF+kBEEaw0H4Fwlu9wKBgQC10JcC0kbtCF/MmHwSq9w0PfgbHT3NoZH7\\nyOWeXPfRLybn+I4MMYW3y5KSL5RM3Gxtve2I/HjJPpprZSUJXfMgRLrVkFRV1iFp\\nA/v1vAxoMlYGk3Oh74rwmmMmU7hhPSNL5HxIDHdXVZb5jrOvqIIBcZ6n2qhaCVXH\\nmtjl3QbvAQKBgBxiUWyiV8bdF4+espLwZHeVH4UOezDTP5jBhRd4LnyzKfLDYGgX\\nnnnBpqLjUX7NV9tDVzZPo9wkne57HHXgd8KNhCHkEZB5zVq8/j8dm1gGy5VbHq/b\\n9aGNHa7fjcnxjuFrd3mS0TcX60bUNcNhrj2jTSUfokFNEpe/cN/PBbUtAoGAaSms\\nnyonciT83Gd6pIYZiXIqluxT+iOxP7SU9AOMJ8ehNl2zM+RVFtk9/yZcHhUE9nj7\\n8tctuiFmyiWnxYI9BXYbpzmjPj7r9kUisKFDf+VVktoo8QqQD9kM7ndQV5Y4W0Ze\\niIIFaVONTu22iyzpfZJNlYNJC0MJBbpQKKyuvQECgYEA2q4N8oL3VJwZAuyIVXOm\\ng9SH9dq4pRunQbXJpxaP2mklGNEbLV1YURVGA0oyQE5oh3/4s/LdMERUFkaYBBnl\\nyrcLRELtnjswAy3b2tEp4ULP/rx5MRY4qjNonUrzoXAs937zDIcyjO6/ekxE28sO\\nXk4daXQsjz4PY3lVvJcnKFA=\\n-----END PRIVATE KEY-----\\n\",\n  \"client_email\": \"vertex-express@gen-lang-client-0521438560.iam.gserviceaccount.com\",\n  \"client_id\": \"113579530477823292475\",\n  \"token_uri\": \"https://oauth2.googleapis.com/token\"\n};\n\nconst settings = $input.item.json;\n\nfunction base64url(str) {\n  return Buffer.from(str).toString('base64').replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=/g, '');\n}\nfunction base64urlBuffer(buffer) {\n  return buffer.toString('base64').replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=/g, '');\n}\n\nconst now = Math.floor(Date.now() / 1000);\nconst header = { alg: 'RS256', typ: 'JWT' };\nconst payload = {\n  iss: serviceAccount.client_email,\n  sub: serviceAccount.client_email,\n  aud: serviceAccount.token_uri,\n  iat: now,\n  exp: now + 3600,\n  scope: 'https://www.googleapis.com/auth/cloud-platform'\n};\n\nconst headerB64 = base64url(JSON.stringify(header));\nconst payloadB64 = base64url(JSON.stringify(payload));\nconst signatureInput = `${headerB64}.${payloadB64}`;\nconst sign = crypto.createSign('RSA-SHA256');\nsign.update(signatureInput);\nconst signature = sign.sign(serviceAccount.private_key);\nconst jwt = `${signatureInput}.${base64urlBuffer(signature)}`;\n\nconst tokenResponse = await this.helpers.httpRequest({\n  method: 'POST',\n  url: serviceAccount.token_uri,\n  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },\n  body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`\n});\n\nif (!tokenResponse.access_token) {\n  throw new Error('Failed to get access token: ' + JSON.stringify(tokenResponse));\n}\n\nconsole.log('Access token OK');\n\nreturn [{\n  json: {\n    PROJECT_ID: settings.PROJECT_ID,\n    MODEL_VERSION: settings.MODEL_VERSION,\n    LOCATION: settings.LOCATION,\n    API_ENDPOINT: settings.API_ENDPOINT,\n    TEXT_PROMPT: settings.TEXT_PROMPT,\n    DURATION: settings.DURATION,\n    ASPECT_RATIO: settings.ASPECT_RATIO,\n    POST_ID: settings.POST_ID,\n    ORIGINAL_PROMPT: settings.ORIGINAL_PROMPT,\n    NEEDS_EXTENSION: settings.NEEDS_EXTENSION,\n    IMAGE_BASE64: settings.IMAGE_BASE64,\n    IMAGE_MIME_TYPE: settings.IMAGE_MIME_TYPE,\n    ACCESS_TOKEN: tokenResponse.access_token\n  }\n}];"
+        "jsCode": "const crypto = require('crypto');\n\nconst serviceAccount = {\n  \"type\": \"service_account\",\n  \"project_id\": \"gen-lang-client-0521438560\",\n  \"private_key_id\": \"353528a978e83fdd043e74b03d0096604b3ccd77\",\n  \"private_key\": \"-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCc8VpJosYd8D0N\\nmFLmh1b7UOsHgm5ZZBvjSkPUhcFXXoEnOoouhWPD5hEl7ziA+3vWpbHLWb5sm0dv\\nqUhHJWwMMbE5eBxmR7m/Cacpy5ZiOVw+180aZqq6e1AsKlEzRvdz66FSgpCeYtmS\\n2nnc8fGwxfB06qpXsxLVQYnwnKzOlKOv9cfXC/29vrbXoPwez9lkVyySa11iGtYA\\nzMU2LjiPrxvcDTbhb1JYD/050fT/m3z2NgclsV6uCEQxNLXOJriJxNuSKhmZufis\\nsoO/rlj/V+RFTrHEQ8zn3nbm6/W2ZANZt94AOo31t5TR6Idt9PxgjodSHJYLEm+0\\nOXC6bAf3AgMBAAECggEASvGn81Ti9YX0qarNH5+OZkmASmA7EL3Q4Wtj07chmfab\\nhx+Zv9hbyT7yfmJrYZB11Qzfx6Lt35AQ/13fkXXp0DLklfRo32Ct7u+Nn1REVlhc\\n1/eWTl6rdYyQPt7gUrO3U+g3655EsBW1Hz7sBZmVmBwVlMdAm8t8GVEILVmr3aN1\\n5CzVUaLtk9UNQDApUfxgdD2kutWTjqM2j3jsgceST6p98dqV2U8HiOXonpMgt02+\\n3PqApJNu4HQhdMzYwX67vKLuqanlZllLlBp8TWvbP3Roo2p57pD8oamT0BKWDUcX\\nfwT19NJOXqRTim6oalvGklTuwhI9+EJJPlAwN7+rAQKBgQDc+sNzQC4Eph4we6g5\\nBQe5QGIchou/ey1vJ+UGbM8vy6bkuy9dPbDZ/XUZTPOYkTPHKvRu544DTIQzH0qJ\\nfG5NKUIYdOInJm8y+r0JybMrrKl0b04/Nrlueb4RjesASMSq3BTVMK5+6Mb4vx7y\\nLS3mYUc8TF+kBEEaw0H4Fwlu9wKBgQC10JcC0kbtCF/MmHwSq9w0PfgbHT3NoZH7\\nyOWeXPfRLybn+I4MMYW3y5KSL5RM3Gxtve2I/HjJPpprZSUJXfMgRLrVkFRV1iFp\\nA/v1vAxoMlYGk3Oh74rwmmMmU7hhPSNL5HxIDHdXVZb5jrOvqIIBcZ6n2qhaCVXH\\nmtjl3QbvAQKBgBxiUWyiV8bdF4+espLwZHeVH4UOezDTP5jBhRd4LnyzKfLDYGgX\\nnnnBpqLjUX7NV9tDVzZPo9wkne57HHXgd8KNhCHkEZB5zVq8/j8dm1gGy5VbHq/b\\n9aGNHa7fjcnxjuFrd3mS0TcX60bUNcNhrj2jTSUfokFNEpe/cN/PBbUtAoGAaSms\\nnyonciT83Gd6pIYZiXIqluxT+iOxP7SU9AOMJ8ehNl2zM+RVFtk9/yZcHhUE9nj7\\n8tctuiFmyiWnxYI9BXYbpzmjPj7r9kUisKFDf+VVktoo8QqQD9kM7ndQV5Y4W0Ze\\niIIFaVONTu22iyzpfZJNlYNJC0MJBbpQKKyuvQECgYEA2q4N8oL3VJwZAuyIVXOm\\ng9SH9dq4pRunQbXJpxaP2mklGNEbLV1YURVGA0oyQE5oh3/4s/LdMERUFkaYBBnl\\nyrcLRELtnjswAy3b2tEp4ULP/rx5MRY4qjNonUrzoXAs937zDIcyjO6/ekxE28sO\\nXk4daXQsjz4PY3lVvJcnKFA=\\n-----END PRIVATE KEY-----\\n\",\n  \"client_email\": \"vertex-express@gen-lang-client-0521438560.iam.gserviceaccount.com\",\n  \"client_id\": \"113579530477823292475\",\n  \"token_uri\": \"https://oauth2.googleapis.com/token\"\n};\n\nconst settings = $input.item.json;\n\nfunction base64url(str) {\n  return Buffer.from(str).toString('base64').replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=/g, '');\n}\nfunction base64urlBuffer(buffer) {\n  return buffer.toString('base64').replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=/g, '');\n}\n\nconst now = Math.floor(Date.now() / 1000);\nconst header = { alg: 'RS256', typ: 'JWT' };\nconst payload = {\n  iss: serviceAccount.client_email,\n  sub: serviceAccount.client_email,\n  aud: serviceAccount.token_uri,\n  iat: now,\n  exp: now + 3600,\n  scope: 'https://www.googleapis.com/auth/cloud-platform'\n};\n\nconst headerB64 = base64url(JSON.stringify(header));\nconst payloadB64 = base64url(JSON.stringify(payload));\nconst signatureInput = `${headerB64}.${payloadB64}`;\nconst sign = crypto.createSign('RSA-SHA256');\nsign.update(signatureInput);\nconst signature = sign.sign(serviceAccount.private_key);\nconst jwt = `${signatureInput}.${base64urlBuffer(signature)}`;\n\nconst tokenResponse = await this.helpers.httpRequest({\n  method: 'POST',\n  url: serviceAccount.token_uri,\n  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },\n  body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`\n});\n\nif (!tokenResponse.access_token) {\n  throw new Error('Failed to get access token');\n}\n\nreturn [{\n  json: {\n    ...settings,\n    ACCESS_TOKEN: tokenResponse.access_token\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        56992,
-        3984
-      ],
+      "position": [2080, 400],
       "id": "4587d017-63ac-4013-a178-ffb3daaae916",
       "name": "Generate Access Token"
     },
@@ -231,19 +216,16 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  instances: [{\n    prompt: $json.TEXT_PROMPT + ($json.NEEDS_EXTENSION ? '. PART 1: Establish scene with smooth camera movement, cinematic motion. NO fade to black - end on engaging visual that can be extended.' : '. Complete video with CTA and fade to black ending.'),\n    image: {\n      bytesBase64Encoded: $json.IMAGE_BASE64,\n      mimeType: $json.IMAGE_MIME_TYPE\n    }\n  }],\n  parameters: {\n    aspectRatio: $json.ASPECT_RATIO,\n    resolution: '720p',\n    sampleCount: 1,\n    durationSeconds: parseInt($json.DURATION),\n    personGeneration: 'allow_all',\n    addWatermark: false,\n    includeRaiReason: true,\n    generateAudio: true,\n    negativePrompt: 'overexposed, static, frozen, abrupt cut, cartoon, 3d render, low quality, blurry'\n  }\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  instances: [{\n    prompt: $json.TEXT_PROMPT + ($json.NEEDS_EXTENSION ? '. PART 1: Establish the emotional hook. Warm cinematic lighting. CONTINUOUS BACKGROUND MUSIC - uplifting, inspiring melody throughout. Ambient sounds always present. End on moment of anticipation, NOT fade to black. Audio must continue strongly to the last frame.' : '. Complete story arc with emotional payoff. CONTINUOUS AUDIO throughout - background music and ambient sounds every second. Show msitechnologiesinc.com naturally. Gentle fade with music resolving peacefully.'),\n    image: {\n      bytesBase64Encoded: $json.IMAGE_BASE64,\n      mimeType: $json.IMAGE_MIME_TYPE\n    }\n  }],\n  parameters: {\n    aspectRatio: $json.ASPECT_RATIO,\n    resolution: '720p',\n    sampleCount: 1,\n    durationSeconds: parseInt($json.DURATION),\n    personGeneration: 'allow_all',\n    addWatermark: false,\n    includeRaiReason: true,\n    generateAudio: true,\n    storageUri: 'gs://' + $json.BUCKET_NAME + '/initial/',\n    negativePrompt: 'silence, no audio, muted, generic office, stock photo, stiff poses, corporate cliche, overexposed, static, cartoon'\n  }\n}) }}",
         "options": {
           "timeout": 30000
         }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        57216,
-        3984
-      ],
+      "position": [2300, 400],
       "id": "d146e150-23ec-4d9c-93a5-0282369b6893",
-      "name": "Vertex AI - VEO3"
+      "name": "Vertex AI - Generate Video"
     },
     {
       "parameters": {
@@ -252,10 +234,7 @@
       },
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [
-        57440,
-        3984
-      ],
+      "position": [2520, 400],
       "id": "1c005670-4554-431d-965c-9a9a80dcd867",
       "name": "Wait 2 Minutes",
       "webhookId": "veo3-wait"
@@ -279,32 +258,63 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"operationName\": \"{{ $('Vertex AI - VEO3').item.json.name }}\"\n}",
+        "jsonBody": "={\n  \"operationName\": \"{{ $('Vertex AI - Generate Video').item.json.name }}\"\n}",
         "options": {
           "timeout": 60000
         }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        57664,
-        3984
-      ],
+      "position": [2740, 400],
       "id": "3c1dc6e5-4f02-4307-b577-55b4e5e69609",
-      "name": "Vertex AI - Fetch Result"
+      "name": "Fetch Video Result"
     },
     {
       "parameters": {
-        "jsCode": "// Process Vertex AI response\nconst response = $input.item.json;\nconst settings = $('Generate Access Token').item.json;\n\nconsole.log('=== PROCESS VIDEO RESPONSE ===');\nconsole.log('Response keys:', Object.keys(response));\nconsole.log('Response.response keys:', response.response ? Object.keys(response.response) : 'N/A');\n\nlet videoBase64 = '';\nlet mimeType = 'video/mp4';\n\n// Try ALL possible response formats from Veo 3.1\nif (response.response?.videos?.[0]?.bytesBase64Encoded) {\n  videoBase64 = response.response.videos[0].bytesBase64Encoded;\n  mimeType = response.response.videos[0].mimeType || 'video/mp4';\n  console.log('Found video in: response.response.videos[0]');\n} else if (response.response?.generatedSamples?.[0]?.video?.bytesBase64Encoded) {\n  videoBase64 = response.response.generatedSamples[0].video.bytesBase64Encoded;\n  console.log('Found video in: response.response.generatedSamples[0].video');\n} else if (response.predictions?.[0]?.bytesBase64Encoded) {\n  videoBase64 = response.predictions[0].bytesBase64Encoded;\n  console.log('Found video in: response.predictions[0]');\n} else if (response.generatedSamples?.[0]?.video?.bytesBase64Encoded) {\n  videoBase64 = response.generatedSamples[0].video.bytesBase64Encoded;\n  console.log('Found video in: response.generatedSamples[0].video');\n} else if (response.videos?.[0]?.bytesBase64Encoded) {\n  videoBase64 = response.videos[0].bytesBase64Encoded;\n  mimeType = response.videos[0].mimeType || 'video/mp4';\n  console.log('Found video in: response.videos[0]');\n} else if (response.video?.bytesBase64Encoded) {\n  videoBase64 = response.video.bytesBase64Encoded;\n  console.log('Found video in: response.video');\n}\n\nconst hasVideo = videoBase64.length > 100;\nconsole.log('Has video:', hasVideo, 'Length:', videoBase64.length, 'Needs extension:', settings.NEEDS_EXTENSION);\n\nif (!hasVideo) {\n  console.log('FULL RESPONSE:', JSON.stringify(response).substring(0, 1000));\n  throw new Error('Video generation failed - no video in response. Keys: ' + Object.keys(response).join(', '));\n}\n\nreturn [{\n  json: {\n    video_base64: videoBase64,\n    mime_type: mimeType,\n    has_video: hasVideo,\n    post_id: settings.POST_ID,\n    prompt: settings.TEXT_PROMPT,\n    original_prompt: settings.ORIGINAL_PROMPT,\n    needs_extension: settings.NEEDS_EXTENSION,\n    ACCESS_TOKEN: settings.ACCESS_TOKEN,\n    PROJECT_ID: settings.PROJECT_ID,\n    MODEL_VERSION: settings.MODEL_VERSION,\n    LOCATION: settings.LOCATION,\n    API_ENDPOINT: settings.API_ENDPOINT,\n    ASPECT_RATIO: settings.ASPECT_RATIO\n  }\n}];"
+        "jsCode": "const response = $input.item.json;\nconst settings = $('Generate Access Token').item.json;\n\n// With storageUri, response has videos[0].uri instead of bytesBase64Encoded\nlet videoUri = '';\nlet mimeType = 'video/mp4';\n\nif (response.response?.videos?.[0]?.uri) {\n  videoUri = response.response.videos[0].uri;\n  mimeType = response.response.videos[0].mimeType || 'video/mp4';\n} else if (response.response?.videos?.[0]?.gcsUri) {\n  videoUri = response.response.videos[0].gcsUri;\n  mimeType = response.response.videos[0].mimeType || 'video/mp4';\n}\n\nif (!videoUri) {\n  throw new Error('Video generation failed. Response: ' + JSON.stringify(response).substring(0, 500));\n}\n\n// Convert gs://bucket/path to https URL for download\nconst httpsUrl = videoUri.replace('gs://', 'https://storage.googleapis.com/');\n\nreturn [{\n  json: {\n    video_gcs_uri: videoUri,\n    video_https_url: httpsUrl,\n    mime_type: mimeType,\n    post_id: settings.POST_ID,\n    original_prompt: settings.ORIGINAL_PROMPT,\n    needs_extension: settings.NEEDS_EXTENSION,\n    ACCESS_TOKEN: settings.ACCESS_TOKEN,\n    PROJECT_ID: settings.PROJECT_ID,\n    MODEL_VERSION: settings.MODEL_VERSION,\n    LOCATION: settings.LOCATION,\n    API_ENDPOINT: settings.API_ENDPOINT,\n    ASPECT_RATIO: settings.ASPECT_RATIO,\n    BUCKET_NAME: settings.BUCKET_NAME\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        57888,
-        3984
-      ],
+      "position": [2960, 400],
       "id": "b7f6d88d-44d5-4bf5-9be4-bed243c4ae90",
       "name": "Process Video Response"
+    },
+    {
+      "parameters": {
+        "url": "=https://storage.googleapis.com/storage/v1/b/{{ $json.BUCKET_NAME }}/o/{{ encodeURIComponent($json.video_gcs_uri.replace('gs://' + $json.BUCKET_NAME + '/', '')) }}?alt=media",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3180, 400],
+      "id": "download-initial-video",
+      "name": "Download Initial Video"
+    },
+    {
+      "parameters": {
+        "jsCode": "const binaryData = $input.item.binary;\nconst settings = $('Process Video Response').item.json;\nconst allSettings = $('Settings').item.json;\n\nreturn [{\n  json: {\n    post_id: settings.post_id,\n    original_prompt: settings.original_prompt,\n    needs_extension: settings.needs_extension,\n    ACCESS_TOKEN: settings.ACCESS_TOKEN,\n    PROJECT_ID: settings.PROJECT_ID,\n    MODEL_VERSION: settings.MODEL_VERSION,\n    LOCATION: settings.LOCATION,\n    API_ENDPOINT: settings.API_ENDPOINT,\n    ASPECT_RATIO: settings.ASPECT_RATIO,\n    BUCKET_NAME: settings.BUCKET_NAME,\n    video_gcs_uri: settings.video_gcs_uri,\n    mime_type: settings.mime_type,\n    EXTENSION_IMAGE_URL: allSettings.EXTENSION_IMAGE_URL || null\n  },\n  binary: binaryData\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3400, 400],
+      "id": "preserve-video-data",
+      "name": "Preserve Video Data"
     },
     {
       "parameters": {
@@ -331,25 +341,30 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [
-        58112,
-        3984
-      ],
+      "position": [3620, 400],
       "id": "a1b2c3d4-5678-90ab-cdef-123456789abc",
-      "name": "Check if Needs Extension"
+      "name": "Needs Extension?"
     },
     {
       "parameters": {
-        "jsCode": "// Prepare video extension request - adds 7 seconds\nconst data = $input.item.json;\n\nconst extensionPrompt = 'PART 2: Continue seamlessly. Same lighting, camera style, atmosphere. Add dynamic motion, then CTA with contact@msitechnologiesinc.com. End with elegant fade to black.';\n\nreturn [{\n  json: {\n    PROJECT_ID: data.PROJECT_ID,\n    MODEL_VERSION: data.MODEL_VERSION,\n    LOCATION: data.LOCATION,\n    API_ENDPOINT: data.API_ENDPOINT,\n    ACCESS_TOKEN: data.ACCESS_TOKEN,\n    ASPECT_RATIO: data.ASPECT_RATIO,\n    BASE_VIDEO_B64: data.video_base64,\n    BASE_VIDEO_MIME: data.mime_type || 'video/mp4',\n    PROMPT_EXTENSION: extensionPrompt,\n    POST_ID: data.post_id,\n    ORIGINAL_PROMPT: data.original_prompt\n  }\n}];"
+        "operation": "binaryToPropery",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [3840, 300],
+      "id": "video-to-base64-ext",
+      "name": "Video to Base64"
+    },
+    {
+      "parameters": {
+        "jsCode": "const videoData = $input.item.json;\nconst settings = $('Preserve Video Data').item.json;\nconst hasExtImage = settings.EXTENSION_IMAGE_URL && settings.EXTENSION_IMAGE_URL.length > 5;\n\nreturn [{\n  json: {\n    PROJECT_ID: settings.PROJECT_ID,\n    MODEL_VERSION: settings.MODEL_VERSION,\n    LOCATION: settings.LOCATION,\n    API_ENDPOINT: settings.API_ENDPOINT,\n    ACCESS_TOKEN: settings.ACCESS_TOKEN,\n    ASPECT_RATIO: settings.ASPECT_RATIO,\n    BUCKET_NAME: settings.BUCKET_NAME,\n    BASE_VIDEO_B64: videoData.data,\n    BASE_VIDEO_MIME: videoData.mimeType || 'video/mp4',\n    EXTENSION_IMAGE_URL: settings.EXTENSION_IMAGE_URL,\n    HAS_EXTENSION_IMAGE: hasExtImage,\n    PROMPT_EXTENSION: hasExtImage ? 'CONTINUATION with reference image as destination. Maintain the emotional journey. Background music swells gently. Natural ambient sounds continue (birds, city hum, soft wind). Human moment of satisfaction or connection. Camera slowly reveals msitechnologiesinc.com on screen or surface. Uplifting music peaks then softens. Gentle fade with warm afterglow.' : 'SEAMLESS CONTINUATION of the story. Same warm lighting, same emotional tone. Background music continues uninterrupted - inspiring, hopeful melody. Ambient sounds persist (coffee shop murmur, keyboard clicks, distant traffic). Show the payoff moment - a smile, a nod, success. Camera finds msitechnologiesinc.com naturally in scene. Music resolves peacefully. Soft fade to warm black with lingering audio.',\n    POST_ID: settings.post_id,\n    ORIGINAL_PROMPT: settings.original_prompt\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        58336,
-        3888
-      ],
+      "position": [4060, 300],
       "id": "b2c3d4e5-6789-01bc-def0-234567890bcd",
-      "name": "Prepare Extension Request"
+      "name": "Prepare Extension"
     },
     {
       "parameters": {
@@ -370,17 +385,14 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  instances: [{\n    prompt: $json.PROMPT_EXTENSION,\n    video: {\n      bytesBase64Encoded: $json.BASE_VIDEO_B64,\n      mimeType: $json.BASE_VIDEO_MIME\n    }\n  }],\n  parameters: {\n    aspectRatio: $json.ASPECT_RATIO,\n    resolution: \"720p\",\n    sampleCount: 1,\n    addWatermark: false,\n    includeRaiReason: true,\n    generateAudio: true,\n    negativePrompt: \"abrupt cut, visible transition, different lighting, different style, inconsistent colors, jarring change, overexposed, washed out, static, frozen\"\n  }\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  instances: [{\n    prompt: $json.PROMPT_EXTENSION,\n    video: {\n      bytesBase64Encoded: $json.BASE_VIDEO_B64,\n      mimeType: $json.BASE_VIDEO_MIME\n    },\n    ...($json.HAS_EXTENSION_IMAGE && $json.EXTENSION_IMAGE_B64 ? { image: { bytesBase64Encoded: $json.EXTENSION_IMAGE_B64, mimeType: $json.EXTENSION_IMAGE_MIME || 'image/jpeg' } } : {})\n  }],\n  parameters: {\n    aspectRatio: $json.ASPECT_RATIO,\n    resolution: '720p',\n    sampleCount: 1,\n    addWatermark: false,\n    includeRaiReason: true,\n    generateAudio: true,\n    storageUri: 'gs://' + $json.BUCKET_NAME + '/extended/',\n    negativePrompt: 'silence, no audio, muted, audio cut, abrupt ending, generic office, stock footage, stiff, overexposed, static'\n  }\n}) }}",
         "options": {
           "timeout": 30000
         }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        58560,
-        3888
-      ],
+      "position": [4280, 300],
       "id": "c3d4e5f6-7890-12cd-ef01-345678901cde",
       "name": "Vertex AI - Extend Video"
     },
@@ -391,10 +403,7 @@
       },
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [
-        58784,
-        3888
-      ],
+      "position": [4500, 300],
       "id": "d4e5f6a7-8901-23de-f012-456789012def",
       "name": "Wait for Extension",
       "webhookId": "veo3-extend-wait"
@@ -402,7 +411,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://{{ $('Prepare Extension Request').item.json.API_ENDPOINT }}/v1/projects/{{ $('Prepare Extension Request').item.json.PROJECT_ID }}/locations/{{ $('Prepare Extension Request').item.json.LOCATION }}/publishers/google/models/{{ $('Prepare Extension Request').item.json.MODEL_VERSION }}:fetchPredictOperation",
+        "url": "=https://{{ $('Prepare Extension').item.json.API_ENDPOINT }}/v1/projects/{{ $('Prepare Extension').item.json.PROJECT_ID }}/locations/{{ $('Prepare Extension').item.json.LOCATION }}/publishers/google/models/{{ $('Prepare Extension').item.json.MODEL_VERSION }}:fetchPredictOperation",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -412,7 +421,7 @@
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $('Prepare Extension Request').item.json.ACCESS_TOKEN }}"
+              "value": "=Bearer {{ $('Prepare Extension').item.json.ACCESS_TOKEN }}"
             }
           ]
         },
@@ -425,36 +434,64 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        59008,
-        3888
-      ],
+      "position": [4720, 300],
       "id": "e5f6a7b8-9012-34ef-0123-567890123ef0",
-      "name": "Fetch Extended Video"
+      "name": "Fetch Extended Result"
     },
     {
       "parameters": {
-        "jsCode": "// Process extended video response - Final merged 15s video\nconst response = $input.item.json;\nconst settings = $('Prepare Extension Request').item.json;\n\nconsole.log('=== PROCESS EXTENDED VIDEO ===');\nconsole.log('Response keys:', Object.keys(response));\nconsole.log('Response.response keys:', response.response ? Object.keys(response.response) : 'N/A');\n\nlet videoBase64 = '';\nlet mimeType = 'video/mp4';\n\n// Try ALL possible response formats from Veo 3.1\nif (response.response?.videos?.[0]?.bytesBase64Encoded) {\n  videoBase64 = response.response.videos[0].bytesBase64Encoded;\n  mimeType = response.response.videos[0].mimeType || 'video/mp4';\n  console.log('Found video in: response.response.videos[0]');\n} else if (response.response?.generatedSamples?.[0]?.video?.bytesBase64Encoded) {\n  videoBase64 = response.response.generatedSamples[0].video.bytesBase64Encoded;\n  console.log('Found video in: response.response.generatedSamples[0].video');\n} else if (response.predictions?.[0]?.bytesBase64Encoded) {\n  videoBase64 = response.predictions[0].bytesBase64Encoded;\n  console.log('Found video in: response.predictions[0]');\n} else if (response.generatedSamples?.[0]?.video?.bytesBase64Encoded) {\n  videoBase64 = response.generatedSamples[0].video.bytesBase64Encoded;\n  console.log('Found video in: response.generatedSamples[0].video');\n} else if (response.videos?.[0]?.bytesBase64Encoded) {\n  videoBase64 = response.videos[0].bytesBase64Encoded;\n  mimeType = response.videos[0].mimeType || 'video/mp4';\n  console.log('Found video in: response.videos[0]');\n} else if (response.video?.bytesBase64Encoded) {\n  videoBase64 = response.video.bytesBase64Encoded;\n  console.log('Found video in: response.video');\n}\n\nconst hasVideo = videoBase64.length > 100;\nconsole.log('Has video:', hasVideo, 'Length:', videoBase64.length);\n\nif (!hasVideo) {\n  console.log('FULL RESPONSE:', JSON.stringify(response).substring(0, 1000));\n  throw new Error('Extension failed - no video in response. Keys: ' + Object.keys(response).join(', '));\n}\n\nreturn [{\n  json: {\n    video_base64: videoBase64,\n    mime_type: mimeType,\n    has_video: hasVideo,\n    post_id: settings.POST_ID,\n    original_prompt: settings.ORIGINAL_PROMPT,\n    final_duration: 15\n  }\n}];"
+        "jsCode": "const response = $input.item.json;\nconst settings = $('Prepare Extension').item.json;\n\nlet videoUri = '';\nlet mimeType = 'video/mp4';\n\nif (response.response?.videos?.[0]?.uri) {\n  videoUri = response.response.videos[0].uri;\n  mimeType = response.response.videos[0].mimeType || 'video/mp4';\n} else if (response.response?.videos?.[0]?.gcsUri) {\n  videoUri = response.response.videos[0].gcsUri;\n  mimeType = response.response.videos[0].mimeType || 'video/mp4';\n}\n\nif (!videoUri) {\n  throw new Error('Extension failed. Response: ' + JSON.stringify(response).substring(0, 500));\n}\n\nreturn [{\n  json: {\n    video_gcs_uri: videoUri,\n    mime_type: mimeType,\n    post_id: settings.POST_ID,\n    original_prompt: settings.ORIGINAL_PROMPT,\n    ACCESS_TOKEN: settings.ACCESS_TOKEN,\n    BUCKET_NAME: settings.BUCKET_NAME\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        59232,
-        3888
-      ],
+      "position": [4940, 300],
       "id": "f6a7b8c9-0123-45f0-1234-678901234f01",
-      "name": "Process Extended Video"
+      "name": "Process Extended Response"
     },
     {
       "parameters": {
-        "jsCode": "// Convert base64 video to binary for YouTube upload\nconst data = $input.item.json;\n\nconsole.log('Prepare YouTube - Input keys:', Object.keys(data));\nconsole.log('Prepare YouTube - has video_base64:', !!data.video_base64, 'length:', data.video_base64?.length || 0);\n\nconst videoBase64 = data.video_base64;\nif (!videoBase64 || videoBase64.length < 100) {\n  throw new Error('No video base64 data available. Keys received: ' + Object.keys(data).join(', '));\n}\n\nconst prompt = data.original_prompt || data.prompt || 'MSI Content';\nconst postId = data.post_id;\nconst mimeType = data.mime_type || 'video/mp4';\n\nlet title = prompt.substring(0, 97);\nif (prompt.length > 97) title += '...';\n\nreturn {\n  json: {\n    title,\n    description: 'Generated with AI by MSI Technologies - ' + prompt.substring(0, 200),\n    post_id: postId,\n    original_prompt: prompt\n  },\n  binary: {\n    data: {\n      data: videoBase64,\n      mimeType: mimeType,\n      fileName: 'msi_video_' + Date.now() + '.mp4'\n    }\n  }\n};"
+        "url": "=https://storage.googleapis.com/storage/v1/b/{{ $json.BUCKET_NAME }}/o/{{ encodeURIComponent($json.video_gcs_uri.replace('gs://' + $json.BUCKET_NAME + '/', '')) }}?alt=media",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [5160, 300],
+      "id": "download-extended-video",
+      "name": "Download Extended Video"
+    },
+    {
+      "parameters": {
+        "jsCode": "const settings = $('Process Extended Response').item.json;\n\nreturn [{\n  json: {\n    post_id: settings.post_id,\n    original_prompt: settings.original_prompt,\n    mime_type: settings.mime_type,\n    is_extended: true\n  },\n  binary: $input.item.binary\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        59456,
-        4080
-      ],
+      "position": [5380, 300],
+      "id": "extended-video-data",
+      "name": "Extended Video Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.item.json;\nconst binary = $input.item.binary;\n\nif (!binary || !binary.data) {\n  throw new Error('No video binary data');\n}\n\nconst prompt = data.original_prompt || 'MSI Content';\nlet title = prompt.substring(0, 97);\nif (prompt.length > 97) title += '...';\n\nconst duration = data.is_extended ? '15s (8s + 7s extension)' : '8s';\n\nreturn {\n  json: {\n    title,\n    description: 'Generated with AI by MSI Technologies - ' + prompt.substring(0, 200),\n    post_id: data.post_id,\n    original_prompt: prompt,\n    duration\n  },\n  binary: binary\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [5600, 500],
       "id": "b20c704d-31a1-44d8-8604-928796857331",
       "name": "Prepare YouTube Upload"
     },
@@ -472,10 +509,7 @@
       },
       "type": "n8n-nodes-base.youTube",
       "typeVersion": 1,
-      "position": [
-        59680,
-        4080
-      ],
+      "position": [5820, 500],
       "id": "d4ce1245-6a71-451d-9cfe-04aa52f2b9a1",
       "name": "Upload to YouTube",
       "credentials": {
@@ -487,14 +521,11 @@
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.item.json;\nconst preparedData = $('Prepare YouTube Upload').item.json;\n\nconst videoId = response.id || response.uploadId;\nconst youtubeUrl = `https://youtu.be/${videoId}`;\n\nreturn [{\n  json: {\n    youtube_url: youtubeUrl,\n    youtube_video_id: videoId,\n    post_id: preparedData.post_id,\n    title: preparedData.title,\n    prompt: preparedData.original_prompt\n  }\n}];"
+        "jsCode": "const response = $input.item.json;\nconst preparedData = $('Prepare YouTube Upload').item.json;\n\nconst videoId = response.id || response.uploadId;\nconst youtubeUrl = `https://youtu.be/${videoId}`;\n\nreturn [{\n  json: {\n    youtube_url: youtubeUrl,\n    youtube_video_id: videoId,\n    post_id: preparedData.post_id,\n    title: preparedData.title,\n    prompt: preparedData.original_prompt,\n    duration: preparedData.duration\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        59904,
-        4080
-      ],
+      "position": [6040, 500],
       "id": "199e7456-8736-4a5b-9f75-f1a6e58541c5",
       "name": "Extract YouTube URL"
     },
@@ -506,12 +537,9 @@
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [
-        60128,
-        4080
-      ],
+      "position": [6260, 500],
       "id": "22d68c5a-db47-482e-b22b-ac6be9671832",
-      "name": "Update DB with YouTube",
+      "name": "Update DB",
       "credentials": {
         "postgres": {
           "id": "WnTYs2zvPoE7hDJE",
@@ -522,7 +550,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, message: 'Video uploaded to YouTube successfully', data: { youtube_url: $json.youtube_url, youtube_video_id: $json.youtube_video_id, post_id: $json.post_id, prompt: $json.prompt, duration: '15s' } }) }}",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Video uploaded to YouTube', data: { youtube_url: $('Extract YouTube URL').item.json.youtube_url, youtube_video_id: $('Extract YouTube URL').item.json.youtube_video_id, post_id: $('Extract YouTube URL').item.json.post_id, duration: $('Extract YouTube URL').item.json.duration } }) }}",
         "options": {
           "responseHeaders": {
             "entries": [
@@ -535,274 +563,206 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        60352,
-        4080
-      ],
+      "position": [6480, 500],
       "id": "690a9620-96e9-4fc1-9e3b-30b4ac368543",
       "name": "Respond Success"
+    },
+    {
+      "parameters": {
+        "jsCode": "// No extension needed - pass through with proper structure\nconst data = $input.item.json;\nconst binary = $input.item.binary;\n\nreturn [{\n  json: {\n    post_id: data.post_id,\n    original_prompt: data.original_prompt,\n    mime_type: data.mime_type,\n    is_extended: false\n  },\n  binary: binary\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3840, 500],
+      "id": "no-extension-passthrough",
+      "name": "No Extension Needed"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "has-ext-image",
+              "leftValue": "={{ $json.HAS_EXTENSION_IMAGE }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [4200, 300],
+      "id": "check-ext-image",
+      "name": "Has Extension Image?"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.EXTENSION_IMAGE_URL }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [4420, 200],
+      "id": "download-ext-image",
+      "name": "Download Extension Image"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [4640, 200],
+      "id": "ext-image-to-base64",
+      "name": "Extension Image to Base64"
+    },
+    {
+      "parameters": {
+        "jsCode": "const imageData = $input.item.json;\nconst settings = $('Prepare Extension').item.json;\n\nreturn [{\n  json: {\n    ...settings,\n    EXTENSION_IMAGE_B64: imageData.data,\n    EXTENSION_IMAGE_MIME: imageData.mimeType || 'image/jpeg'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4860, 200],
+      "id": "merge-ext-image",
+      "name": "Merge Extension Image"
+    },
+    {
+      "parameters": {
+        "jsCode": "// No extension image - pass through\nconst settings = $input.item.json;\n\nreturn [{\n  json: {\n    ...settings,\n    EXTENSION_IMAGE_B64: null,\n    EXTENSION_IMAGE_MIME: null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4420, 400],
+      "id": "no-ext-image",
+      "name": "No Extension Image"
     }
   ],
   "connections": {
     "Webhook - Video Gen": {
-      "main": [
-        [
-          {
-            "node": "Format Video Input",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Format Video Input", "type": "main", "index": 0 }]]
     },
     "Format Video Input": {
-      "main": [
-        [
-          {
-            "node": "Agent: Video Prompt Optimizer",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Agent: Video Prompt Optimizer", "type": "main", "index": 0 }]]
     },
     "Agent: Video Prompt Optimizer": {
-      "main": [
-        [
-          {
-            "node": "Settings",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Settings", "type": "main", "index": 0 }]]
     },
     "Google Gemini Chat Model": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Agent: Video Prompt Optimizer",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
+      "ai_languageModel": [[{ "node": "Agent: Video Prompt Optimizer", "type": "ai_languageModel", "index": 0 }]]
     },
     "Settings": {
-      "main": [
-        [
-          {
-            "node": "Download Start Image",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Download Start Image", "type": "main", "index": 0 }]]
     },
     "Download Start Image": {
-      "main": [
-        [
-          {
-            "node": "Image to Base64",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Image to Base64", "type": "main", "index": 0 }]]
     },
     "Image to Base64": {
-      "main": [
-        [
-          {
-            "node": "Prepare Vertex Request",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Prepare Vertex Request", "type": "main", "index": 0 }]]
     },
     "Prepare Vertex Request": {
-      "main": [
-        [
-          {
-            "node": "Generate Access Token",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Generate Access Token", "type": "main", "index": 0 }]]
     },
     "Generate Access Token": {
-      "main": [
-        [
-          {
-            "node": "Vertex AI - VEO3",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Vertex AI - Generate Video", "type": "main", "index": 0 }]]
     },
-    "Vertex AI - VEO3": {
-      "main": [
-        [
-          {
-            "node": "Wait 2 Minutes",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Vertex AI - Generate Video": {
+      "main": [[{ "node": "Wait 2 Minutes", "type": "main", "index": 0 }]]
     },
     "Wait 2 Minutes": {
-      "main": [
-        [
-          {
-            "node": "Vertex AI - Fetch Result",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Fetch Video Result", "type": "main", "index": 0 }]]
     },
-    "Vertex AI - Fetch Result": {
-      "main": [
-        [
-          {
-            "node": "Process Video Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Fetch Video Result": {
+      "main": [[{ "node": "Process Video Response", "type": "main", "index": 0 }]]
     },
     "Process Video Response": {
+      "main": [[{ "node": "Download Initial Video", "type": "main", "index": 0 }]]
+    },
+    "Download Initial Video": {
+      "main": [[{ "node": "Preserve Video Data", "type": "main", "index": 0 }]]
+    },
+    "Preserve Video Data": {
+      "main": [[{ "node": "Needs Extension?", "type": "main", "index": 0 }]]
+    },
+    "Needs Extension?": {
       "main": [
-        [
-          {
-            "node": "Check if Needs Extension",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Video to Base64", "type": "main", "index": 0 }],
+        [{ "node": "No Extension Needed", "type": "main", "index": 0 }]
       ]
     },
-    "Check if Needs Extension": {
+    "Video to Base64": {
+      "main": [[{ "node": "Prepare Extension", "type": "main", "index": 0 }]]
+    },
+    "Prepare Extension": {
+      "main": [[{ "node": "Has Extension Image?", "type": "main", "index": 0 }]]
+    },
+    "Has Extension Image?": {
       "main": [
-        [
-          {
-            "node": "Prepare Extension Request",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Prepare YouTube Upload",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Download Extension Image", "type": "main", "index": 0 }],
+        [{ "node": "No Extension Image", "type": "main", "index": 0 }]
       ]
     },
-    "Prepare Extension Request": {
-      "main": [
-        [
-          {
-            "node": "Vertex AI - Extend Video",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Download Extension Image": {
+      "main": [[{ "node": "Extension Image to Base64", "type": "main", "index": 0 }]]
+    },
+    "Extension Image to Base64": {
+      "main": [[{ "node": "Merge Extension Image", "type": "main", "index": 0 }]]
+    },
+    "Merge Extension Image": {
+      "main": [[{ "node": "Vertex AI - Extend Video", "type": "main", "index": 0 }]]
+    },
+    "No Extension Image": {
+      "main": [[{ "node": "Vertex AI - Extend Video", "type": "main", "index": 0 }]]
     },
     "Vertex AI - Extend Video": {
-      "main": [
-        [
-          {
-            "node": "Wait for Extension",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Wait for Extension", "type": "main", "index": 0 }]]
     },
     "Wait for Extension": {
-      "main": [
-        [
-          {
-            "node": "Fetch Extended Video",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Fetch Extended Result", "type": "main", "index": 0 }]]
     },
-    "Fetch Extended Video": {
-      "main": [
-        [
-          {
-            "node": "Process Extended Video",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Fetch Extended Result": {
+      "main": [[{ "node": "Process Extended Response", "type": "main", "index": 0 }]]
     },
-    "Process Extended Video": {
-      "main": [
-        [
-          {
-            "node": "Prepare YouTube Upload",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Process Extended Response": {
+      "main": [[{ "node": "Download Extended Video", "type": "main", "index": 0 }]]
+    },
+    "Download Extended Video": {
+      "main": [[{ "node": "Extended Video Data", "type": "main", "index": 0 }]]
+    },
+    "Extended Video Data": {
+      "main": [[{ "node": "Prepare YouTube Upload", "type": "main", "index": 0 }]]
+    },
+    "No Extension Needed": {
+      "main": [[{ "node": "Prepare YouTube Upload", "type": "main", "index": 0 }]]
     },
     "Prepare YouTube Upload": {
-      "main": [
-        [
-          {
-            "node": "Upload to YouTube",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Upload to YouTube", "type": "main", "index": 0 }]]
     },
     "Upload to YouTube": {
-      "main": [
-        [
-          {
-            "node": "Extract YouTube URL",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Extract YouTube URL", "type": "main", "index": 0 }]]
     },
     "Extract YouTube URL": {
-      "main": [
-        [
-          {
-            "node": "Update DB with YouTube",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Update DB", "type": "main", "index": 0 }]]
     },
-    "Update DB with YouTube": {
-      "main": [
-        [
-          {
-            "node": "Respond Success",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Update DB": {
+      "main": [[{ "node": "Respond Success", "type": "main", "index": 0 }]]
     }
   },
   "pinData": {},

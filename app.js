@@ -1833,26 +1833,6 @@ if (document.readyState !== 'loading') {
 
 // ========== VIDEO GENERATION ==========
 
-// Logo preview for video
-const videoLogoInput = document.getElementById('video_logo_url');
-const videoLogoPreviewContainer = document.getElementById('video-logo-preview-container');
-const videoLogoImg = document.getElementById('video-logo-img');
-
-if (videoLogoInput) {
-    videoLogoInput.addEventListener('input', (e) => {
-        const url = e.target.value.trim();
-        if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-            videoLogoImg.src = url;
-            videoLogoPreviewContainer.style.display = 'block';
-            videoLogoImg.onerror = () => {
-                videoLogoPreviewContainer.style.display = 'none';
-            };
-        } else {
-            videoLogoPreviewContainer.style.display = 'none';
-        }
-    });
-}
-
 // Start image preview for video
 const videoStartImageInput = document.getElementById('video_start_image_url');
 const videoStartImagePreviewContainer = document.getElementById('video-start-image-preview-container');
@@ -1873,6 +1853,26 @@ if (videoStartImageInput) {
     });
 }
 
+// Extension image preview for video
+const videoExtImageInput = document.getElementById('video_extension_image_url');
+const videoExtImagePreviewContainer = document.getElementById('video-extension-image-preview-container');
+const videoExtImageImg = document.getElementById('video-extension-image-img');
+
+if (videoExtImageInput) {
+    videoExtImageInput.addEventListener('input', (e) => {
+        const url = e.target.value.trim();
+        if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+            videoExtImageImg.src = url;
+            videoExtImagePreviewContainer.style.display = 'block';
+            videoExtImageImg.onerror = () => {
+                videoExtImagePreviewContainer.style.display = 'none';
+            };
+        } else {
+            videoExtImagePreviewContainer.style.display = 'none';
+        }
+    });
+}
+
 // Video Form Submit
 if (videoForm) {
     videoForm.addEventListener('submit', async (e) => {
@@ -1882,16 +1882,21 @@ if (videoForm) {
         
         const data = {
             prompt: formData.get('prompt'),
-            style: formData.get('style'),
+            service: formData.get('service') || 'company_intro',
             duration: formData.get('duration'),
             topic: formData.get('topic') || '',
-            logo_url: formData.get('logo_url') || null,
-            start_image_url: formData.get('start_image_url') || null
+            start_image_url: formData.get('start_image_url') || null,
+            extension_image_url: formData.get('extension_image_url') || null
             // aspect_ratio is fixed to 9:16 in workflow
         };
         
         if (!data.prompt) {
             showToast('Please enter a video description', 'error');
+            return;
+        }
+        
+        if (!data.start_image_url) {
+            showToast('Start image URL is required', 'error');
             return;
         }
         

@@ -371,8 +371,8 @@
             <div class="card form-card">
                 <h2>🎬 Generate AI Video (Veo 3.1)</h2>
                 <p style="color: #718096; margin-bottom: 24px;">
-                    Create professional corporate videos with AI using Google's Veo 3.1. 
-                    Videos are <strong>hyper-realistic</strong> with natural scenes, text on screen, and MSI branding.
+                    Create <strong>human, emotional videos</strong> with AI. Coffee shops, real moments, genuine expressions.
+                    <br>Audio continuo incluido. Videos uploaded to YouTube automatically.
                 </p>
                 
                 <form id="video-form">
@@ -383,21 +383,8 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="video_logo_url">Logo URL (Optional)</label>
-                        <input type="url" id="video_logo_url" name="logo_url" placeholder="https://i.ibb.co/S7mKXdxr/MSI-Technologies-Icon.png">
-                        <small class="form-hint">🏢 Logo que aparecerá en el video. Por defecto se usa el logo de MSI.</small>
-                    </div>
-
-                    <div class="form-group" id="video-logo-preview-container" style="display: none;">
-                        <label>Logo Preview</label>
-                        <div id="video-logo-preview" class="edit-image-preview">
-                            <img id="video-logo-img" src="" alt="Logo preview" style="max-width: 200px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="video_start_image_url">Imagen de Inicio del Video (Optional)</label>
-                        <input type="url" id="video_start_image_url" name="start_image_url" placeholder="https://example.com/mi-imagen-inicio.jpg">
+                        <label for="video_start_image_url">Imagen de Inicio del Video *</label>
+                        <input type="url" id="video_start_image_url" name="start_image_url" required placeholder="https://example.com/mi-imagen-inicio.jpg">
                         <small class="form-hint">🎬 Imagen que será el punto de partida del video. El video se generará a partir de esta imagen.</small>
                     </div>
 
@@ -405,6 +392,19 @@
                         <label>Start Image Preview</label>
                         <div id="video-start-image-preview" class="edit-image-preview">
                             <img id="video-start-image-img" src="" alt="Start image preview" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="video_extension_image_url">Imagen de Referencia para Segunda Parte (Opcional)</label>
+                        <input type="url" id="video_extension_image_url" name="extension_image_url" placeholder="https://example.com/mi-imagen-final.jpg">
+                        <small class="form-hint">🖼️ Solo para videos de 15s. Esta imagen guía la segunda parte del video (ej: escena de CTA).</small>
+                    </div>
+
+                    <div class="form-group" id="video-extension-image-preview-container" style="display: none;">
+                        <label>Extension Image Preview</label>
+                        <div id="video-extension-image-preview" class="edit-image-preview">
+                            <img id="video-extension-image-img" src="" alt="Extension image preview" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                         </div>
                     </div>
 
@@ -444,12 +444,10 @@
                         <div class="form-group">
                             <label for="video_duration">Duration</label>
                             <select id="video_duration" name="duration">
-                                <option value="4">4 seconds</option>
-                                <option value="6">6 seconds</option>
-                                <option value="8">8 seconds</option>
-                                <option value="16" selected>16 seconds (Extended)</option>
+                                <option value="8">8 seconds (Single generation)</option>
+                                <option value="15" selected>15 seconds (8s + 7s extension)</option>
                             </select>
-                            <small class="form-hint">⏱️ Videos &gt;8s use auto-extension</small>
+                            <small class="form-hint">⏱️ 15s videos use auto-extension for longer content</small>
                         </div>
 
                         <div class="form-group">
