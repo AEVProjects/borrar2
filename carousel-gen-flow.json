@@ -145,7 +145,7 @@
       },
       {
         "parameters": {
-          "jsCode": "// Prepare Slides for Insert\nconst postId = $('Create Post Record').item.json.id;\nconst slides = $('Parse Output').item.json.slides;\n\nreturn slides.map(slide => ({\n    json: {\n        carousel_id: postId,\n        slide_number: slide.slide_number,\n        headline: slide.headline,\n        subtext: slide.subtext || '',\n        body_text: slide.body || slide.body_text || '',\n        image_prompt: slide.image_prompt,\n        visual_style: JSON.stringify({ style: slide.visual_style, source: slide.source || '' })\n    }\n}));"
+          "jsCode": "// Prepare All Slides Data\nconst postId = $('Create Post Record').item.json.id;\nconst slides = $('Parse Output').item.json.slides;\nconst topic = $('Format Input').item.json.topic || 'Technology';\n\n// Return all slides as individual items for batch insert\nconst slideItems = slides.map(slide => ({\n    json: {\n        carousel_id: postId,\n        slide_number: slide.slide_number,\n        headline: slide.headline,\n        subtext: slide.subtext || '',\n        body_text: slide.body || slide.body_text || '',\n        image_prompt: slide.image_prompt,\n        visual_style: JSON.stringify({ style: slide.visual_style, source: slide.source || '' }),\n        topic: topic\n    }\n}));\n\nreturn slideItems;"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -259,7 +259,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const slide = $('Insert Slides').all()[0].json;\nconst topic = $('Format Input').item.json.topic || 'Technology';\n\nreturn [{\n  json: {\n    id: slide.id,\n    carousel_id: slide.carousel_id,\n    slide_number: slide.slide_number,\n    headline: slide.headline || '',\n    subtext: slide.subtext || '',\n    body_text: slide.body_text || '',\n    image_prompt: slide.image_prompt || '',\n    visual_style: slide.visual_style || '',\n    topic: topic\n  }\n}];"
+          "jsCode": "// Get all inserted slides and prepare for sequential processing\nconst allInserted = $('Insert Slides').all().map(item => item.json);\nconst topic = $('Format Input').item.json.topic || 'Technology';\n\n// Store all slides data for the chain\nconst s1 = allInserted[0];\nconst s2 = allInserted[1];\nconst s3 = allInserted[2];\nconst s4 = allInserted[3];\nconst s5 = allInserted[4];\n\nreturn [{\n  json: {\n    // Current slide to process\n    id: s1.id,\n    carousel_id: s1.carousel_id,\n    slide_number: s1.slide_number,\n    headline: s1.headline || '',\n    subtext: s1.subtext || '',\n    body_text: s1.body_text || '',\n    image_prompt: s1.image_prompt || '',\n    visual_style: s1.visual_style || '',\n    topic: topic,\n    // All slides for the chain\n    s2_id: s2.id, s2_headline: s2.headline || '', s2_subtext: s2.subtext || '', s2_body: s2.body_text || '', s2_prompt: s2.image_prompt || '', s2_style: s2.visual_style || '',\n    s3_id: s3.id, s3_headline: s3.headline || '', s3_subtext: s3.subtext || '', s3_body: s3.body_text || '', s3_prompt: s3.image_prompt || '', s3_style: s3.visual_style || '',\n    s4_id: s4.id, s4_headline: s4.headline || '', s4_subtext: s4.subtext || '', s4_body: s4.body_text || '', s4_prompt: s4.image_prompt || '', s4_style: s4.visual_style || '',\n    s5_id: s5.id, s5_headline: s5.headline || '', s5_subtext: s5.subtext || '', s5_body: s5.body_text || '', s5_prompt: s5.image_prompt || '', s5_style: s5.visual_style || '',\n    carousel_id_shared: s1.carousel_id\n  }\n}];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -272,7 +272,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\nreturn [{ json: response }];"
+          "jsCode": "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\n// Pass all slide data to next node\nreturn [{ json: { ...response, ...input } }];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -286,7 +286,7 @@
 
       {
         "parameters": {
-          "jsCode": "const slide = $('Insert Slides').all()[1].json;\nconst topic = $('Format Input').item.json.topic || 'Technology';\n\nreturn [{\n  json: {\n    id: slide.id,\n    carousel_id: slide.carousel_id,\n    slide_number: slide.slide_number,\n    headline: slide.headline || '',\n    subtext: slide.subtext || '',\n    body_text: slide.body_text || '',\n    image_prompt: slide.image_prompt || '',\n    visual_style: slide.visual_style || '',\n    topic: topic\n  }\n}];"
+          "jsCode": "const prev = $input.first().json;\n\nreturn [{\n  json: {\n    id: prev.s2_id,\n    carousel_id: prev.carousel_id_shared,\n    slide_number: 2,\n    headline: prev.s2_headline,\n    subtext: prev.s2_subtext,\n    body_text: prev.s2_body,\n    image_prompt: prev.s2_prompt,\n    visual_style: prev.s2_style,\n    topic: prev.topic,\n    // Pass remaining slides\n    s3_id: prev.s3_id, s3_headline: prev.s3_headline, s3_subtext: prev.s3_subtext, s3_body: prev.s3_body, s3_prompt: prev.s3_prompt, s3_style: prev.s3_style,\n    s4_id: prev.s4_id, s4_headline: prev.s4_headline, s4_subtext: prev.s4_subtext, s4_body: prev.s4_body, s4_prompt: prev.s4_prompt, s4_style: prev.s4_style,\n    s5_id: prev.s5_id, s5_headline: prev.s5_headline, s5_subtext: prev.s5_subtext, s5_body: prev.s5_body, s5_prompt: prev.s5_prompt, s5_style: prev.s5_style,\n    carousel_id_shared: prev.carousel_id_shared\n  }\n}];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -299,7 +299,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\nreturn [{ json: response }];"
+          "jsCode": "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\n// Pass all slide data to next node\nreturn [{ json: { ...response, ...input } }];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -313,7 +313,7 @@
 
       {
         "parameters": {
-          "jsCode": "const slide = $('Insert Slides').all()[2].json;\nconst topic = $('Format Input').item.json.topic || 'Technology';\n\nreturn [{\n  json: {\n    id: slide.id,\n    carousel_id: slide.carousel_id,\n    slide_number: slide.slide_number,\n    headline: slide.headline || '',\n    subtext: slide.subtext || '',\n    body_text: slide.body_text || '',\n    image_prompt: slide.image_prompt || '',\n    visual_style: slide.visual_style || '',\n    topic: topic\n  }\n}];"
+          "jsCode": "const prev = $input.first().json;\n\nreturn [{\n  json: {\n    id: prev.s3_id,\n    carousel_id: prev.carousel_id_shared,\n    slide_number: 3,\n    headline: prev.s3_headline,\n    subtext: prev.s3_subtext,\n    body_text: prev.s3_body,\n    image_prompt: prev.s3_prompt,\n    visual_style: prev.s3_style,\n    topic: prev.topic,\n    // Pass remaining slides\n    s4_id: prev.s4_id, s4_headline: prev.s4_headline, s4_subtext: prev.s4_subtext, s4_body: prev.s4_body, s4_prompt: prev.s4_prompt, s4_style: prev.s4_style,\n    s5_id: prev.s5_id, s5_headline: prev.s5_headline, s5_subtext: prev.s5_subtext, s5_body: prev.s5_body, s5_prompt: prev.s5_prompt, s5_style: prev.s5_style,\n    carousel_id_shared: prev.carousel_id_shared\n  }\n}];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -326,7 +326,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\nreturn [{ json: response }];"
+          "jsCode": "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\n// Pass all slide data to next node\nreturn [{ json: { ...response, ...input } }];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -340,7 +340,7 @@
 
       {
         "parameters": {
-          "jsCode": "const slide = $('Insert Slides').all()[3].json;\nconst topic = $('Format Input').item.json.topic || 'Technology';\n\nreturn [{\n  json: {\n    id: slide.id,\n    carousel_id: slide.carousel_id,\n    slide_number: slide.slide_number,\n    headline: slide.headline || '',\n    subtext: slide.subtext || '',\n    body_text: slide.body_text || '',\n    image_prompt: slide.image_prompt || '',\n    visual_style: slide.visual_style || '',\n    topic: topic\n  }\n}];"
+          "jsCode": "const prev = $input.first().json;\n\nreturn [{\n  json: {\n    id: prev.s4_id,\n    carousel_id: prev.carousel_id_shared,\n    slide_number: 4,\n    headline: prev.s4_headline,\n    subtext: prev.s4_subtext,\n    body_text: prev.s4_body,\n    image_prompt: prev.s4_prompt,\n    visual_style: prev.s4_style,\n    topic: prev.topic,\n    // Pass remaining slide\n    s5_id: prev.s5_id, s5_headline: prev.s5_headline, s5_subtext: prev.s5_subtext, s5_body: prev.s5_body, s5_prompt: prev.s5_prompt, s5_style: prev.s5_style,\n    carousel_id_shared: prev.carousel_id_shared\n  }\n}];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -353,7 +353,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\nreturn [{ json: response }];"
+          "jsCode": "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\n// Pass all slide data to next node\nreturn [{ json: { ...response, ...input } }];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -367,7 +367,7 @@
 
       {
         "parameters": {
-          "jsCode": "const slide = $('Insert Slides').all()[4].json;\nconst topic = $('Format Input').item.json.topic || 'Technology';\n\nreturn [{\n  json: {\n    id: slide.id,\n    carousel_id: slide.carousel_id,\n    slide_number: slide.slide_number,\n    headline: slide.headline || '',\n    subtext: slide.subtext || '',\n    body_text: slide.body_text || '',\n    image_prompt: slide.image_prompt || '',\n    visual_style: slide.visual_style || '',\n    topic: topic\n  }\n}];"
+          "jsCode": "const prev = $input.first().json;\n\nreturn [{\n  json: {\n    id: prev.s5_id,\n    carousel_id: prev.carousel_id_shared,\n    slide_number: 5,\n    headline: prev.s5_headline,\n    subtext: prev.s5_subtext,\n    body_text: prev.s5_body,\n    image_prompt: prev.s5_prompt,\n    visual_style: prev.s5_style,\n    topic: prev.topic,\n    carousel_id_shared: prev.carousel_id_shared\n  }\n}];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
