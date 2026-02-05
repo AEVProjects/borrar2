@@ -2859,7 +2859,8 @@ let trendsData = {
     trends: [], // Unique trend queries
     filters: {
         trendQuery: '',
-        usedStatus: ''
+        usedStatus: '',
+        searchText: '' // Search by title
     },
     pagination: {
         currentPage: 1,
@@ -2986,6 +2987,15 @@ function renderTrendNews() {
 
     // Apply filters
     let filteredNews = trendsData.news;
+
+    // Search by title
+    if (trendsData.filters.searchText) {
+        const searchLower = trendsData.filters.searchText.toLowerCase();
+        filteredNews = filteredNews.filter(n => 
+            (n.title && n.title.toLowerCase().includes(searchLower)) ||
+            (n.snippet && n.snippet.toLowerCase().includes(searchLower))
+        );
+    }
 
     if (trendsData.filters.trendQuery) {
         filteredNews = filteredNews.filter(n => n.trend_query === trendsData.filters.trendQuery);
@@ -3233,11 +3243,11 @@ function renderTrendNews() {
                             showToast(`Carrusel generado: ${result.slide_count || 'unknown'} slides. Ve a Generate Content para ver el resultado.`, 'info');
                         }
                         
-                        // Clear selection
-                        selectedNewsForCarousel = [];
+                        // Keep selection - don't clear so user can generate again if needed
+                        // selectedNewsForCarousel = []; // Commented out to keep selection
                         setTimeout(() => {
                             btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><rect x="2" y="3" width="6" height="18" rx="1"></rect><rect x="9" y="3" width="6" height="18" rx="1"></rect><rect x="16" y="3" width="6" height="18" rx="1"></rect></svg> Generar Carrusel con 3 noticias`;
-                            btn.disabled = true;
+                            btn.disabled = selectedNewsForCarousel.length !== 3; // Keep enabled if 3 selected
                             renderTrendNews();
                         }, 2000);
                     } else {
@@ -3552,13 +3562,21 @@ async function triggerTrendsWorkflow() {
 }
 
 // Filter event listeners
+document.getElementById('filter-news-search')?.addEventListener('input', (e) => {
+    trendsData.filters.searchText = e.target.value;
+    trendsData.pagination.currentPage = 1; // Reset to page 1 on search
+    renderTrendNews();
+});
+
 document.getElementById('filter-trend-query')?.addEventListener('change', (e) => {
     trendsData.filters.trendQuery = e.target.value;
+    trendsData.pagination.currentPage = 1; // Reset to page 1 on filter
     renderTrendNews();
 });
 
 document.getElementById('filter-used-status')?.addEventListener('change', (e) => {
     trendsData.filters.usedStatus = e.target.value;
+    trendsData.pagination.currentPage = 1; // Reset to page 1 on filter
     renderTrendNews();
 });
 
