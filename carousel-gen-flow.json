@@ -259,7 +259,7 @@
       },
       {
         "parameters": {
-          "jsCode": "return [ $('Insert Slides').all()[0] ];"
+          "jsCode": "const slide = $('Insert Slides').all()[0].json;\nreturn [{\n  json: {\n    id: slide.id,\n    carousel_id: slide.carousel_id,\n    slide_number: slide.slide_number,\n    headline: slide.headline || '',\n    subtext: slide.subtext || '',\n    body_text: slide.body_text || '',\n    image_prompt: slide.image_prompt || '',\n    visual_style: slide.visual_style || '',\n    topic: $('Format Input').item.json.topic || 'Technology'\n  }\n}];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -275,20 +275,8 @@
           "method": "POST",
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
-          "contentType": "json",
-          "bodyParameters": {
-            "parameters": [
-              { "name": "slide_id", "value": "={{ $json.id }}" },
-              { "name": "image_prompt", "value": "={{ $json.image_prompt }}" },
-              { "name": "carousel_id", "value": "={{ $json.carousel_id }}" },
-              { "name": "slide_number", "value": "={{ $json.slide_number }}" },
-              { "name": "headline", "value": "={{ $json.headline }}" },
-              { "name": "subtext", "value": "={{ $json.subtext }}" },
-              { "name": "body_text", "value": "={{ $json.body_text }}" },
-              { "name": "visual_style", "value": "={{ $json.visual_style }}" },
-              { "name": "topic", "value": "={{ $('Format Input').item.json.topic }}" }
-            ]
-          },
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt, carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: $json.headline, subtext: $json.subtext, body_text: $json.body_text, visual_style: $json.visual_style, topic: $json.topic }) }}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -316,7 +304,7 @@
       },
       {
         "parameters": {
-          "jsCode": "return [ $('Insert Slides').all()[1] ];"
+          "jsCode": "const slide = $('Insert Slides').all()[1].json;\nreturn [{\n  json: {\n    id: slide.id,\n    carousel_id: slide.carousel_id,\n    slide_number: slide.slide_number,\n    headline: slide.headline || '',\n    subtext: slide.subtext || '',\n    body_text: slide.body_text || '',\n    image_prompt: slide.image_prompt || '',\n    visual_style: slide.visual_style || '',\n    topic: $('Format Input').item.json.topic || 'Technology'\n  }\n}];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -332,20 +320,8 @@
           "method": "POST",
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
-          "contentType": "json",
-          "bodyParameters": {
-            "parameters": [
-              { "name": "slide_id", "value": "={{ $json.id }}" },
-              { "name": "image_prompt", "value": "={{ $json.image_prompt }}" },
-              { "name": "carousel_id", "value": "={{ $json.carousel_id }}" },
-              { "name": "slide_number", "value": "={{ $json.slide_number }}" },
-              { "name": "headline", "value": "={{ $json.headline }}" },
-              { "name": "subtext", "value": "={{ $json.subtext }}" },
-              { "name": "body_text", "value": "={{ $json.body_text }}" },
-              { "name": "visual_style", "value": "={{ $json.visual_style }}" },
-              { "name": "topic", "value": "={{ $('Format Input').item.json.topic }}" }
-            ]
-          },
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt, carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: $json.headline, subtext: $json.subtext, body_text: $json.body_text, visual_style: $json.visual_style, topic: $json.topic }) }}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -373,7 +349,7 @@
       },
       {
         "parameters": {
-          "jsCode": "return [ $('Insert Slides').all()[2] ];"
+          "jsCode": "const slide = $('Insert Slides').all()[2].json;\nreturn [{\n  json: {\n    id: slide.id,\n    carousel_id: slide.carousel_id,\n    slide_number: slide.slide_number,\n    headline: slide.headline || '',\n    subtext: slide.subtext || '',\n    body_text: slide.body_text || '',\n    image_prompt: slide.image_prompt || '',\n    visual_style: slide.visual_style || '',\n    topic: $('Format Input').item.json.topic || 'Technology'\n  }\n}];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -389,20 +365,8 @@
           "method": "POST",
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
-          "contentType": "json",
-          "bodyParameters": {
-            "parameters": [
-              { "name": "slide_id", "value": "={{ $json.id }}" },
-              { "name": "image_prompt", "value": "={{ $json.image_prompt }}" },
-              { "name": "carousel_id", "value": "={{ $json.carousel_id }}" },
-              { "name": "slide_number", "value": "={{ $json.slide_number }}" },
-              { "name": "headline", "value": "={{ $json.headline }}" },
-              { "name": "subtext", "value": "={{ $json.subtext }}" },
-              { "name": "body_text", "value": "={{ $json.body_text }}" },
-              { "name": "visual_style", "value": "={{ $json.visual_style }}" },
-              { "name": "topic", "value": "={{ $('Format Input').item.json.topic }}" }
-            ]
-          },
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt, carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: $json.headline, subtext: $json.subtext, body_text: $json.body_text, visual_style: $json.visual_style, topic: $json.topic }) }}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -430,7 +394,7 @@
       },
       {
         "parameters": {
-          "jsCode": "return [ $('Insert Slides').all()[3] ];"
+          "jsCode": "const slide = $('Insert Slides').all()[3].json;\nreturn [{\n  json: {\n    id: slide.id,\n    carousel_id: slide.carousel_id,\n    slide_number: slide.slide_number,\n    headline: slide.headline || '',\n    subtext: slide.subtext || '',\n    body_text: slide.body_text || '',\n    image_prompt: slide.image_prompt || '',\n    visual_style: slide.visual_style || '',\n    topic: $('Format Input').item.json.topic || 'Technology'\n  }\n}];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -446,20 +410,8 @@
           "method": "POST",
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
-          "contentType": "json",
-          "bodyParameters": {
-            "parameters": [
-              { "name": "slide_id", "value": "={{ $json.id }}" },
-              { "name": "image_prompt", "value": "={{ $json.image_prompt }}" },
-              { "name": "carousel_id", "value": "={{ $json.carousel_id }}" },
-              { "name": "slide_number", "value": "={{ $json.slide_number }}" },
-              { "name": "headline", "value": "={{ $json.headline }}" },
-              { "name": "subtext", "value": "={{ $json.subtext }}" },
-              { "name": "body_text", "value": "={{ $json.body_text }}" },
-              { "name": "visual_style", "value": "={{ $json.visual_style }}" },
-              { "name": "topic", "value": "={{ $('Format Input').item.json.topic }}" }
-            ]
-          },
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt, carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: $json.headline, subtext: $json.subtext, body_text: $json.body_text, visual_style: $json.visual_style, topic: $json.topic }) }}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -487,7 +439,7 @@
       },
       {
         "parameters": {
-          "jsCode": "return [ $('Insert Slides').all()[4] ];"
+          "jsCode": "const slide = $('Insert Slides').all()[4].json;\nreturn [{\n  json: {\n    id: slide.id,\n    carousel_id: slide.carousel_id,\n    slide_number: slide.slide_number,\n    headline: slide.headline || '',\n    subtext: slide.subtext || '',\n    body_text: slide.body_text || '',\n    image_prompt: slide.image_prompt || '',\n    visual_style: slide.visual_style || '',\n    topic: $('Format Input').item.json.topic || 'Technology'\n  }\n}];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -503,20 +455,8 @@
           "method": "POST",
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
-          "contentType": "json",
-          "bodyParameters": {
-            "parameters": [
-              { "name": "slide_id", "value": "={{ $json.id }}" },
-              { "name": "image_prompt", "value": "={{ $json.image_prompt }}" },
-              { "name": "carousel_id", "value": "={{ $json.carousel_id }}" },
-              { "name": "slide_number", "value": "={{ $json.slide_number }}" },
-              { "name": "headline", "value": "={{ $json.headline }}" },
-              { "name": "subtext", "value": "={{ $json.subtext }}" },
-              { "name": "body_text", "value": "={{ $json.body_text }}" },
-              { "name": "visual_style", "value": "={{ $json.visual_style }}" },
-              { "name": "topic", "value": "={{ $('Format Input').item.json.topic }}" }
-            ]
-          },
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt, carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: $json.headline, subtext: $json.subtext, body_text: $json.body_text, visual_style: $json.visual_style, topic: $json.topic }) }}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
