@@ -276,7 +276,7 @@
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={\n  \"slide_id\": \"{{ $json.id }}\",\n  \"image_prompt\": {{ JSON.stringify($json.image_prompt || '') }},\n  \"carousel_id\": \"{{ $json.carousel_id }}\",\n  \"slide_number\": {{ $json.slide_number }},\n  \"headline\": {{ JSON.stringify($json.headline || '') }},\n  \"subtext\": {{ JSON.stringify($json.subtext || '') }},\n  \"body_text\": {{ JSON.stringify($json.body_text || '') }},\n  \"source\": {{ JSON.stringify((JSON.parse($json.visual_style || '{}').source) || '') }},\n  \"topic\": {{ JSON.stringify($('Format Input').item.json.topic || 'Technology') }}\n}",
+          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt || '', carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: $json.headline || '', subtext: $json.subtext || '', body_text: $json.body_text || '', source: (JSON.parse($json.visual_style || '{}').source) || '', topic: $('Format Input').item.json.topic || 'Technology' }) }}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -321,7 +321,7 @@
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={\n  \"slide_id\": \"{{ $json.id }}\",\n  \"image_prompt\": {{ JSON.stringify($json.image_prompt || '') }},\n  \"carousel_id\": \"{{ $json.carousel_id }}\",\n  \"slide_number\": {{ $json.slide_number }},\n  \"headline\": {{ JSON.stringify($json.headline || '') }},\n  \"subtext\": {{ JSON.stringify($json.subtext || '') }},\n  \"body_text\": {{ JSON.stringify($json.body_text || '') }},\n  \"source\": {{ JSON.stringify((JSON.parse($json.visual_style || '{}').source) || '') }},\n  \"topic\": {{ JSON.stringify($('Format Input').item.json.topic || 'Technology') }}\n}",
+          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt || '', carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: $json.headline || '', subtext: $json.subtext || '', body_text: $json.body_text || '', source: (JSON.parse($json.visual_style || '{}').source) || '', topic: $('Format Input').item.json.topic || 'Technology' }) }}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -366,7 +366,7 @@
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={\n  \"slide_id\": \"{{ $json.id }}\",\n  \"image_prompt\": {{ JSON.stringify($json.image_prompt || '') }},\n  \"carousel_id\": \"{{ $json.carousel_id }}\",\n  \"slide_number\": {{ $json.slide_number }},\n  \"headline\": {{ JSON.stringify($json.headline || '') }},\n  \"subtext\": {{ JSON.stringify($json.subtext || '') }},\n  \"body_text\": {{ JSON.stringify($json.body_text || '') }},\n  \"source\": {{ JSON.stringify((JSON.parse($json.visual_style || '{}').source) || '') }},\n  \"topic\": {{ JSON.stringify($('Format Input').item.json.topic || 'Technology') }}\n}",
+          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt || '', carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: $json.headline || '', subtext: $json.subtext || '', body_text: $json.body_text || '', source: (JSON.parse($json.visual_style || '{}').source) || '', topic: $('Format Input').item.json.topic || 'Technology' }) }}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -411,7 +411,7 @@
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={\n  \"slide_id\": \"{{ $json.id }}\",\n  \"image_prompt\": {{ JSON.stringify($json.image_prompt || '') }},\n  \"carousel_id\": \"{{ $json.carousel_id }}\",\n  \"slide_number\": {{ $json.slide_number }},\n  \"headline\": {{ JSON.stringify($json.headline || '') }},\n  \"subtext\": {{ JSON.stringify($json.subtext || '') }},\n  \"body_text\": {{ JSON.stringify($json.body_text || '') }},\n  \"source\": {{ JSON.stringify((JSON.parse($json.visual_style || '{}').source) || '') }},\n  \"topic\": {{ JSON.stringify($('Format Input').item.json.topic || 'Technology') }}\n}",
+          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt || '', carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: $json.headline || '', subtext: $json.subtext || '', body_text: $json.body_text || '', source: (JSON.parse($json.visual_style || '{}').source) || '', topic: $('Format Input').item.json.topic || 'Technology' }) }}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -456,7 +456,7 @@
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={\n  \"slide_id\": \"{{ $json.id }}\",\n  \"image_prompt\": {{ JSON.stringify($json.image_prompt || '') }},\n  \"carousel_id\": \"{{ $json.carousel_id }}\",\n  \"slide_number\": {{ $json.slide_number }},\n  \"headline\": {{ JSON.stringify($json.headline || '') }},\n  \"subtext\": {{ JSON.stringify($json.subtext || '') }},\n  \"body_text\": {{ JSON.stringify($json.body_text || '') }},\n  \"source\": {{ JSON.stringify((JSON.parse($json.visual_style || '{}').source) || '') }},\n  \"topic\": {{ JSON.stringify($('Format Input').item.json.topic || 'Technology') }}\n}",
+          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt || '', carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: $json.headline || '', subtext: $json.subtext || '', body_text: $json.body_text || '', source: (JSON.parse($json.visual_style || '{}').source) || '', topic: $('Format Input').item.json.topic || 'Technology' }) }}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
