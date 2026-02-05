@@ -276,7 +276,7 @@
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt, carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: $json.headline, subtext: $json.subtext || '', body_text: $json.body_text || '', source: (typeof $json.visual_style === 'string' ? JSON.parse($json.visual_style) : $json.visual_style).source || '', topic: $('Format Input').item.json.topic || 'Technology' }) }}",
+          "jsonBody": "={{ (() => { const vs = $json.visual_style; let source = ''; try { if (typeof vs === 'string') { source = JSON.parse(vs).source || ''; } else if (vs && typeof vs === 'object') { source = vs.source || ''; } } catch(e) {} return JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt || '', carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: String($json.headline || ''), subtext: String($json.subtext || ''), body_text: String($json.body_text || ''), source: source, topic: $('Format Input').item.json.topic || 'Technology' }); })() }}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -321,7 +321,7 @@
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt, carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: $json.headline, subtext: $json.subtext || '', body_text: $json.body_text || '', source: (typeof $json.visual_style === 'string' ? JSON.parse($json.visual_style) : $json.visual_style).source || '', topic: $('Format Input').item.json.topic || 'Technology' }) }}",
+          "jsonBody": "={{ (() => { const vs = $json.visual_style; let source = ''; try { if (typeof vs === 'string') { source = JSON.parse(vs).source || ''; } else if (vs && typeof vs === 'object') { source = vs.source || ''; } } catch(e) {} return JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt || '', carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: String($json.headline || ''), subtext: String($json.subtext || ''), body_text: String($json.body_text || ''), source: source, topic: $('Format Input').item.json.topic || 'Technology' }); })() }}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -366,7 +366,7 @@
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt, carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: $json.headline, subtext: $json.subtext || '', body_text: $json.body_text || '', source: (typeof $json.visual_style === 'string' ? JSON.parse($json.visual_style) : $json.visual_style).source || '', topic: $('Format Input').item.json.topic || 'Technology' }) }}",
+          "jsonBody": "={{ (() => { const vs = $json.visual_style; let source = ''; try { if (typeof vs === 'string') { source = JSON.parse(vs).source || ''; } else if (vs && typeof vs === 'object') { source = vs.source || ''; } } catch(e) {} return JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt || '', carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: String($json.headline || ''), subtext: String($json.subtext || ''), body_text: String($json.body_text || ''), source: source, topic: $('Format Input').item.json.topic || 'Technology' }); })() }}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -411,7 +411,7 @@
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt, carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: $json.headline, subtext: $json.subtext || '', body_text: $json.body_text || '', source: (typeof $json.visual_style === 'string' ? JSON.parse($json.visual_style) : $json.visual_style).source || '', topic: $('Format Input').item.json.topic || 'Technology' }) }}",
+          "jsonBody": "={{ (() => { const vs = $json.visual_style; let source = ''; try { if (typeof vs === 'string') { source = JSON.parse(vs).source || ''; } else if (vs && typeof vs === 'object') { source = vs.source || ''; } } catch(e) {} return JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt || '', carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: String($json.headline || ''), subtext: String($json.subtext || ''), body_text: String($json.body_text || ''), source: source, topic: $('Format Input').item.json.topic || 'Technology' }); })() }}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -456,7 +456,7 @@
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt, carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: $json.headline, subtext: $json.subtext || '', body_text: $json.body_text || '', source: (typeof $json.visual_style === 'string' ? JSON.parse($json.visual_style) : $json.visual_style).source || '', topic: $('Format Input').item.json.topic || 'Technology' }) }}",
+          "jsonBody": "={{ (() => { const vs = $json.visual_style; let source = ''; try { if (typeof vs === 'string') { source = JSON.parse(vs).source || ''; } else if (vs && typeof vs === 'object') { source = vs.source || ''; } } catch(e) {} return JSON.stringify({ slide_id: $json.id, image_prompt: $json.image_prompt || '', carousel_id: $json.carousel_id, slide_number: $json.slide_number, headline: String($json.headline || ''), subtext: String($json.subtext || ''), body_text: String($json.body_text || ''), source: source, topic: $('Format Input').item.json.topic || 'Technology' }); })() }}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
