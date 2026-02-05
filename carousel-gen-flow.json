@@ -275,8 +275,20 @@
           "method": "POST",
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
-          "specifyBody": "json",
-          "jsonBody": "={\n  \"slide_id\": \"{{ $json.id }}\",\n  \"image_prompt\": {{ JSON.stringify($json.image_prompt || '') }},\n  \"carousel_id\": \"{{ $json.carousel_id }}\",\n  \"slide_number\": {{ $json.slide_number }},\n  \"headline\": {{ JSON.stringify($json.headline || '') }},\n  \"subtext\": {{ JSON.stringify($json.subtext || '') }},\n  \"body_text\": {{ JSON.stringify($json.body_text || '') }},\n  \"visual_style\": {{ JSON.stringify($json.visual_style || '') }},\n  \"topic\": {{ JSON.stringify($('Format Input').item.json.topic || 'Technology') }}\n}",
+          "contentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              { "name": "slide_id", "value": "={{ $json.id }}" },
+              { "name": "image_prompt", "value": "={{ $json.image_prompt }}" },
+              { "name": "carousel_id", "value": "={{ $json.carousel_id }}" },
+              { "name": "slide_number", "value": "={{ $json.slide_number }}" },
+              { "name": "headline", "value": "={{ $json.headline }}" },
+              { "name": "subtext", "value": "={{ $json.subtext }}" },
+              { "name": "body_text", "value": "={{ $json.body_text }}" },
+              { "name": "visual_style", "value": "={{ $json.visual_style }}" },
+              { "name": "topic", "value": "={{ $('Format Input').item.json.topic }}" }
+            ]
+          },
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -320,8 +332,20 @@
           "method": "POST",
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
-          "specifyBody": "json",
-          "jsonBody": "={\n  \"slide_id\": \"{{ $json.id }}\",\n  \"image_prompt\": {{ JSON.stringify($json.image_prompt || '') }},\n  \"carousel_id\": \"{{ $json.carousel_id }}\",\n  \"slide_number\": {{ $json.slide_number }},\n  \"headline\": {{ JSON.stringify($json.headline || '') }},\n  \"subtext\": {{ JSON.stringify($json.subtext || '') }},\n  \"body_text\": {{ JSON.stringify($json.body_text || '') }},\n  \"visual_style\": {{ JSON.stringify($json.visual_style || '') }},\n  \"topic\": {{ JSON.stringify($('Format Input').item.json.topic || 'Technology') }}\n}",
+          "contentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              { "name": "slide_id", "value": "={{ $json.id }}" },
+              { "name": "image_prompt", "value": "={{ $json.image_prompt }}" },
+              { "name": "carousel_id", "value": "={{ $json.carousel_id }}" },
+              { "name": "slide_number", "value": "={{ $json.slide_number }}" },
+              { "name": "headline", "value": "={{ $json.headline }}" },
+              { "name": "subtext", "value": "={{ $json.subtext }}" },
+              { "name": "body_text", "value": "={{ $json.body_text }}" },
+              { "name": "visual_style", "value": "={{ $json.visual_style }}" },
+              { "name": "topic", "value": "={{ $('Format Input').item.json.topic }}" }
+            ]
+          },
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -365,8 +389,20 @@
           "method": "POST",
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
-          "specifyBody": "json",
-          "jsonBody": "={\n  \"slide_id\": \"{{ $json.id }}\",\n  \"image_prompt\": {{ JSON.stringify($json.image_prompt || '') }},\n  \"carousel_id\": \"{{ $json.carousel_id }}\",\n  \"slide_number\": {{ $json.slide_number }},\n  \"headline\": {{ JSON.stringify($json.headline || '') }},\n  \"subtext\": {{ JSON.stringify($json.subtext || '') }},\n  \"body_text\": {{ JSON.stringify($json.body_text || '') }},\n  \"visual_style\": {{ JSON.stringify($json.visual_style || '') }},\n  \"topic\": {{ JSON.stringify($('Format Input').item.json.topic || 'Technology') }}\n}",
+          "contentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              { "name": "slide_id", "value": "={{ $json.id }}" },
+              { "name": "image_prompt", "value": "={{ $json.image_prompt }}" },
+              { "name": "carousel_id", "value": "={{ $json.carousel_id }}" },
+              { "name": "slide_number", "value": "={{ $json.slide_number }}" },
+              { "name": "headline", "value": "={{ $json.headline }}" },
+              { "name": "subtext", "value": "={{ $json.subtext }}" },
+              { "name": "body_text", "value": "={{ $json.body_text }}" },
+              { "name": "visual_style", "value": "={{ $json.visual_style }}" },
+              { "name": "topic", "value": "={{ $('Format Input').item.json.topic }}" }
+            ]
+          },
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -410,8 +446,20 @@
           "method": "POST",
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
-          "specifyBody": "json",
-          "jsonBody": "={\n  \"slide_id\": \"{{ $json.id }}\",\n  \"image_prompt\": {{ JSON.stringify($json.image_prompt || '') }},\n  \"carousel_id\": \"{{ $json.carousel_id }}\",\n  \"slide_number\": {{ $json.slide_number }},\n  \"headline\": {{ JSON.stringify($json.headline || '') }},\n  \"subtext\": {{ JSON.stringify($json.subtext || '') }},\n  \"body_text\": {{ JSON.stringify($json.body_text || '') }},\n  \"visual_style\": {{ JSON.stringify($json.visual_style || '') }},\n  \"topic\": {{ JSON.stringify($('Format Input').item.json.topic || 'Technology') }}\n}",
+          "contentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              { "name": "slide_id", "value": "={{ $json.id }}" },
+              { "name": "image_prompt", "value": "={{ $json.image_prompt }}" },
+              { "name": "carousel_id", "value": "={{ $json.carousel_id }}" },
+              { "name": "slide_number", "value": "={{ $json.slide_number }}" },
+              { "name": "headline", "value": "={{ $json.headline }}" },
+              { "name": "subtext", "value": "={{ $json.subtext }}" },
+              { "name": "body_text", "value": "={{ $json.body_text }}" },
+              { "name": "visual_style", "value": "={{ $json.visual_style }}" },
+              { "name": "topic", "value": "={{ $('Format Input').item.json.topic }}" }
+            ]
+          },
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -455,8 +503,20 @@
           "method": "POST",
           "url": "https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen",
           "sendBody": true,
-          "specifyBody": "json",
-          "jsonBody": "={\n  \"slide_id\": \"{{ $json.id }}\",\n  \"image_prompt\": {{ JSON.stringify($json.image_prompt || '') }},\n  \"carousel_id\": \"{{ $json.carousel_id }}\",\n  \"slide_number\": {{ $json.slide_number }},\n  \"headline\": {{ JSON.stringify($json.headline || '') }},\n  \"subtext\": {{ JSON.stringify($json.subtext || '') }},\n  \"body_text\": {{ JSON.stringify($json.body_text || '') }},\n  \"visual_style\": {{ JSON.stringify($json.visual_style || '') }},\n  \"topic\": {{ JSON.stringify($('Format Input').item.json.topic || 'Technology') }}\n}",
+          "contentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              { "name": "slide_id", "value": "={{ $json.id }}" },
+              { "name": "image_prompt", "value": "={{ $json.image_prompt }}" },
+              { "name": "carousel_id", "value": "={{ $json.carousel_id }}" },
+              { "name": "slide_number", "value": "={{ $json.slide_number }}" },
+              { "name": "headline", "value": "={{ $json.headline }}" },
+              { "name": "subtext", "value": "={{ $json.subtext }}" },
+              { "name": "body_text", "value": "={{ $json.body_text }}" },
+              { "name": "visual_style", "value": "={{ $json.visual_style }}" },
+              { "name": "topic", "value": "={{ $('Format Input').item.json.topic }}" }
+            ]
+          },
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
