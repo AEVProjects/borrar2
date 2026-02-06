@@ -1,4 +1,5 @@
 {
+  "name": "Video Gen Orchestrator",
   "nodes": [
     {
       "parameters": {
@@ -12,32 +13,32 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [540, 400],
+      "position": [400, 400],
       "id": "e403b818-9dad-4efd-94f8-1eb27485f6f3",
       "name": "Webhook - Video Gen",
       "webhookId": "msi-video-gen"
     },
     {
       "parameters": {
-        "jsCode": "const input = $input.item.json;\nlet data = input.body || input;\nif (typeof data === 'string') {\n  try { data = JSON.parse(data); } catch (e) { }\n}\n\nconst prompt = data.prompt || data.video_prompt || '';\nconst start_image_url = data.start_image_url || data.imageUrl || null;\nconst second_image_url = data.second_image_url || data.end_image_url || null;\nconst aspect_ratio = data.aspect_ratio || data.aspectRatio || '9:16';\nconst service = data.service || 'company_intro';\nconst post_id = data.post_id || data.postId || null;\nconst topic = data.topic || '';\n\nconst duration = Math.min(parseInt(data.duration || '8'), 8);\n\nif (!prompt || prompt.length < 3) {\n  throw new Error('prompt is required (min 3 chars)');\n}\nif (!start_image_url) {\n  throw new Error('start_image_url is required');\n}\nif (!second_image_url || second_image_url.length < 5) {\n  throw new Error('second_image_url is required for part 2');\n}\n\nreturn [{ \n  json: { \n    prompt, \n    duration: String(duration),\n    aspect_ratio, \n    service,\n    post_id, \n    topic,\n    start_image_url,\n    second_image_url\n  } \n}];"
+        "jsCode": "const input = $input.item.json;\nlet data = input.body || input;\nif (typeof data === 'string') {\n  try { data = JSON.parse(data); } catch (e) { }\n}\n\nconst prompt = data.prompt || data.video_prompt || '';\nconst start_image_url = data.start_image_url || data.imageUrl || null;\nconst second_image_url = data.second_image_url || data.end_image_url || null;\nconst aspect_ratio = data.aspect_ratio || data.aspectRatio || '9:16';\nconst service = data.service || 'company_intro';\nconst post_id = data.post_id || data.postId || null;\nconst topic = data.topic || '';\nconst duration = Math.min(parseInt(data.duration || '8'), 8);\n\nif (!prompt || prompt.length < 3) throw new Error('prompt is required');\nif (!start_image_url) throw new Error('start_image_url is required');\nif (!second_image_url || second_image_url.length < 5) throw new Error('second_image_url is required');\n\nreturn [{ json: { prompt, duration: String(duration), aspect_ratio, service, post_id, topic, start_image_url, second_image_url } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [760, 400],
+      "position": [620, 400],
       "id": "14619088-ccd9-406b-9376-1133b57cd1be",
       "name": "Format Video Input"
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "=\"You are creating a 2-PART video script. Each part is \" + $json.duration + \"s.\n\nSERVICE: \" + $json.service + \"\nSCENE DESCRIPTION: \" + $json.prompt + \"\nTOPIC: \" + ($json.topic || 'Technology') + \"\n\nIMPORTANT RULES:\n- The person in the video MUST SPEAK OUT LOUD with lip movement\n- Write what the person SAYS as dialogue\n- NO text, letters, or words visible on screen\n- Include ambient sounds and background music\n- Cinematic camera movement and warm lighting\n\nOutput TWO prompts separated by ||| delimiter:\nPART1_PROMPT ||| PART2_PROMPT\n\nEach prompt under 350 chars. The person must be TALKING throughout.\"",
+        "text": "=\"You are creating a 2-PART video script. Each part is \" + $json.duration + \"s.\n\nSERVICE: \" + $json.service + \"\nSCENE DESCRIPTION: \" + $json.prompt + \"\nTOPIC: \" + ($json.topic || 'Technology') + \"\n\nIMPORTANT RULES:\n- The person in the video MUST SPEAK OUT LOUD with lip movement and voice\n- Write what the person SAYS as dialogue\n- NO text, letters, or words visible on screen\n- Include ambient sounds and background music\n- Cinematic camera movement and warm lighting\n\nOutput TWO prompts separated by ||| delimiter:\nPART1_PROMPT ||| PART2_PROMPT\n\nEach prompt under 350 chars. The person must be TALKING throughout.\"",
         "options": {
-          "systemMessage": "You are a video director specializing in corporate content. You write prompts where the on-screen person SPEAKS and TALKS with visible lip movement. Never use text overlays. Output exactly: PART1_PROMPT ||| PART2_PROMPT. Each under 350 chars."
+          "systemMessage": "You are a video director. Write prompts where the on-screen person SPEAKS OUT LOUD and TALKS with visible lip movement and audible voice. Never use text overlays. Output exactly: PART1_PROMPT ||| PART2_PROMPT. Each under 350 chars."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
-      "position": [980, 400],
+      "position": [840, 400],
       "id": "c583000c-7bac-4d4b-a2f7-7ed2c8bd622d",
       "name": "Agent: Video Script"
     },
@@ -47,7 +48,7 @@
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
-      "position": [1060, 620],
+      "position": [920, 620],
       "id": "535f4b45-3da5-47e3-a956-2d89ccdfb8fa",
       "name": "Google Gemini Chat Model",
       "credentials": {
@@ -59,71 +60,23 @@
     },
     {
       "parameters": {
-        "jsCode": "const agentOutput = $('Agent: Video Script').item.json.output || '';\nconst formInput = $('Format Video Input').item.json;\n\n// Parse the two prompts from agent output\nlet prompt1 = '';\nlet prompt2 = '';\n\nif (agentOutput.includes('|||')) {\n  const parts = agentOutput.split('|||');\n  prompt1 = parts[0].trim();\n  prompt2 = parts[1].trim();\n} else {\n  // Fallback: use the whole output for both with different endings\n  prompt1 = agentOutput.substring(0, 350);\n  prompt2 = agentOutput.substring(0, 300) + ' Continue the scene with resolution.';\n}\n\nreturn [{\n  json: {\n    PROMPT_PART1: prompt1,\n    PROMPT_PART2: prompt2,\n    PROJECT_ID: 'gen-lang-client-0521438560',\n    MODEL_VERSION: 'veo-3.1-generate-001',\n    LOCATION: 'us-central1',\n    API_ENDPOINT: 'us-central1-aiplatform.googleapis.com',\n    BUCKET_NAME: 'msi-veo-videos',\n    DURATION: formInput.duration,\n    ASPECT_RATIO: formInput.aspect_ratio,\n    POST_ID: formInput.post_id,\n    ORIGINAL_PROMPT: formInput.prompt,\n    START_IMAGE_URL: formInput.start_image_url,\n    SECOND_IMAGE_URL: formInput.second_image_url\n  }\n}];"
+        "jsCode": "const agentOutput = $('Agent: Video Script').item.json.output || '';\nconst formInput = $('Format Video Input').item.json;\n\nlet prompt1 = '';\nlet prompt2 = '';\nif (agentOutput.includes('|||')) {\n  const parts = agentOutput.split('|||');\n  prompt1 = parts[0].trim();\n  prompt2 = parts[1].trim();\n} else {\n  prompt1 = agentOutput.substring(0, 350);\n  prompt2 = agentOutput.substring(0, 300) + ' Continue the scene with resolution.';\n}\n\n// ================================================\n// IMPORTANT: Set your n8n webhook base URL here\n// For self-hosted: http://localhost:5678\n// For n8n cloud: https://your-instance.app.n8n.cloud\n// ================================================\nconst N8N_BASE = 'http://localhost:5678';\n\nreturn [{\n  json: {\n    PROMPT_PART1: prompt1 + ' The person speaks directly to camera with clear lip movement and audible voice. No text on screen.',\n    PROMPT_PART2: prompt2 + ' The person speaks confidently to camera with clear lip movement and audible voice. No text on screen.',\n    DURATION: formInput.duration,\n    ASPECT_RATIO: formInput.aspect_ratio,\n    POST_ID: formInput.post_id,\n    ORIGINAL_PROMPT: formInput.prompt,\n    START_IMAGE_URL: formInput.start_image_url,\n    SECOND_IMAGE_URL: formInput.second_image_url,\n    N8N_BASE: N8N_BASE\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1200, 400],
+      "position": [1060, 400],
       "id": "afed24c1-c87b-42cd-ab16-da8cd79fc954",
       "name": "Build Settings"
     },
     {
       "parameters": {
-        "url": "={{ $json.START_IMAGE_URL }}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "file"
-            }
-          }
-        }
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1420, 400],
-      "id": "download-start-img",
-      "name": "Download Start Image"
-    },
-    {
-      "parameters": {
-        "operation": "binaryToPropery",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.extractFromFile",
-      "typeVersion": 1,
-      "position": [1640, 400],
-      "id": "start-to-b64",
-      "name": "Start Image to Base64"
-    },
-    {
-      "parameters": {
-        "jsCode": "const imgData = $input.item.json;\nconst settings = $('Build Settings').item.json;\n\nif (!imgData.data || imgData.data.length < 100) {\n  throw new Error('Start image base64 is empty or too small');\n}\n\nreturn [{\n  json: {\n    ...settings,\n    START_IMAGE_B64: imgData.data,\n    START_MIME: imgData.mimeType || 'image/jpeg'\n  }\n}];"
+        "jsCode": "// Call the Video Job worker to submit Part 1 (download + base64 + token + veo)\n// This keeps ALL heavy data (base64) in the worker's execution, not here\nconst s = $input.item.json;\n\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `${s.N8N_BASE}/webhook/msi-video-job`,\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({\n    action: 'submit',\n    image_url: s.START_IMAGE_URL,\n    prompt: s.PROMPT_PART1,\n    bucket_path: 'part1/',\n    duration: s.DURATION,\n    aspect_ratio: s.ASPECT_RATIO\n  }),\n  timeout: 120000\n});\n\nif (!response.success || !response.operationName) {\n  throw new Error('Submit Part 1 failed: ' + JSON.stringify(response).substring(0, 300));\n}\n\n// Pack lightweight state for after Wait (NO base64 anywhere!)\nreturn [{\n  json: {\n    op1: response.operationName,\n    PROMPT_PART2: s.PROMPT_PART2,\n    DURATION: s.DURATION,\n    ASPECT_RATIO: s.ASPECT_RATIO,\n    POST_ID: s.POST_ID,\n    ORIGINAL_PROMPT: s.ORIGINAL_PROMPT,\n    SECOND_IMAGE_URL: s.SECOND_IMAGE_URL,\n    N8N_BASE: s.N8N_BASE\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1860, 400],
-      "id": "prep-video-request",
-      "name": "Prepare Video Request"
-    },
-    {
-      "parameters": {
-        "jsCode": "const crypto = require('crypto');\n\nconst serviceAccount = {\n  \"type\": \"service_account\",\n  \"project_id\": \"gen-lang-client-0521438560\",\n  \"private_key_id\": \"353528a978e83fdd043e74b03d0096604b3ccd77\",\n  \"private_key\": \"-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCc8VpJosYd8D0N\\nmFLmh1b7UOsHgm5ZZBvjSkPUhcFXXoEnOoouhWPD5hEl7ziA+3vWpbHLWb5sm0dv\\nqUhHJWwMMbE5eBxmR7m/Cacpy5ZiOVw+180aZqq6e1AsKlEzRvdz66FSgpCeYtmS\\n2nnc8fGwxfB06qpXsxLVQYnwnKzOlKOv9cfXC/29vrbXoPwez9lkVyySa11iGtYA\\nzMU2LjiPrxvcDTbhb1JYD/050fT/m3z2NgclsV6uCEQxNLXOJriJxNuSKhmZufis\\nsoO/rlj/V+RFTrHEQ8zn3nbm6/W2ZANZt94AOo31t5TR6Idt9PxgjodSHJYLEm+0\\nOXC6bAf3AgMBAAECggEASvGn81Ti9YX0qarNH5+OZkmASmA7EL3Q4Wtj07chmfab\\nhx+Zv9hbyT7yfmJrYZB11Qzfx6Lt35AQ/13fkXXp0DLklfRo32Ct7u+Nn1REVlhc\\n1/eWTl6rdYyQPt7gUrO3U+g3655EsBW1Hz7sBZmVmBwVlMdAm8t8GVEILVmr3aN1\\n5CzVUaLtk9UNQDApUfxgdD2kutWTjqM2j3jsgceST6p98dqV2U8HiOXonpMgt02+\\n3PqApJNu4HQhdMzYwX67vKLuqanlZllLlBp8TWvbP3Roo2p57pD8oamT0BKWDUcX\\nfwT19NJOXqRTim6oalvGklTuwhI9+EJJPlAwN7+rAQKBgQDc+sNzQC4Eph4we6g5\\nBQe5QGIchou/ey1vJ+UGbM8vy6bkuy9dPbDZ/XUZTPOYkTPHKvRu544DTIQzH0qJ\\nfG5NKUIYdOInJm8y+r0JybMrrKl0b04/Nrlueb4RjesASMSq3BTVMK5+6Mb4vx7y\\nLS3mYUc8TF+kBEEaw0H4Fwlu9wKBgQC10JcC0kbtCF/MmHwSq9w0PfgbHT3NoZH7\\nyOWeXPfRLybn+I4MMYW3y5KSL5RM3Gxtve2I/HjJPpprZSUJXfMgRLrVkFRV1iFp\\nA/v1vAxoMlYGk3Oh74rwmmMmU7hhPSNL5HxIDHdXVZb5jrOvqIIBcZ6n2qhaCVXH\\nmtjl3QbvAQKBgBxiUWyiV8bdF4+espLwZHeVH4UOezDTP5jBhRd4LnyzKfLDYGgX\\nnnnBpqLjUX7NV9tDVzZPo9wkne57HHXgd8KNhCHkEZB5zVq8/j8dm1gGy5VbHq/b\\n9aGNHa7fjcnxjuFrd3mS0TcX60bUNcNhrj2jTSUfokFNEpe/cN/PBbUtAoGAaSms\\nnyonciT83Gd6pIYZiXIqluxT+iOxP7SU9AOMJ8ehNl2zM+RVFtk9/yZcHhUE9nj7\\n8tctuiFmyiWnxYI9BXYbpzmjPj7r9kUisKFDf+VVktoo8QqQD9kM7ndQV5Y4W0Ze\\niIIFaVONTu22iyzpfZJNlYNJC0MJBbpQKKyuvQECgYEA2q4N8oL3VJwZAuyIVXOm\\ng9SH9dq4pRunQbXJpxaP2mklGNEbLV1YURVGA0oyQE5oh3/4s/LdMERUFkaYBBnl\\nyrcLRELtnjswAy3b2tEp4ULP/rx5MRY4qjNonUrzoXAs937zDIcyjO6/ekxE28sO\\nXk4daXQsjz4PY3lVvJcnKFA=\\n-----END PRIVATE KEY-----\\n\",\n  \"client_email\": \"vertex-express@gen-lang-client-0521438560.iam.gserviceaccount.com\",\n  \"client_id\": \"113579530477823292475\",\n  \"token_uri\": \"https://oauth2.googleapis.com/token\"\n};\n\nconst settings = $input.item.json;\n\nfunction base64url(str) {\n  return Buffer.from(str).toString('base64').replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=/g, '');\n}\nfunction base64urlBuffer(buffer) {\n  return buffer.toString('base64').replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=/g, '');\n}\n\nconst now = Math.floor(Date.now() / 1000);\nconst header = { alg: 'RS256', typ: 'JWT' };\nconst payload = {\n  iss: serviceAccount.client_email,\n  sub: serviceAccount.client_email,\n  aud: serviceAccount.token_uri,\n  iat: now,\n  exp: now + 3600,\n  scope: 'https://www.googleapis.com/auth/cloud-platform'\n};\n\nconst headerB64 = base64url(JSON.stringify(header));\nconst payloadB64 = base64url(JSON.stringify(payload));\nconst signatureInput = `${headerB64}.${payloadB64}`;\nconst sign = crypto.createSign('RSA-SHA256');\nsign.update(signatureInput);\nconst signature = sign.sign(serviceAccount.private_key);\nconst jwt = `${signatureInput}.${base64urlBuffer(signature)}`;\n\nconst tokenResponse = await this.helpers.httpRequest({\n  method: 'POST',\n  url: serviceAccount.token_uri,\n  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },\n  body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`\n});\n\nif (!tokenResponse.access_token) {\n  throw new Error('Failed to get access token');\n}\n\nreturn [{\n  json: {\n    ...settings,\n    ACCESS_TOKEN: tokenResponse.access_token\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [2080, 400],
-      "id": "4587d017-63ac-4013-a178-ffb3daaae916",
-      "name": "Generate Access Token"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Send Veo request for Part 1 AND save all state for after Wait\nconst s = $input.item.json;\n\nconst requestBody = {\n  instances: [{\n    prompt: s.PROMPT_PART1 + ' The person speaks directly to camera with clear lip movement. No text on screen.',\n    image: {\n      bytesBase64Encoded: s.START_IMAGE_B64,\n      mimeType: s.START_MIME\n    }\n  }],\n  parameters: {\n    aspectRatio: s.ASPECT_RATIO,\n    resolution: '720p',\n    sampleCount: 1,\n    durationSeconds: parseInt(s.DURATION),\n    personGeneration: 'allow_all',\n    addWatermark: false,\n    includeRaiReason: true,\n    generateAudio: true,\n    storageUri: 'gs://' + s.BUCKET_NAME + '/part1/',\n    negativePrompt: 'silence, no audio, mute, static, blurry, text, letters, words, subtitles, captions, watermark'\n  }\n};\n\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `https://${s.API_ENDPOINT}/v1/projects/${s.PROJECT_ID}/locations/${s.LOCATION}/publishers/google/models/${s.MODEL_VERSION}:predictLongRunning`,\n  headers: {\n    'Content-Type': 'application/json',\n    'Authorization': `Bearer ${s.ACCESS_TOKEN}`\n  },\n  body: JSON.stringify(requestBody),\n  timeout: 30000\n});\n\nif (!response.name) {\n  throw new Error('Vertex AI Part 1 failed: ' + JSON.stringify(response).substring(0, 500));\n}\n\n// CRITICAL: Pack ALL state into the item so it survives the Wait node\nreturn [{\n  json: {\n    operationName: response.name,\n    API_ENDPOINT: s.API_ENDPOINT,\n    PROJECT_ID: s.PROJECT_ID,\n    LOCATION: s.LOCATION,\n    MODEL_VERSION: s.MODEL_VERSION,\n    ACCESS_TOKEN: s.ACCESS_TOKEN,\n    BUCKET_NAME: s.BUCKET_NAME,\n    DURATION: s.DURATION,\n    ASPECT_RATIO: s.ASPECT_RATIO,\n    POST_ID: s.POST_ID,\n    ORIGINAL_PROMPT: s.ORIGINAL_PROMPT,\n    PROMPT_PART2: s.PROMPT_PART2,\n    SECOND_IMAGE_URL: s.SECOND_IMAGE_URL\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [2300, 400],
-      "id": "d146e150-23ec-4d9c-93a5-0282369b6893",
-      "name": "Submit Video Part 1"
+      "position": [1280, 400],
+      "id": "submit-part1",
+      "name": "Submit Part 1 via Worker"
     },
     {
       "parameters": {
@@ -132,58 +85,30 @@
       },
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [2520, 400],
+      "position": [1500, 400],
       "id": "1c005670-4554-431d-965c-9a9a80dcd867",
       "name": "Wait Part 1",
       "webhookId": "veo3-wait-1"
     },
     {
       "parameters": {
-        "jsCode": "// After Wait resume - ALL data is in $json (packed before Wait)\nconst s = $input.item.json;\n\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `https://${s.API_ENDPOINT}/v1/projects/${s.PROJECT_ID}/locations/${s.LOCATION}/publishers/google/models/${s.MODEL_VERSION}:fetchPredictOperation`,\n  headers: {\n    'Content-Type': 'application/json',\n    'Authorization': `Bearer ${s.ACCESS_TOKEN}`\n  },\n  body: JSON.stringify({ operationName: s.operationName }),\n  timeout: 60000\n});\n\nlet videoUri = '';\nif (response.response?.videos?.[0]?.uri) {\n  videoUri = response.response.videos[0].uri;\n} else if (response.response?.videos?.[0]?.gcsUri) {\n  videoUri = response.response.videos[0].gcsUri;\n}\n\nif (!videoUri) {\n  throw new Error('Video Part 1 not ready or failed: ' + JSON.stringify(response).substring(0, 500));\n}\n\n// Pass everything forward including video1 URI\nreturn [{\n  json: {\n    video1_gcs_uri: videoUri,\n    API_ENDPOINT: s.API_ENDPOINT,\n    PROJECT_ID: s.PROJECT_ID,\n    LOCATION: s.LOCATION,\n    MODEL_VERSION: s.MODEL_VERSION,\n    ACCESS_TOKEN: s.ACCESS_TOKEN,\n    BUCKET_NAME: s.BUCKET_NAME,\n    DURATION: s.DURATION,\n    ASPECT_RATIO: s.ASPECT_RATIO,\n    POST_ID: s.POST_ID,\n    ORIGINAL_PROMPT: s.ORIGINAL_PROMPT,\n    PROMPT_PART2: s.PROMPT_PART2,\n    SECOND_IMAGE_URL: s.SECOND_IMAGE_URL\n  }\n}];"
+        "jsCode": "// After Wait - fetch Part 1 result via the worker (fresh token generated there)\nconst s = $input.item.json;\n\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `${s.N8N_BASE}/webhook/msi-video-job`,\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({\n    action: 'fetch',\n    operationName: s.op1\n  }),\n  timeout: 120000\n});\n\nif (!response.success || !response.ready) {\n  throw new Error('Part 1 not ready: ' + JSON.stringify(response).substring(0, 300));\n}\n\nreturn [{\n  json: {\n    video1_gcs_uri: response.videoUri,\n    PROMPT_PART2: s.PROMPT_PART2,\n    DURATION: s.DURATION,\n    ASPECT_RATIO: s.ASPECT_RATIO,\n    POST_ID: s.POST_ID,\n    ORIGINAL_PROMPT: s.ORIGINAL_PROMPT,\n    SECOND_IMAGE_URL: s.SECOND_IMAGE_URL,\n    N8N_BASE: s.N8N_BASE\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2740, 400],
-      "id": "3c1dc6e5-4f02-4307-b577-55b4e5e69609",
-      "name": "Fetch & Process Part 1"
+      "position": [1720, 400],
+      "id": "fetch-part1",
+      "name": "Fetch Part 1 via Worker"
     },
     {
       "parameters": {
-        "url": "={{ $json.SECOND_IMAGE_URL }}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "file"
-            }
-          }
-        }
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2960, 400],
-      "id": "download-second-img",
-      "name": "Download Second Image"
-    },
-    {
-      "parameters": {
-        "operation": "binaryToPropery",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.extractFromFile",
-      "typeVersion": 1,
-      "position": [3180, 400],
-      "id": "second-to-b64",
-      "name": "Second Image to Base64"
-    },
-    {
-      "parameters": {
-        "jsCode": "const imgData = $input.item.json;\nconst settings = $('Fetch & Process Part 1').item.json;\n\nif (!imgData.data || imgData.data.length < 100) {\n  throw new Error('Second image base64 is empty');\n}\n\n// Submit Part 2 to Veo\nconst requestBody = {\n  instances: [{\n    prompt: settings.PROMPT_PART2 + ' The person speaks confidently to camera with clear lip movement. No text on screen.',\n    image: {\n      bytesBase64Encoded: imgData.data,\n      mimeType: imgData.mimeType || 'image/jpeg'\n    }\n  }],\n  parameters: {\n    aspectRatio: settings.ASPECT_RATIO,\n    resolution: '720p',\n    sampleCount: 1,\n    durationSeconds: parseInt(settings.DURATION),\n    personGeneration: 'allow_all',\n    addWatermark: false,\n    includeRaiReason: true,\n    generateAudio: true,\n    storageUri: 'gs://' + settings.BUCKET_NAME + '/part2/',\n    negativePrompt: 'silence, no audio, mute, static, blurry, text, letters, words, subtitles, captions, watermark'\n  }\n};\n\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `https://${settings.API_ENDPOINT}/v1/projects/${settings.PROJECT_ID}/locations/${settings.LOCATION}/publishers/google/models/${settings.MODEL_VERSION}:predictLongRunning`,\n  headers: {\n    'Content-Type': 'application/json',\n    'Authorization': `Bearer ${settings.ACCESS_TOKEN}`\n  },\n  body: JSON.stringify(requestBody),\n  timeout: 30000\n});\n\nif (!response.name) {\n  throw new Error('Vertex AI Part 2 failed: ' + JSON.stringify(response).substring(0, 500));\n}\n\n// Pack ALL state for after Wait Part 2\nreturn [{\n  json: {\n    operationName: response.name,\n    video1_gcs_uri: settings.video1_gcs_uri,\n    API_ENDPOINT: settings.API_ENDPOINT,\n    PROJECT_ID: settings.PROJECT_ID,\n    LOCATION: settings.LOCATION,\n    MODEL_VERSION: settings.MODEL_VERSION,\n    ACCESS_TOKEN: settings.ACCESS_TOKEN,\n    BUCKET_NAME: settings.BUCKET_NAME,\n    DURATION: settings.DURATION,\n    POST_ID: settings.POST_ID,\n    ORIGINAL_PROMPT: settings.ORIGINAL_PROMPT\n  }\n}];"
+        "jsCode": "// Call the Video Job worker to submit Part 2\nconst s = $input.item.json;\n\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `${s.N8N_BASE}/webhook/msi-video-job`,\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({\n    action: 'submit',\n    image_url: s.SECOND_IMAGE_URL,\n    prompt: s.PROMPT_PART2,\n    bucket_path: 'part2/',\n    duration: s.DURATION,\n    aspect_ratio: s.ASPECT_RATIO\n  }),\n  timeout: 120000\n});\n\nif (!response.success || !response.operationName) {\n  throw new Error('Submit Part 2 failed: ' + JSON.stringify(response).substring(0, 300));\n}\n\n// Pack lightweight state for after Wait 2\nreturn [{\n  json: {\n    op2: response.operationName,\n    video1_gcs_uri: s.video1_gcs_uri,\n    DURATION: s.DURATION,\n    POST_ID: s.POST_ID,\n    ORIGINAL_PROMPT: s.ORIGINAL_PROMPT,\n    N8N_BASE: s.N8N_BASE\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3400, 400],
-      "id": "prep-part2",
-      "name": "Submit Video Part 2"
+      "position": [1940, 400],
+      "id": "submit-part2",
+      "name": "Submit Part 2 via Worker"
     },
     {
       "parameters": {
@@ -192,20 +117,20 @@
       },
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [3620, 400],
+      "position": [2160, 400],
       "id": "wait-part2",
       "name": "Wait Part 2",
       "webhookId": "veo3-wait-2"
     },
     {
       "parameters": {
-        "jsCode": "// After Wait resume - ALL data is in $json\nconst s = $input.item.json;\n\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `https://${s.API_ENDPOINT}/v1/projects/${s.PROJECT_ID}/locations/${s.LOCATION}/publishers/google/models/${s.MODEL_VERSION}:fetchPredictOperation`,\n  headers: {\n    'Content-Type': 'application/json',\n    'Authorization': `Bearer ${s.ACCESS_TOKEN}`\n  },\n  body: JSON.stringify({ operationName: s.operationName }),\n  timeout: 60000\n});\n\nlet video2Uri = '';\nif (response.response?.videos?.[0]?.uri) {\n  video2Uri = response.response.videos[0].uri;\n} else if (response.response?.videos?.[0]?.gcsUri) {\n  video2Uri = response.response.videos[0].gcsUri;\n}\n\nif (!video2Uri) {\n  throw new Error('Video Part 2 not ready or failed: ' + JSON.stringify(response).substring(0, 500));\n}\n\nreturn [{\n  json: {\n    video1_gcs_uri: s.video1_gcs_uri,\n    video2_gcs_uri: video2Uri,\n    POST_ID: s.POST_ID,\n    ORIGINAL_PROMPT: s.ORIGINAL_PROMPT,\n    ACCESS_TOKEN: s.ACCESS_TOKEN,\n    BUCKET_NAME: s.BUCKET_NAME,\n    DURATION: s.DURATION\n  }\n}];"
+        "jsCode": "// After Wait - fetch Part 2 result via the worker\nconst s = $input.item.json;\n\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `${s.N8N_BASE}/webhook/msi-video-job`,\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({\n    action: 'fetch',\n    operationName: s.op2\n  }),\n  timeout: 120000\n});\n\nif (!response.success || !response.ready) {\n  throw new Error('Part 2 not ready: ' + JSON.stringify(response).substring(0, 300));\n}\n\nreturn [{\n  json: {\n    video1_gcs_uri: s.video1_gcs_uri,\n    video2_gcs_uri: response.videoUri,\n    POST_ID: s.POST_ID,\n    ORIGINAL_PROMPT: s.ORIGINAL_PROMPT,\n    DURATION: s.DURATION\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3840, 400],
-      "id": "process-part2",
-      "name": "Fetch & Process Part 2"
+      "position": [2380, 400],
+      "id": "fetch-part2",
+      "name": "Fetch Part 2 via Worker"
     },
     {
       "parameters": {
@@ -215,7 +140,7 @@
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [4060, 400],
+      "position": [2600, 400],
       "id": "22d68c5a-db47-482e-b22b-ac6be9671832",
       "name": "Update DB",
       "credentials": {
@@ -228,7 +153,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, message: 'Video generated: 2 parts in GCS bucket', data: { video1_gcs_uri: $('Fetch & Process Part 2').item.json.video1_gcs_uri, video2_gcs_uri: $('Fetch & Process Part 2').item.json.video2_gcs_uri, post_id: $('Fetch & Process Part 2').item.json.POST_ID, duration: (parseInt($('Fetch & Process Part 2').item.json.DURATION) * 2) + 's (2 parts)', prompt: $('Fetch & Process Part 2').item.json.ORIGINAL_PROMPT } }) }}",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Video generated: 2 parts in GCS bucket', data: { video1_gcs_uri: $('Fetch Part 2 via Worker').item.json.video1_gcs_uri, video2_gcs_uri: $('Fetch Part 2 via Worker').item.json.video2_gcs_uri, post_id: $('Fetch Part 2 via Worker').item.json.POST_ID, duration: (parseInt($('Fetch Part 2 via Worker').item.json.DURATION) * 2) + 's (2 parts)', prompt: $('Fetch Part 2 via Worker').item.json.ORIGINAL_PROMPT } }) }}",
         "options": {
           "responseHeaders": {
             "entries": [
@@ -241,7 +166,7 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [4280, 400],
+      "position": [2820, 400],
       "id": "690a9620-96e9-4fc1-9e3b-30b4ac368543",
       "name": "Respond Success"
     }
@@ -260,42 +185,24 @@
       "ai_languageModel": [[{ "node": "Agent: Video Script", "type": "ai_languageModel", "index": 0 }]]
     },
     "Build Settings": {
-      "main": [[{ "node": "Download Start Image", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Submit Part 1 via Worker", "type": "main", "index": 0 }]]
     },
-    "Download Start Image": {
-      "main": [[{ "node": "Start Image to Base64", "type": "main", "index": 0 }]]
-    },
-    "Start Image to Base64": {
-      "main": [[{ "node": "Prepare Video Request", "type": "main", "index": 0 }]]
-    },
-    "Prepare Video Request": {
-      "main": [[{ "node": "Generate Access Token", "type": "main", "index": 0 }]]
-    },
-    "Generate Access Token": {
-      "main": [[{ "node": "Submit Video Part 1", "type": "main", "index": 0 }]]
-    },
-    "Submit Video Part 1": {
+    "Submit Part 1 via Worker": {
       "main": [[{ "node": "Wait Part 1", "type": "main", "index": 0 }]]
     },
     "Wait Part 1": {
-      "main": [[{ "node": "Fetch & Process Part 1", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Fetch Part 1 via Worker", "type": "main", "index": 0 }]]
     },
-    "Fetch & Process Part 1": {
-      "main": [[{ "node": "Download Second Image", "type": "main", "index": 0 }]]
+    "Fetch Part 1 via Worker": {
+      "main": [[{ "node": "Submit Part 2 via Worker", "type": "main", "index": 0 }]]
     },
-    "Download Second Image": {
-      "main": [[{ "node": "Second Image to Base64", "type": "main", "index": 0 }]]
-    },
-    "Second Image to Base64": {
-      "main": [[{ "node": "Submit Video Part 2", "type": "main", "index": 0 }]]
-    },
-    "Submit Video Part 2": {
+    "Submit Part 2 via Worker": {
       "main": [[{ "node": "Wait Part 2", "type": "main", "index": 0 }]]
     },
     "Wait Part 2": {
-      "main": [[{ "node": "Fetch & Process Part 2", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Fetch Part 2 via Worker", "type": "main", "index": 0 }]]
     },
-    "Fetch & Process Part 2": {
+    "Fetch Part 2 via Worker": {
       "main": [[{ "node": "Update DB", "type": "main", "index": 0 }]]
     },
     "Update DB": {
