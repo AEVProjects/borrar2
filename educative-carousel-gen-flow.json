@@ -6,7 +6,11 @@
           "httpMethod": "POST",
           "path": "msi-educative-carousel",
           "responseMode": "responseNode",
-          "options": {}
+          "options": {
+            "allowedOrigins": "https://msi-workflow.vercel.app",
+            "allowedMethods": "POST,OPTIONS",
+            "allowedHeaders": "Content-Type,Authorization"
+          }
         },
         "type": "n8n-nodes-base.webhook",
         "typeVersion": 2,
