@@ -396,15 +396,15 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="video_extension_image_url">Imagen de Referencia para Segunda Parte (Opcional)</label>
-                        <input type="url" id="video_extension_image_url" name="extension_image_url" placeholder="https://example.com/mi-imagen-final.jpg">
-                        <small class="form-hint">🖼️ Solo para videos de 15s. Esta imagen guía la segunda parte del video (ej: escena de CTA).</small>
+                        <label for="video_second_image_url">Imagen de Inicio de Segunda Parte *</label>
+                        <input type="url" id="video_second_image_url" name="second_image_url" required placeholder="https://example.com/mi-imagen-parte2.jpg">
+                        <small class="form-hint">🎬 Imagen para la segunda parte del video (REQUERIDA). El video tendrá 2 partes, cada una iniciando desde su imagen.</small>
                     </div>
 
-                    <div class="form-group" id="video-extension-image-preview-container" style="display: none;">
-                        <label>Extension Image Preview</label>
-                        <div id="video-extension-image-preview" class="edit-image-preview">
-                            <img id="video-extension-image-img" src="" alt="Extension image preview" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    <div class="form-group" id="video-second-image-preview-container" style="display: none;">
+                        <label>Second Part Image Preview</label>
+                        <div id="video-second-image-preview" class="edit-image-preview">
+                            <img id="video-second-image-img" src="" alt="Second part image preview" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                         </div>
                     </div>
 
@@ -442,12 +442,13 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="video_duration">Duration</label>
+                            <label for="video_duration">Duration per Part</label>
                             <select id="video_duration" name="duration">
-                                <option value="8">8 seconds (Single generation)</option>
-                                <option value="15" selected>15 seconds (8s + 7s extension)</option>
+                                <option value="8" selected>8 seconds per part (16s total)</option>
+                                <option value="6">6 seconds per part (12s total)</option>
+                                <option value="5">5 seconds per part (10s total)</option>
                             </select>
-                            <small class="form-hint">⏱️ 15s videos use auto-extension for longer content</small>
+                            <small class="form-hint">⏱️ Se generan 2 videos de esta duración, uno por cada imagen</small>
                         </div>
 
                         <div class="form-group">

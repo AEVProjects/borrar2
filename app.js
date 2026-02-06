@@ -1853,22 +1853,22 @@ if (videoStartImageInput) {
     });
 }
 
-// Extension image preview for video
-const videoExtImageInput = document.getElementById('video_extension_image_url');
-const videoExtImagePreviewContainer = document.getElementById('video-extension-image-preview-container');
-const videoExtImageImg = document.getElementById('video-extension-image-img');
+// Second image preview for video
+const videoSecondImageInput = document.getElementById('video_second_image_url');
+const videoSecondImagePreviewContainer = document.getElementById('video-second-image-preview-container');
+const videoSecondImageImg = document.getElementById('video-second-image-img');
 
-if (videoExtImageInput) {
-    videoExtImageInput.addEventListener('input', (e) => {
+if (videoSecondImageInput) {
+    videoSecondImageInput.addEventListener('input', (e) => {
         const url = e.target.value.trim();
         if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-            videoExtImageImg.src = url;
-            videoExtImagePreviewContainer.style.display = 'block';
-            videoExtImageImg.onerror = () => {
-                videoExtImagePreviewContainer.style.display = 'none';
+            videoSecondImageImg.src = url;
+            videoSecondImagePreviewContainer.style.display = 'block';
+            videoSecondImageImg.onerror = () => {
+                videoSecondImagePreviewContainer.style.display = 'none';
             };
         } else {
-            videoExtImagePreviewContainer.style.display = 'none';
+            videoSecondImagePreviewContainer.style.display = 'none';
         }
     });
 }
@@ -1886,7 +1886,7 @@ if (videoForm) {
             duration: formData.get('duration'),
             topic: formData.get('topic') || '',
             start_image_url: formData.get('start_image_url') || null,
-            extension_image_url: formData.get('extension_image_url') || null
+            second_image_url: formData.get('second_image_url') || null
             // aspect_ratio is fixed to 9:16 in workflow
         };
         
@@ -1897,6 +1897,11 @@ if (videoForm) {
         
         if (!data.start_image_url) {
             showToast('Start image URL is required', 'error');
+            return;
+        }
+        
+        if (!data.second_image_url) {
+            showToast('Second part image URL is required', 'error');
             return;
         }
         
