@@ -428,57 +428,23 @@
     },
     {
       "parameters": {
-        "jsCode": "const settings = $('Process Part 2').item.json;\nconst binary = $input.item.binary;\n\nif (!binary || !binary.data) {\n  throw new Error('No video binary data');\n}\n\nconst prompt = settings.original_prompt || 'MSI Content';\nlet title = prompt.substring(0, 97);\nif (prompt.length > 97) title += '...';\n\nconst totalDuration = (parseInt(settings.DURATION) * 2) + 's (2 parts)';\n\nreturn {\n  json: {\n    title,\n    description: 'Generated with AI by MSI Technologies - ' + prompt.substring(0, 200),\n    post_id: settings.post_id,\n    original_prompt: prompt,\n    duration: totalDuration,\n    video2_gcs_uri: settings.video2_gcs_uri,\n    ACCESS_TOKEN: settings.ACCESS_TOKEN,\n    BUCKET_NAME: settings.BUCKET_NAME\n  },\n  binary: binary\n};"
+        "jsCode": "const settings = $('Process Part 2').item.json;\nconst binary = $input.item.binary;\n\nif (!binary || !binary.data) {\n  throw new Error('No video binary data');\n}\n\nconst prompt = settings.original_prompt || 'MSI Content';\nconst totalDuration = (parseInt(settings.DURATION) * 2) + 's (2 parts)';\n\nreturn {\n  json: {\n    video1_binary_size: binary.data.length,\n    video2_gcs_uri: settings.video2_gcs_uri,\n    post_id: settings.post_id,\n    original_prompt: prompt,\n    duration: totalDuration,\n    ACCESS_TOKEN: settings.ACCESS_TOKEN,\n    BUCKET_NAME: settings.BUCKET_NAME\n  },\n  binary: binary\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [5160, 400],
       "id": "b20c704d-31a1-44d8-8604-928796857331",
-      "name": "Prepare YouTube Upload"
-    },
-    {
-      "parameters": {
-        "resource": "video",
-        "operation": "upload",
-        "title": "={{ $json.title }}",
-        "categoryId": "28",
-        "options": {
-          "description": "={{ $json.description }}",
-          "privacyStatus": "unlisted",
-          "tags": "ai,content,msi,technology"
-        }
-      },
-      "type": "n8n-nodes-base.youTube",
-      "typeVersion": 1,
-      "position": [5380, 400],
-      "id": "d4ce1245-6a71-451d-9cfe-04aa52f2b9a1",
-      "name": "Upload to YouTube",
-      "credentials": {
-        "youTubeOAuth2Api": {
-          "id": "Mku9dCuHHXi7CGsE",
-          "name": "YouTube account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "const response = $input.item.json;\nconst preparedData = $('Prepare YouTube Upload').item.json;\n\nconst videoId = response.id || response.uploadId;\nconst youtubeUrl = `https://youtu.be/${videoId}`;\n\nreturn [{\n  json: {\n    youtube_url: youtubeUrl,\n    youtube_video_id: videoId,\n    video2_gcs_uri: preparedData.video2_gcs_uri,\n    post_id: preparedData.post_id,\n    title: preparedData.title,\n    prompt: preparedData.original_prompt,\n    duration: preparedData.duration\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [5600, 400],
-      "id": "199e7456-8736-4a5b-9f75-f1a6e58541c5",
-      "name": "Extract YouTube URL"
+      "name": "Prepare Video Response"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "={{ $json.post_id && $json.post_id.length > 10 ? `UPDATE social_posts SET youtube_url = '${$json.youtube_url}', status = 'video_completed', updated_at = NOW() WHERE id = '${$json.post_id}' RETURNING *` : `SELECT '${$json.youtube_url}' as youtube_url, 'no_post_id' as status` }}",
+        "query": "={{ $json.post_id && $json.post_id.length > 10 ? `UPDATE social_posts SET video_gcs_uri = '${$json.video2_gcs_uri}', status = 'video_completed', updated_at = NOW() WHERE id = '${$json.post_id}' RETURNING *` : `SELECT 'no_post_id' as status` }}",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [5820, 400],
+      "position": [5380, 400],
       "id": "22d68c5a-db47-482e-b22b-ac6be9671832",
       "name": "Update DB",
       "credentials": {
@@ -491,7 +457,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, message: 'Video uploaded to YouTube (Part 1). Part 2 available in GCS.', data: { youtube_url: $('Extract YouTube URL').item.json.youtube_url, youtube_video_id: $('Extract YouTube URL').item.json.youtube_video_id, part2_gcs_uri: $('Extract YouTube URL').item.json.video2_gcs_uri, post_id: $('Extract YouTube URL').item.json.post_id, duration: $('Extract YouTube URL').item.json.duration } }) }}",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Video generated successfully. 2 parts created.', data: { video1_size_bytes: $('Prepare Video Response').item.json.video1_binary_size, video2_gcs_uri: $('Prepare Video Response').item.json.video2_gcs_uri, post_id: $('Prepare Video Response').item.json.post_id, duration: $('Prepare Video Response').item.json.duration, prompt: $('Prepare Video Response').item.json.original_prompt } }) }}",
         "options": {
           "responseHeaders": {
             "entries": [
@@ -504,7 +470,7 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [6040, 400],
+      "position": [5600, 400],
       "id": "690a9620-96e9-4fc1-9e3b-30b4ac368543",
       "name": "Respond Success"
     }
@@ -571,15 +537,9 @@
       "main": [[{ "node": "Download Video 1", "type": "main", "index": 0 }]]
     },
     "Download Video 1": {
-      "main": [[{ "node": "Prepare YouTube Upload", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Prepare Video Response", "type": "main", "index": 0 }]]
     },
-    "Prepare YouTube Upload": {
-      "main": [[{ "node": "Upload to YouTube", "type": "main", "index": 0 }]]
-    },
-    "Upload to YouTube": {
-      "main": [[{ "node": "Extract YouTube URL", "type": "main", "index": 0 }]]
-    },
-    "Extract YouTube URL": {
+    "Prepare Video Response": {
       "main": [[{ "node": "Update DB", "type": "main", "index": 0 }]]
     },
     "Update DB": {
