@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const input = $input.item.json;\nlet data = input.body || input;\nif (typeof data === 'string') {\n  try { data = JSON.parse(data); } catch (e) { }\n}\n\nconst prompt = data.prompt || data.video_prompt || '';\nconst start_image_url = data.start_image_url || data.imageUrl || null;\nconst second_image_url = data.second_image_url || data.end_image_url || null;\nconst aspect_ratio = data.aspect_ratio || data.aspectRatio || '9:16';\nconst service = data.service || 'company_intro';\nconst post_id = data.post_id || data.postId || null;\nconst topic = data.topic || '';\n\n// Veo 3.1: max 8s por video, siempre 2 partes\nconst duration = Math.min(parseInt(data.duration || '8'), 8);\n\nif (!prompt || prompt.length < 3) {\n  throw new Error('prompt is required (min 3 chars)');\n}\nif (!start_image_url) {\n  throw new Error('start_image_url is required');\n}\nif (!second_image_url || second_image_url.length < 5) {\n  throw new Error('second_image_url is required for part 2');\n}\n\nreturn [{ \n  json: { \n    prompt, \n    duration: String(duration),\n    aspect_ratio, \n    service,\n    post_id, \n    topic,\n    start_image_url,\n    second_image_url\n  } \n}];"
+        "jsCode": "const input = $input.item.json;\nlet data = input.body || input;\nif (typeof data === 'string') {\n  try { data = JSON.parse(data); } catch (e) { }\n}\n\nconst prompt = data.prompt || data.video_prompt || '';\nconst start_image_url = data.start_image_url || data.imageUrl || null;\nconst second_image_url = data.second_image_url || data.end_image_url || null;\nconst aspect_ratio = data.aspect_ratio || data.aspectRatio || '9:16';\nconst service = data.service || 'company_intro';\nconst post_id = data.post_id || data.postId || null;\nconst topic = data.topic || '';\n\nconst duration = Math.min(parseInt(data.duration || '8'), 8);\n\nif (!prompt || prompt.length < 3) {\n  throw new Error('prompt is required (min 3 chars)');\n}\nif (!start_image_url) {\n  throw new Error('start_image_url is required');\n}\nif (!second_image_url || second_image_url.length < 5) {\n  throw new Error('second_image_url is required for part 2');\n}\n\nreturn [{ \n  json: { \n    prompt, \n    duration: String(duration),\n    aspect_ratio, \n    service,\n    post_id, \n    topic,\n    start_image_url,\n    second_image_url\n  } \n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -30,16 +30,16 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=\"Create a cinematic video prompt for MSI Technologies.\n\nSERVICE: \" + $json.service + \"\nUSER PROMPT: \" + $json.prompt + \"\nTOPIC: \" + ($json.topic || 'Technology') + \"\nDURATION: \" + $json.duration + \"s\n\nCreate a smooth, emotional video with VOICE NARRATION. Include:\n- Cinematic camera movement\n- Warm lighting\n- Background music (uplifting)\n- SPOKEN NARRATION describing the scene naturally\n- NO TEXT OR LETTERS on screen\n- Voice should be warm, professional, inspiring\n\nOutput a concise cinematic prompt under 400 chars.\"",
+        "text": "=\"You are creating a 2-PART video script. Each part is \" + $json.duration + \"s.\n\nSERVICE: \" + $json.service + \"\nSCENE DESCRIPTION: \" + $json.prompt + \"\nTOPIC: \" + ($json.topic || 'Technology') + \"\n\nIMPORTANT RULES:\n- The person in the video MUST SPEAK OUT LOUD with lip movement\n- Write what the person SAYS as dialogue\n- NO text, letters, or words visible on screen\n- Include ambient sounds and background music\n- Cinematic camera movement and warm lighting\n\nOutput TWO prompts separated by ||| delimiter:\nPART1_PROMPT ||| PART2_PROMPT\n\nEach prompt under 350 chars. The person must be TALKING throughout.\"",
         "options": {
-          "systemMessage": "You are a video director. Create prompts with VOICE NARRATION. Include spoken dialogue or narration. NO text overlays or written words. Keep under 400 characters."
+          "systemMessage": "You are a video director specializing in corporate content. You write prompts where the on-screen person SPEAKS and TALKS with visible lip movement. Never use text overlays. Output exactly: PART1_PROMPT ||| PART2_PROMPT. Each under 350 chars."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
       "position": [980, 400],
       "id": "c583000c-7bac-4d4b-a2f7-7ed2c8bd622d",
-      "name": "Agent: Video Prompt Optimizer"
+      "name": "Agent: Video Script"
     },
     {
       "parameters": {
@@ -59,95 +59,13 @@
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "project-id",
-              "name": "PROJECT_ID",
-              "type": "string",
-              "value": "gen-lang-client-0521438560"
-            },
-            {
-              "id": "model-version",
-              "name": "MODEL_VERSION",
-              "type": "string",
-              "value": "veo-3.1-generate-001"
-            },
-            {
-              "id": "location",
-              "name": "LOCATION",
-              "type": "string",
-              "value": "us-central1"
-            },
-            {
-              "id": "api-endpoint",
-              "name": "API_ENDPOINT",
-              "type": "string",
-              "value": "us-central1-aiplatform.googleapis.com"
-            },
-            {
-              "id": "bucket-name",
-              "name": "BUCKET_NAME",
-              "type": "string",
-              "value": "msi-veo-videos"
-            },
-            {
-              "id": "text-prompt",
-              "name": "TEXT_PROMPT",
-              "type": "string",
-              "value": "={{ $('Agent: Video Prompt Optimizer').item.json.output }}"
-            },
-            {
-              "id": "duration",
-              "name": "DURATION",
-              "type": "string",
-              "value": "={{ $('Format Video Input').item.json.duration }}"
-            },
-            {
-              "id": "aspect-ratio",
-              "name": "ASPECT_RATIO",
-              "type": "string",
-              "value": "={{ $('Format Video Input').item.json.aspect_ratio }}"
-            },
-            {
-              "id": "post-id",
-              "name": "POST_ID",
-              "type": "string",
-              "value": "={{ $('Format Video Input').item.json.post_id }}"
-            },
-            {
-              "id": "original-prompt",
-              "name": "ORIGINAL_PROMPT",
-              "type": "string",
-              "value": "={{ $('Format Video Input').item.json.prompt }}"
-            },
-            {
-              "id": "start-image-url",
-              "name": "START_IMAGE_URL",
-              "type": "string",
-              "value": "={{ $('Format Video Input').item.json.start_image_url }}"
-            },
-            {
-              "id": "second-image-url",
-              "name": "SECOND_IMAGE_URL",
-              "type": "string",
-              "value": "={{ $('Format Video Input').item.json.second_image_url }}"
-            },
-            {
-              "id": "has-second-part",
-              "name": "HAS_SECOND_PART",
-              "type": "boolean",
-              "value": true
-            }
-          ]
-        },
-        "options": {}
+        "jsCode": "const agentOutput = $('Agent: Video Script').item.json.output || '';\nconst formInput = $('Format Video Input').item.json;\n\n// Parse the two prompts from agent output\nlet prompt1 = '';\nlet prompt2 = '';\n\nif (agentOutput.includes('|||')) {\n  const parts = agentOutput.split('|||');\n  prompt1 = parts[0].trim();\n  prompt2 = parts[1].trim();\n} else {\n  // Fallback: use the whole output for both with different endings\n  prompt1 = agentOutput.substring(0, 350);\n  prompt2 = agentOutput.substring(0, 300) + ' Continue the scene with resolution.';\n}\n\nreturn [{\n  json: {\n    PROMPT_PART1: prompt1,\n    PROMPT_PART2: prompt2,\n    PROJECT_ID: 'gen-lang-client-0521438560',\n    MODEL_VERSION: 'veo-3.1-generate-001',\n    LOCATION: 'us-central1',\n    API_ENDPOINT: 'us-central1-aiplatform.googleapis.com',\n    BUCKET_NAME: 'msi-veo-videos',\n    DURATION: formInput.duration,\n    ASPECT_RATIO: formInput.aspect_ratio,\n    POST_ID: formInput.post_id,\n    ORIGINAL_PROMPT: formInput.prompt,\n    START_IMAGE_URL: formInput.start_image_url,\n    SECOND_IMAGE_URL: formInput.second_image_url\n  }\n}];"
       },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [1200, 400],
       "id": "afed24c1-c87b-42cd-ab16-da8cd79fc954",
-      "name": "Settings"
+      "name": "Build Settings"
     },
     {
       "parameters": {
@@ -179,7 +97,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const imgData = $input.item.json;\nconst settings = $('Settings').item.json;\n\nif (!imgData.data || imgData.data.length < 100) {\n  throw new Error('Start image base64 is empty or too small');\n}\n\nreturn [{\n  json: {\n    ...settings,\n    START_IMAGE_B64: imgData.data,\n    START_MIME: imgData.mimeType || 'image/jpeg'\n  }\n}];"
+        "jsCode": "const imgData = $input.item.json;\nconst settings = $('Build Settings').item.json;\n\nif (!imgData.data || imgData.data.length < 100) {\n  throw new Error('Start image base64 is empty or too small');\n}\n\nreturn [{\n  json: {\n    ...settings,\n    START_IMAGE_B64: imgData.data,\n    START_MIME: imgData.mimeType || 'image/jpeg'\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -199,33 +117,13 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "=https://{{ $json.API_ENDPOINT }}/v1/projects/{{ $json.PROJECT_ID }}/locations/{{ $json.LOCATION }}/publishers/google/models/{{ $json.MODEL_VERSION }}:predictLongRunning",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $json.ACCESS_TOKEN }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  instances: [{\n    prompt: $json.TEXT_PROMPT + ' PART 1: Establish scene with energy. A warm voice narrates the story. Background music plays softly. No text or letters on screen. End on moment of anticipation.',\n    image: {\n      bytesBase64Encoded: $json.START_IMAGE_B64,\n      mimeType: $json.START_MIME\n    }\n  }],\n  parameters: {\n    aspectRatio: $json.ASPECT_RATIO,\n    resolution: '720p',\n    sampleCount: 1,\n    durationSeconds: parseInt($json.DURATION),\n    personGeneration: 'allow_all',\n    addWatermark: false,\n    includeRaiReason: true,\n    generateAudio: true,\n    storageUri: 'gs://' + $json.BUCKET_NAME + '/part1/',\n    negativePrompt: 'silence, no audio, static, blurry, text, letters, words, subtitles, captions, watermark, logo text'\n  }\n}) }}",
-        "options": {
-          "timeout": 30000
-        }
+        "jsCode": "// Send Veo request for Part 1 AND save all state for after Wait\nconst s = $input.item.json;\n\nconst requestBody = {\n  instances: [{\n    prompt: s.PROMPT_PART1 + ' The person speaks directly to camera with clear lip movement. No text on screen.',\n    image: {\n      bytesBase64Encoded: s.START_IMAGE_B64,\n      mimeType: s.START_MIME\n    }\n  }],\n  parameters: {\n    aspectRatio: s.ASPECT_RATIO,\n    resolution: '720p',\n    sampleCount: 1,\n    durationSeconds: parseInt(s.DURATION),\n    personGeneration: 'allow_all',\n    addWatermark: false,\n    includeRaiReason: true,\n    generateAudio: true,\n    storageUri: 'gs://' + s.BUCKET_NAME + '/part1/',\n    negativePrompt: 'silence, no audio, mute, static, blurry, text, letters, words, subtitles, captions, watermark'\n  }\n};\n\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `https://${s.API_ENDPOINT}/v1/projects/${s.PROJECT_ID}/locations/${s.LOCATION}/publishers/google/models/${s.MODEL_VERSION}:predictLongRunning`,\n  headers: {\n    'Content-Type': 'application/json',\n    'Authorization': `Bearer ${s.ACCESS_TOKEN}`\n  },\n  body: JSON.stringify(requestBody),\n  timeout: 30000\n});\n\nif (!response.name) {\n  throw new Error('Vertex AI Part 1 failed: ' + JSON.stringify(response).substring(0, 500));\n}\n\n// CRITICAL: Pack ALL state into the item so it survives the Wait node\nreturn [{\n  json: {\n    operationName: response.name,\n    API_ENDPOINT: s.API_ENDPOINT,\n    PROJECT_ID: s.PROJECT_ID,\n    LOCATION: s.LOCATION,\n    MODEL_VERSION: s.MODEL_VERSION,\n    ACCESS_TOKEN: s.ACCESS_TOKEN,\n    BUCKET_NAME: s.BUCKET_NAME,\n    DURATION: s.DURATION,\n    ASPECT_RATIO: s.ASPECT_RATIO,\n    POST_ID: s.POST_ID,\n    ORIGINAL_PROMPT: s.ORIGINAL_PROMPT,\n    PROMPT_PART2: s.PROMPT_PART2,\n    SECOND_IMAGE_URL: s.SECOND_IMAGE_URL\n  }\n}];"
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [2300, 400],
       "id": "d146e150-23ec-4d9c-93a5-0282369b6893",
-      "name": "Vertex AI - Video Part 1"
+      "name": "Submit Video Part 1"
     },
     {
       "parameters": {
@@ -241,43 +139,13 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "=https://{{ $('Generate Access Token').item.json.API_ENDPOINT }}/v1/projects/{{ $('Generate Access Token').item.json.PROJECT_ID }}/locations/{{ $('Generate Access Token').item.json.LOCATION }}/publishers/google/models/{{ $('Generate Access Token').item.json.MODEL_VERSION }}:fetchPredictOperation",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $('Generate Access Token').item.json.ACCESS_TOKEN }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"operationName\": \"{{ $('Vertex AI - Video Part 1').item.json.name }}\"\n}",
-        "options": {
-          "timeout": 60000
-        }
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2740, 400],
-      "id": "3c1dc6e5-4f02-4307-b577-55b4e5e69609",
-      "name": "Fetch Part 1 Result"
-    },
-    {
-      "parameters": {
-        "jsCode": "const response = $input.item.json;\nconst settings = $('Generate Access Token').item.json;\n\nlet videoUri = '';\nif (response.response?.videos?.[0]?.uri) {\n  videoUri = response.response.videos[0].uri;\n} else if (response.response?.videos?.[0]?.gcsUri) {\n  videoUri = response.response.videos[0].gcsUri;\n}\n\nif (!videoUri) {\n  throw new Error('Video Part 1 failed: ' + JSON.stringify(response).substring(0, 500));\n}\n\nreturn [{\n  json: {\n    video1_gcs_uri: videoUri,\n    ...settings\n  }\n}];"
+        "jsCode": "// After Wait resume - ALL data is in $json (packed before Wait)\nconst s = $input.item.json;\n\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `https://${s.API_ENDPOINT}/v1/projects/${s.PROJECT_ID}/locations/${s.LOCATION}/publishers/google/models/${s.MODEL_VERSION}:fetchPredictOperation`,\n  headers: {\n    'Content-Type': 'application/json',\n    'Authorization': `Bearer ${s.ACCESS_TOKEN}`\n  },\n  body: JSON.stringify({ operationName: s.operationName }),\n  timeout: 60000\n});\n\nlet videoUri = '';\nif (response.response?.videos?.[0]?.uri) {\n  videoUri = response.response.videos[0].uri;\n} else if (response.response?.videos?.[0]?.gcsUri) {\n  videoUri = response.response.videos[0].gcsUri;\n}\n\nif (!videoUri) {\n  throw new Error('Video Part 1 not ready or failed: ' + JSON.stringify(response).substring(0, 500));\n}\n\n// Pass everything forward including video1 URI\nreturn [{\n  json: {\n    video1_gcs_uri: videoUri,\n    API_ENDPOINT: s.API_ENDPOINT,\n    PROJECT_ID: s.PROJECT_ID,\n    LOCATION: s.LOCATION,\n    MODEL_VERSION: s.MODEL_VERSION,\n    ACCESS_TOKEN: s.ACCESS_TOKEN,\n    BUCKET_NAME: s.BUCKET_NAME,\n    DURATION: s.DURATION,\n    ASPECT_RATIO: s.ASPECT_RATIO,\n    POST_ID: s.POST_ID,\n    ORIGINAL_PROMPT: s.ORIGINAL_PROMPT,\n    PROMPT_PART2: s.PROMPT_PART2,\n    SECOND_IMAGE_URL: s.SECOND_IMAGE_URL\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2960, 400],
-      "id": "b7f6d88d-44d5-4bf5-9be4-bed243c4ae90",
-      "name": "Process Part 1"
+      "position": [2740, 400],
+      "id": "3c1dc6e5-4f02-4307-b577-55b4e5e69609",
+      "name": "Fetch & Process Part 1"
     },
     {
       "parameters": {
@@ -292,7 +160,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [3400, 300],
+      "position": [2960, 400],
       "id": "download-second-img",
       "name": "Download Second Image"
     },
@@ -303,49 +171,19 @@
       },
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
-      "position": [3620, 300],
+      "position": [3180, 400],
       "id": "second-to-b64",
       "name": "Second Image to Base64"
     },
     {
       "parameters": {
-        "jsCode": "const imgData = $input.item.json;\nconst settings = $('Process Part 1').item.json;\n\nif (!imgData.data || imgData.data.length < 100) {\n  throw new Error('Second image base64 is empty');\n}\n\nreturn [{\n  json: {\n    ...settings,\n    SECOND_IMAGE_B64: imgData.data,\n    SECOND_MIME: imgData.mimeType || 'image/jpeg'\n  }\n}];"
+        "jsCode": "const imgData = $input.item.json;\nconst settings = $('Fetch & Process Part 1').item.json;\n\nif (!imgData.data || imgData.data.length < 100) {\n  throw new Error('Second image base64 is empty');\n}\n\n// Submit Part 2 to Veo\nconst requestBody = {\n  instances: [{\n    prompt: settings.PROMPT_PART2 + ' The person speaks confidently to camera with clear lip movement. No text on screen.',\n    image: {\n      bytesBase64Encoded: imgData.data,\n      mimeType: imgData.mimeType || 'image/jpeg'\n    }\n  }],\n  parameters: {\n    aspectRatio: settings.ASPECT_RATIO,\n    resolution: '720p',\n    sampleCount: 1,\n    durationSeconds: parseInt(settings.DURATION),\n    personGeneration: 'allow_all',\n    addWatermark: false,\n    includeRaiReason: true,\n    generateAudio: true,\n    storageUri: 'gs://' + settings.BUCKET_NAME + '/part2/',\n    negativePrompt: 'silence, no audio, mute, static, blurry, text, letters, words, subtitles, captions, watermark'\n  }\n};\n\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `https://${settings.API_ENDPOINT}/v1/projects/${settings.PROJECT_ID}/locations/${settings.LOCATION}/publishers/google/models/${settings.MODEL_VERSION}:predictLongRunning`,\n  headers: {\n    'Content-Type': 'application/json',\n    'Authorization': `Bearer ${settings.ACCESS_TOKEN}`\n  },\n  body: JSON.stringify(requestBody),\n  timeout: 30000\n});\n\nif (!response.name) {\n  throw new Error('Vertex AI Part 2 failed: ' + JSON.stringify(response).substring(0, 500));\n}\n\n// Pack ALL state for after Wait Part 2\nreturn [{\n  json: {\n    operationName: response.name,\n    video1_gcs_uri: settings.video1_gcs_uri,\n    API_ENDPOINT: settings.API_ENDPOINT,\n    PROJECT_ID: settings.PROJECT_ID,\n    LOCATION: settings.LOCATION,\n    MODEL_VERSION: settings.MODEL_VERSION,\n    ACCESS_TOKEN: settings.ACCESS_TOKEN,\n    BUCKET_NAME: settings.BUCKET_NAME,\n    DURATION: settings.DURATION,\n    POST_ID: settings.POST_ID,\n    ORIGINAL_PROMPT: settings.ORIGINAL_PROMPT\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3840, 300],
+      "position": [3400, 400],
       "id": "prep-part2",
-      "name": "Prepare Part 2"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "=https://{{ $json.API_ENDPOINT }}/v1/projects/{{ $json.PROJECT_ID }}/locations/{{ $json.LOCATION }}/publishers/google/models/{{ $json.MODEL_VERSION }}:predictLongRunning",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $json.ACCESS_TOKEN }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  instances: [{\n    prompt: $json.TEXT_PROMPT + ' PART 2: Continue the story seamlessly. Voice narration continues warmly. Show payoff and emotional resolution. Background music swells. No text or letters on screen.',\n    image: {\n      bytesBase64Encoded: $json.SECOND_IMAGE_B64,\n      mimeType: $json.SECOND_MIME\n    }\n  }],\n  parameters: {\n    aspectRatio: $json.ASPECT_RATIO,\n    resolution: '720p',\n    sampleCount: 1,\n    durationSeconds: parseInt($json.DURATION),\n    personGeneration: 'allow_all',\n    addWatermark: false,\n    includeRaiReason: true,\n    generateAudio: true,\n    storageUri: 'gs://' + $json.BUCKET_NAME + '/part2/',\n    negativePrompt: 'silence, no audio, static, blurry, text, letters, words, subtitles, captions, watermark, logo text'\n  }\n}) }}",
-        "options": {
-          "timeout": 30000
-        }
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [4060, 300],
-      "id": "vertex-part2",
-      "name": "Vertex AI - Video Part 2"
+      "name": "Submit Video Part 2"
     },
     {
       "parameters": {
@@ -354,97 +192,30 @@
       },
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [4280, 300],
+      "position": [3620, 400],
       "id": "wait-part2",
       "name": "Wait Part 2",
       "webhookId": "veo3-wait-2"
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "=https://{{ $('Prepare Part 2').item.json.API_ENDPOINT }}/v1/projects/{{ $('Prepare Part 2').item.json.PROJECT_ID }}/locations/{{ $('Prepare Part 2').item.json.LOCATION }}/publishers/google/models/{{ $('Prepare Part 2').item.json.MODEL_VERSION }}:fetchPredictOperation",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $('Prepare Part 2').item.json.ACCESS_TOKEN }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"operationName\": \"{{ $('Vertex AI - Video Part 2').item.json.name }}\"\n}",
-        "options": {
-          "timeout": 60000
-        }
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [4500, 300],
-      "id": "fetch-part2",
-      "name": "Fetch Part 2 Result"
-    },
-    {
-      "parameters": {
-        "jsCode": "const response = $input.item.json;\nconst settings = $('Prepare Part 2').item.json;\n\nlet video2Uri = '';\nif (response.response?.videos?.[0]?.uri) {\n  video2Uri = response.response.videos[0].uri;\n} else if (response.response?.videos?.[0]?.gcsUri) {\n  video2Uri = response.response.videos[0].gcsUri;\n}\n\nif (!video2Uri) {\n  throw new Error('Video Part 2 failed: ' + JSON.stringify(response).substring(0, 500));\n}\n\nreturn [{\n  json: {\n    video1_gcs_uri: settings.video1_gcs_uri,\n    video2_gcs_uri: video2Uri,\n    post_id: settings.POST_ID,\n    original_prompt: settings.ORIGINAL_PROMPT,\n    ACCESS_TOKEN: settings.ACCESS_TOKEN,\n    BUCKET_NAME: settings.BUCKET_NAME,\n    DURATION: settings.DURATION\n  }\n}];"
+        "jsCode": "// After Wait resume - ALL data is in $json\nconst s = $input.item.json;\n\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `https://${s.API_ENDPOINT}/v1/projects/${s.PROJECT_ID}/locations/${s.LOCATION}/publishers/google/models/${s.MODEL_VERSION}:fetchPredictOperation`,\n  headers: {\n    'Content-Type': 'application/json',\n    'Authorization': `Bearer ${s.ACCESS_TOKEN}`\n  },\n  body: JSON.stringify({ operationName: s.operationName }),\n  timeout: 60000\n});\n\nlet video2Uri = '';\nif (response.response?.videos?.[0]?.uri) {\n  video2Uri = response.response.videos[0].uri;\n} else if (response.response?.videos?.[0]?.gcsUri) {\n  video2Uri = response.response.videos[0].gcsUri;\n}\n\nif (!video2Uri) {\n  throw new Error('Video Part 2 not ready or failed: ' + JSON.stringify(response).substring(0, 500));\n}\n\nreturn [{\n  json: {\n    video1_gcs_uri: s.video1_gcs_uri,\n    video2_gcs_uri: video2Uri,\n    POST_ID: s.POST_ID,\n    ORIGINAL_PROMPT: s.ORIGINAL_PROMPT,\n    ACCESS_TOKEN: s.ACCESS_TOKEN,\n    BUCKET_NAME: s.BUCKET_NAME,\n    DURATION: s.DURATION\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4720, 300],
+      "position": [3840, 400],
       "id": "process-part2",
-      "name": "Process Part 2"
-    },
-    {
-      "parameters": {
-        "url": "=https://storage.googleapis.com/storage/v1/b/{{ $json.BUCKET_NAME }}/o/{{ encodeURIComponent($json.video1_gcs_uri.replace('gs://' + $json.BUCKET_NAME + '/', '')) }}?alt=media",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $json.ACCESS_TOKEN }}"
-            }
-          ]
-        },
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "file"
-            }
-          },
-          "timeout": 120000
-        }
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [4940, 400],
-      "id": "download-video1",
-      "name": "Download Video 1"
-    },
-    {
-      "parameters": {
-        "jsCode": "const settings = $('Process Part 2').item.json;\nconst binary = $input.item.binary;\n\nif (!binary || !binary.data) {\n  throw new Error('No video binary data');\n}\n\nconst prompt = settings.original_prompt || 'MSI Content';\nconst totalDuration = (parseInt(settings.DURATION) * 2) + 's (2 parts)';\n\nreturn {\n  json: {\n    video1_binary_size: binary.data.length,\n    video2_gcs_uri: settings.video2_gcs_uri,\n    post_id: settings.post_id,\n    original_prompt: prompt,\n    duration: totalDuration,\n    ACCESS_TOKEN: settings.ACCESS_TOKEN,\n    BUCKET_NAME: settings.BUCKET_NAME\n  },\n  binary: binary\n};"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [5160, 400],
-      "id": "b20c704d-31a1-44d8-8604-928796857331",
-      "name": "Prepare Video Response"
+      "name": "Fetch & Process Part 2"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "={{ $json.post_id && $json.post_id.length > 10 ? `UPDATE social_posts SET video_gcs_uri = '${$json.video2_gcs_uri}', status = 'video_completed', updated_at = NOW() WHERE id = '${$json.post_id}' RETURNING *` : `SELECT 'no_post_id' as status` }}",
+        "query": "={{ $json.POST_ID && $json.POST_ID.length > 10 ? `UPDATE social_posts SET video_part1_uri = '${$json.video1_gcs_uri}', video_part2_uri = '${$json.video2_gcs_uri}', status = 'video_completed', updated_at = NOW() WHERE id = '${$json.POST_ID}' RETURNING *` : `SELECT 'no_post_id' as status` }}",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [5380, 400],
+      "position": [4060, 400],
       "id": "22d68c5a-db47-482e-b22b-ac6be9671832",
       "name": "Update DB",
       "credentials": {
@@ -457,7 +228,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, message: 'Video generated successfully. 2 parts created.', data: { video1_size_bytes: $('Prepare Video Response').item.json.video1_binary_size, video2_gcs_uri: $('Prepare Video Response').item.json.video2_gcs_uri, post_id: $('Prepare Video Response').item.json.post_id, duration: $('Prepare Video Response').item.json.duration, prompt: $('Prepare Video Response').item.json.original_prompt } }) }}",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Video generated: 2 parts in GCS bucket', data: { video1_gcs_uri: $('Fetch & Process Part 2').item.json.video1_gcs_uri, video2_gcs_uri: $('Fetch & Process Part 2').item.json.video2_gcs_uri, post_id: $('Fetch & Process Part 2').item.json.POST_ID, duration: (parseInt($('Fetch & Process Part 2').item.json.DURATION) * 2) + 's (2 parts)', prompt: $('Fetch & Process Part 2').item.json.ORIGINAL_PROMPT } }) }}",
         "options": {
           "responseHeaders": {
             "entries": [
@@ -470,7 +241,7 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [5600, 400],
+      "position": [4280, 400],
       "id": "690a9620-96e9-4fc1-9e3b-30b4ac368543",
       "name": "Respond Success"
     }
@@ -480,15 +251,15 @@
       "main": [[{ "node": "Format Video Input", "type": "main", "index": 0 }]]
     },
     "Format Video Input": {
-      "main": [[{ "node": "Agent: Video Prompt Optimizer", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Agent: Video Script", "type": "main", "index": 0 }]]
     },
-    "Agent: Video Prompt Optimizer": {
-      "main": [[{ "node": "Settings", "type": "main", "index": 0 }]]
+    "Agent: Video Script": {
+      "main": [[{ "node": "Build Settings", "type": "main", "index": 0 }]]
     },
     "Google Gemini Chat Model": {
-      "ai_languageModel": [[{ "node": "Agent: Video Prompt Optimizer", "type": "ai_languageModel", "index": 0 }]]
+      "ai_languageModel": [[{ "node": "Agent: Video Script", "type": "ai_languageModel", "index": 0 }]]
     },
-    "Settings": {
+    "Build Settings": {
       "main": [[{ "node": "Download Start Image", "type": "main", "index": 0 }]]
     },
     "Download Start Image": {
@@ -501,45 +272,30 @@
       "main": [[{ "node": "Generate Access Token", "type": "main", "index": 0 }]]
     },
     "Generate Access Token": {
-      "main": [[{ "node": "Vertex AI - Video Part 1", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Submit Video Part 1", "type": "main", "index": 0 }]]
     },
-    "Vertex AI - Video Part 1": {
+    "Submit Video Part 1": {
       "main": [[{ "node": "Wait Part 1", "type": "main", "index": 0 }]]
     },
     "Wait Part 1": {
-      "main": [[{ "node": "Fetch Part 1 Result", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Fetch & Process Part 1", "type": "main", "index": 0 }]]
     },
-    "Fetch Part 1 Result": {
-      "main": [[{ "node": "Process Part 1", "type": "main", "index": 0 }]]
-    },
-    "Process Part 1": {
+    "Fetch & Process Part 1": {
       "main": [[{ "node": "Download Second Image", "type": "main", "index": 0 }]]
     },
     "Download Second Image": {
       "main": [[{ "node": "Second Image to Base64", "type": "main", "index": 0 }]]
     },
     "Second Image to Base64": {
-      "main": [[{ "node": "Prepare Part 2", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Submit Video Part 2", "type": "main", "index": 0 }]]
     },
-    "Prepare Part 2": {
-      "main": [[{ "node": "Vertex AI - Video Part 2", "type": "main", "index": 0 }]]
-    },
-    "Vertex AI - Video Part 2": {
+    "Submit Video Part 2": {
       "main": [[{ "node": "Wait Part 2", "type": "main", "index": 0 }]]
     },
     "Wait Part 2": {
-      "main": [[{ "node": "Fetch Part 2 Result", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Fetch & Process Part 2", "type": "main", "index": 0 }]]
     },
-    "Fetch Part 2 Result": {
-      "main": [[{ "node": "Process Part 2", "type": "main", "index": 0 }]]
-    },
-    "Process Part 2": {
-      "main": [[{ "node": "Download Video 1", "type": "main", "index": 0 }]]
-    },
-    "Download Video 1": {
-      "main": [[{ "node": "Prepare Video Response", "type": "main", "index": 0 }]]
-    },
-    "Prepare Video Response": {
+    "Fetch & Process Part 2": {
       "main": [[{ "node": "Update DB", "type": "main", "index": 0 }]]
     },
     "Update DB": {
