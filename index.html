@@ -70,6 +70,13 @@
                     </svg>
                     Trends
                 </button>
+                <button class="tab-btn" data-mode="educative">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                    </svg>
+                    Educative
+                </button>
             </div>
         </nav>
 
@@ -867,6 +874,101 @@
                 <!-- News Grid -->
                 <div class="trends-news-grid" id="trends-news-grid">
                     <p class="loading-news">Cargando noticias...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Educative Mode -->
+        <div id="educative-mode" class="mode-content">
+            <div class="card form-card">
+                <div class="educative-header">
+                    <h2>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                        </svg>
+                        Educative Carousel Generator
+                    </h2>
+                    <p class="form-subtitle">Create educational content carousels for thought leadership</p>
+                </div>
+                
+                <form id="educative-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="educative_pillar">Content Pillar *</label>
+                            <select id="educative_pillar" name="pillar" required>
+                                <option value="Educación & Tendencias Tecnológicas" selected>Educación & Tendencias Tecnológicas</option>
+                                <option value="AI & Automatización">AI & Automatización</option>
+                                <option value="Cloud & Infraestructura">Cloud & Infraestructura</option>
+                                <option value="Transformación Digital">Transformación Digital</option>
+                                <option value="Ciberseguridad">Ciberseguridad</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="educative_theme">Theme *</label>
+                            <select id="educative_theme" name="theme" required>
+                                <option value="AI & Smart Business Solutions" selected>AI & Smart Business Solutions</option>
+                                <option value="Cost Reduction & Efficiency">Cost Reduction & Efficiency</option>
+                                <option value="Productivity & Automation">Productivity & Automation</option>
+                                <option value="Digital Innovation">Digital Innovation</option>
+                                <option value="Business Intelligence">Business Intelligence</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="educative_topic">Topic / Question *</label>
+                        <input type="text" id="educative_topic" name="topic" required 
+                               placeholder="e.g., How AI reduces operational costs by 40%, Why automation is key for scaling businesses">
+                        <small class="form-hint">Describe the educational topic or question you want to address in the carousel</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="educative_context">Additional Context (optional)</label>
+                        <textarea id="educative_context" name="context" rows="3" 
+                                  placeholder="Any specific points to cover, statistics to mention, or audience considerations..."></textarea>
+                    </div>
+
+                    <!-- Example Topics -->
+                    <div class="example-topics">
+                        <label>Quick Topics:</label>
+                        <div class="topic-chips">
+                            <button type="button" class="topic-chip" data-topic="How AI is transforming business operations">AI in Business</button>
+                            <button type="button" class="topic-chip" data-topic="5 ways automation reduces human error">Automation Benefits</button>
+                            <button type="button" class="topic-chip" data-topic="Why cloud migration saves money">Cloud Savings</button>
+                            <button type="button" class="topic-chip" data-topic="The future of work with AI assistants">Future of Work</button>
+                            <button type="button" class="topic-chip" data-topic="How data analytics drives better decisions">Data-Driven Decisions</button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-large">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                        </svg>
+                        Generate Educative Carousel
+                    </button>
+                </form>
+            </div>
+
+            <!-- Educative Carousel Results -->
+            <div id="educative-results" class="generated-results" style="display: none;">
+                <div class="card">
+                    <h2>Generated Educative Carousel</h2>
+                    <div id="educative-preview" class="carousel-preview">
+                        <!-- Slides will be inserted here -->
+                    </div>
+                    <div class="result-actions">
+                        <button id="download-all-educative" class="btn btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download All
+                        </button>
+                        <button id="regenerate-educative" class="btn btn-secondary">Generate Again</button>
+                    </div>
                 </div>
             </div>
         </div>

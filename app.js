@@ -104,6 +104,7 @@ const n8nGenerateWebhook = CONFIG.n8nGenerateWebhook || CONFIG.n8n?.generateWebh
 const n8nEditWebhook = CONFIG.n8nEditWebhook || CONFIG.n8n?.editWebhook;
 const n8nVideoWebhook = CONFIG.n8nVideoWebhook || CONFIG.n8n?.videoWebhook;
 const n8nCarouselWebhook = CONFIG.n8nCarouselWebhook || CONFIG.n8n?.carouselWebhook;
+const n8nEducativeWebhook = CONFIG.n8nEducativeWebhook || CONFIG.n8n?.educativeWebhook;
 
 // Supabase Client
 let supabaseClient;
@@ -148,11 +149,13 @@ const videoMode = document.getElementById('video-mode');
 const carouselMode = document.getElementById('carousel-mode');
 const dailyMode = document.getElementById('daily-mode');
 const trendsMode = document.getElementById('trends-mode');
+const educativeMode = document.getElementById('educative-mode');
 const publishForm = document.getElementById('publish-form');
 const generateForm = document.getElementById('generate-form');
 const editImageForm = document.getElementById('edit-image-form');
 const videoForm = document.getElementById('video-form');
 const carouselForm = document.getElementById('carousel-form');
+const educativeForm = document.getElementById('educative-form');
 const postsListEl = document.getElementById('posts-list');
 const editPostsListEl = document.getElementById('edit-posts-list');
 const imageInput = document.getElementById('image');
@@ -178,6 +181,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         carouselMode?.classList.remove('active');
         dailyMode?.classList.remove('active');
         trendsMode?.classList.remove('active');
+        educativeMode?.classList.remove('active');
         
         if (mode === 'publish') {
             publishMode?.classList.add('active');
@@ -196,6 +200,8 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         } else if (mode === 'trends') {
             trendsMode?.classList.add('active');
             loadTrendNews();
+        } else if (mode === 'educative') {
+            educativeMode?.classList.add('active');
         }
     });
 });
@@ -3599,6 +3605,184 @@ document.querySelector('.tab-btn[data-mode="trends"]')?.addEventListener('click'
 });
 
 // ========== END TRENDS MODE ==========
+
+// ========== EDUCATIVE MODE ==========
+
+// Topic chip click handlers
+document.querySelectorAll('.topic-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+        const topic = chip.dataset.topic;
+        const topicInput = document.getElementById('educative_topic');
+        if (topicInput) {
+            topicInput.value = topic;
+            topicInput.focus();
+        }
+    });
+});
+
+// Educative Form Submit
+educativeForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    
+    const data = {
+        topic: formData.get('topic'),
+        pillar: formData.get('pillar'),
+        theme: formData.get('theme'),
+        context: formData.get('context') || ''
+    };
+    
+    if (!data.topic) {
+        showToast('Please enter a topic', 'error');
+        return;
+    }
+    
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Generating...';
+    
+    // Show progress
+    showProgressAlert(
+        'Generating Educative Carousel',
+        `Creating educational content about: ${data.topic.substring(0, 50)}...`,
+        'Initializing AI strategy...'
+    );
+    
+    try {
+        updateProgress(5, 'Analyzing educational content...');
+        
+        const response = await fetch(n8nEducativeWebhook, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        updateProgress(15, 'Creating content strategy...');
+        
+        // Educative carousel generation takes time
+        let result;
+        try {
+            result = await response.json();
+        } catch (parseError) {
+            // If response takes too long
+            updateProgress(25, 'Generating slides (this may take a minute per slide)...');
+            
+            for (let i = 0; i < 20; i++) {
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                updateProgress(25 + (i * 3), `Processing educational content...`);
+            }
+            
+            hideProgressAlert();
+            showToast('Educative carousel submitted. Check back in a few minutes.', 'warning');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            return;
+        }
+        
+        if (result.success && result.data?.slides) {
+            updateProgress(100, 'Educative carousel ready!');
+            
+            setTimeout(() => {
+                hideProgressAlert();
+                
+                // Show educative results
+                const educativeResults = document.getElementById('educative-results');
+                const educativePreview = document.getElementById('educative-preview');
+                
+                if (educativePreview) {
+                    educativePreview.innerHTML = '';
+                    const totalSlides = result.data.slides.length;
+                    
+                    result.data.slides.forEach((slide, index) => {
+                        const isFirst = index === 0;
+                        const isLast = index === totalSlides - 1;
+                        const slideEl = document.createElement('div');
+                        
+                        let slideClass = 'carousel-slide';
+                        let labelBadge = '';
+                        
+                        if (isFirst) {
+                            slideClass += ' carousel-slide-cover';
+                            labelBadge = '<span class="slide-label-badge">HOOK</span>';
+                        } else if (isLast && totalSlides > 1) {
+                            slideClass += ' carousel-slide-cta';
+                            labelBadge = '<span class="slide-label-badge slide-label-cta">CTA</span>';
+                        } else {
+                            labelBadge = `<span class="slide-label-badge slide-label-edu">POINT ${index}</span>`;
+                        }
+                        
+                        slideEl.className = slideClass;
+                        slideEl.innerHTML = `
+                            <div class="slide-image-container">
+                                <img src="${slide.image_url}" alt="Slide ${index + 1}" class="slide-image">
+                                <span class="slide-badge">${index + 1}</span>
+                                ${labelBadge}
+                            </div>
+                            <div class="slide-info">
+                                <h4>${slide.headline || ''}</h4>
+                                <p>${slide.body || slide.subtext || ''}</p>
+                                <a href="${slide.image_url}" download="educative-slide-${index + 1}.png" class="btn btn-small btn-secondary">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                    Download
+                                </a>
+                            </div>
+                        `;
+                        educativePreview.appendChild(slideEl);
+                    });
+                }
+                
+                if (educativeResults) {
+                    educativeResults.style.display = 'block';
+                }
+                
+                showToast('Educative carousel generated successfully!', 'success');
+            }, 500);
+        } else if (result.error) {
+            throw new Error(result.error);
+        } else {
+            // Partial success - show message
+            hideProgressAlert();
+            showToast('Generation started. Check database for results.', 'warning');
+        }
+        
+    } catch (error) {
+        console.error('Educative carousel error:', error);
+        hideProgressAlert();
+        showToast(`Error: ${error.message}`, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+});
+
+// Regenerate educative carousel
+document.getElementById('regenerate-educative')?.addEventListener('click', () => {
+    document.getElementById('educative-results').style.display = 'none';
+    document.getElementById('educative_topic').focus();
+});
+
+// Download all educative slides
+document.getElementById('download-all-educative')?.addEventListener('click', async () => {
+    const slides = document.querySelectorAll('#educative-preview .carousel-slide');
+    for (let i = 0; i < slides.length; i++) {
+        const link = slides[i].querySelector('a[download]');
+        if (link) {
+            link.click();
+            await new Promise(r => setTimeout(r, 500));
+        }
+    }
+    showToast(`Downloaded ${slides.length} slides`, 'success');
+});
+
+// ========== END EDUCATIVE MODE ==========
 
 // Initialize
 if (supabaseUrl === 'YOUR_SUPABASE_URL' || !supabaseUrl) {

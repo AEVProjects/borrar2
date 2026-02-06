@@ -2411,3 +2411,89 @@ input[type="checkbox"].post-checkbox {
     50% { box-shadow: 0 0 0 6px rgba(32, 124, 229, 0.3); }
     100% { box-shadow: 0 0 0 3px rgba(32, 124, 229, 0.3); }
 }
+
+/* ========== EDUCATIVE MODE ========== */
+.educative-header {
+    margin-bottom: 24px;
+}
+
+.educative-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+}
+
+.example-topics {
+    margin: 24px 0;
+    padding: 16px;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.example-topics label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.topic-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.topic-chip {
+    padding: 8px 16px;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.topic-chip:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background: rgba(32, 124, 229, 0.05);
+}
+
+.topic-chip:active {
+    transform: scale(0.98);
+}
+
+#educative-form .btn-large {
+    width: 100%;
+    padding: 16px 24px;
+    font-size: 16px;
+    margin-top: 20px;
+}
+
+#educative-results .carousel-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.slide-label-edu {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+}
+
+@media (max-width: 768px) {
+    .topic-chips {
+        flex-direction: column;
+    }
+    
+    .topic-chip {
+        text-align: center;
+    }
+}

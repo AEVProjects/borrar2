@@ -28,7 +28,8 @@ window.APP_CONFIG = {
         carouselWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-carousel-v12', // Del workflow "MSI Carousel v12" - ACTUALIZADO
         inputGeneratorWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-carousel-v12', // Flujo unificado v12 - ACTUALIZADO
         dailyWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-auto-daily', // Del workflow "MSI Auto Daily"
-        trendsWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-trends-content' // Del workflow "MSI Trends Content Flow"
+        trendsWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-trends-content', // Del workflow "MSI Trends Content Flow"
+        educativeWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-educative-carousel' // Del workflow "MSI Educative Carousel Gen Flow"
     },
     
     // Security token - Este valor NO se puede cambiar desde el frontend
