@@ -5,7 +5,7 @@
         "parameters": {
           "httpMethod": "POST",
           "path": "msi-educative-carousel",
-          "responseMode": "lastNode",
+          "responseMode": "responseNode",
           "options": {}
         },
         "type": "n8n-nodes-base.webhook",
@@ -390,6 +390,20 @@
         ],
         "id": "gen-slide-5",
         "name": "Gen Slide 5"
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={\n  \"success\": true,\n  \"message\": \"Educative carousel generated successfully\",\n  \"data\": {\n    \"slides\": {{ $json }}\n  }\n}"
+        },
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.1,
+        "position": [
+          4200,
+          -100
+        ],
+        "id": "respond-webhook",
+        "name": "Respond to Webhook"
       }
     ],
     "connections": {
@@ -606,6 +620,17 @@
           [
             {
               "node": "Gen Slide 5",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Gen Slide 5": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
               "type": "main",
               "index": 0
             }
