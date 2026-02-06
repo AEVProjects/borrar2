@@ -23,7 +23,7 @@
       },
       {
         "parameters": {
-          "jsCode": "// Format Input for Educational Content\nconst input = $('Webhook - Educative Carousel').item.json;\nlet data = input.body || input;\nif (typeof data === 'string') {\n  try { data = JSON.parse(data); } catch(e) { data = input; }\n}\n\n// Educational content structure\nconst topic = data.topic || 'AI & Business Efficiency';\nconst pillar = data.pillar || 'Educación & Tendencias Tecnológicas';\nconst theme = data.theme || 'AI & Smart Business Solutions';\nconst context = data.context || '';\n\nreturn [{\n  json: {\n    topic: topic,\n    pillar: pillar,\n    theme: theme,\n    context: context,\n    visual_style: 'Realistic Photography',\n    color_primary: data.color_primary || '#207CE5',\n    color_secondary: data.color_secondary || '#004AAD'\n  }\n}];"
+          "jsCode": "// Format Input for Educational Content\nconst input = $('Webhook - Educative Carousel').item.json;\nlet data = input.body || input;\nif (typeof data === 'string') {\n  try { data = JSON.parse(data); } catch(e) { data = input; }\n}\n\n// Educational content structure - NO NEWS ELEMENTS\nconst topic = data.topic || 'Business Process Automation';\nconst pillar = data.pillar || 'Educational Content & Technology Learning';\nconst theme = data.theme || 'Professional Development & Skills';\nconst context = data.context || '';\n\nreturn [{\n  json: {\n    topic: topic,\n    pillar: pillar,\n    theme: theme,\n    context: context,\n    visual_style: 'Educational Mixed Media',\n    content_type: 'Educational Carousel',\n    color_primary: data.color_primary || '#207CE5',\n    color_secondary: data.color_secondary || '#004AAD'\n  }\n}];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -129,7 +129,7 @@
       {
         "parameters": {
           "operation": "executeQuery",
-          "query": "=INSERT INTO social_posts (topic, post_type, visual_style, orientation, headline, status, created_at)\nVALUES ('{{ $json.parent_post.topic.replace(/'/g, \"''\") }}', 'Carousel', '{{ $json.parent_post.visual_style }}', '4:5', '{{ $json.parent_post.headline.replace(/'/g, \"''\") }}', 'generating', NOW())\nRETURNING id",
+          "query": "=INSERT INTO social_posts (topic, post_type, visual_style, orientation, headline, status, created_at)\nVALUES ('{{ $json.parent_post.topic.replace(/'/g, \"''\") }}', 'Educational', '{{ $json.parent_post.visual_style }}', '4:5', '{{ $json.parent_post.headline.replace(/'/g, \"''\") }}', 'generating', NOW())\nRETURNING id",
           "options": {}
         },
         "type": "n8n-nodes-base.postgres",
@@ -276,7 +276,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\n// Pass all slide data to next node\nreturn [{ json: { ...response, ...input } }];"
+          "jsCode": "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-educative-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\n// Pass all slide data to next node\nreturn [{ json: { ...response, ...input } }];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -303,7 +303,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\n// Pass all slide data to next node\nreturn [{ json: { ...response, ...input } }];"
+          "jsCode": "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-educative-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\n// Pass all slide data to next node\nreturn [{ json: { ...response, ...input } }];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -330,7 +330,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\n// Pass all slide data to next node\nreturn [{ json: { ...response, ...input } }];"
+          "jsCode": "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-educative-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\n// Pass all slide data to next node\nreturn [{ json: { ...response, ...input } }];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -357,7 +357,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\n// Pass all slide data to next node\nreturn [{ json: { ...response, ...input } }];"
+          "jsCode": "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-educative-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\n// Pass all slide data to next node\nreturn [{ json: { ...response, ...input } }];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -384,7 +384,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\nreturn [{ json: response }];"
+          "jsCode": "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-educative-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\nreturn [{ json: response }];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
