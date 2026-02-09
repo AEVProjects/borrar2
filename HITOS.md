@@ -25,7 +25,7 @@
 ## 🔧 Stack Tecnológico
 
 ### APIs Integradas (5)
-
+a
 - **OpenAI GPT-4o:** Agentes de IA (Strategy Analyzer, Copy Writer, Image Prompts)
 - **Google Gemini Flash Image:** Generación de imágenes con 8 estilos visuales
 - **Google Gemini Edit:** Edición inteligente de imágenes
