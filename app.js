@@ -1982,51 +1982,52 @@ if (videoForm) {
                 return;
             }
             
-            if (result.success && result.data?.youtube_url) {
-                updateProgress(100, 'Video uploaded to YouTube!');
+            if (result.success && result.data?.video1_url) {
+                updateProgress(100, 'Video ready!');
                 
                 setTimeout(() => {
                     hideProgressAlert();
                     
-                    // Show video results with YouTube embed
                     const videoResults = document.getElementById('video-results');
-                    const videoPlayerContainer = document.getElementById('video-player');
-                    const downloadLink = document.getElementById('download-video');
+                    const videoEl = document.getElementById('generated-video');
+                    const indicator = document.getElementById('video-part-indicator');
+                    const dl1 = document.getElementById('download-video-1');
+                    const dl2 = document.getElementById('download-video-2');
                     const promptUsed = document.getElementById('video-prompt-used');
                     
-                    if (videoPlayerContainer) {
-                        // Replace video player with YouTube iframe
-                        const youtubeId = result.data.youtube_video_id || result.data.youtube_url.split('v=')[1]?.split('&')[0];
-                        videoPlayerContainer.innerHTML = `
-                            <iframe 
-                                width="100%" 
-                                height="500" 
-                                src="https://www.youtube.com/embed/${youtubeId}" 
-                                frameborder="0" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                allowfullscreen
-                                style="border-radius: 8px;">
-                            </iframe>
-                        `;
+                    const url1 = result.data.video1_url;
+                    const url2 = result.data.video2_url;
+                    
+                    if (videoEl) {
+                        // Play Part 1 first, then seamlessly transition to Part 2
+                        videoEl.src = url1;
+                        if (indicator) indicator.textContent = 'Part 1 / 2';
+                        
+                        // When Part 1 ends, automatically play Part 2
+                        const onPart1End = () => {
+                            videoEl.removeEventListener('ended', onPart1End);
+                            videoEl.src = url2;
+                            if (indicator) indicator.textContent = 'Part 2 / 2';
+                            videoEl.play();
+                            
+                            // When Part 2 ends, loop back to Part 1
+                            const onPart2End = () => {
+                                videoEl.removeEventListener('ended', onPart2End);
+                                videoEl.src = url1;
+                                if (indicator) indicator.textContent = 'Part 1 / 2';
+                                videoEl.play();
+                                videoEl.addEventListener('ended', onPart1End);
+                            };
+                            videoEl.addEventListener('ended', onPart2End);
+                        };
+                        videoEl.addEventListener('ended', onPart1End);
                     }
                     
-                    if (downloadLink) {
-                        // Change download to "View on YouTube"
-                        downloadLink.href = result.data.youtube_url;
-                        downloadLink.target = '_blank';
-                        downloadLink.innerHTML = `
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                                <polyline points="15 3 21 3 21 9"></polyline>
-                                <line x1="10" y1="14" x2="21" y2="3"></line>
-                            </svg>
-                            View on YouTube
-                        `;
-                        downloadLink.removeAttribute('download');
-                    }
+                    if (dl1) { dl1.href = url1; dl1.target = '_blank'; }
+                    if (dl2) { dl2.href = url2; dl2.target = '_blank'; }
                     
                     if (promptUsed && result.data.prompt) {
-                        promptUsed.innerHTML = `<strong>Optimized Prompt:</strong> ${result.data.prompt}`;
+                        promptUsed.innerHTML = `<strong>Prompt:</strong> ${result.data.prompt}<br><strong>Duration:</strong> ${result.data.duration}`;
                     }
                     
                     if (videoResults) {
@@ -2034,7 +2035,7 @@ if (videoForm) {
                         videoResults.scrollIntoView({ behavior: 'smooth' });
                     }
                     
-                    showSuccessAlert('Video Uploaded!', 'Your AI video has been uploaded to YouTube successfully.');
+                    showSuccessAlert('Video Ready!', 'Your 2-part AI video is playing. It loops automatically: Part 1 → Part 2 → repeat.');
                 }, 500);
             } else {
                 hideProgressAlert();

@@ -479,21 +479,30 @@
                 <div class="card">
                     <h2>✅ Video Generated Successfully!</h2>
                     <div class="result-section">
-                        <div id="video-player" class="video-player">
-                            <video id="generated-video" controls autoplay loop style="width: 100%; max-height: 600px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
+                        <div id="video-player" class="video-player" style="position:relative;">
+                            <video id="generated-video" controls autoplay style="width: 100%; max-height: 600px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
                                 Your browser does not support the video tag.
                             </video>
+                            <div id="video-part-indicator" style="position:absolute;top:16px;right:16px;background:rgba(0,0,0,0.7);color:white;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;pointer-events:none;">Part 1 / 2</div>
                         </div>
                         <div id="video-prompt-used" class="video-prompt-used" style="margin-top: 16px; padding: 16px; background: #f7fafc; border-radius: 8px; border-left: 4px solid #207CE5;"></div>
                     </div>
-                    <div class="result-actions">
-                        <a id="download-video" href="#" download="generated-video.mp4" class="btn btn-primary">
+                    <div class="result-actions" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;">
+                        <a id="download-video-1" href="#" download="video-part1.mp4" class="btn btn-primary">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                 <polyline points="7 10 12 15 17 10"></polyline>
                                 <line x1="12" y1="15" x2="12" y2="3"></line>
                             </svg>
-                            Download Video
+                            Download Part 1
+                        </a>
+                        <a id="download-video-2" href="#" download="video-part2.mp4" class="btn btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download Part 2
                         </a>
                         <button id="regenerate-video" class="btn btn-secondary">Generate Another</button>
                     </div>

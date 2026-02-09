@@ -153,7 +153,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, message: 'Video generated: 2 parts in GCS', data: { video1_gcs_uri: $('Fetch Part 2').item.json.video1_gcs_uri, video2_gcs_uri: $('Fetch Part 2').item.json.video2_gcs_uri, post_id: $('Fetch Part 2').item.json.POST_ID, duration: (parseInt($('Fetch Part 2').item.json.DURATION) * 2) + 's (2 parts)', prompt: $('Fetch Part 2').item.json.ORIGINAL_PROMPT } }) }}",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Video generated: 2 parts', data: { video1_url: $('Fetch Part 2').item.json.video1_url, video2_url: $('Fetch Part 2').item.json.video2_url, video1_gcs_uri: $('Fetch Part 2').item.json.video1_gcs_uri, video2_gcs_uri: $('Fetch Part 2').item.json.video2_gcs_uri, post_id: $('Fetch Part 2').item.json.POST_ID, duration: (parseInt($('Fetch Part 2').item.json.DURATION) * 2) + 's (2 parts)', prompt: $('Fetch Part 2').item.json.ORIGINAL_PROMPT } }) }}",
         "options": {
           "responseHeaders": {
             "entries": [
