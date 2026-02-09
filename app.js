@@ -1880,9 +1880,16 @@ if (videoSecondImageInput) {
 }
 
 // Video Form Submit
+let _videoGenerating = false; // Guard against double submission
 if (videoForm) {
     videoForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        
+        // Prevent double submission
+        if (_videoGenerating) {
+            showToast('Video generation already in progress. Please wait.', 'warning');
+            return;
+        }
         
         const formData = new FormData(e.target);
         
@@ -1893,7 +1900,6 @@ if (videoForm) {
             topic: formData.get('topic') || '',
             start_image_url: formData.get('start_image_url') || null,
             second_image_url: formData.get('second_image_url') || null
-            // aspect_ratio is fixed to 9:16 in workflow
         };
         
         if (!data.prompt) {
@@ -1911,76 +1917,70 @@ if (videoForm) {
             return;
         }
         
+        _videoGenerating = true;
         const btn = e.target.querySelector('button[type="submit"]');
         const originalText = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span> Generating...';
+        btn.innerHTML = '<span class="spinner"></span> Generating (5-6 min)...';
         
         // Show progress
         showProgressAlert(
             'Generating Video',
             'Creating your video with Veo 3 AI...',
-            'Initializing video generation...'
+            'This takes about 5-6 minutes. Do NOT close this page.'
         );
+        
+        // AbortController with 8 minute timeout (workflow takes ~6 min)
+        const abortCtrl = new AbortController();
+        const abortTimeout = setTimeout(() => abortCtrl.abort(), 480000);
         
         try {
             updateProgress(10, 'Sending request to Veo 3...');
             
-            // Debug logging
-            console.log('=== VIDEO GENERATION DEBUG ===');
-            console.log('Video Webhook URL:', n8nVideoWebhook);
-            console.log('Request data:', JSON.stringify(data, null, 2));
+            console.log('=== VIDEO GENERATION ===');
+            console.log('Webhook:', n8nVideoWebhook);
             
             if (!n8nVideoWebhook) {
                 throw new Error('Video webhook URL not configured. Add videoWebhook to config.js');
             }
             
-            let response;
-            try {
-                // Try with CORS first
-                response = await fetch(n8nVideoWebhook, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-                console.log('Video response status:', response.status);
-            } catch (corsError) {
-                console.log('CORS error, trying no-cors mode:', corsError.message);
-                // Fallback to no-cors
-                response = await fetch(n8nVideoWebhook, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-            }
+            const response = await fetch(n8nVideoWebhook, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+                signal: abortCtrl.signal
+            });
+            console.log('Response status:', response.status);
             
-            updateProgress(30, 'Processing prompt...');
+            updateProgress(15, 'AI is writing the video script...');
             
-            // Video generation takes time - poll or wait for response
+            // n8n keeps connection open for ~6min (2 waits + processing)
+            // Show incremental progress while waiting
+            const progressTimer = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                if (elapsed < 30) updateProgress(20, 'AI is writing the video script...');
+                else if (elapsed < 60) updateProgress(30, 'Submitting Part 1 to Veo 3...');
+                else if (elapsed < 180) updateProgress(40, `Generating Part 1... (${Math.round(elapsed)}s)`);
+                else if (elapsed < 210) updateProgress(55, 'Fetching Part 1 result...');
+                else if (elapsed < 240) updateProgress(60, 'Submitting Part 2 to Veo 3...');
+                else if (elapsed < 360) updateProgress(75, `Generating Part 2... (${Math.round(elapsed)}s)`);
+                else updateProgress(85, `Almost done... (${Math.round(elapsed)}s)`);
+            }, 3000);
+            const startTime = Date.now();
+            
             let result;
             try {
                 result = await response.json();
             } catch (parseError) {
-                // If response is not JSON, assume it's processing
-                updateProgress(50, 'Video is being generated (this may take a few minutes)...');
-                
-                // Wait and show progress updates
-                for (let i = 0; i < 12; i++) {
-                    await new Promise(resolve => setTimeout(resolve, 5000));
-                    updateProgress(50 + (i * 4), `Still generating... (${(i + 1) * 5}s elapsed)`);
-                }
-                
+                clearInterval(progressTimer);
                 hideProgressAlert();
-                showToast('Video generation submitted. It may take a few minutes to complete.', 'warning');
+                showToast('Video generation request sent but response could not be parsed. Check n8n logs.', 'warning');
                 btn.disabled = false;
                 btn.innerHTML = originalText;
+                _videoGenerating = false;
                 return;
             }
+            clearInterval(progressTimer);
             
             if (result.success && result.data?.video1_url) {
                 updateProgress(100, 'Video parts ready! Merging into one file...');
@@ -2022,17 +2022,21 @@ if (videoForm) {
                         const resp2 = await fetch(url2);
                         const blob2 = await resp2.blob();
                         
-                        // Step 2: Initialize ffmpeg.wasm
+                        // Step 2: Initialize ffmpeg.wasm (use toBlobURL for cross-origin Worker)
                         if (mergeStatus) mergeStatus.textContent = 'Loading video merger...';
                         if (mergeBar) mergeBar.style.width = '40%';
                         
                         const { FFmpeg } = FFmpegWASM;
-                        const { fetchFile } = FFmpegUtil;
+                        const { toBlobURL } = FFmpegUtil;
                         const ffmpeg = new FFmpeg();
                         
+                        const baseFFmpegURL = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd';
+                        const baseCoreURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+                        
                         await ffmpeg.load({
-                            coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
-                            wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm'
+                            classWorkerURL: await toBlobURL(`${baseFFmpegURL}/814.ffmpeg.js`, 'text/javascript'),
+                            coreURL: await toBlobURL(`${baseCoreURL}/ffmpeg-core.js`, 'text/javascript'),
+                            wasmURL: await toBlobURL(`${baseCoreURL}/ffmpeg-core.wasm`, 'application/wasm')
                         });
                         
                         // Step 3: Write files to ffmpeg virtual filesystem
@@ -2122,10 +2126,16 @@ if (videoForm) {
         } catch (error) {
             console.error('Video generation error:', error);
             hideProgressAlert();
-            showToast('Error generating video: ' + error.message, 'error');
+            if (error.name === 'AbortError') {
+                showToast('Video generation timed out after 8 minutes. Check n8n execution logs.', 'error');
+            } else {
+                showToast('Error generating video: ' + error.message, 'error');
+            }
         } finally {
+            clearTimeout(abortTimeout);
             btn.disabled = false;
             btn.innerHTML = originalText;
+            _videoGenerating = false;
         }
     });
 }
