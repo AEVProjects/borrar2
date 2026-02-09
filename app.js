@@ -710,6 +710,7 @@ function renderPost(post) {
     
     const isCompleted = post.status === 'completed';
     const isCarousel = post.post_type === 'Carousel';
+    const isVideo = post.status === 'video_completed' || !!(post.video_part1_uri || post.video1_signed_url);
     
     // Determine published platforms
     const platforms = [];
@@ -744,22 +745,106 @@ function renderPost(post) {
     // Get display content - for simple posts it's post_type, for carousels it's post_copy
     const displayContent = isCarousel ? post.post_copy : post.post_type;
     
+    // Build type badge
+    let typeBadge = '';
+    if (isVideo) {
+        typeBadge = `
+            <span class="post-type-badge" style="background: linear-gradient(135deg, #8B5CF6, #6D28D9); color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Video
+            </span>`;
+    } else if (isCarousel) {
+        typeBadge = `
+            <span class="post-type-badge" style="background: linear-gradient(135deg, #207CE5, #004AAD); color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="2" y="3" width="6" height="6" rx="1"/>
+                    <rect x="9" y="3" width="6" height="6" rx="1"/>
+                    <rect x="16" y="3" width="6" height="6" rx="1"/>
+                    <rect x="2" y="15" width="20" height="6" rx="1"/>
+                </svg>
+                Carrusel
+            </span>`;
+    }
+    
+    // Build video section HTML
+    let videoHtml = '';
+    if (isVideo) {
+        const videoUrl = post.video1_signed_url || post.video_part1_uri || '';
+        const videoUrl2 = post.video2_signed_url || post.video_part2_uri || '';
+        if (videoUrl) {
+            videoHtml = `
+                <div style="margin-top: 12px; border-radius: 12px; overflow: hidden; background: #000;">
+                    <video controls playsinline preload="metadata" style="width: 100%; max-height: 400px; display: block;"
+                        poster="" id="post-video-${post.id}">
+                        <source src="${videoUrl}" type="video/mp4">
+                        Your browser does not support video.
+                    </video>
+                    ${videoUrl2 ? `
+                        <div style="padding: 8px 12px; background: #1a1a2e; display: flex; align-items: center; gap: 8px;">
+                            <button onclick="document.getElementById('post-video-${post.id}').src='${videoUrl}'; document.getElementById('post-video-${post.id}').play()" style="background: #207CE5; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">▶ Parte 1</button>
+                            <button onclick="document.getElementById('post-video-${post.id}').src='${videoUrl2}'; document.getElementById('post-video-${post.id}').play()" style="background: #6D28D9; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">▶ Parte 2</button>
+                        </div>
+                    ` : ''}
+                </div>`;
+        }
+    }
+    
+    // Build images section HTML
+    let imagesHtml = '';
+    if (imageUrls.length > 0 && !isVideo) {
+        if (isCarousel && imageUrls.length > 1) {
+            // Carousel: horizontal scroll with snap
+            const carouselId = 'carousel-' + post.id;
+            imagesHtml = `
+                <div style="margin-top: 12px; position: relative;">
+                    <div id="${carouselId}" style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 0; border-radius: 12px; scrollbar-width: none; -ms-overflow-style: none;">
+                        ${imageUrls.map((url, idx) => {
+                            const cleanUrl = url.trim().replace(/'/g, '%27');
+                            return `
+                            <div style="flex: 0 0 100%; scroll-snap-align: start; position: relative; aspect-ratio: 4/5; background: linear-gradient(135deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%); background-size: 200% 200%; animation: shimmer 1.5s infinite;">
+                                <img src="${cleanUrl}" alt="Slide ${idx + 1}" loading="lazy" class="post-grid-image"
+                                    style="width: 100%; height: 100%; object-fit: cover;"
+                                    onload="this.style.opacity='1'; this.parentElement.style.background='none'; this.parentElement.style.animation='none';"
+                                    onerror="this.style.display='none'; this.parentElement.style.background='#f0f0f0'; this.parentElement.style.animation='none';">
+                                <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">${idx + 1} / ${imageUrls.length}</div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                    ${imageUrls.length > 1 ? `
+                        <button onclick="document.getElementById('${carouselId}').scrollBy({left: -document.getElementById('${carouselId}').offsetWidth, behavior: 'smooth'})" style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.9); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 16px; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center;">‹</button>
+                        <button onclick="document.getElementById('${carouselId}').scrollBy({left: document.getElementById('${carouselId}').offsetWidth, behavior: 'smooth'})" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.9); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 16px; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center;">›</button>
+                    ` : ''}
+                </div>`;
+        } else {
+            // Single image or non-carousel multi-image: grid layout
+            imagesHtml = `
+                <div class="post-images-grid" style="display: grid; grid-template-columns: ${imageUrls.length === 1 ? '1fr' : 'repeat(2, 1fr)'}; gap: 8px; margin-top: 12px;">
+                    ${imageUrls.map((url, idx) => {
+                        const cleanUrl = url.trim().replace(/'/g, '%27');
+                        return `
+                        <div class="image-container" style="position: relative; width: 100%; aspect-ratio: 4/5; background: linear-gradient(135deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%); background-size: 200% 200%; animation: shimmer 1.5s infinite; border-radius: 8px; overflow: hidden;">
+                            <img 
+                                src="${cleanUrl}" 
+                                alt="Post image ${idx + 1}" 
+                                loading="lazy"
+                                class="post-grid-image"
+                                data-url="${cleanUrl}"
+                                onload="this.style.opacity='1'; this.parentElement.style.background='none'; this.parentElement.style.animation='none';"
+                                onerror="this.style.display='none'; this.parentElement.classList.add('image-error');"
+                            >
+                        </div>
+                    `;
+                    }).join('')}
+                </div>`;
+        }
+    }
+    
     return `
         <div class="post-item" data-post-id="${post.id}">
             <div class="post-header">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span class="post-meta">${date}</span>
-                    ${isCarousel ? `
-                        <span class="post-type-badge" style="background: linear-gradient(135deg, #207CE5, #004AAD); color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                                <rect x="2" y="3" width="6" height="6" rx="1"/>
-                                <rect x="9" y="3" width="6" height="6" rx="1"/>
-                                <rect x="16" y="3" width="6" height="6" rx="1"/>
-                                <rect x="2" y="15" width="20" height="6" rx="1"/>
-                            </svg>
-                            Carrusel
-                        </span>
-                    ` : ''}
+                    ${typeBadge}
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     ${platforms.length > 0 ? `
@@ -784,27 +869,8 @@ function renderPost(post) {
                 <div class="post-content" style="margin: 16px 0; font-size: 15px; line-height: 1.6; color: #1d2129; white-space: pre-wrap; word-wrap: break-word;">${escapeHtml(displayContent)}</div>
             ` : ''}
             
-            ${imageUrls.length > 0 ? `
-                <div class="post-images-grid" style="display: grid; grid-template-columns: ${imageUrls.length === 1 ? '1fr' : imageUrls.length === 2 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(200px, 1fr))'}; gap: 8px; margin-top: 12px;">
-                    ${imageUrls.map((url, idx) => {
-                        const cleanUrl = url.trim().replace(/'/g, '%27');
-                        return `
-                        <div class="image-container" style="position: relative; width: 100%; aspect-ratio: 4/5; background: linear-gradient(135deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%); background-size: 200% 200%; animation: shimmer 1.5s infinite; border-radius: 8px; overflow: hidden;">
-                            <img 
-                                src="${cleanUrl}" 
-                                alt="${isCarousel ? `Carrusel slide ${idx + 1}` : `Post image ${idx + 1}`}" 
-                                loading="lazy"
-                                class="post-grid-image"
-                                data-url="${cleanUrl}"
-                                onload="this.style.opacity='1'; this.parentElement.style.background='none'; this.parentElement.style.animation='none';"
-                                onerror="this.style.display='none'; this.parentElement.classList.add('image-error');"
-                            >
-                            ${isCarousel ? `<div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${idx + 1}</div>` : ''}
-                        </div>
-                    `;
-                    }).join('')}
-                </div>
-            ` : ''}
+            ${videoHtml}
+            ${imagesHtml}
             
             ${platforms.length === 0 ? `
                 <div class="publish-section" style="margin-top: 16px; padding: 16px; background: #f8f9fa; border-radius: 8px;">

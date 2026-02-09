@@ -65,6 +65,12 @@ CREATE TABLE public.social_posts (
   image_url text,
   youtube_url text,            -- YouTube video URL (from Veo 3.1)
   
+  -- Video generation (Veo 3.1)
+  video_part1_uri text,        -- GCS URI for video part 1
+  video_part2_uri text,        -- GCS URI for video part 2
+  video1_signed_url text,      -- Signed URL for video part 1 (browser-accessible)
+  video2_signed_url text,      -- Signed URL for video part 2 (browser-accessible)
+  
   -- Publishing platforms
   publish_linkedin text DEFAULT 'No',
   publish_facebook text DEFAULT 'No',
@@ -75,9 +81,10 @@ CREATE TABLE public.social_posts (
   
   -- Metadata
   status text DEFAULT 'pending' NOT NULL 
-    CHECK (status IN ('pending', 'strategy_completed', 'copy_completed', 'prompt_completed', 'image_generated', 'completed', 'failed', 'editing_started', 'generating_edit', 'scheduled', 'publishing')),
+    CHECK (status IN ('pending', 'strategy_completed', 'copy_completed', 'prompt_completed', 'image_generated', 'completed', 'failed', 'editing_started', 'generating_edit', 'generating', 'scheduled', 'publishing', 'video_completed')),
   -- Status flow: pending → copy_completed → prompt_completed → image_generated → completed
   -- Edit flow: editing_started → generating_edit → completed
+  -- Video flow: pending → video_completed
   
   -- Timestamps
   created_at timestamp with time zone DEFAULT now() NOT NULL,
