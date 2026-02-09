@@ -1983,59 +1983,136 @@ if (videoForm) {
             }
             
             if (result.success && result.data?.video1_url) {
-                updateProgress(100, 'Video ready!');
+                updateProgress(100, 'Video parts ready! Merging into one file...');
                 
-                setTimeout(() => {
+                setTimeout(async () => {
                     hideProgressAlert();
                     
                     const videoResults = document.getElementById('video-results');
+                    const mergeProgress = document.getElementById('video-merge-progress');
+                    const mergeStatus = document.getElementById('merge-status-text');
+                    const mergeBar = document.getElementById('merge-progress-bar');
+                    const playerSection = document.getElementById('video-player-section');
                     const videoEl = document.getElementById('generated-video');
-                    const indicator = document.getElementById('video-part-indicator');
-                    const dl1 = document.getElementById('download-video-1');
-                    const dl2 = document.getElementById('download-video-2');
+                    const dlBtn = document.getElementById('download-video-complete');
+                    const actionsDiv = document.getElementById('video-result-actions');
                     const promptUsed = document.getElementById('video-prompt-used');
                     
                     const url1 = result.data.video1_url;
                     const url2 = result.data.video2_url;
                     
-                    if (videoEl) {
-                        // Play Part 1 first, then seamlessly transition to Part 2
-                        videoEl.src = url1;
-                        if (indicator) indicator.textContent = 'Part 1 / 2';
-                        
-                        // When Part 1 ends, automatically play Part 2
-                        const onPart1End = () => {
-                            videoEl.removeEventListener('ended', onPart1End);
-                            videoEl.src = url2;
-                            if (indicator) indicator.textContent = 'Part 2 / 2';
-                            videoEl.play();
-                            
-                            // When Part 2 ends, loop back to Part 1
-                            const onPart2End = () => {
-                                videoEl.removeEventListener('ended', onPart2End);
-                                videoEl.src = url1;
-                                if (indicator) indicator.textContent = 'Part 1 / 2';
-                                videoEl.play();
-                                videoEl.addEventListener('ended', onPart1End);
-                            };
-                            videoEl.addEventListener('ended', onPart2End);
-                        };
-                        videoEl.addEventListener('ended', onPart1End);
-                    }
-                    
-                    if (dl1) { dl1.href = url1; dl1.target = '_blank'; }
-                    if (dl2) { dl2.href = url2; dl2.target = '_blank'; }
-                    
-                    if (promptUsed && result.data.prompt) {
-                        promptUsed.innerHTML = `<strong>Prompt:</strong> ${result.data.prompt}<br><strong>Duration:</strong> ${result.data.duration}`;
-                    }
-                    
+                    // Show results container with merge progress
                     if (videoResults) {
                         videoResults.style.display = 'block';
                         videoResults.scrollIntoView({ behavior: 'smooth' });
                     }
+                    if (mergeProgress) mergeProgress.style.display = 'block';
+                    if (playerSection) playerSection.style.display = 'none';
+                    if (actionsDiv) actionsDiv.style.display = 'none';
                     
-                    showSuccessAlert('Video Ready!', 'Your 2-part AI video is playing. It loops automatically: Part 1 → Part 2 → repeat.');
+                    try {
+                        // Step 1: Download both video parts
+                        if (mergeStatus) mergeStatus.textContent = 'Downloading Part 1...';
+                        if (mergeBar) mergeBar.style.width = '10%';
+                        const resp1 = await fetch(url1);
+                        const blob1 = await resp1.blob();
+                        
+                        if (mergeStatus) mergeStatus.textContent = 'Downloading Part 2...';
+                        if (mergeBar) mergeBar.style.width = '30%';
+                        const resp2 = await fetch(url2);
+                        const blob2 = await resp2.blob();
+                        
+                        // Step 2: Initialize ffmpeg.wasm
+                        if (mergeStatus) mergeStatus.textContent = 'Loading video merger...';
+                        if (mergeBar) mergeBar.style.width = '40%';
+                        
+                        const { FFmpeg } = FFmpegWASM;
+                        const { fetchFile } = FFmpegUtil;
+                        const ffmpeg = new FFmpeg();
+                        
+                        await ffmpeg.load({
+                            coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
+                            wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm'
+                        });
+                        
+                        // Step 3: Write files to ffmpeg virtual filesystem
+                        if (mergeStatus) mergeStatus.textContent = 'Preparing video files...';
+                        if (mergeBar) mergeBar.style.width = '55%';
+                        
+                        await ffmpeg.writeFile('part1.mp4', new Uint8Array(await blob1.arrayBuffer()));
+                        await ffmpeg.writeFile('part2.mp4', new Uint8Array(await blob2.arrayBuffer()));
+                        
+                        // Step 4: Create concat list and merge (no re-encoding, fast copy)
+                        if (mergeStatus) mergeStatus.textContent = 'Merging video parts...';
+                        if (mergeBar) mergeBar.style.width = '70%';
+                        
+                        await ffmpeg.writeFile('list.txt', 'file part1.mp4\nfile part2.mp4');
+                        await ffmpeg.exec(['-f', 'concat', '-safe', '0', '-i', 'list.txt', '-c', 'copy', '-y', 'output.mp4']);
+                        
+                        if (mergeBar) mergeBar.style.width = '90%';
+                        
+                        // Step 5: Read merged file
+                        const mergedData = await ffmpeg.readFile('output.mp4');
+                        const mergedBlob = new Blob([mergedData], { type: 'video/mp4' });
+                        const mergedUrl = URL.createObjectURL(mergedBlob);
+                        
+                        if (mergeBar) mergeBar.style.width = '100%';
+                        if (mergeStatus) mergeStatus.textContent = 'Video merge complete!';
+                        
+                        // Step 6: Show merged video player
+                        setTimeout(() => {
+                            if (mergeProgress) mergeProgress.style.display = 'none';
+                            if (playerSection) playerSection.style.display = 'block';
+                            if (actionsDiv) { actionsDiv.style.display = 'flex'; }
+                            
+                            if (videoEl) {
+                                videoEl.src = mergedUrl;
+                                videoEl.play().catch(() => {});
+                            }
+                            
+                            if (dlBtn) {
+                                dlBtn.href = mergedUrl;
+                                dlBtn.download = 'msi-video-complete.mp4';
+                            }
+                            
+                            if (promptUsed && result.data.prompt) {
+                                promptUsed.innerHTML = `<strong>Prompt:</strong> ${result.data.prompt}<br><strong>Duration:</strong> ${result.data.duration}`;
+                            }
+                            
+                            showSuccessAlert('Video Complete!', 'Your full video is ready. Click "Download Complete Video" to save it for social media.');
+                        }, 800);
+                        
+                    } catch (mergeError) {
+                        console.error('Video merge error:', mergeError);
+                        // Fallback: play Part 1 → Part 2 sequentially if merge fails
+                        if (mergeProgress) mergeProgress.style.display = 'none';
+                        if (playerSection) playerSection.style.display = 'block';
+                        if (actionsDiv) { actionsDiv.style.display = 'flex'; }
+                        
+                        if (videoEl) {
+                            videoEl.src = url1;
+                            videoEl.play().catch(() => {});
+                            const onEnd = () => {
+                                videoEl.removeEventListener('ended', onEnd);
+                                videoEl.src = url2;
+                                videoEl.play().catch(() => {});
+                            };
+                            videoEl.addEventListener('ended', onEnd);
+                        }
+                        
+                        // Provide Part 1 download as fallback
+                        if (dlBtn) {
+                            dlBtn.href = url1;
+                            dlBtn.textContent = '⬇️ Download Part 1';
+                            dlBtn.download = 'video-part1.mp4';
+                        }
+                        
+                        if (promptUsed && result.data.prompt) {
+                            promptUsed.innerHTML = `<strong>Prompt:</strong> ${result.data.prompt}<br><strong>Duration:</strong> ${result.data.duration}`;
+                        }
+                        
+                        showToast('Could not merge videos automatically. Playing sequentially instead.', 'warning');
+                    }
                 }, 500);
             } else {
                 hideProgressAlert();
@@ -2058,9 +2135,15 @@ const regenerateVideoBtn = document.getElementById('regenerate-video');
 if (regenerateVideoBtn) {
     regenerateVideoBtn.addEventListener('click', () => {
         const videoResults = document.getElementById('video-results');
-        if (videoResults) {
-            videoResults.style.display = 'none';
-        }
+        const videoEl = document.getElementById('generated-video');
+        const mergeProgress = document.getElementById('video-merge-progress');
+        const playerSection = document.getElementById('video-player-section');
+        const actionsDiv = document.getElementById('video-result-actions');
+        if (videoEl) { videoEl.pause(); videoEl.src = ''; }
+        if (videoResults) videoResults.style.display = 'none';
+        if (mergeProgress) mergeProgress.style.display = 'none';
+        if (playerSection) playerSection.style.display = 'none';
+        if (actionsDiv) actionsDiv.style.display = 'none';
         // Scroll to form
         videoForm?.scrollIntoView({ behavior: 'smooth' });
     });
