@@ -1,7 +1,5 @@
 {
   "name": "msi-workflow",
   "private": true,
-  "dependencies": {
-    "ffmpeg-static": "^5.2.0"
-  }
+  "dependencies": {}
 }
