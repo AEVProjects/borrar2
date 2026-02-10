@@ -1,4 +1,8 @@
 {
+  "version": 2,
+  "builds": [
+    { "src": "api/*.js", "use": "@vercel/node" }
+  ],
   "functions": {
     "api/merge-videos.js": {
       "memory": 1024,
