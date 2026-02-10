@@ -685,6 +685,44 @@ async function loadPosts() {
             return;
         }
         
+        // Fetch carousel slides for carousel posts
+        const carouselPosts = data.filter(p => p.post_type === 'Carousel');
+        if (carouselPosts.length > 0) {
+            const carouselIds = carouselPosts.map(p => p.id);
+            try {
+                const { data: slides, error: slidesError } = await supabaseClient
+                    .from('carousel_slides')
+                    .select('*')
+                    .in('carousel_id', carouselIds)
+                    .order('slide_number', { ascending: true });
+                
+                if (!slidesError && slides && slides.length > 0) {
+                    // Group slides by carousel_id and inject image URLs into posts
+                    const slidesByCarousel = {};
+                    slides.forEach(slide => {
+                        if (!slidesByCarousel[slide.carousel_id]) slidesByCarousel[slide.carousel_id] = [];
+                        slidesByCarousel[slide.carousel_id].push(slide);
+                    });
+                    
+                    data.forEach(post => {
+                        if (post.post_type === 'Carousel' && slidesByCarousel[post.id]) {
+                            const postSlides = slidesByCarousel[post.id];
+                            const slideUrls = postSlides
+                                .filter(s => s.image_url)
+                                .map(s => s.image_url);
+                            if (slideUrls.length > 0 && !post.image_url) {
+                                post.image_url = JSON.stringify(slideUrls);
+                            }
+                            // Also attach slides data for detailed rendering
+                            post._carousel_slides = postSlides;
+                        }
+                    });
+                }
+            } catch (slidesErr) {
+                console.warn('Could not load carousel slides:', slidesErr);
+            }
+        }
+        
         postsListEl.innerHTML = data.map(post => renderPost(post)).join('');
         
     } catch (error) {
@@ -710,7 +748,7 @@ function renderPost(post) {
     
     const isCompleted = post.status === 'completed';
     const isCarousel = post.post_type === 'Carousel';
-    const isVideo = post.status === 'video_completed' || !!(post.video_part1_uri || post.video1_signed_url);
+    const isVideo = post.post_type === 'Video' || post.status === 'video_completed' || !!(post.video_part1_uri || post.video1_signed_url);
     
     // Determine published platforms
     const platforms = [];
@@ -764,13 +802,50 @@ function renderPost(post) {
                 </svg>
                 Carrusel
             </span>`;
+    } else if (imageUrls.length > 0) {
+        typeBadge = `
+            <span class="post-type-badge" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <path d="M21 15l-5-5L5 21"/>
+                </svg>
+                Imagen
+            </span>`;
+    } else {
+        typeBadge = `
+            <span class="post-type-badge" style="background: linear-gradient(135deg, #6b7280, #4b5563); color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+                Texto
+            </span>`;
     }
     
     // Build video section HTML
     let videoHtml = '';
     if (isVideo) {
-        const videoUrl = post.video1_signed_url || post.video_part1_uri || '';
-        const videoUrl2 = post.video2_signed_url || post.video_part2_uri || '';
+        let videoUrl = post.video1_signed_url || post.video_part1_uri || '';
+        let videoUrl2 = post.video2_signed_url || post.video_part2_uri || '';
+        
+        // Fallback: if video URLs stored in image_url as JSON array (when migration not run)
+        if (!videoUrl && post.image_url) {
+            try {
+                const parsed = JSON.parse(post.image_url);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    videoUrl = parsed[0] || '';
+                    videoUrl2 = parsed[1] || '';
+                }
+            } catch (e) {
+                // Not JSON, try as single URL
+                if (post.image_url.startsWith('http')) {
+                    videoUrl = post.image_url;
+                }
+            }
+        }
         if (videoUrl) {
             videoHtml = `
                 <div style="margin-top: 12px; border-radius: 12px; overflow: hidden; background: #000;">
@@ -2049,6 +2124,44 @@ if (videoForm) {
             clearInterval(progressTimer);
             
             if (result.success && result.data?.video1_url) {
+                updateProgress(95, 'Saving video to database...');
+                
+                // Save video data to Supabase
+                if (supabaseClient) {
+                    try {
+                        const insertData = {
+                            post_type: 'Video',
+                            status: 'video_completed',
+                            headline: (data.prompt || '').substring(0, 120),
+                            post_copy: data.prompt || '',
+                            image_url: result.data.video1_url,
+                            video_part1_uri: result.data.video1_gcs_uri || '',
+                            video_part2_uri: result.data.video2_gcs_uri || '',
+                            video1_signed_url: result.data.video1_url || '',
+                            video2_signed_url: result.data.video2_url || ''
+                        };
+                        const { error: dbError } = await supabaseClient.from('social_posts').insert(insertData);
+                        if (dbError) {
+                            console.warn('Video DB save error:', dbError);
+                            // Try without video-specific columns (migration may not be run)
+                            const fallbackData = {
+                                post_type: 'Video',
+                                status: 'video_completed',
+                                headline: (data.prompt || '').substring(0, 120),
+                                post_copy: data.prompt || '',
+                                image_url: JSON.stringify([result.data.video1_url, result.data.video2_url])
+                            };
+                            const { error: fbError } = await supabaseClient.from('social_posts').insert(fallbackData);
+                            if (fbError) console.error('Video DB fallback save error:', fbError);
+                            else console.log('Video saved to DB (fallback mode)');
+                        } else {
+                            console.log('Video saved to DB successfully');
+                        }
+                    } catch (dbSaveErr) {
+                        console.error('Failed to save video to DB:', dbSaveErr);
+                    }
+                }
+                
                 updateProgress(100, 'Video parts ready! Merging into one file...');
                 
                 setTimeout(async () => {
