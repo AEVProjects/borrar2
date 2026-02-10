@@ -207,7 +207,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "={{ $json.POST_ID && $json.POST_ID.length > 10 ? `UPDATE social_posts SET video_part1_uri = '${$json.video1_gcs_uri}', video_part2_uri = '${$json.video2_gcs_uri}', video1_signed_url = '${$json.video1_url}', video2_signed_url = '${$json.video2_url}', status = 'video_completed', updated_at = NOW() WHERE id = '${$json.POST_ID}' RETURNING *` : `SELECT 'no_post_id' as status` }}",
+        "query": "={{ $json.POST_ID && $json.POST_ID.length > 10 ? `UPDATE social_posts SET video_part1_uri = '${$json.video1_gcs_uri}', video_part2_uri = '${$json.video2_gcs_uri}', video1_signed_url = '${$json.video1_url}', video2_signed_url = '${$json.video2_url}', status = 'video_completed', updated_at = NOW() WHERE id = '${$json.POST_ID}' RETURNING *` : `INSERT INTO social_posts (post_type, status, headline, post_copy, image_url, video_part1_uri, video_part2_uri, video1_signed_url, video2_signed_url, created_at, updated_at) VALUES ('Video', 'video_completed', LEFT('${($json.ORIGINAL_PROMPT || '').replace(/'/g, \"''\")}', 120), '${($json.ORIGINAL_PROMPT || '').replace(/'/g, \"''\")}', '${$json.video1_url}', '${$json.video1_gcs_uri}', '${$json.video2_gcs_uri}', '${$json.video1_url}', '${$json.video2_url}', NOW(), NOW()) RETURNING *` }}",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -228,7 +228,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, message: 'Video generated', data: { video1_url: $('Sign URLs').item.json.video1_url, video2_url: $('Sign URLs').item.json.video2_url, video1_gcs_uri: $('Sign URLs').item.json.video1_gcs_uri, video2_gcs_uri: $('Sign URLs').item.json.video2_gcs_uri, post_id: $('Sign URLs').item.json.POST_ID, duration: (parseInt($('Sign URLs').item.json.DURATION) * 2) + 's', prompt: $('Sign URLs').item.json.ORIGINAL_PROMPT, service: $('Build Settings').item.json.SERVICE } }) }}",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Video generated and saved to database', data: { video1_url: $('Sign URLs').item.json.video1_url, video2_url: $('Sign URLs').item.json.video2_url, video1_gcs_uri: $('Sign URLs').item.json.video1_gcs_uri, video2_gcs_uri: $('Sign URLs').item.json.video2_gcs_uri, post_id: $('Update DB').item.json?.id || $('Sign URLs').item.json.POST_ID, db_saved: true, duration: (parseInt($('Sign URLs').item.json.DURATION) * 2) + 's', prompt: $('Sign URLs').item.json.ORIGINAL_PROMPT, service: $('Build Settings').item.json.SERVICE } }) }}",
         "options": {
           "responseHeaders": {
             "entries": [

@@ -2129,9 +2129,16 @@ if (videoForm) {
                 updateProgress(95, 'Saving video to database...');
                 console.log('Video URLs received, saving to DB...');
                 
-                // Save video data to Supabase - try multiple strategies
-                let videoSaved = false;
-                if (supabaseClient) {
+                // Check if workflow already saved to DB
+                let videoSaved = !!(result.data.db_saved);
+                if (videoSaved) {
+                    console.log('Video already saved to DB by n8n workflow (post_id:', result.data.post_id, ')');
+                    showToast('Video generated and saved to database!', 'success');
+                    if (typeof loadPosts === 'function') loadPosts();
+                }
+                
+                // Fallback: Save video data to Supabase client-side if workflow didn't save
+                if (!videoSaved && supabaseClient) {
                     // Strategy 1: Full insert with video columns + video_completed status
                     try {
                         const { error: err1 } = await supabaseClient.from('social_posts').insert({
