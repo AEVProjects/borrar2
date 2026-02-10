@@ -2241,92 +2241,76 @@ if (videoForm) {
                     if (actionsDiv) actionsDiv.style.display = 'none';
                     
                     try {
-                        // Step 1: Download both video parts
-                        if (mergeStatus) mergeStatus.textContent = 'Downloading Part 1...';
-                        if (mergeBar) mergeBar.style.width = '10%';
-                        const resp1 = await fetch(url1);
-                        const blob1 = await resp1.blob();
-                        
-                        if (mergeStatus) mergeStatus.textContent = 'Downloading Part 2...';
-                        if (mergeBar) mergeBar.style.width = '50%';
-                        const resp2 = await fetch(url2);
-                        const blob2 = await resp2.blob();
-                        
-                        const blobUrl1 = URL.createObjectURL(blob1);
-                        const blobUrl2 = URL.createObjectURL(blob2);
-                        
+                        // Merge videos server-side using ffmpeg API
+                        if (mergeStatus) mergeStatus.textContent = 'Uniendo videos en servidor...';
+                        if (mergeBar) mergeBar.style.width = '20%';
+
+                        const mergeResp = await fetch('/api/merge-videos', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ url1, url2 })
+                        });
+
+                        if (mergeBar) mergeBar.style.width = '80%';
+
+                        if (!mergeResp.ok) {
+                            const errData = await mergeResp.json().catch(() => ({}));
+                            throw new Error(errData.error || `Server error: ${mergeResp.status}`);
+                        }
+
+                        if (mergeStatus) mergeStatus.textContent = 'Descargando video completo...';
+                        const mergedBlob = await mergeResp.blob();
+                        const mergedUrl = URL.createObjectURL(mergedBlob);
+
                         if (mergeBar) mergeBar.style.width = '100%';
-                        if (mergeStatus) mergeStatus.textContent = 'Videos ready!';
-                        
-                        // Set up seamless sequential playback: Part 1 → Part 2 auto-transition
+                        if (mergeStatus) mergeStatus.textContent = '¡Video unido!';
+
                         setTimeout(() => {
                             if (mergeProgress) mergeProgress.style.display = 'none';
                             if (playerSection) playerSection.style.display = 'block';
                             if (actionsDiv) { actionsDiv.style.display = 'flex'; }
-                            
+
                             if (videoEl) {
-                                videoEl.src = blobUrl1;
+                                videoEl.src = mergedUrl;
                                 videoEl.play().catch(() => {});
-                                const onEnd = () => {
-                                    videoEl.removeEventListener('ended', onEnd);
-                                    videoEl.src = blobUrl2;
-                                    videoEl.play().catch(() => {});
-                                };
-                                videoEl.addEventListener('ended', onEnd);
                             }
-                            
+
                             if (dlBtn) {
-                                dlBtn.href = blobUrl1;
-                                dlBtn.download = 'msi-video-part1.mp4';
-                                dlBtn.textContent = '⬇️ Download Part 1';
+                                dlBtn.href = mergedUrl;
+                                dlBtn.download = 'msi-video-complete.mp4';
+                                dlBtn.textContent = '⬇️ Download Complete Video';
                             }
-                            
-                            // Add Part 2 download button
-                            if (actionsDiv) {
-                                const dl2 = document.createElement('a');
-                                dl2.href = blobUrl2;
-                                dl2.download = 'msi-video-part2.mp4';
-                                dl2.className = 'btn btn-primary';
-                                dl2.style.cssText = 'font-size:16px;padding:12px 24px;';
-                                dl2.textContent = '⬇️ Download Part 2';
-                                actionsDiv.insertBefore(dl2, actionsDiv.children[1]);
-                            }
-                            
+
                             if (promptUsed && result.data.prompt) {
-                                promptUsed.innerHTML = `<strong>Prompt:</strong> ${result.data.prompt}<br><strong>Duration:</strong> ${result.data.duration}<br><em>Reproducción continua: Parte 1 → Parte 2 automático</em>`;
+                                promptUsed.innerHTML = `<strong>Prompt:</strong> ${result.data.prompt}<br><strong>Duration:</strong> ${result.data.duration}<br><em>✅ Video completo unido</em>`;
                             }
-                            
-                            showSuccessAlert('Video Complete!', 'Your 2-part video is ready. Part 1 plays first, then Part 2 automatically.');
+
+                            showSuccessAlert('Video Complete!', 'Your merged video is ready to play and download.');
                         }, 800);
-                        
+
                     } catch (mergeError) {
-                        console.error('Video load error:', mergeError);
+                        console.error('Video merge error:', mergeError);
                         if (mergeProgress) mergeProgress.style.display = 'none';
                         if (playerSection) playerSection.style.display = 'block';
                         if (actionsDiv) { actionsDiv.style.display = 'flex'; }
-                        
+
+                        // Fallback: play Part 1 directly
                         if (videoEl) {
                             videoEl.src = url1;
                             videoEl.play().catch(() => {});
-                            const onEnd = () => {
-                                videoEl.removeEventListener('ended', onEnd);
-                                videoEl.src = url2;
-                                videoEl.play().catch(() => {});
-                            };
-                            videoEl.addEventListener('ended', onEnd);
                         }
-                        
+
                         if (dlBtn) {
                             dlBtn.href = url1;
                             dlBtn.textContent = '⬇️ Download Part 1';
                             dlBtn.download = 'video-part1.mp4';
                         }
-                        
+
                         if (promptUsed && result.data.prompt) {
                             promptUsed.innerHTML = `<strong>Prompt:</strong> ${result.data.prompt}<br><strong>Duration:</strong> ${result.data.duration}`;
                         }
-                        
-                        showToast('Playing videos sequentially.', 'info');
+
+                        showToast('Error al unir: ' + mergeError.message + '. Mostrando Parte 1.', 'error');
                     }
                 }, 500);
             } else {
@@ -2372,60 +2356,51 @@ if (regenerateVideoBtn) {
 
 // ========== VIDEO MERGE FOR POSTS TAB ==========
 
-// Global function to play both video parts seamlessly and offer downloads
+// Global function to merge two video parts using server-side ffmpeg
 async function mergePostVideos(postId, url1, url2) {
     const mergeBtn = document.getElementById('merge-btn-' + postId);
     const videoEl = document.getElementById('post-video-' + postId);
     if (!mergeBtn || !videoEl) return;
 
     mergeBtn.disabled = true;
-    mergeBtn.innerHTML = '⏳ Preparando...';
+    mergeBtn.innerHTML = '⏳ Uniendo en servidor...';
 
     try {
-        // Download both parts as blobs for local playback
-        const resp1 = await fetch(url1);
-        const blob1 = await resp1.blob();
-        mergeBtn.innerHTML = '⏳ Descargando P2...';
-        const resp2 = await fetch(url2);
-        const blob2 = await resp2.blob();
+        // Call server-side merge API
+        const response = await fetch('/api/merge-videos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url1, url2 })
+        });
 
-        const blobUrl1 = URL.createObjectURL(blob1);
-        const blobUrl2 = URL.createObjectURL(blob2);
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error || `Server error: ${response.status}`);
+        }
 
-        // Set up seamless sequential playback: Part 1 → Part 2 auto-transition
-        videoEl.src = blobUrl1;
-        let playingPart = 1;
+        mergeBtn.innerHTML = '⏳ Descargando video...';
+        const mergedBlob = await response.blob();
+        const mergedUrl = URL.createObjectURL(mergedBlob);
 
-        // Remove any previous listener
-        videoEl._onEnded && videoEl.removeEventListener('ended', videoEl._onEnded);
-        videoEl._onEnded = () => {
-            if (playingPart === 1) {
-                playingPart = 2;
-                videoEl.src = blobUrl2;
-                videoEl.play().catch(() => {});
-            }
-        };
-        videoEl.addEventListener('ended', videoEl._onEnded);
+        // Play merged video
+        videoEl.src = mergedUrl;
         videoEl.play().catch(() => {});
 
-        // Replace buttons bar with playback controls + download links
+        // Replace buttons bar with download button
         const controlsBar = mergeBtn.parentElement;
         if (controlsBar) {
             controlsBar.innerHTML = `
-                <button onclick="(function(v){v.src='${blobUrl1}';v.play();v._part=1})(document.getElementById('post-video-${postId}'))" style="background: #207CE5; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">▶ Parte 1</button>
-                <button onclick="(function(v){v.src='${blobUrl2}';v.play();v._part=2})(document.getElementById('post-video-${postId}'))" style="background: #6D28D9; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">▶ Parte 2</button>
-                <span style="color: #10b981; font-size: 11px; font-weight: 500;">▶ Reproducción continua</span>
-                <a href="${blobUrl1}" download="msi-video-${postId}-part1.mp4" style="background: #059669; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; text-decoration: none; margin-left: auto;">⬇️ P1</a>
-                <a href="${blobUrl2}" download="msi-video-${postId}-part2.mp4" style="background: #059669; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; text-decoration: none;">⬇️ P2</a>
+                <span style="color: #10b981; font-size: 12px; font-weight: 600;">✅ Video unido</span>
+                <a href="${mergedUrl}" download="msi-video-${postId}.mp4" style="background: #059669; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; text-decoration: none; margin-left: auto;">⬇️ Descargar Video Completo</a>
             `;
         }
 
-        showToast('Reproducción continua activada. Parte 1 → Parte 2 automático.', 'success');
+        showToast('Video unido exitosamente!', 'success');
     } catch (err) {
-        console.error('Video load error:', err);
+        console.error('Merge error:', err);
         mergeBtn.disabled = false;
         mergeBtn.innerHTML = '🔗 Unir Videos';
-        showToast('Error al cargar videos: ' + err.message, 'error');
+        showToast('Error al unir videos: ' + err.message, 'error');
     }
 }
 // Make it globally accessible for onclick handlers
