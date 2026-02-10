@@ -1,39 +1,4 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "*.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "*.css",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "*.js",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "*.json",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "*.md",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "*.sql",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "*.py",
-      "use": "@vercel/static"
-    }
-  ],
   "functions": {
     "api/merge-videos.js": {
       "memory": 1024,
