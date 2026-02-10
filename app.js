@@ -855,9 +855,10 @@ function renderPost(post) {
                         Your browser does not support video.
                     </video>
                     ${videoUrl2 ? `
-                        <div style="padding: 8px 12px; background: #1a1a2e; display: flex; align-items: center; gap: 8px;">
+                        <div style="padding: 8px 12px; background: #1a1a2e; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                             <button onclick="document.getElementById('post-video-${post.id}').src='${videoUrl}'; document.getElementById('post-video-${post.id}').play()" style="background: #207CE5; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">▶ Parte 1</button>
                             <button onclick="document.getElementById('post-video-${post.id}').src='${videoUrl2}'; document.getElementById('post-video-${post.id}').play()" style="background: #6D28D9; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">▶ Parte 2</button>
+                            <button onclick="mergePostVideos('${post.id}', '${videoUrl}', '${videoUrl2}')" id="merge-btn-${post.id}" style="background: #059669; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; margin-left: auto;">🔗 Unir Videos</button>
                         </div>
                     ` : ''}
                 </div>`;
@@ -2387,6 +2388,77 @@ if (regenerateVideoBtn) {
         videoForm?.scrollIntoView({ behavior: 'smooth' });
     });
 }
+
+// ========== VIDEO MERGE FOR POSTS TAB ==========
+
+// Global function to merge two video parts from the Posts tab
+async function mergePostVideos(postId, url1, url2) {
+    const mergeBtn = document.getElementById('merge-btn-' + postId);
+    const videoEl = document.getElementById('post-video-' + postId);
+    if (!mergeBtn || !videoEl) return;
+
+    const originalText = mergeBtn.innerHTML;
+    mergeBtn.disabled = true;
+    mergeBtn.innerHTML = '⏳ Descargando...';
+
+    try {
+        // Download both parts
+        const resp1 = await fetch(url1);
+        const blob1 = await resp1.blob();
+        mergeBtn.innerHTML = '⏳ Descargando P2...';
+        const resp2 = await fetch(url2);
+        const blob2 = await resp2.blob();
+
+        // Load ffmpeg
+        mergeBtn.innerHTML = '⏳ Cargando merger...';
+        const { FFmpeg } = FFmpegWASM;
+        const { toBlobURL } = FFmpegUtil;
+        const ffmpeg = new FFmpeg();
+
+        const baseFFmpegURL = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd';
+        const baseCoreURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+
+        await ffmpeg.load({
+            classWorkerURL: await toBlobURL(`${baseFFmpegURL}/814.ffmpeg.js`, 'text/javascript'),
+            coreURL: await toBlobURL(`${baseCoreURL}/ffmpeg-core.js`, 'text/javascript'),
+            wasmURL: await toBlobURL(`${baseCoreURL}/ffmpeg-core.wasm`, 'application/wasm')
+        });
+
+        // Write files and merge
+        mergeBtn.innerHTML = '⏳ Uniendo...';
+        await ffmpeg.writeFile('part1.mp4', new Uint8Array(await blob1.arrayBuffer()));
+        await ffmpeg.writeFile('part2.mp4', new Uint8Array(await blob2.arrayBuffer()));
+        await ffmpeg.writeFile('list.txt', 'file part1.mp4\nfile part2.mp4');
+        await ffmpeg.exec(['-f', 'concat', '-safe', '0', '-i', 'list.txt', '-c', 'copy', '-y', 'output.mp4']);
+
+        // Read merged file
+        const mergedData = await ffmpeg.readFile('output.mp4');
+        const mergedBlob = new Blob([mergedData], { type: 'video/mp4' });
+        const mergedUrl = URL.createObjectURL(mergedBlob);
+
+        // Replace the video player with merged video
+        videoEl.src = mergedUrl;
+        videoEl.play().catch(() => {});
+
+        // Replace buttons bar with download button
+        const controlsBar = mergeBtn.parentElement;
+        if (controlsBar) {
+            controlsBar.innerHTML = `
+                <span style="color: #10b981; font-size: 12px; font-weight: 600;">✅ Video unido</span>
+                <a href="${mergedUrl}" download="msi-video-${postId}.mp4" style="background: #059669; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; text-decoration: none; margin-left: auto;">⬇️ Descargar Video Completo</a>
+            `;
+        }
+
+        showToast('Videos unidos exitosamente!', 'success');
+    } catch (err) {
+        console.error('Merge error:', err);
+        mergeBtn.disabled = false;
+        mergeBtn.innerHTML = originalText;
+        showToast('Error al unir videos: ' + err.message, 'error');
+    }
+}
+// Make it globally accessible for onclick handlers
+window.mergePostVideos = mergePostVideos;
 
 // ========== END VIDEO GENERATION ==========
 
