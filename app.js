@@ -2123,13 +2123,18 @@ if (videoForm) {
             }
             clearInterval(progressTimer);
             
+            console.log('=== VIDEO RESULT ===', JSON.stringify(result).substring(0, 500));
+            
             if (result.success && result.data?.video1_url) {
                 updateProgress(95, 'Saving video to database...');
+                console.log('Video URLs received, saving to DB...');
                 
-                // Save video data to Supabase
+                // Save video data to Supabase - try multiple strategies
+                let videoSaved = false;
                 if (supabaseClient) {
+                    // Strategy 1: Full insert with video columns + video_completed status
                     try {
-                        const insertData = {
+                        const { error: err1 } = await supabaseClient.from('social_posts').insert({
                             post_type: 'Video',
                             status: 'video_completed',
                             headline: (data.prompt || '').substring(0, 120),
@@ -2139,26 +2144,64 @@ if (videoForm) {
                             video_part2_uri: result.data.video2_gcs_uri || '',
                             video1_signed_url: result.data.video1_url || '',
                             video2_signed_url: result.data.video2_url || ''
-                        };
-                        const { error: dbError } = await supabaseClient.from('social_posts').insert(insertData);
-                        if (dbError) {
-                            console.warn('Video DB save error:', dbError);
-                            // Try without video-specific columns (migration may not be run)
-                            const fallbackData = {
+                        });
+                        if (!err1) { videoSaved = true; console.log('Video saved (strategy 1: full)'); }
+                        else { console.warn('Strategy 1 failed:', err1.message); }
+                    } catch (e1) { console.warn('Strategy 1 exception:', e1.message); }
+
+                    // Strategy 2: Video columns but 'completed' status (CHECK constraint may not have video_completed)
+                    if (!videoSaved) {
+                        try {
+                            const { error: err2 } = await supabaseClient.from('social_posts').insert({
+                                post_type: 'Video',
+                                status: 'completed',
+                                headline: (data.prompt || '').substring(0, 120),
+                                post_copy: data.prompt || '',
+                                image_url: result.data.video1_url,
+                                video_part1_uri: result.data.video1_gcs_uri || '',
+                                video_part2_uri: result.data.video2_gcs_uri || '',
+                                video1_signed_url: result.data.video1_url || '',
+                                video2_signed_url: result.data.video2_url || ''
+                            });
+                            if (!err2) { videoSaved = true; console.log('Video saved (strategy 2: completed status)'); }
+                            else { console.warn('Strategy 2 failed:', err2.message); }
+                        } catch (e2) { console.warn('Strategy 2 exception:', e2.message); }
+                    }
+
+                    // Strategy 3: No video columns (migration not run), video_completed status
+                    if (!videoSaved) {
+                        try {
+                            const { error: err3 } = await supabaseClient.from('social_posts').insert({
                                 post_type: 'Video',
                                 status: 'video_completed',
                                 headline: (data.prompt || '').substring(0, 120),
                                 post_copy: data.prompt || '',
                                 image_url: JSON.stringify([result.data.video1_url, result.data.video2_url])
-                            };
-                            const { error: fbError } = await supabaseClient.from('social_posts').insert(fallbackData);
-                            if (fbError) console.error('Video DB fallback save error:', fbError);
-                            else console.log('Video saved to DB (fallback mode)');
-                        } else {
-                            console.log('Video saved to DB successfully');
-                        }
-                    } catch (dbSaveErr) {
-                        console.error('Failed to save video to DB:', dbSaveErr);
+                            });
+                            if (!err3) { videoSaved = true; console.log('Video saved (strategy 3: no video cols)'); }
+                            else { console.warn('Strategy 3 failed:', err3.message); }
+                        } catch (e3) { console.warn('Strategy 3 exception:', e3.message); }
+                    }
+
+                    // Strategy 4: Minimal - no video columns, 'completed' status
+                    if (!videoSaved) {
+                        try {
+                            const { error: err4 } = await supabaseClient.from('social_posts').insert({
+                                post_type: 'Video',
+                                status: 'completed',
+                                headline: (data.prompt || '').substring(0, 120),
+                                post_copy: data.prompt || '',
+                                image_url: JSON.stringify([result.data.video1_url, result.data.video2_url])
+                            });
+                            if (!err4) { videoSaved = true; console.log('Video saved (strategy 4: minimal)'); }
+                            else { console.warn('Strategy 4 failed:', err4.message); showToast('DB Error: ' + err4.message, 'error'); }
+                        } catch (e4) { console.error('All DB strategies failed:', e4.message); showToast('Could not save video to DB: ' + e4.message, 'error'); }
+                    }
+
+                    if (videoSaved) {
+                        showToast('Video saved to database!', 'success');
+                        // Refresh posts list
+                        if (typeof loadPosts === 'function') loadPosts();
                     }
                 }
                 
