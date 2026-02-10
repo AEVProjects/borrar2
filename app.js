@@ -2412,7 +2412,12 @@ async function mergePostVideos(postId, url1, url2) {
         // Load ffmpeg
         mergeBtn.innerHTML = '⏳ Cargando merger...';
         const { FFmpeg } = FFmpegWASM;
-        const { toBlobURL } = FFmpegUtil;
+        // Inline toBlobURL to avoid FFmpegUtil dependency
+        const toBlobURL = async (url, mimeType) => {
+            const resp = await fetch(url);
+            const blob = new Blob([await resp.arrayBuffer()], { type: mimeType });
+            return URL.createObjectURL(blob);
+        };
         const ffmpeg = new FFmpeg();
 
         const baseFFmpegURL = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd';
