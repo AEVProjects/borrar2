@@ -856,9 +856,8 @@ function renderPost(post) {
                     </video>
                     ${videoUrl2 ? `
                         <div style="padding: 8px 12px; background: #1a1a2e; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <button onclick="document.getElementById('post-video-${post.id}').src='${videoUrl}'; document.getElementById('post-video-${post.id}').play()" style="background: #207CE5; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">▶ Parte 1</button>
-                            <button onclick="document.getElementById('post-video-${post.id}').src='${videoUrl2}'; document.getElementById('post-video-${post.id}').play()" style="background: #6D28D9; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">▶ Parte 2</button>
-                            <button onclick="mergePostVideos('${post.id}', '${videoUrl}', '${videoUrl2}')" id="merge-btn-${post.id}" style="background: #059669; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; margin-left: auto;">🔗 Unir Videos</button>
+                            <span style="color: #94a3b8; font-size: 11px;">2 partes disponibles</span>
+                            <button onclick="mergePostVideos('${post.id}', '${videoUrl}', '${videoUrl2}')" id="merge-btn-${post.id}" style="background: #059669; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; margin-left: auto;">🔗 Unir y Descargar Video Completo</button>
                         </div>
                     ` : ''}
                 </div>`;
