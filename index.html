@@ -379,23 +379,23 @@
         <!-- Video Generation Mode -->
         <div id="video-mode" class="mode-content">
             <div class="card form-card">
-                <h2>🎬 Generate AI Video (Veo 3.1)</h2>
+                <h2>Generate AI Video (Veo 3.1)</h2>
                 <p style="color: #718096; margin-bottom: 24px;">
-                    Create <strong>human, emotional videos</strong> with AI. Coffee shops, real moments, genuine expressions.
-                    <br>Audio continuo incluido. Videos uploaded to YouTube automatically.
+                    Create <strong>professional videos</strong> with AI-generated speech and motion.
+                    <br>Two-part video with continuous audio included.
                 </p>
                 
                 <form id="video-form">
                     <div class="form-group">
                         <label for="video_prompt">Video Description *</label>
                         <textarea id="video_prompt" name="prompt" rows="4" required placeholder="Describe the video you want to create...&#10;&#10;Examples:&#10;- Professional office with cloud technology dashboard&#10;- Data center with servers and blue lighting&#10;- Modern conference room with team collaboration"></textarea>
-                        <small class="form-hint">💡 Be specific! Our AI will create complete corporate scenes with text, lighting, and your MSI branding.</small>
+                        <small class="form-hint">Be specific about the scene and message you want to convey.</small>
                     </div>
 
                     <div class="form-group">
                         <label for="video_start_image_url">Imagen de Inicio del Video *</label>
                         <input type="url" id="video_start_image_url" name="start_image_url" required placeholder="https://example.com/mi-imagen-inicio.jpg">
-                        <small class="form-hint">🎬 Imagen que será el punto de partida del video. El video se generará a partir de esta imagen.</small>
+                        <small class="form-hint">Imagen que será el punto de partida del video. El video se generará a partir de esta imagen.</small>
                     </div>
 
                     <div class="form-group" id="video-start-image-preview-container" style="display: none;">
@@ -408,7 +408,7 @@
                     <div class="form-group">
                         <label for="video_second_image_url">Imagen de Inicio de Segunda Parte *</label>
                         <input type="url" id="video_second_image_url" name="second_image_url" required placeholder="https://example.com/mi-imagen-parte2.jpg">
-                        <small class="form-hint">🎬 Imagen para la segunda parte del video (REQUERIDA). El video tendrá 2 partes, cada una iniciando desde su imagen.</small>
+                        <small class="form-hint">Imagen para la segunda parte del video (REQUERIDA). El video tendrá 2 partes, cada una iniciando desde su imagen.</small>
                     </div>
 
                     <div class="form-group" id="video-second-image-preview-container" style="display: none;">
@@ -428,15 +428,17 @@
                             <option value="it_outsourcing">IT Outsourcing Solutions</option>
                             <option value="ai_solutions">AI and Smart Business Solutions</option>
                             <option value="executive_consulting">Executive Consulting</option>
+                            <option value="workforce_agility">Workforce Agility</option>
+                            <option value="telecom">Telecom Services</option>
                         </select>
-                        <small class="form-hint">🎯 Select the MSI service to highlight in the video</small>
+                        <small class="form-hint">Select the MSI service to highlight in the video</small>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label for="video_topic">Additional Context (Optional)</label>
                             <input type="text" id="video_topic" name="topic" placeholder="e.g., Enterprise clients, Fortune 500, SMBs">
-                            <small class="form-hint">📝 Extra details about target audience or use case</small>
+                            <small class="form-hint">Extra details about target audience or use case</small>
                         </div>
 
                         <div class="form-group">
@@ -458,13 +460,13 @@
                                 <option value="6">6 seconds per part (12s total)</option>
                                 <option value="5">5 seconds per part (10s total)</option>
                             </select>
-                            <small class="form-hint">⏱️ Se generan 2 videos de esta duración, uno por cada imagen</small>
+                            <small class="form-hint">Se generan 2 videos de esta duración, uno por cada imagen</small>
                         </div>
 
                         <div class="form-group">
                             <label>Aspect Ratio</label>
                             <input type="text" value="9:16 (Vertical)" disabled style="background: #f5f7fa; cursor: not-allowed;">
-                            <small class="form-hint">📱 Optimized for social media stories</small>
+                            <small class="form-hint">Optimized for social media stories</small>
                         </div>
                     </div>
 
@@ -480,21 +482,28 @@
             <!-- Video Results -->
             <div id="video-results" class="generated-results" style="display: none;">
                 <div class="card">
-                    <h2>✅ Video Generated Successfully!</h2>
+                    <h2>Video Generated Successfully!</h2>
                     
                     <!-- Merge Progress (shown while ffmpeg merges) -->
                     <div id="video-merge-progress" style="display:none; text-align:center; padding:32px;">
                         <div class="spinner" style="margin:0 auto 16px;width:48px;height:48px;border:4px solid #e2e8f0;border-top-color:#207CE5;border-radius:50%;animation:spin 1s linear infinite;"></div>
-                        <p id="merge-status-text" style="font-size:16px;color:#4a5568;font-weight:500;">Merging video parts into one file...</p>
+                        <p id="merge-status-text" style="font-size:16px;color:#4a5568;font-weight:500;">Processing video...</p>
                         <div style="margin-top:12px;background:#e2e8f0;border-radius:8px;height:8px;overflow:hidden;max-width:400px;margin-left:auto;margin-right:auto;">
                             <div id="merge-progress-bar" style="background:linear-gradient(90deg,#207CE5,#6366f1);height:100%;width:0%;transition:width 0.3s;border-radius:8px;"></div>
                         </div>
                     </div>
 
-                    <!-- Merged Video Player -->
+                    <!-- Video Players - Both parts -->
                     <div id="video-player-section" class="result-section" style="display:none;">
-                        <div id="video-player" class="video-player">
-                            <video id="generated-video" controls autoplay style="width: 100%; max-height: 600px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
+                        <h3 style="margin-bottom:12px;color:#2d3748;">Part 1</h3>
+                        <div class="video-player">
+                            <video id="generated-video-part1" controls style="width: 100%; max-height: 600px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        <h3 style="margin-top:24px;margin-bottom:12px;color:#2d3748;">Part 2</h3>
+                        <div class="video-player">
+                            <video id="generated-video-part2" controls style="width: 100%; max-height: 600px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
                                 Your browser does not support the video tag.
                             </video>
                         </div>
@@ -502,13 +511,21 @@
                     </div>
 
                     <div class="result-actions" id="video-result-actions" style="display:none;gap:12px;flex-wrap:wrap;margin-top:16px;">
-                        <a id="download-video-complete" href="#" download="video-complete.mp4" class="btn btn-primary" style="font-size:16px;padding:12px 24px;">
+                        <a id="download-video-part1" href="#" download="video-part1.mp4" class="btn btn-primary" style="font-size:16px;padding:12px 24px;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                 <polyline points="7 10 12 15 17 10"></polyline>
                                 <line x1="12" y1="15" x2="12" y2="3"></line>
                             </svg>
-                            ⬇️ Download Complete Video
+                            Download Part 1
+                        </a>
+                        <a id="download-video-part2" href="#" download="video-part2.mp4" class="btn btn-primary" style="font-size:16px;padding:12px 24px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download Part 2
                         </a>
                         <button id="regenerate-video" class="btn btn-secondary">Generate Another</button>
                     </div>

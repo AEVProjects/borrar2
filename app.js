@@ -2212,105 +2212,64 @@ if (videoForm) {
                     }
                 }
                 
-                updateProgress(100, 'Video parts ready! Merging into one file...');
+                updateProgress(100, 'Video parts ready!');
                 
                 setTimeout(async () => {
                     hideProgressAlert();
                     
                     const videoResults = document.getElementById('video-results');
                     const mergeProgress = document.getElementById('video-merge-progress');
-                    const mergeStatus = document.getElementById('merge-status-text');
-                    const mergeBar = document.getElementById('merge-progress-bar');
                     const playerSection = document.getElementById('video-player-section');
-                    const videoEl = document.getElementById('generated-video');
-                    const dlBtn = document.getElementById('download-video-complete');
+                    const videoPart1 = document.getElementById('generated-video-part1');
+                    const videoPart2 = document.getElementById('generated-video-part2');
+                    const dlBtnPart1 = document.getElementById('download-video-part1');
+                    const dlBtnPart2 = document.getElementById('download-video-part2');
                     const actionsDiv = document.getElementById('video-result-actions');
                     const promptUsed = document.getElementById('video-prompt-used');
                     
                     const url1 = result.data.video1_url;
                     const url2 = result.data.video2_url;
                     
-                    // Show results container with merge progress
+                    // Show results container
                     if (videoResults) {
                         videoResults.style.display = 'block';
                         videoResults.scrollIntoView({ behavior: 'smooth' });
                     }
-                    if (mergeProgress) mergeProgress.style.display = 'block';
-                    if (playerSection) playerSection.style.display = 'none';
-                    if (actionsDiv) actionsDiv.style.display = 'none';
-                    
-                    try {
-                        // Merge videos server-side using ffmpeg API
-                        if (mergeStatus) mergeStatus.textContent = 'Uniendo videos en servidor...';
-                        if (mergeBar) mergeBar.style.width = '20%';
+                    if (mergeProgress) mergeProgress.style.display = 'none';
+                    if (playerSection) playerSection.style.display = 'block';
+                    if (actionsDiv) { actionsDiv.style.display = 'flex'; }
 
-                        const mergeResp = await fetch('/api/merge-videos', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ url1, url2 })
-                        });
-
-                        if (mergeBar) mergeBar.style.width = '80%';
-
-                        if (!mergeResp.ok) {
-                            const errData = await mergeResp.json().catch(() => ({}));
-                            throw new Error(errData.error || `Server error: ${mergeResp.status}`);
-                        }
-
-                        if (mergeStatus) mergeStatus.textContent = 'Descargando video completo...';
-                        const mergedBlob = await mergeResp.blob();
-                        const mergedUrl = URL.createObjectURL(mergedBlob);
-
-                        if (mergeBar) mergeBar.style.width = '100%';
-                        if (mergeStatus) mergeStatus.textContent = '¡Video unido!';
-
-                        setTimeout(() => {
-                            if (mergeProgress) mergeProgress.style.display = 'none';
-                            if (playerSection) playerSection.style.display = 'block';
-                            if (actionsDiv) { actionsDiv.style.display = 'flex'; }
-
-                            if (videoEl) {
-                                videoEl.src = mergedUrl;
-                                videoEl.play().catch(() => {});
+                    // Set both video sources
+                    if (videoPart1) {
+                        videoPart1.src = url1;
+                        videoPart1.play().catch(() => {});
+                        // Auto-play Part 2 when Part 1 ends
+                        videoPart1.addEventListener('ended', () => {
+                            if (videoPart2) {
+                                videoPart2.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                videoPart2.play().catch(() => {});
                             }
-
-                            if (dlBtn) {
-                                dlBtn.href = mergedUrl;
-                                dlBtn.download = 'msi-video-complete.mp4';
-                                dlBtn.textContent = '⬇️ Download Complete Video';
-                            }
-
-                            if (promptUsed && result.data.prompt) {
-                                promptUsed.innerHTML = `<strong>Prompt:</strong> ${result.data.prompt}<br><strong>Duration:</strong> ${result.data.duration}<br><em>✅ Video completo unido</em>`;
-                            }
-
-                            showSuccessAlert('Video Complete!', 'Your merged video is ready to play and download.');
-                        }, 800);
-
-                    } catch (mergeError) {
-                        console.error('Video merge error:', mergeError);
-                        if (mergeProgress) mergeProgress.style.display = 'none';
-                        if (playerSection) playerSection.style.display = 'block';
-                        if (actionsDiv) { actionsDiv.style.display = 'flex'; }
-
-                        // Fallback: play Part 1 directly
-                        if (videoEl) {
-                            videoEl.src = url1;
-                            videoEl.play().catch(() => {});
-                        }
-
-                        if (dlBtn) {
-                            dlBtn.href = url1;
-                            dlBtn.textContent = '⬇️ Download Part 1';
-                            dlBtn.download = 'video-part1.mp4';
-                        }
-
-                        if (promptUsed && result.data.prompt) {
-                            promptUsed.innerHTML = `<strong>Prompt:</strong> ${result.data.prompt}<br><strong>Duration:</strong> ${result.data.duration}`;
-                        }
-
-                        showToast('Error al unir: ' + mergeError.message + '. Mostrando Parte 1.', 'error');
+                        }, { once: true });
                     }
+                    if (videoPart2) {
+                        videoPart2.src = url2;
+                    }
+
+                    // Set download links for both parts
+                    if (dlBtnPart1) {
+                        dlBtnPart1.href = url1;
+                        dlBtnPart1.download = 'msi-video-part1.mp4';
+                    }
+                    if (dlBtnPart2) {
+                        dlBtnPart2.href = url2;
+                        dlBtnPart2.download = 'msi-video-part2.mp4';
+                    }
+
+                    if (promptUsed && result.data.prompt) {
+                        promptUsed.innerHTML = `<strong>Prompt:</strong> ${result.data.prompt}<br><strong>Duration:</strong> ${result.data.duration}`;
+                    }
+
+                    showSuccessAlert('Video Ready!', 'Both video parts are ready to play and download.');
                 }, 500);
             } else {
                 hideProgressAlert();
@@ -2339,11 +2298,13 @@ const regenerateVideoBtn = document.getElementById('regenerate-video');
 if (regenerateVideoBtn) {
     regenerateVideoBtn.addEventListener('click', () => {
         const videoResults = document.getElementById('video-results');
-        const videoEl = document.getElementById('generated-video');
+        const videoPart1 = document.getElementById('generated-video-part1');
+        const videoPart2 = document.getElementById('generated-video-part2');
         const mergeProgress = document.getElementById('video-merge-progress');
         const playerSection = document.getElementById('video-player-section');
         const actionsDiv = document.getElementById('video-result-actions');
-        if (videoEl) { videoEl.pause(); videoEl.src = ''; }
+        if (videoPart1) { videoPart1.pause(); videoPart1.src = ''; }
+        if (videoPart2) { videoPart2.pause(); videoPart2.src = ''; }
         if (videoResults) videoResults.style.display = 'none';
         if (mergeProgress) mergeProgress.style.display = 'none';
         if (playerSection) playerSection.style.display = 'none';
