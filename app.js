@@ -105,6 +105,7 @@ const n8nEditWebhook = CONFIG.n8nEditWebhook || CONFIG.n8n?.editWebhook;
 const n8nVideoWebhook = CONFIG.n8nVideoWebhook || CONFIG.n8n?.videoWebhook;
 const n8nCarouselWebhook = CONFIG.n8nCarouselWebhook || CONFIG.n8n?.carouselWebhook;
 const n8nEducativeWebhook = CONFIG.n8nEducativeWebhook || CONFIG.n8n?.educativeWebhook;
+const n8nVoiceVideoWebhook = CONFIG.n8nVoiceVideoWebhook || CONFIG.n8n?.voiceVideoWebhook;
 
 // Supabase Client
 let supabaseClient;
@@ -146,6 +147,7 @@ const publishMode = document.getElementById('publish-mode');
 const generateMode = document.getElementById('generate-mode');
 const editMode = document.getElementById('edit-mode');
 const videoMode = document.getElementById('video-mode');
+const voiceVideoMode = document.getElementById('voicevideo-mode');
 const carouselMode = document.getElementById('carousel-mode');
 const dailyMode = document.getElementById('daily-mode');
 const trendsMode = document.getElementById('trends-mode');
@@ -154,6 +156,7 @@ const publishForm = document.getElementById('publish-form');
 const generateForm = document.getElementById('generate-form');
 const editImageForm = document.getElementById('edit-image-form');
 const videoForm = document.getElementById('video-form');
+const voiceVideoForm = document.getElementById('voice-video-form');
 const carouselForm = document.getElementById('carousel-form');
 const educativeForm = document.getElementById('educative-form');
 const postsListEl = document.getElementById('posts-list');
@@ -178,6 +181,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         generateMode?.classList.remove('active');
         editMode?.classList.remove('active');
         videoMode?.classList.remove('active');
+        voiceVideoMode?.classList.remove('active');
         carouselMode?.classList.remove('active');
         dailyMode?.classList.remove('active');
         trendsMode?.classList.remove('active');
@@ -192,6 +196,8 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
             loadEditPosts(); // Load posts when switching to edit tab
         } else if (mode === 'video') {
             videoMode?.classList.add('active');
+        } else if (mode === 'voicevideo') {
+            voiceVideoMode?.classList.add('active');
         } else if (mode === 'carousel') {
             carouselMode?.classList.add('active');
         } else if (mode === 'daily') {
@@ -2311,6 +2317,273 @@ if (regenerateVideoBtn) {
         if (actionsDiv) actionsDiv.style.display = 'none';
         // Scroll to form
         videoForm?.scrollIntoView({ behavior: 'smooth' });
+    });
+}
+
+// ========== VOICE VIDEO (Image-to-Video + Video Extension) ==========
+
+// Image preview for voice video start image
+const voiceVideoImgInput = document.getElementById('voice_video_start_image_url');
+if (voiceVideoImgInput) {
+    let voiceVideoImgDebounce;
+    voiceVideoImgInput.addEventListener('input', () => {
+        clearTimeout(voiceVideoImgDebounce);
+        voiceVideoImgDebounce = setTimeout(() => {
+            const url = voiceVideoImgInput.value.trim();
+            const container = document.getElementById('voice-video-start-image-preview-container');
+            const imgEl = document.getElementById('voice-video-start-image-img');
+            if (url && url.startsWith('http')) {
+                if (imgEl) imgEl.src = url;
+                if (container) container.style.display = 'block';
+            } else {
+                if (container) container.style.display = 'none';
+            }
+        }, 500);
+    });
+}
+
+// Voice Video Form Submit
+let _voiceVideoGenerating = false;
+if (voiceVideoForm) {
+    voiceVideoForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        if (_voiceVideoGenerating) {
+            showToast('Voice video generation already in progress. Please wait.', 'warning');
+            return;
+        }
+        
+        const formData = new FormData(e.target);
+        
+        const data = {
+            prompt: formData.get('prompt'),
+            service: formData.get('service') || 'company_intro',
+            duration: '8',
+            topic: formData.get('topic') || '',
+            start_image_url: formData.get('start_image_url') || null
+        };
+        
+        if (!data.prompt) {
+            showToast('Please enter a video description', 'error');
+            return;
+        }
+        
+        if (!data.start_image_url) {
+            showToast('Start image URL is required', 'error');
+            return;
+        }
+        
+        _voiceVideoGenerating = true;
+        const btn = e.target.querySelector('button[type="submit"]');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Generating Voice Video (5-6 min)...';
+        
+        showProgressAlert(
+            'Generating Voice Video',
+            'Creating 16s video with voice consistency via video extension...',
+            'Part 1: Image→Video, then Part 2: Video Extension. This takes about 5-6 minutes. Do NOT close this page.'
+        );
+        
+        const abortCtrl = new AbortController();
+        const abortTimeout = setTimeout(() => abortCtrl.abort(), 480000);
+        
+        try {
+            updateProgress(10, 'Sending request...');
+            
+            console.log('=== VOICE VIDEO GENERATION ===');
+            console.log('Webhook:', n8nVoiceVideoWebhook);
+            
+            if (!n8nVoiceVideoWebhook) {
+                throw new Error('Voice Video webhook URL not configured. Add voiceVideoWebhook to config.js');
+            }
+            
+            const response = await fetch(n8nVoiceVideoWebhook, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+                signal: abortCtrl.signal
+            });
+            console.log('Response status:', response.status);
+            
+            updateProgress(15, 'AI is writing the voice video script...');
+            
+            const progressTimer = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                if (elapsed < 30) updateProgress(20, 'AI is writing the coherent 2-part script...');
+                else if (elapsed < 60) updateProgress(30, 'Submitting Part 1 (Image→Video) to Veo 3.1...');
+                else if (elapsed < 180) updateProgress(40, `Generating Part 1 from image... (${Math.round(elapsed)}s)`);
+                else if (elapsed < 210) updateProgress(55, 'Fetching Part 1 result...');
+                else if (elapsed < 240) updateProgress(60, 'Submitting Part 2 (Video Extension) to Veo 3.1...');
+                else if (elapsed < 360) updateProgress(75, `Extending video with voice continuity... (${Math.round(elapsed)}s)`);
+                else updateProgress(85, `Almost done... (${Math.round(elapsed)}s)`);
+            }, 3000);
+            const startTime = Date.now();
+            
+            let result;
+            try {
+                result = await response.json();
+            } catch (parseError) {
+                clearInterval(progressTimer);
+                hideProgressAlert();
+                showToast('Voice video request sent but response could not be parsed. Check n8n logs.', 'warning');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                _voiceVideoGenerating = false;
+                return;
+            }
+            clearInterval(progressTimer);
+            
+            console.log('=== VOICE VIDEO RESULT ===', JSON.stringify(result).substring(0, 500));
+            
+            if (result.success && result.data?.video1_url) {
+                updateProgress(95, 'Saving voice video to database...');
+                
+                let videoSaved = !!(result.data.db_saved);
+                if (videoSaved) {
+                    console.log('Voice video already saved to DB by n8n workflow (post_id:', result.data.post_id, ')');
+                    showToast('Voice video generated and saved to database!', 'success');
+                    if (typeof loadPosts === 'function') loadPosts();
+                }
+                
+                // Fallback: Save to Supabase client-side if workflow didn't
+                if (!videoSaved && supabaseClient) {
+                    try {
+                        const { error: err1 } = await supabaseClient.from('social_posts').insert({
+                            post_type: 'Voice Video',
+                            status: 'video_completed',
+                            headline: (data.prompt || '').substring(0, 120),
+                            post_copy: data.prompt || '',
+                            image_url: result.data.video1_url,
+                            video_part1_uri: result.data.video1_gcs_uri || '',
+                            video_part2_uri: result.data.video2_gcs_uri || '',
+                            video1_signed_url: result.data.video1_url || '',
+                            video2_signed_url: result.data.video2_url || ''
+                        });
+                        if (!err1) { videoSaved = true; console.log('Voice video saved (strategy 1)'); }
+                        else { console.warn('Strategy 1 failed:', err1.message); }
+                    } catch (e1) { console.warn('Strategy 1 exception:', e1.message); }
+
+                    if (!videoSaved) {
+                        try {
+                            const { error: err2 } = await supabaseClient.from('social_posts').insert({
+                                post_type: 'Voice Video',
+                                status: 'completed',
+                                headline: (data.prompt || '').substring(0, 120),
+                                post_copy: data.prompt || '',
+                                image_url: result.data.video1_url,
+                                video_part1_uri: result.data.video1_gcs_uri || '',
+                                video_part2_uri: result.data.video2_gcs_uri || '',
+                                video1_signed_url: result.data.video1_url || '',
+                                video2_signed_url: result.data.video2_url || ''
+                            });
+                            if (!err2) { videoSaved = true; console.log('Voice video saved (strategy 2)'); }
+                            else { console.warn('Strategy 2 failed:', err2.message); }
+                        } catch (e2) { console.warn('Strategy 2 exception:', e2.message); }
+                    }
+
+                    if (!videoSaved) {
+                        try {
+                            const { error: err3 } = await supabaseClient.from('social_posts').insert({
+                                post_type: 'Voice Video',
+                                status: 'completed',
+                                headline: (data.prompt || '').substring(0, 120),
+                                post_copy: data.prompt || '',
+                                image_url: JSON.stringify([result.data.video1_url, result.data.video2_url])
+                            });
+                            if (!err3) { videoSaved = true; console.log('Voice video saved (strategy 3)'); }
+                            else { console.warn('Strategy 3 failed:', err3.message); showToast('DB Error: ' + err3.message, 'error'); }
+                        } catch (e3) { console.error('All DB strategies failed:', e3.message); showToast('Could not save voice video to DB: ' + e3.message, 'error'); }
+                    }
+
+                    if (videoSaved) {
+                        showToast('Voice video saved to database!', 'success');
+                        if (typeof loadPosts === 'function') loadPosts();
+                    }
+                }
+                
+                updateProgress(100, 'Voice video ready!');
+                
+                setTimeout(() => {
+                    hideProgressAlert();
+                    
+                    const videoResults = document.getElementById('voice-video-results');
+                    const videoPart1 = document.getElementById('voice-video-part1');
+                    const videoPart2 = document.getElementById('voice-video-part2');
+                    const dlBtnPart1 = document.getElementById('download-voice-video-part1');
+                    const dlBtnPart2 = document.getElementById('download-voice-video-part2');
+                    const promptUsed = document.getElementById('voice-video-prompt-used');
+                    
+                    const url1 = result.data.video1_url;
+                    const url2 = result.data.video2_url;
+                    
+                    if (videoResults) {
+                        videoResults.style.display = 'block';
+                        videoResults.scrollIntoView({ behavior: 'smooth' });
+                    }
+
+                    if (videoPart1) {
+                        videoPart1.src = url1;
+                        videoPart1.play().catch(() => {});
+                        videoPart1.addEventListener('ended', () => {
+                            if (videoPart2) {
+                                videoPart2.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                videoPart2.play().catch(() => {});
+                            }
+                        }, { once: true });
+                    }
+                    if (videoPart2) {
+                        videoPart2.src = url2;
+                    }
+
+                    if (dlBtnPart1) {
+                        dlBtnPart1.href = url1;
+                        dlBtnPart1.download = 'msi-voice-video-part1.mp4';
+                    }
+                    if (dlBtnPart2) {
+                        dlBtnPart2.href = url2;
+                        dlBtnPart2.download = 'msi-voice-video-part2.mp4';
+                    }
+
+                    if (promptUsed && result.data.prompt) {
+                        promptUsed.innerHTML = `<strong>Prompt:</strong> ${result.data.prompt}<br><strong>Duration:</strong> ${result.data.duration}<br><strong>Method:</strong> Image-to-Video + Video Extension (Voice Consistency)`;
+                    }
+
+                    showSuccessAlert('Voice Video Ready!', '16-second video with consistent voice via video extension is ready to play and download.');
+                }, 500);
+            } else {
+                hideProgressAlert();
+                showToast(result.message || 'Voice video generation failed', 'error');
+            }
+            
+        } catch (error) {
+            console.error('Voice video generation error:', error);
+            hideProgressAlert();
+            if (error.name === 'AbortError') {
+                showToast('Voice video generation timed out after 8 minutes. Check n8n execution logs.', 'error');
+            } else {
+                showToast('Error generating voice video: ' + error.message, 'error');
+            }
+        } finally {
+            clearTimeout(abortTimeout);
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            _voiceVideoGenerating = false;
+        }
+    });
+}
+
+// Regenerate voice video button
+const regenerateVoiceVideoBtn = document.getElementById('regenerate-voice-video');
+if (regenerateVoiceVideoBtn) {
+    regenerateVoiceVideoBtn.addEventListener('click', () => {
+        const videoResults = document.getElementById('voice-video-results');
+        const videoPart1 = document.getElementById('voice-video-part1');
+        const videoPart2 = document.getElementById('voice-video-part2');
+        if (videoPart1) { videoPart1.pause(); videoPart1.src = ''; }
+        if (videoPart2) { videoPart2.pause(); videoPart2.src = ''; }
+        if (videoResults) videoResults.style.display = 'none';
+        voiceVideoForm?.scrollIntoView({ behavior: 'smooth' });
     });
 }
 

@@ -48,6 +48,15 @@
                     </svg>
                     Generate Video
                 </button>
+                <button class="tab-btn" data-mode="voicevideo">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                    Voice Video
+                </button>
                 <button class="tab-btn" data-mode="carousel">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="2" y="3" width="6" height="18" rx="1"></rect>
@@ -528,6 +537,142 @@
                             Download Part 2
                         </a>
                         <button id="regenerate-video" class="btn btn-secondary">Generate Another</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Voice Video Mode (Image-to-Video + Video Extension for Voice Consistency) -->
+        <div id="voicevideo-mode" class="mode-content">
+            <div class="card form-card">
+                <h2>Voice Video (16s Continuous)</h2>
+                <p style="color: #718096; margin-bottom: 24px;">
+                    Create a <strong>16-second continuous video</strong> with consistent voice using video extension.
+                    <br>Part 1: Image-to-Video (8s) &rarr; Part 2: Video Extension (8s) for seamless voice continuity.
+                    <br><span style="color: #207CE5; font-weight: 500;">Only ONE start image needed</span> &mdash; Part 2 extends from Part 1's last frame.
+                </p>
+                
+                <form id="voice-video-form">
+                    <div class="form-group">
+                        <label for="voice_video_prompt">Video Description *</label>
+                        <textarea id="voice_video_prompt" name="prompt" rows="4" required placeholder="Describe the video you want to create...&#10;&#10;Examples:&#10;- Professional spokesperson presenting tech solutions&#10;- Business leader introducing company services&#10;- Expert explaining AI capabilities"></textarea>
+                        <small class="form-hint">Describe the scene and message. The AI will create a coherent 16s narrative with consistent voice.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="voice_video_start_image_url">Start Image URL *</label>
+                        <input type="url" id="voice_video_start_image_url" name="start_image_url" required placeholder="https://example.com/person-image.jpg">
+                        <small class="form-hint">Image of the person who will speak. Part 1 generates from this image, Part 2 extends the video automatically.</small>
+                    </div>
+
+                    <div class="form-group" id="voice-video-start-image-preview-container" style="display: none;">
+                        <label>Start Image Preview</label>
+                        <div id="voice-video-start-image-preview" class="edit-image-preview">
+                            <img id="voice-video-start-image-img" src="" alt="Start image preview" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="voice_video_service">MSI Service Focus *</label>
+                        <select id="voice_video_service" name="service" required>
+                            <option value="company_intro" selected>Introduce the Company</option>
+                            <option value="data_security">Data Security and Cloud Computing</option>
+                            <option value="bpo">Business Process Outsourcing (BPO)</option>
+                            <option value="it_cybersecurity">IT Management and Cybersecurity</option>
+                            <option value="it_outsourcing">IT Outsourcing Solutions</option>
+                            <option value="ai_solutions">AI and Smart Business Solutions</option>
+                            <option value="executive_consulting">Executive Consulting</option>
+                            <option value="workforce_agility">Workforce Agility</option>
+                            <option value="telecom">Telecom Services</option>
+                        </select>
+                        <small class="form-hint">Select the MSI service to highlight in the video</small>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="voice_video_topic">Additional Context (Optional)</label>
+                            <input type="text" id="voice_video_topic" name="topic" placeholder="e.g., Enterprise clients, Fortune 500, SMBs">
+                            <small class="form-hint">Extra details about target audience or use case</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Duration</label>
+                            <input type="text" value="8s + 8s = 16s total (Voice Consistent)" disabled style="background: #f5f7fa; cursor: not-allowed;">
+                            <small class="form-hint">Part 1: Image&rarr;Video (8s) + Part 2: Video Extension (8s)</small>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Aspect Ratio</label>
+                            <input type="text" value="9:16 (Vertical)" disabled style="background: #f5f7fa; cursor: not-allowed;">
+                            <small class="form-hint">Optimized for social media stories</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Method</label>
+                            <input type="text" value="Image-to-Video + Video-to-Video Extension" disabled style="background: #edf2f7; cursor: not-allowed; color: #207CE5; font-weight: 500;">
+                            <small class="form-hint">Uses Veo 3.1 video extension for voice &amp; identity continuity</small>
+                        </div>
+                    </div>
+
+                    <div style="background: linear-gradient(135deg, #ebf8ff 0%, #e9f5e9 100%); border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; border-left: 4px solid #207CE5;">
+                        <p style="margin: 0; font-size: 13px; color: #2d3748; line-height: 1.6;">
+                            <strong style="color: #207CE5;">How it works:</strong> Part 1 generates video from your image. Part 2 uses <em>video-to-video extension</em> &mdash; Veo 3.1 samples the last second of Part 1 to extract voice timbre, facial identity, and motion vectors, then continues the scene seamlessly. This maintains the <strong>same voice, same face, same scene</strong> across the full 16 seconds.
+                        </p>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-video">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                        </svg>
+                        Generate Voice Video (16s)
+                    </button>
+                </form>
+            </div>
+
+            <!-- Voice Video Results -->
+            <div id="voice-video-results" class="generated-results" style="display: none;">
+                <div class="card">
+                    <h2>Voice Video Generated Successfully!</h2>
+                    <p style="color: #48bb78; font-weight: 500; margin-bottom: 16px;">16-second continuous video with voice consistency via video extension</p>
+                    
+                    <!-- Video Players - Both parts -->
+                    <div id="voice-video-player-section" class="result-section">
+                        <h3 style="margin-bottom:12px;color:#2d3748;">Part 1 (Image &rarr; Video)</h3>
+                        <div class="video-player">
+                            <video id="voice-video-part1" controls style="width: 100%; max-height: 600px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        <h3 style="margin-top:24px;margin-bottom:12px;color:#2d3748;">Part 2 (Video Extension &mdash; Voice Continuity)</h3>
+                        <div class="video-player">
+                            <video id="voice-video-part2" controls style="width: 100%; max-height: 600px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        <div id="voice-video-prompt-used" class="video-prompt-used" style="margin-top: 16px; padding: 16px; background: #f7fafc; border-radius: 8px; border-left: 4px solid #207CE5;"></div>
+                    </div>
+
+                    <div class="result-actions" id="voice-video-result-actions" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;">
+                        <a id="download-voice-video-part1" href="#" download="voice-video-part1.mp4" class="btn btn-primary" style="font-size:16px;padding:12px 24px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download Part 1
+                        </a>
+                        <a id="download-voice-video-part2" href="#" download="voice-video-part2.mp4" class="btn btn-primary" style="font-size:16px;padding:12px 24px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download Part 2
+                        </a>
+                        <button id="regenerate-voice-video" class="btn btn-secondary">Generate Another</button>
                     </div>
                 </div>
             </div>

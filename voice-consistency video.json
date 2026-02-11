@@ -1,0 +1,432 @@
+﻿{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "msi-video-gen",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*",
+          "rawBody": false
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        78608,
+        960
+      ],
+      "id": "b64ca61b-25fa-4085-a9ad-8f21f0dc5724",
+      "name": "Webhook - Video Gen",
+      "webhookId": "msi-video-gen"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.item.json;\nlet data = input.body || input;\nif (typeof data === 'string') {\n  try { data = JSON.parse(data); } catch (e) { }\n}\n\nconst prompt = data.prompt || data.video_prompt || '';\nconst start_image_url = data.start_image_url || data.imageUrl || null;\nconst second_image_url = data.second_image_url || data.end_image_url || null;\nconst aspect_ratio = data.aspect_ratio || data.aspectRatio || '9:16';\nconst service = data.service || 'company_intro';\nconst post_id = data.post_id || data.postId || null;\nconst topic = data.topic || '';\nconst duration = Math.min(parseInt(data.duration || '8'), 8);\n\nif (!prompt || prompt.length < 3) throw new Error('prompt is required');\nif (!start_image_url) throw new Error('start_image_url is required');\nif (!second_image_url || second_image_url.length < 5) throw new Error('second_image_url is required');\n\nreturn [{ json: { prompt, duration: String(duration), aspect_ratio, service, post_id, topic, start_image_url, second_image_url } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        78832,
+        960
+      ],
+      "id": "0d201840-09ea-41aa-874f-8866f6ee71c8",
+      "name": "Format Video Input"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=\"You write Veo 3.1 image-to-video prompts for MSI Technologies.\\n\\nVideo duration: \" + $json.duration + \"s per part. Two parts from reference images.\\n\\nSERVICE: \" + $json.service + \"\\nCONTEXT: \" + $json.prompt + \"\\nAUDIENCE: \" + ($json.topic || 'Business professionals') + \"\\n\\nREAD THE SERVICE VALUE ABOVE CAREFULLY BEFORE WRITING.\\n\\nIF SERVICE = company_intro:\\nThis is a GENERAL company introduction. DO NOT focus on any single service. Instead, present MSI Technologies as a technology and software company that offers a broad range of solutions. Mention the CORE services by name: IT Outsourcing, AI Solutions, and Workforce Agility. You may also briefly reference software development and technology consulting. The tone should be welcoming and broad — like a company overview video. Do NOT dive deep into any one service.\\n\\nIF SERVICE = anything else (not company_intro):\\nFocus the ENTIRE video on ONLY that specific service. Do NOT mention other services. Use the matching description below:\\n- data_security: MSI Data Security and Cloud Computing - protecting sensitive data, cloud infrastructure, compliance, and secure digital transformation.\\n- it_cybersecurity: MSI IT Management and Cybersecurity - threat detection, security operations, protecting business data and systems from cyber attacks.\\n- ai_solutions: MSI AI and Smart Business Solutions - artificial intelligence, automation, machine learning, and data-driven innovation.\\n- bpo: MSI Business Process Outsourcing (BPO) - outsourcing non-core business tasks, back-office operations, customer support, and process optimization.\\n- it_outsourcing: MSI IT Outsourcing Solutions - access to global IT talent, managed services, remote teams, and scalable tech staffing without hiring in-house.\\n- executive_consulting: MSI Executive Consulting - strategic advisory, navigating complexity, driving performance, and executive-level decision support.\\n- workforce_agility: MSI Workforce Agility - flexible staffing, adaptive talent solutions, scaling teams up or down based on business needs.\\n- telecom: MSI Telecom Services - network planning, RF engineering, measurements, and telecommunications infrastructure.\\n\\nCRITICAL SPEECH TIMING (8-second video):\\n- Natural speech = ~2.5 words/second\\n- Max speaking time = 6 seconds (2s silence buffer at end)\\n- MAXIMUM 15 WORDS of dialogue per part\\n- Write EXACT dialogue using colon syntax: The person says: [exact words here]\\n- Count your words carefully - if over 15, rewrite shorter\\n- Both parts must form a COHERENT narrative adapted to the CONTEXT above\\n\\nPROMPT FORMAT (for each part):\\n- Line 1: Brief motion direction (gesture, head movement) - max 10 words\\n- Line 2: EXACT dialogue with colon syntax - max 15 spoken words\\n- NEVER describe person appearance, clothing, background, or setting\\n- NEVER use quotation marks - only colons for speech\\n- Camera stays completely static and locked\\n\\nPART 1 RULES (depends on SERVICE):\\n- If SERVICE is company_intro: The person introduces MSI Technologies as a WHOLE — a technology and software company. They MUST mention the core services: IT Outsourcing, AI Solutions, and Workforce Agility. Keep it broad, general, and welcoming. Do NOT focus on a single service.\\n- If SERVICE is any other value: The person introduces MSI Technologies and IMMEDIATELY focuses on the SPECIFIC service selected. The dialogue must be about THAT service only, using keywords from its description above. Do NOT list other services.\\n\\nPART 2: The person starts speaking immediately from frame 1. Continues and completes the message from Part 1. If company_intro, continues the broad overview. If a specific service, stays focused on that service. After finishing speech, the person ends with a confident closing gesture (a nod, a subtle smile, or a calm hand gesture) during the last 2 seconds.\\n\\nVOICE DESCRIPTION (MANDATORY - include in EVERY prompt):\\n- The person speaks in a clear, confident, professional American English accent (standard US pronunciation).\\n- Warm and articulate tone, like a corporate spokesperson.\\n- Natural conversational pace, not robotic or overly dramatic.\\n- Include this voice direction in each prompt: speaks with a clear American accent, warm professional tone\\n\\nBoth parts together tell ONE coherent story adapted to the CONTEXT provided.\\n\\nOutput format: PART1_PROMPT ||| PART2_PROMPT\\nEach prompt under 280 characters. Max 15 spoken words per part.\"",
+        "options": {
+          "systemMessage": "You write Veo 3.1 image-to-video prompts for MSI Technologies. RULES: 1) Write EXACT dialogue with colon syntax (person says: words here). 2) MAX 15 spoken words per part - count carefully. 3) Never describe person/background - only motion and speech. 4) Camera static. No music. 5) CHECK THE SERVICE VALUE: If company_intro, create a BROAD company overview mentioning core services (IT Outsourcing, AI Solutions, Workforce Agility, software). NEVER focus on one service for company_intro. If any OTHER service value, talk ONLY and SPECIFICALLY about that one service. 6) Part 2: person speaks from frame 1, ends with a confident closing gesture (nod or smile) in the last 2 seconds. 7) VOICE: ALWAYS specify that the person speaks with a clear American English accent, warm professional tone. Include this voice direction in every prompt. Format: PART1_PROMPT ||| PART2_PROMPT. Under 280 chars each."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        79056,
+        960
+      ],
+      "id": "b304579d-c6d7-4df1-adc9-7d0afd9e3b14",
+      "name": "Agent: Video Script"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        79136,
+        1184
+      ],
+      "id": "e5eb6615-c642-43d9-8325-d8243c721679",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "oF4jKBK0jRbwEPWt",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const agentOutput = $('Agent: Video Script').item.json.output || '';\nconst f = $('Format Video Input').item.json;\n\nlet p1 = '', p2 = '';\nif (agentOutput.includes('|||')) {\n  const parts = agentOutput.split('|||');\n  p1 = parts[0].trim();\n  p2 = parts[1].trim();\n} else {\n  p1 = agentOutput.substring(0, 300);\n  p2 = agentOutput.substring(0, 300);\n}\n\n// Validate word count in dialogue (extract words after colon)\nfunction countSpokenWords(prompt) {\n  const colonMatch = prompt.match(/says?:\\s*(.+?)(?:\\.|$)/i);\n  if (!colonMatch) return 0;\n  return colonMatch[1].trim().split(/\\s+/).length;\n}\n\nconst w1 = countSpokenWords(p1);\nconst w2 = countSpokenWords(p2);\nif (w1 > 18) { console.log('WARNING: Part 1 has ' + w1 + ' spoken words (max 15)'); }\nif (w2 > 18) { console.log('WARNING: Part 2 has ' + w2 + ' spoken words (max 15)'); }\n\n// Minimal technical suffix - no extra dialogue instructions\nconst suffix1 = ' Clear American English accent, warm professional tone. Voice only, zero music. Static camera.';\nconst suffix2 = ' Person speaks immediately from first frame with clear American English accent, warm professional tone. Voice only, zero music. Static camera.';\n\nreturn [{\n  json: {\n    PROMPT_PART1: (p1 + suffix1).substring(0, 600),\n    PROMPT_PART2: (p2 + suffix2).substring(0, 600),\n    DURATION: f.duration,\n    ASPECT_RATIO: f.aspect_ratio,\n    POST_ID: f.post_id,\n    ORIGINAL_PROMPT: f.prompt,\n    SERVICE: f.service,\n    START_IMAGE_URL: f.start_image_url,\n    SECOND_IMAGE_URL: f.second_image_url\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        79408,
+        960
+      ],
+      "id": "032c64e1-c01c-4258-962c-b9c75907736e",
+      "name": "Build Settings"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Download start image and base64 encode it (~15s max)\nconst s = $input.item.json;\nconst imgBuffer = await this.helpers.httpRequest({\n  method: 'GET', url: s.START_IMAGE_URL, encoding: 'arraybuffer', timeout: 15000\n});\nconst b64 = Buffer.from(imgBuffer).toString('base64');\nif (b64.length < 100) throw new Error('Start image download failed');\n\nreturn [{ json: { IMAGE_B64: b64, PROMPT_PART1: s.PROMPT_PART1, PROMPT_PART2: s.PROMPT_PART2, DURATION: s.DURATION, ASPECT_RATIO: s.ASPECT_RATIO, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT, SERVICE: s.SERVICE, SECOND_IMAGE_URL: s.SECOND_IMAGE_URL } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        79632,
+        960
+      ],
+      "id": "7c1759c9-82b6-4463-892b-f20ed1f9f52a",
+      "name": "Download Image 1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst SA_EMAIL = 'vertex-express@gen-lang-client-0521438560.iam.gserviceaccount.com';\nconst SA_KEY = '-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCc8VpJosYd8D0N\\nmFLmh1b7UOsHgm5ZZBvjSkPUhcFXXoEnOoouhWPD5hEl7ziA+3vWpbHLWb5sm0dv\\nqUhHJWwMMbE5eBxmR7m/Cacpy5ZiOVw+180aZqq6e1AsKlEzRvdz66FSgpCeYtmS\\n2nnc8fGwxfB06qpXsxLVQYnwnKzOlKOv9cfXC/29vrbXoPwez9lkVyySa11iGtYA\\nzMU2LjiPrxvcDTbhb1JYD/050fT/m3z2NgclsV6uCEQxNLXOJriJxNuSKhmZufis\\nsoO/rlj/V+RFTrHEQ8zn3nbm6/W2ZANZt94AOo31t5TR6Idt9PxgjodSHJYLEm+0\\nOXC6bAf3AgMBAAECggEASvGn81Ti9YX0qarNH5+OZkmASmA7EL3Q4Wtj07chmfab\\nhx+Zv9hbyT7yfmJrYZB11Qzfx6Lt35AQ/13fkXXp0DLklfRo32Ct7u+Nn1REVlhc\\n1/eWTl6rdYyQPt7gUrO3U+g3655EsBW1Hz7sBZmVmBwVlMdAm8t8GVEILVmr3aN1\\n5CzVUaLtk9UNQDApUfxgdD2kutWTjqM2j3jsgceST6p98dqV2U8HiOXonpMgt02+\\n3PqApJNu4HQhdMzYwX67vKLuqanlZllLlBp8TWvbP3Roo2p57pD8oamT0BKWDUcX\\nfwT19NJOXqRTim6oalvGklTuwhI9+EJJPlAwN7+rAQKBgQDc+sNzQC4Eph4we6g5\\nBQe5QGIchou/ey1vJ+UGbM8vy6bkuy9dPbDZ/XUZTPOYkTPHKvRu544DTIQzH0qJ\\nfG5NKUIYdOInJm8y+r0JybMrrKl0b04/Nrlueb4RjesASMSq3BTVMK5+6Mb4vx7y\\nLS3mYUc8TF+kBEEaw0H4Fwlu9wKBgQC10JcC0kbtCF/MmHwSq9w0PfgbHT3NoZH7\\nyOWeXPfRLybn+I4MMYW3y5KSL5RM3Gxtve2I/HjJPpprZSUJXfMgRLrVkFRV1iFp\\nA/v1vAxoMlYGk3Oh74rwmmMmU7hhPSNL5HxIDHdXVZb5jrOvqIIBcZ6n2qhaCVXH\\nmtjl3QbvAQKBgBxiUWyiV8bdF4+espLwZHeVH4UOezDTP5jBhRd4LnyzKfLDYGgX\\nnnnBpqLjUX7NV9tDVzZPo9wkne57HHXgd8KNhCHkEZB5zVq8/j8dm1gGy5VbHq/b\\n9aGNHa7fjcnxjuFrd3mS0TcX60bUNcNhrj2jTSUfokFNEpe/cN/PBbUtAoGAaSms\\nnyonciT83Gd6pIYZiXIqluxT+iOxP7SU9AOMJ8ehNl2zM+RVFtk9/yZcHhUE9nj7\\n8tctuiFmyiWnxYI9BXYbpzmjPj7r9kUisKFDf+VVktoo8QqQD9kM7ndQV5Y4W0Ze\\niIIFaVONTu22iyzpfZJNlYNJC0MJBbpQKKyuvQECgYEA2q4N8oL3VJwZAuyIVXOm\\ng9SH9dq4pRunQbXJpxaP2mklGNEbLV1YURVGA0oyQE5oh3/4s/LdMERUFkaYBBnl\\nyrcLRELtnjswAy3b2tEp4ULP/rx5MRY4qjNonUrzoXAs937zDIcyjO6/ekxE28sO\\nXk4daXQsjz4PY3lVvJcnKFA=\\n-----END PRIVATE KEY-----\\n';\nconst TOKEN_URI = 'https://oauth2.googleapis.com/token';\nfunction b64url(str) { return Buffer.from(str).toString('base64').replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=/g,''); }\nfunction b64urlBuf(buf) { return buf.toString('base64').replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=/g,''); }\nconst now = Math.floor(Date.now()/1000);\nconst hdr = b64url(JSON.stringify({alg:'RS256',typ:'JWT'}));\nconst pay = b64url(JSON.stringify({iss:SA_EMAIL,sub:SA_EMAIL,aud:TOKEN_URI,iat:now,exp:now+3600,scope:'https://www.googleapis.com/auth/cloud-platform'}));\nconst si = hdr + '.' + pay;\nconst signer = crypto.createSign('RSA-SHA256');\nsigner.update(si);\nconst jwt = si + '.' + b64urlBuf(signer.sign(SA_KEY));\nconst tokenRes = await this.helpers.httpRequest({method:'POST',url:TOKEN_URI,headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion='+jwt, timeout: 10000});\nif (!tokenRes.access_token) throw new Error('Token failed');\nconst TOKEN = tokenRes.access_token;\nconst s = $input.item.json;\nconst EP = 'us-central1-aiplatform.googleapis.com';\nconst PJ = 'gen-lang-client-0521438560';\nconst LOC = 'us-central1';\nconst MDL = 'veo-3.1-generate-001';\nconst veoRes = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://' + EP + '/v1/projects/' + PJ + '/locations/' + LOC + '/publishers/google/models/' + MDL + ':predictLongRunning',\n  headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + TOKEN },\n  body: JSON.stringify({\n    instances: [{ prompt: s.PROMPT_PART1, image: { bytesBase64Encoded: s.IMAGE_B64, mimeType: 'image/jpeg' } }],\n    parameters: { aspectRatio: s.ASPECT_RATIO, resolution: '720p', sampleCount: 1, durationSeconds: parseInt(s.DURATION), personGeneration: 'allow_all', addWatermark: false, includeRaiReason: true, generateAudio: true, storageUri: 'gs://msi-veo-videos/part1/', negativePrompt: 'background music, soundtrack, instrumental music, musical score, ambient music, piano, guitar, drums, orchestra, synthesizer, melody, rhythm, cinematic score, dramatic music, soft music, upbeat music, ambient sounds, ambient noise, room tone, wind sound, traffic noise, nature sounds, transition animation, visual transitions, fade, dissolve, wipe, crossfade, scene change, new background, different setting, camera movement, camera pan, camera zoom, dolly, static, blurry, text, letters, words, subtitles, captions, watermark, frozen face, closed mouth, logo animation, logo zoom, logo glow, logo enlargement, logo movement' }\n  }),\n  timeout: 30000\n});\nif (!veoRes.name) throw new Error('Veo Part 1 failed: ' + JSON.stringify(veoRes).substring(0, 300));\n\nreturn [{ json: { op1: veoRes.name, PROMPT_PART2: s.PROMPT_PART2, DURATION: s.DURATION, ASPECT_RATIO: s.ASPECT_RATIO, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT, IMAGE_B64_2: s.IMAGE_B64_2 } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80080,
+        960
+      ],
+      "id": "b1f493c7-9a6a-4069-a17d-32752c8059ee",
+      "name": "Submit Part 1"
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        80304,
+        960
+      ],
+      "id": "5570b354-0704-4d91-a527-ff60ad3679ba",
+      "name": "Wait Part 1",
+      "webhookId": "veo3-wait-1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst SA_EMAIL = 'vertex-express@gen-lang-client-0521438560.iam.gserviceaccount.com';\nconst SA_KEY = '-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCc8VpJosYd8D0N\\nmFLmh1b7UOsHgm5ZZBvjSkPUhcFXXoEnOoouhWPD5hEl7ziA+3vWpbHLWb5sm0dv\\nqUhHJWwMMbE5eBxmR7m/Cacpy5ZiOVw+180aZqq6e1AsKlEzRvdz66FSgpCeYtmS\\n2nnc8fGwxfB06qpXsxLVQYnwnKzOlKOv9cfXC/29vrbXoPwez9lkVyySa11iGtYA\\nzMU2LjiPrxvcDTbhb1JYD/050fT/m3z2NgclsV6uCEQxNLXOJriJxNuSKhmZufis\\nsoO/rlj/V+RFTrHEQ8zn3nbm6/W2ZANZt94AOo31t5TR6Idt9PxgjodSHJYLEm+0\\nOXC6bAf3AgMBAAECggEASvGn81Ti9YX0qarNH5+OZkmASmA7EL3Q4Wtj07chmfab\\nhx+Zv9hbyT7yfmJrYZB11Qzfx6Lt35AQ/13fkXXp0DLklfRo32Ct7u+Nn1REVlhc\\n1/eWTl6rdYyQPt7gUrO3U+g3655EsBW1Hz7sBZmVmBwVlMdAm8t8GVEILVmr3aN1\\n5CzVUaLtk9UNQDApUfxgdD2kutWTjqM2j3jsgceST6p98dqV2U8HiOXonpMgt02+\\n3PqApJNu4HQhdMzYwX67vKLuqanlZllLlBp8TWvbP3Roo2p57pD8oamT0BKWDUcX\\nfwT19NJOXqRTim6oalvGklTuwhI9+EJJPlAwN7+rAQKBgQDc+sNzQC4Eph4we6g5\\nBQe5QGIchou/ey1vJ+UGbM8vy6bkuy9dPbDZ/XUZTPOYkTPHKvRu544DTIQzH0qJ\\nfG5NKUIYdOInJm8y+r0JybMrrKl0b04/Nrlueb4RjesASMSq3BTVMK5+6Mb4vx7y\\nLS3mYUc8TF+kBEEaw0H4Fwlu9wKBgQC10JcC0kbtCF/MmHwSq9w0PfgbHT3NoZH7\\nyOWeXPfRLybn+I4MMYW3y5KSL5RM3Gxtve2I/HjJPpprZSUJXfMgRLrVkFRV1iFp\\nA/v1vAxoMlYGk3Oh74rwmmMmU7hhPSNL5HxIDHdXVZb5jrOvqIIBcZ6n2qhaCVXH\\nmtjl3QbvAQKBgBxiUWyiV8bdF4+espLwZHeVH4UOezDTP5jBhRd4LnyzKfLDYGgX\\nnnnBpqLjUX7NV9tDVzZPo9wkne57HHXgd8KNhCHkEZB5zVq8/j8dm1gGy5VbHq/b\\n9aGNHa7fjcnxjuFrd3mS0TcX60bUNcNhrj2jTSUfokFNEpe/cN/PBbUtAoGAaSms\\nnyonciT83Gd6pIYZiXIqluxT+iOxP7SU9AOMJ8ehNl2zM+RVFtk9/yZcHhUE9nj7\\n8tctuiFmyiWnxYI9BXYbpzmjPj7r9kUisKFDf+VVktoo8QqQD9kM7ndQV5Y4W0Ze\\niIIFaVONTu22iyzpfZJNlYNJC0MJBbpQKKyuvQECgYEA2q4N8oL3VJwZAuyIVXOm\\ng9SH9dq4pRunQbXJpxaP2mklGNEbLV1YURVGA0oyQE5oh3/4s/LdMERUFkaYBBnl\\nyrcLRELtnjswAy3b2tEp4ULP/rx5MRY4qjNonUrzoXAs937zDIcyjO6/ekxE28sO\\nXk4daXQsjz4PY3lVvJcnKFA=\\n-----END PRIVATE KEY-----\\n';\nconst TOKEN_URI = 'https://oauth2.googleapis.com/token';\nfunction b64url(str) { return Buffer.from(str).toString('base64').replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=/g,''); }\nfunction b64urlBuf(buf) { return buf.toString('base64').replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=/g,''); }\nconst now = Math.floor(Date.now()/1000);\nconst hdr = b64url(JSON.stringify({alg:'RS256',typ:'JWT'}));\nconst pay = b64url(JSON.stringify({iss:SA_EMAIL,sub:SA_EMAIL,aud:TOKEN_URI,iat:now,exp:now+3600,scope:'https://www.googleapis.com/auth/cloud-platform'}));\nconst si = hdr + '.' + pay;\nconst signer = crypto.createSign('RSA-SHA256');\nsigner.update(si);\nconst jwt = si + '.' + b64urlBuf(signer.sign(SA_KEY));\nconst tokenRes = await this.helpers.httpRequest({method:'POST',url:TOKEN_URI,headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion='+jwt, timeout: 10000});\nif (!tokenRes.access_token) throw new Error('Token failed');\nconst TOKEN = tokenRes.access_token;\nconst s = $input.item.json;\nconst EP = 'us-central1-aiplatform.googleapis.com';\nconst PJ = 'gen-lang-client-0521438560';\nconst LOC = 'us-central1';\nconst MDL = 'veo-3.1-generate-001';\nconst res = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://' + EP + '/v1/projects/' + PJ + '/locations/' + LOC + '/publishers/google/models/' + MDL + ':fetchPredictOperation',\n  headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + TOKEN },\n  body: JSON.stringify({ operationName: s.op1 }),\n  timeout: 15000\n});\nlet videoUri = res.response?.videos?.[0]?.gcsUri || res.response?.videos?.[0]?.uri || '';\nif (!videoUri) throw new Error('Part 1 not ready: ' + JSON.stringify(res).substring(0, 400));\n\nreturn [{ json: { video1_gcs_uri: videoUri, PROMPT_PART2: s.PROMPT_PART2, DURATION: s.DURATION, ASPECT_RATIO: s.ASPECT_RATIO, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT, IMAGE_B64_2: s.IMAGE_B64_2 } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80528,
+        960
+      ],
+      "id": "94abd36d-80a4-4cc1-b529-141b70ae48e2",
+      "name": "Fetch Part 1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Download second image early (before Veo calls) to avoid post-Wait timeout\nconst s = $input.item.json;\nconst imgBuffer = await this.helpers.httpRequest({\n  method: 'GET', url: s.SECOND_IMAGE_URL, encoding: 'arraybuffer', timeout: 15000\n});\nconst b64 = Buffer.from(imgBuffer).toString('base64');\nif (b64.length < 100) throw new Error('Second image download failed');\n\nreturn [{ json: { IMAGE_B64: s.IMAGE_B64, IMAGE_B64_2: b64, PROMPT_PART1: s.PROMPT_PART1, PROMPT_PART2: s.PROMPT_PART2, DURATION: s.DURATION, ASPECT_RATIO: s.ASPECT_RATIO, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT, SERVICE: s.SERVICE } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        79856,
+        960
+      ],
+      "id": "925b44e0-8890-4811-97d4-becc280b5941",
+      "name": "Download Image 2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst SA_EMAIL = 'vertex-express@gen-lang-client-0521438560.iam.gserviceaccount.com';\nconst SA_KEY = '-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCc8VpJosYd8D0N\\nmFLmh1b7UOsHgm5ZZBvjSkPUhcFXXoEnOoouhWPD5hEl7ziA+3vWpbHLWb5sm0dv\\nqUhHJWwMMbE5eBxmR7m/Cacpy5ZiOVw+180aZqq6e1AsKlEzRvdz66FSgpCeYtmS\\n2nnc8fGwxfB06qpXsxLVQYnwnKzOlKOv9cfXC/29vrbXoPwez9lkVyySa11iGtYA\\nzMU2LjiPrxvcDTbhb1JYD/050fT/m3z2NgclsV6uCEQxNLXOJriJxNuSKhmZufis\\nsoO/rlj/V+RFTrHEQ8zn3nbm6/W2ZANZt94AOo31t5TR6Idt9PxgjodSHJYLEm+0\\nOXC6bAf3AgMBAAECggEASvGn81Ti9YX0qarNH5+OZkmASmA7EL3Q4Wtj07chmfab\\nhx+Zv9hbyT7yfmJrYZB11Qzfx6Lt35AQ/13fkXXp0DLklfRo32Ct7u+Nn1REVlhc\\n1/eWTl6rdYyQPt7gUrO3U+g3655EsBW1Hz7sBZmVmBwVlMdAm8t8GVEILVmr3aN1\\n5CzVUaLtk9UNQDApUfxgdD2kutWTjqM2j3jsgceST6p98dqV2U8HiOXonpMgt02+\\n3PqApJNu4HQhdMzYwX67vKLuqanlZllLlBp8TWvbP3Roo2p57pD8oamT0BKWDUcX\\nfwT19NJOXqRTim6oalvGklTuwhI9+EJJPlAwN7+rAQKBgQDc+sNzQC4Eph4we6g5\\nBQe5QGIchou/ey1vJ+UGbM8vy6bkuy9dPbDZ/XUZTPOYkTPHKvRu544DTIQzH0qJ\\nfG5NKUIYdOInJm8y+r0JybMrrKl0b04/Nrlueb4RjesASMSq3BTVMK5+6Mb4vx7y\\nLS3mYUc8TF+kBEEaw0H4Fwlu9wKBgQC10JcC0kbtCF/MmHwSq9w0PfgbHT3NoZH7\\nyOWeXPfRLybn+I4MMYW3y5KSL5RM3Gxtve2I/HjJPpprZSUJXfMgRLrVkFRV1iFp\\nA/v1vAxoMlYGk3Oh74rwmmMmU7hhPSNL5HxIDHdXVZb5jrOvqIIBcZ6n2qhaCVXH\\nmtjl3QbvAQKBgBxiUWyiV8bdF4+espLwZHeVH4UOezDTP5jBhRd4LnyzKfLDYGgX\\nnnnBpqLjUX7NV9tDVzZPo9wkne57HHXgd8KNhCHkEZB5zVq8/j8dm1gGy5VbHq/b\\n9aGNHa7fjcnxjuFrd3mS0TcX60bUNcNhrj2jTSUfokFNEpe/cN/PBbUtAoGAaSms\\nnyonciT83Gd6pIYZiXIqluxT+iOxP7SU9AOMJ8ehNl2zM+RVFtk9/yZcHhUE9nj7\\n8tctuiFmyiWnxYI9BXYbpzmjPj7r9kUisKFDf+VVktoo8QqQD9kM7ndQV5Y4W0Ze\\niIIFaVONTu22iyzpfZJNlYNJC0MJBbpQKKyuvQECgYEA2q4N8oL3VJwZAuyIVXOm\\ng9SH9dq4pRunQbXJpxaP2mklGNEbLV1YURVGA0oyQE5oh3/4s/LdMERUFkaYBBnl\\nyrcLRELtnjswAy3b2tEp4ULP/rx5MRY4qjNonUrzoXAs937zDIcyjO6/ekxE28sO\\nXk4daXQsjz4PY3lVvJcnKFA=\\n-----END PRIVATE KEY-----\\n';\nconst TOKEN_URI = 'https://oauth2.googleapis.com/token';\nfunction b64url(str) { return Buffer.from(str).toString('base64').replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=/g,''); }\nfunction b64urlBuf(buf) { return buf.toString('base64').replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=/g,''); }\nconst now = Math.floor(Date.now()/1000);\nconst hdr = b64url(JSON.stringify({alg:'RS256',typ:'JWT'}));\nconst pay = b64url(JSON.stringify({iss:SA_EMAIL,sub:SA_EMAIL,aud:TOKEN_URI,iat:now,exp:now+3600,scope:'https://www.googleapis.com/auth/cloud-platform'}));\nconst si = hdr + '.' + pay;\nconst signer = crypto.createSign('RSA-SHA256');\nsigner.update(si);\nconst jwt = si + '.' + b64urlBuf(signer.sign(SA_KEY));\nconst tokenRes = await this.helpers.httpRequest({method:'POST',url:TOKEN_URI,headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion='+jwt, timeout: 10000});\nif (!tokenRes.access_token) throw new Error('Token failed');\nconst TOKEN = tokenRes.access_token;\nconst s = $input.item.json;\nconst EP = 'us-central1-aiplatform.googleapis.com';\nconst PJ = 'gen-lang-client-0521438560';\nconst LOC = 'us-central1';\nconst MDL = 'veo-3.1-generate-001';\nconst veoRes = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://' + EP + '/v1/projects/' + PJ + '/locations/' + LOC + '/publishers/google/models/' + MDL + ':predictLongRunning',\n  headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + TOKEN },\n  body: JSON.stringify({\n    instances: [{ prompt: s.PROMPT_PART2, image: { bytesBase64Encoded: s.IMAGE_B64_2, mimeType: 'image/jpeg' } }],\n    parameters: { aspectRatio: s.ASPECT_RATIO, resolution: '720p', sampleCount: 1, durationSeconds: parseInt(s.DURATION), personGeneration: 'allow_all', addWatermark: false, includeRaiReason: true, generateAudio: true, storageUri: 'gs://msi-veo-videos/part2/', negativePrompt: 'background music, soundtrack, instrumental music, musical score, ambient music, piano, guitar, drums, orchestra, synthesizer, melody, rhythm, cinematic score, dramatic music, soft music, upbeat music, ambient sounds, ambient noise, room tone, wind sound, traffic noise, nature sounds, transition animation, visual transitions, fade, dissolve, wipe, crossfade, scene change, new background, different setting, camera movement, camera pan, camera zoom, dolly, static, blurry, text, letters, words, subtitles, captions, watermark, frozen face, closed mouth, logo animation, logo zoom, logo glow, logo enlargement, logo movement' }\n  }),\n  timeout: 30000\n});\nif (!veoRes.name) throw new Error('Veo Part 2 failed: ' + JSON.stringify(veoRes).substring(0, 300));\n\nreturn [{ json: { op2: veoRes.name, video1_gcs_uri: s.video1_gcs_uri, DURATION: s.DURATION, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80752,
+        960
+      ],
+      "id": "ef367407-7475-4d5b-bca7-0d5e6d10a170",
+      "name": "Submit Part 2"
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        80976,
+        960
+      ],
+      "id": "b4146364-eb6d-431f-a53b-d771ee6b97e0",
+      "name": "Wait Part 2",
+      "webhookId": "veo3-wait-2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst SA_EMAIL = 'vertex-express@gen-lang-client-0521438560.iam.gserviceaccount.com';\nconst SA_KEY = '-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCc8VpJosYd8D0N\\nmFLmh1b7UOsHgm5ZZBvjSkPUhcFXXoEnOoouhWPD5hEl7ziA+3vWpbHLWb5sm0dv\\nqUhHJWwMMbE5eBxmR7m/Cacpy5ZiOVw+180aZqq6e1AsKlEzRvdz66FSgpCeYtmS\\n2nnc8fGwxfB06qpXsxLVQYnwnKzOlKOv9cfXC/29vrbXoPwez9lkVyySa11iGtYA\\nzMU2LjiPrxvcDTbhb1JYD/050fT/m3z2NgclsV6uCEQxNLXOJriJxNuSKhmZufis\\nsoO/rlj/V+RFTrHEQ8zn3nbm6/W2ZANZt94AOo31t5TR6Idt9PxgjodSHJYLEm+0\\nOXC6bAf3AgMBAAECggEASvGn81Ti9YX0qarNH5+OZkmASmA7EL3Q4Wtj07chmfab\\nhx+Zv9hbyT7yfmJrYZB11Qzfx6Lt35AQ/13fkXXp0DLklfRo32Ct7u+Nn1REVlhc\\n1/eWTl6rdYyQPt7gUrO3U+g3655EsBW1Hz7sBZmVmBwVlMdAm8t8GVEILVmr3aN1\\n5CzVUaLtk9UNQDApUfxgdD2kutWTjqM2j3jsgceST6p98dqV2U8HiOXonpMgt02+\\n3PqApJNu4HQhdMzYwX67vKLuqanlZllLlBp8TWvbP3Roo2p57pD8oamT0BKWDUcX\\nfwT19NJOXqRTim6oalvGklTuwhI9+EJJPlAwN7+rAQKBgQDc+sNzQC4Eph4we6g5\\nBQe5QGIchou/ey1vJ+UGbM8vy6bkuy9dPbDZ/XUZTPOYkTPHKvRu544DTIQzH0qJ\\nfG5NKUIYdOInJm8y+r0JybMrrKl0b04/Nrlueb4RjesASMSq3BTVMK5+6Mb4vx7y\\nLS3mYUc8TF+kBEEaw0H4Fwlu9wKBgQC10JcC0kbtCF/MmHwSq9w0PfgbHT3NoZH7\\nyOWeXPfRLybn+I4MMYW3y5KSL5RM3Gxtve2I/HjJPpprZSUJXfMgRLrVkFRV1iFp\\nA/v1vAxoMlYGk3Oh74rwmmMmU7hhPSNL5HxIDHdXVZb5jrOvqIIBcZ6n2qhaCVXH\\nmtjl3QbvAQKBgBxiUWyiV8bdF4+espLwZHeVH4UOezDTP5jBhRd4LnyzKfLDYGgX\\nnnnBpqLjUX7NV9tDVzZPo9wkne57HHXgd8KNhCHkEZB5zVq8/j8dm1gGy5VbHq/b\\n9aGNHa7fjcnxjuFrd3mS0TcX60bUNcNhrj2jTSUfokFNEpe/cN/PBbUtAoGAaSms\\nnyonciT83Gd6pIYZiXIqluxT+iOxP7SU9AOMJ8ehNl2zM+RVFtk9/yZcHhUE9nj7\\n8tctuiFmyiWnxYI9BXYbpzmjPj7r9kUisKFDf+VVktoo8QqQD9kM7ndQV5Y4W0Ze\\niIIFaVONTu22iyzpfZJNlYNJC0MJBbpQKKyuvQECgYEA2q4N8oL3VJwZAuyIVXOm\\ng9SH9dq4pRunQbXJpxaP2mklGNEbLV1YURVGA0oyQE5oh3/4s/LdMERUFkaYBBnl\\nyrcLRELtnjswAy3b2tEp4ULP/rx5MRY4qjNonUrzoXAs937zDIcyjO6/ekxE28sO\\nXk4daXQsjz4PY3lVvJcnKFA=\\n-----END PRIVATE KEY-----\\n';\nconst TOKEN_URI = 'https://oauth2.googleapis.com/token';\nfunction b64url(str) { return Buffer.from(str).toString('base64').replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=/g,''); }\nfunction b64urlBuf(buf) { return buf.toString('base64').replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=/g,''); }\nconst now = Math.floor(Date.now()/1000);\nconst hdr = b64url(JSON.stringify({alg:'RS256',typ:'JWT'}));\nconst pay = b64url(JSON.stringify({iss:SA_EMAIL,sub:SA_EMAIL,aud:TOKEN_URI,iat:now,exp:now+3600,scope:'https://www.googleapis.com/auth/cloud-platform'}));\nconst si = hdr + '.' + pay;\nconst signer = crypto.createSign('RSA-SHA256');\nsigner.update(si);\nconst jwt = si + '.' + b64urlBuf(signer.sign(SA_KEY));\nconst tokenRes = await this.helpers.httpRequest({method:'POST',url:TOKEN_URI,headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion='+jwt, timeout: 10000});\nif (!tokenRes.access_token) throw new Error('Token failed');\nconst TOKEN = tokenRes.access_token;\nconst s = $input.item.json;\nconst EP = 'us-central1-aiplatform.googleapis.com';\nconst PJ = 'gen-lang-client-0521438560';\nconst LOC = 'us-central1';\nconst MDL = 'veo-3.1-generate-001';\nconst res = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://' + EP + '/v1/projects/' + PJ + '/locations/' + LOC + '/publishers/google/models/' + MDL + ':fetchPredictOperation',\n  headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + TOKEN },\n  body: JSON.stringify({ operationName: s.op2 }),\n  timeout: 15000\n});\nlet videoUri = res.response?.videos?.[0]?.gcsUri || res.response?.videos?.[0]?.uri || '';\nif (!videoUri) throw new Error('Part 2 not ready: ' + JSON.stringify(res).substring(0, 400));\n\nreturn [{ json: { video1_gcs_uri: s.video1_gcs_uri, video2_gcs_uri: videoUri, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT, DURATION: s.DURATION } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        81200,
+        960
+      ],
+      "id": "895644ac-31f8-492e-b400-fa9fae5637f5",
+      "name": "Fetch Part 2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate V4 Signed URLs so browser can download videos (~5s max)\nconst crypto = require('crypto');\nconst s = $input.item.json;\nconst SA_EMAIL = 'vertex-express@gen-lang-client-0521438560.iam.gserviceaccount.com';\nconst SA_KEY = '-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCc8VpJosYd8D0N\\nmFLmh1b7UOsHgm5ZZBvjSkPUhcFXXoEnOoouhWPD5hEl7ziA+3vWpbHLWb5sm0dv\\nqUhHJWwMMbE5eBxmR7m/Cacpy5ZiOVw+180aZqq6e1AsKlEzRvdz66FSgpCeYtmS\\n2nnc8fGwxfB06qpXsxLVQYnwnKzOlKOv9cfXC/29vrbXoPwez9lkVyySa11iGtYA\\nzMU2LjiPrxvcDTbhb1JYD/050fT/m3z2NgclsV6uCEQxNLXOJriJxNuSKhmZufis\\nsoO/rlj/V+RFTrHEQ8zn3nbm6/W2ZANZt94AOo31t5TR6Idt9PxgjodSHJYLEm+0\\nOXC6bAf3AgMBAAECggEASvGn81Ti9YX0qarNH5+OZkmASmA7EL3Q4Wtj07chmfab\\nhx+Zv9hbyT7yfmJrYZB11Qzfx6Lt35AQ/13fkXXp0DLklfRo32Ct7u+Nn1REVlhc\\n1/eWTl6rdYyQPt7gUrO3U+g3655EsBW1Hz7sBZmVmBwVlMdAm8t8GVEILVmr3aN1\\n5CzVUaLtk9UNQDApUfxgdD2kutWTjqM2j3jsgceST6p98dqV2U8HiOXonpMgt02+\\n3PqApJNu4HQhdMzYwX67vKLuqanlZllLlBp8TWvbP3Roo2p57pD8oamT0BKWDUcX\\nfwT19NJOXqRTim6oalvGklTuwhI9+EJJPlAwN7+rAQKBgQDc+sNzQC4Eph4we6g5\\nBQe5QGIchou/ey1vJ+UGbM8vy6bkuy9dPbDZ/XUZTPOYkTPHKvRu544DTIQzH0qJ\\nfG5NKUIYdOInJm8y+r0JybMrrKl0b04/Nrlueb4RjesASMSq3BTVMK5+6Mb4vx7y\\nLS3mYUc8TF+kBEEaw0H4Fwlu9wKBgQC10JcC0kbtCF/MmHwSq9w0PfgbHT3NoZH7\\nyOWeXPfRLybn+I4MMYW3y5KSL5RM3Gxtve2I/HjJPpprZSUJXfMgRLrVkFRV1iFp\\nA/v1vAxoMlYGk3Oh74rwmmMmU7hhPSNL5HxIDHdXVZb5jrOvqIIBcZ6n2qhaCVXH\\nmtjl3QbvAQKBgBxiUWyiV8bdF4+espLwZHeVH4UOezDTP5jBhRd4LnyzKfLDYGgX\\nnnnBpqLjUX7NV9tDVzZPo9wkne57HHXgd8KNhCHkEZB5zVq8/j8dm1gGy5VbHq/b\\n9aGNHa7fjcnxjuFrd3mS0TcX60bUNcNhrj2jTSUfokFNEpe/cN/PBbUtAoGAaSms\\nnyonciT83Gd6pIYZiXIqluxT+iOxP7SU9AOMJ8ehNl2zM+RVFtk9/yZcHhUE9nj7\\n8tctuiFmyiWnxYI9BXYbpzmjPj7r9kUisKFDf+VVktoo8QqQD9kM7ndQV5Y4W0Ze\\niIIFaVONTu22iyzpfZJNlYNJC0MJBbpQKKyuvQECgYEA2q4N8oL3VJwZAuyIVXOm\\ng9SH9dq4pRunQbXJpxaP2mklGNEbLV1YURVGA0oyQE5oh3/4s/LdMERUFkaYBBnl\\nyrcLRELtnjswAy3b2tEp4ULP/rx5MRY4qjNonUrzoXAs937zDIcyjO6/ekxE28sO\\nXk4daXQsjz4PY3lVvJcnKFA=\\n-----END PRIVATE KEY-----\\n';\n\nfunction signUrl(gsUri) {\n  const m = gsUri.match(/^gs:\\/\\/([^\\/]+)\\/(.+)$/);\n  if (!m) return gsUri;\n  const bucket = m[1], objPath = m[2], host = 'storage.googleapis.com';\n  const d = new Date();\n  const pad = v => String(v).padStart(2, '0');\n  const ds = d.getUTCFullYear() + '' + pad(d.getUTCMonth()+1) + pad(d.getUTCDate());\n  const dt = ds + 'T' + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + 'Z';\n  const scope = ds + '/auto/storage/goog4_request';\n  const cred = SA_EMAIL + '/' + scope;\n  const qs = 'X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=' + encodeURIComponent(cred) + '&X-Goog-Date=' + dt + '&X-Goog-Expires=604800&X-Goog-SignedHeaders=host';\n  const objEnc = objPath.split('/').map(p => encodeURIComponent(p)).join('/');\n  const canon = 'GET\\n/' + bucket + '/' + objEnc + '\\n' + qs + '\\nhost:' + host + '\\n\\nhost\\nUNSIGNED-PAYLOAD';\n  const sts = 'GOOG4-RSA-SHA256\\n' + dt + '\\n' + scope + '\\n' + crypto.createHash('sha256').update(canon).digest('hex');\n  const sg = crypto.createSign('RSA-SHA256');\n  sg.update(sts);\n  return 'https://' + host + '/' + bucket + '/' + objEnc + '?' + qs + '&X-Goog-Signature=' + sg.sign(SA_KEY, 'hex');\n}\n\nreturn [{ json: {\n  video1_gcs_uri: s.video1_gcs_uri,\n  video2_gcs_uri: s.video2_gcs_uri,\n  video1_url: signUrl(s.video1_gcs_uri),\n  video2_url: signUrl(s.video2_gcs_uri),\n  POST_ID: s.POST_ID,\n  ORIGINAL_PROMPT: s.ORIGINAL_PROMPT,\n  DURATION: s.DURATION\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        81424,
+        960
+      ],
+      "id": "941c66c2-865f-459d-90ff-3fa319e76cce",
+      "name": "Sign URLs"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.POST_ID && $json.POST_ID.length > 10 ? `UPDATE social_posts SET video_part1_uri = '${$json.video1_gcs_uri}', video_part2_uri = '${$json.video2_gcs_uri}', video1_signed_url = '${$json.video1_url}', video2_signed_url = '${$json.video2_url}', status = 'video_completed', updated_at = NOW() WHERE id = '${$json.POST_ID}' RETURNING *` : `INSERT INTO social_posts (post_type, status, headline, post_copy, image_url, video_part1_uri, video_part2_uri, video1_signed_url, video2_signed_url, created_at, updated_at) VALUES ('Video', 'video_completed', LEFT('${($json.ORIGINAL_PROMPT || '').replace(/'/g, \"''\")}', 120), '${($json.ORIGINAL_PROMPT || '').replace(/'/g, \"''\")}', '${$json.video1_url}', '${$json.video1_gcs_uri}', '${$json.video2_gcs_uri}', '${$json.video1_url}', '${$json.video2_url}', NOW(), NOW()) RETURNING *` }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        81648,
+        960
+      ],
+      "id": "b00a2d79-600b-4980-8de2-1ad23ee8616a",
+      "name": "Update DB",
+      "credentials": {
+        "postgres": {
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Video generated and saved to database', data: { video1_url: $('Sign URLs').item.json.video1_url, video2_url: $('Sign URLs').item.json.video2_url, video1_gcs_uri: $('Sign URLs').item.json.video1_gcs_uri, video2_gcs_uri: $('Sign URLs').item.json.video2_gcs_uri, post_id: $('Update DB').item.json?.id || $('Sign URLs').item.json.POST_ID, db_saved: true, duration: (parseInt($('Sign URLs').item.json.DURATION) * 2) + 's', prompt: $('Sign URLs').item.json.ORIGINAL_PROMPT, service: $('Build Settings').item.json.SERVICE } }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, GET, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        81872,
+        960
+      ],
+      "id": "2a08b820-fa4a-4e71-84dd-00918ffc85a2",
+      "name": "Respond Success"
+    }
+  ],
+  "connections": {
+    "Webhook - Video Gen": {
+      "main": [
+        [
+          {
+            "node": "Format Video Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Video Input": {
+      "main": [
+        [
+          {
+            "node": "Agent: Video Script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent: Video Script": {
+      "main": [
+        [
+          {
+            "node": "Build Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent: Video Script",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Settings": {
+      "main": [
+        [
+          {
+            "node": "Download Image 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image 1": {
+      "main": [
+        [
+          {
+            "node": "Download Image 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit Part 1": {
+      "main": [
+        [
+          {
+            "node": "Wait Part 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Part 1": {
+      "main": [
+        [
+          {
+            "node": "Fetch Part 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Part 1": {
+      "main": [
+        [
+          {
+            "node": "Submit Part 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image 2": {
+      "main": [
+        [
+          {
+            "node": "Submit Part 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit Part 2": {
+      "main": [
+        [
+          {
+            "node": "Wait Part 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Part 2": {
+      "main": [
+        [
+          {
+            "node": "Fetch Part 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Part 2": {
+      "main": [
+        [
+          {
+            "node": "Sign URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign URLs": {
+      "main": [
+        [
+          {
+            "node": "Update DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update DB": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b5116c87255060ddf18db8a2b1b90e34b38f50f44815cf784a0b8a92b6bb4e6e"
+  }
+}
