@@ -106,6 +106,7 @@ const n8nVideoWebhook = CONFIG.n8nVideoWebhook || CONFIG.n8n?.videoWebhook;
 const n8nCarouselWebhook = CONFIG.n8nCarouselWebhook || CONFIG.n8n?.carouselWebhook;
 const n8nEducativeWebhook = CONFIG.n8nEducativeWebhook || CONFIG.n8n?.educativeWebhook;
 const n8nVoiceVideoWebhook = CONFIG.n8nVoiceVideoWebhook || CONFIG.n8n?.voiceVideoWebhook;
+const n8nVoiceSwapWebhook = CONFIG.n8nVoiceSwapWebhook || CONFIG.n8n?.voiceSwapWebhook;
 
 // Supabase Client
 let supabaseClient;
@@ -152,6 +153,7 @@ const carouselMode = document.getElementById('carousel-mode');
 const dailyMode = document.getElementById('daily-mode');
 const trendsMode = document.getElementById('trends-mode');
 const educativeMode = document.getElementById('educative-mode');
+const voiceSwapMode = document.getElementById('voiceswap-mode');
 const publishForm = document.getElementById('publish-form');
 const generateForm = document.getElementById('generate-form');
 const editImageForm = document.getElementById('edit-image-form');
@@ -182,6 +184,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         editMode?.classList.remove('active');
         videoMode?.classList.remove('active');
         voiceVideoMode?.classList.remove('active');
+        voiceSwapMode?.classList.remove('active');
         carouselMode?.classList.remove('active');
         dailyMode?.classList.remove('active');
         trendsMode?.classList.remove('active');
@@ -198,6 +201,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
             videoMode?.classList.add('active');
         } else if (mode === 'voicevideo') {
             voiceVideoMode?.classList.add('active');
+        } else if (mode === 'voiceswap') {
+            voiceSwapMode?.classList.add('active');
+            loadVoiceSwapVideos();
         } else if (mode === 'carousel') {
             carouselMode?.classList.add('active');
         } else if (mode === 'daily') {
@@ -4357,6 +4363,322 @@ document.getElementById('download-all-educative')?.addEventListener('click', asy
 });
 
 // ========== END EDUCATIVE MODE ==========
+
+// ========== VOICE SWAP MODE ==========
+
+let _vsSelectedPost = null;
+let _vsSelectedPart = 'part1';
+let _vsSwapping = false;
+
+// Load videos that have video parts (Voice Video or Video posts)
+async function loadVoiceSwapVideos() {
+    const listEl = document.getElementById('voiceswap-videos-list');
+    if (!listEl) return;
+    
+    if (!supabaseClient) {
+        listEl.innerHTML = '<div class="empty-state"><h3>Configure Supabase</h3><p>Supabase is required to load videos.</p></div>';
+        return;
+    }
+    
+    listEl.innerHTML = '<div class="loading">Loading videos...</div>';
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('social_posts')
+            .select('*')
+            .or('status.eq.video_completed,post_type.eq.Voice Video,post_type.eq.Video')
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        // Filter to only posts that actually have video URLs
+        const videos = (data || []).filter(p => 
+            p.video1_signed_url || p.video2_signed_url || p.video_part1_uri || p.video_part2_uri
+        );
+        
+        if (videos.length === 0) {
+            listEl.innerHTML = '<div class="empty-state"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg><h3>No videos found</h3><p>Generate a Voice Video or Video first, then come back here to swap its voice.</p></div>';
+            return;
+        }
+        
+        listEl.innerHTML = videos.map(post => {
+            const date = new Date(post.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const title = post.headline || post.post_copy?.substring(0, 80) || post.post_type || 'Untitled Video';
+            const hasP1 = !!(post.video1_signed_url || post.video_part1_uri);
+            const hasP2 = !!(post.video2_signed_url || post.video_part2_uri);
+            const parts = [hasP1 ? 'Part 1' : '', hasP2 ? 'Part 2' : ''].filter(Boolean).join(' + ');
+            
+            return `<div class="vs-video-card" data-post-id="${post.id}" 
+                data-video1="${post.video1_signed_url || ''}" 
+                data-video2="${post.video2_signed_url || ''}"
+                data-gcs1="${post.video_part1_uri || ''}"
+                data-gcs2="${post.video_part2_uri || ''}"
+                data-title="${title.replace(/"/g, '&quot;')}"
+                data-date="${date}">
+                <div class="vs-check-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
+                <div class="vs-card-header">
+                    <div class="vs-card-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="vs-card-title">${title}</div>
+                        <div class="vs-card-date">${date}</div>
+                    </div>
+                </div>
+                <span class="vs-card-badge">${post.post_type || 'Video'} &mdash; ${parts}</span>
+            </div>`;
+        }).join('');
+        
+        // Click handlers for video cards
+        listEl.querySelectorAll('.vs-video-card').forEach(card => {
+            card.addEventListener('click', () => {
+                // Deselect others
+                listEl.querySelectorAll('.vs-video-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                
+                _vsSelectedPost = {
+                    id: card.dataset.postId,
+                    video1: card.dataset.video1,
+                    video2: card.dataset.video2,
+                    gcs1: card.dataset.gcs1,
+                    gcs2: card.dataset.gcs2,
+                    title: card.dataset.title,
+                    date: card.dataset.date
+                };
+                
+                showVoiceSwapPreview();
+            });
+        });
+        
+    } catch (err) {
+        console.error('Error loading voice swap videos:', err);
+        listEl.innerHTML = `<div class="empty-state"><h3>Error</h3><p>${err.message}</p></div>`;
+    }
+}
+
+function showVoiceSwapPreview() {
+    const container = document.getElementById('vs-preview-container');
+    const noSelection = document.getElementById('vs-no-selection');
+    const titleEl = document.getElementById('vs-selected-title');
+    const dateEl = document.getElementById('vs-selected-date');
+    const videoEl = document.getElementById('vs-preview-video');
+    
+    if (!_vsSelectedPost || !container) return;
+    
+    container.style.display = 'block';
+    if (noSelection) noSelection.style.display = 'none';
+    if (titleEl) titleEl.textContent = _vsSelectedPost.title;
+    if (dateEl) dateEl.textContent = _vsSelectedPost.date;
+    
+    // Show available part buttons
+    const p1Btn = document.getElementById('vs-part1-btn');
+    const p2Btn = document.getElementById('vs-part2-btn');
+    const bothBtn = document.getElementById('vs-both-btn');
+    
+    const hasPart1 = _vsSelectedPost.video1 || _vsSelectedPost.gcs1;
+    const hasPart2 = _vsSelectedPost.video2 || _vsSelectedPost.gcs2;
+    
+    if (p1Btn) p1Btn.style.display = hasPart1 ? 'block' : 'none';
+    if (p2Btn) p2Btn.style.display = hasPart2 ? 'block' : 'none';
+    if (bothBtn) bothBtn.style.display = (hasPart1 && hasPart2) ? 'block' : 'none';
+    
+    // Default to first available part
+    if (hasPart1) {
+        _vsSelectedPart = 'part1';
+    } else if (hasPart2) {
+        _vsSelectedPart = 'part2';
+    }
+    
+    updateVsPartSelection();
+    updateVsPreviewVideo();
+}
+
+function updateVsPartSelection() {
+    document.querySelectorAll('.vs-part-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.part === _vsSelectedPart);
+    });
+}
+
+function updateVsPreviewVideo() {
+    const videoEl = document.getElementById('vs-preview-video');
+    if (!videoEl || !_vsSelectedPost) return;
+    
+    if (_vsSelectedPart === 'part1' || _vsSelectedPart === 'both') {
+        videoEl.src = _vsSelectedPost.video1 || _vsSelectedPost.video2 || '';
+    } else {
+        videoEl.src = _vsSelectedPost.video2 || '';
+    }
+}
+
+// Part button clicks
+document.querySelectorAll('.vs-part-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        _vsSelectedPart = btn.dataset.part;
+        updateVsPartSelection();
+        updateVsPreviewVideo();
+    });
+});
+
+// Refresh button
+document.getElementById('refresh-voiceswap-posts')?.addEventListener('click', loadVoiceSwapVideos);
+
+// Submit Voice Swap
+document.getElementById('vs-submit-swap')?.addEventListener('click', async () => {
+    if (_vsSwapping) {
+        showToast('Voice swap already in progress. Please wait.', 'warning');
+        return;
+    }
+    
+    const voiceId = document.getElementById('vs_voice_id')?.value?.trim();
+    const modelId = document.getElementById('vs_model_id')?.value || 'eleven_english_sts_v2';
+    
+    if (!voiceId) {
+        showToast('Please enter an ElevenLabs Voice ID', 'error');
+        return;
+    }
+    
+    if (!_vsSelectedPost) {
+        showToast('Please select a video first', 'error');
+        return;
+    }
+    
+    if (!n8nVoiceSwapWebhook) {
+        showToast('Voice Swap webhook not configured. Add voiceSwapWebhook to config.js', 'error');
+        return;
+    }
+    
+    _vsSwapping = true;
+    const btn = document.getElementById('vs-submit-swap');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Swapping voice...';
+    
+    // Determine which parts to swap - use GCS URIs for the n8n workflow
+    const partsToSwap = [];
+    if (_vsSelectedPart === 'part1' || _vsSelectedPart === 'both') {
+        const gcsUri = _vsSelectedPost.gcs1;
+        if (gcsUri) partsToSwap.push({ part: 'part1', gcs_uri: gcsUri });
+    }
+    if (_vsSelectedPart === 'part2' || _vsSelectedPart === 'both') {
+        const gcsUri = _vsSelectedPost.gcs2;
+        if (gcsUri) partsToSwap.push({ part: 'part2', gcs_uri: gcsUri });
+    }
+    
+    if (partsToSwap.length === 0) {
+        showToast('No GCS URI available for selected part. Video must be generated first.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        _vsSwapping = false;
+        return;
+    }
+    
+    showProgressAlert(
+        'Swapping Voice',
+        'Extracting audio, converting with ElevenLabs, and recombining...',
+        `Processing ${partsToSwap.length} video part(s). This takes about 2-3 minutes per part.`
+    );
+    
+    const results = [];
+    
+    try {
+        for (let i = 0; i < partsToSwap.length; i++) {
+            const { part, gcs_uri } = partsToSwap[i];
+            const progress = Math.round((i / partsToSwap.length) * 80) + 10;
+            updateProgress(progress, `Processing ${part} (${i + 1}/${partsToSwap.length})...`);
+            
+            const response = await fetch(n8nVoiceSwapWebhook, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    video_gcs_uri: gcs_uri,
+                    voice_id: voiceId,
+                    model_id: modelId,
+                    post_id: _vsSelectedPost.id,
+                    video_part: part
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success && result.data?.final_video_url) {
+                results.push({ part, url: result.data.final_video_url });
+            } else {
+                throw new Error(result.message || `Voice swap failed for ${part}`);
+            }
+        }
+        
+        updateProgress(95, 'Voice swap complete!');
+        
+        setTimeout(() => {
+            hideProgressAlert();
+            
+            const resultsCard = document.getElementById('vs-results');
+            const resultVideo = document.getElementById('vs-result-video');
+            const downloadBtn = document.getElementById('vs-download-result');
+            
+            if (resultsCard) {
+                resultsCard.style.display = 'block';
+                resultsCard.scrollIntoView({ behavior: 'smooth' });
+            }
+            
+            if (results.length > 0 && resultVideo) {
+                resultVideo.src = results[0].url;
+                resultVideo.play().catch(() => {});
+            }
+            
+            if (downloadBtn && results.length > 0) {
+                downloadBtn.href = results[0].url;
+                downloadBtn.download = `voice-swapped-${results[0].part}.mp4`;
+            }
+            
+            // If both parts were swapped, add a second download link
+            if (results.length > 1) {
+                const actionsDiv = document.querySelector('#vs-results .result-actions');
+                if (actionsDiv) {
+                    const existingExtra = actionsDiv.querySelector('.vs-extra-download');
+                    if (existingExtra) existingExtra.remove();
+                    
+                    const extraLink = document.createElement('a');
+                    extraLink.href = results[1].url;
+                    extraLink.download = `voice-swapped-${results[1].part}.mp4`;
+                    extraLink.className = 'btn btn-primary vs-extra-download';
+                    extraLink.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download Part 2';
+                    actionsDiv.insertBefore(extraLink, actionsDiv.querySelector('#vs-swap-another'));
+                }
+            }
+            
+            showSuccessAlert('Voice Swap Complete!', `Successfully swapped voice on ${results.length} video part(s) using ElevenLabs.`);
+        }, 500);
+        
+    } catch (error) {
+        console.error('Voice swap error:', error);
+        hideProgressAlert();
+        showToast('Voice swap error: ' + error.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        _vsSwapping = false;
+    }
+});
+
+// Swap Another button
+document.getElementById('vs-swap-another')?.addEventListener('click', () => {
+    const resultsCard = document.getElementById('vs-results');
+    const resultVideo = document.getElementById('vs-result-video');
+    if (resultVideo) { resultVideo.pause(); resultVideo.src = ''; }
+    if (resultsCard) resultsCard.style.display = 'none';
+    // Remove extra download buttons
+    document.querySelectorAll('.vs-extra-download').forEach(el => el.remove());
+});
+
+// ========== END VOICE SWAP MODE ==========
 
 // Initialize
 if (supabaseUrl === 'YOUR_SUPABASE_URL' || !supabaseUrl) {

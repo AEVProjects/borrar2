@@ -57,6 +57,16 @@
                     </svg>
                     Voice Video
                 </button>
+                <button class="tab-btn" data-mode="voiceswap">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                        <path d="M16 5l3-3m0 0l3 3m-3-3v8"></path>
+                    </svg>
+                    Voice Swap
+                </button>
                 <button class="tab-btn" data-mode="carousel">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="2" y="3" width="6" height="18" rx="1"></rect>
@@ -1145,6 +1155,113 @@
                             Download All
                         </button>
                         <button id="regenerate-educative" class="btn btn-secondary">Generate Again</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Voice Swap Mode -->
+        <div id="voiceswap-mode" class="mode-content">
+            <div class="two-column-layout">
+                <!-- Left: Video Selection -->
+                <div class="column form-column">
+                    <div class="card">
+                        <h2>Voice Swap with ElevenLabs</h2>
+                        <p style="color: #718096; margin-bottom: 24px;">
+                            Select a generated video and replace its voice using <strong>ElevenLabs Speech-to-Speech</strong>.
+                            <br>The original video visuals stay the same &mdash; only the voice changes.
+                        </p>
+
+                        <div class="form-group">
+                            <label for="vs_voice_id">ElevenLabs Voice ID *</label>
+                            <input type="text" id="vs_voice_id" placeholder="e.g., pNInz6obpgDQGcFmaJgB" required>
+                            <small class="form-hint">Get your voice ID from <a href="https://elevenlabs.io/voice-library" target="_blank" style="color:#207CE5;">ElevenLabs Voice Library</a></small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="vs_model_id">ElevenLabs Model</label>
+                            <select id="vs_model_id">
+                                <option value="eleven_english_sts_v2" selected>English STS v2 (Best quality)</option>
+                                <option value="eleven_multilingual_sts_v2">Multilingual STS v2</option>
+                            </select>
+                            <small class="form-hint">Speech-to-Speech model to use</small>
+                        </div>
+
+                        <div class="posts-header" style="margin-top:24px;">
+                            <h3>Select Video</h3>
+                            <button id="refresh-voiceswap-posts" class="btn btn-secondary">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                </svg>
+                                Refresh
+                            </button>
+                        </div>
+                        <div id="voiceswap-videos-list" class="posts-list">
+                            <div class="loading">Loading videos...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Preview & Action -->
+                <div class="column posts-column">
+                    <div class="card">
+                        <h2>Selected Video Preview</h2>
+                        <div id="vs-preview-container" style="display:none;">
+                            <div id="vs-selected-info" style="margin-bottom:16px; padding:12px 16px; background:#f7fafc; border-radius:8px; border-left:4px solid #207CE5;">
+                                <p id="vs-selected-title" style="margin:0;font-weight:600;color:#2d3748;"></p>
+                                <small id="vs-selected-date" style="color:#718096;"></small>
+                            </div>
+                            <div style="margin-bottom:16px;">
+                                <label style="font-weight:600;color:#2d3748;display:block;margin-bottom:8px;">Video Part to Swap</label>
+                                <div style="display:flex;gap:12px;">
+                                    <button type="button" class="btn btn-secondary vs-part-btn active" data-part="part1" id="vs-part1-btn">Part 1</button>
+                                    <button type="button" class="btn btn-secondary vs-part-btn" data-part="part2" id="vs-part2-btn">Part 2</button>
+                                    <button type="button" class="btn btn-secondary vs-part-btn" data-part="both" id="vs-both-btn">Both Parts</button>
+                                </div>
+                            </div>
+                            <div class="video-player">
+                                <video id="vs-preview-video" controls style="width:100%;max-height:500px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.15);">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                            <button id="vs-submit-swap" class="btn btn-primary btn-video" style="margin-top:20px;width:100%;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                </svg>
+                                Swap Voice Now
+                            </button>
+                        </div>
+                        <div id="vs-no-selection" style="text-align:center;padding:60px 20px;color:#718096;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin-bottom:16px;opacity:0.4;">
+                                <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                            </svg>
+                            <h3 style="color:#a0aec0;">No video selected</h3>
+                            <p>Select a video from the list on the left to preview and swap its voice</p>
+                        </div>
+                    </div>
+
+                    <!-- Voice Swap Results -->
+                    <div id="vs-results" class="card" style="display:none;margin-top:20px;">
+                        <h2 style="color:#48bb78;">Voice Swap Complete!</h2>
+                        <div class="video-player">
+                            <video id="vs-result-video" controls style="width:100%;max-height:500px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.15);">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        <div class="result-actions" style="margin-top:16px;">
+                            <a id="vs-download-result" href="#" download="voice-swapped-video.mp4" class="btn btn-primary">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                Download
+                            </a>
+                            <button id="vs-swap-another" class="btn btn-secondary">Swap Another</button>
+                        </div>
                     </div>
                 </div>
             </div>
