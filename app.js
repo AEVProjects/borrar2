@@ -154,6 +154,7 @@ const dailyMode = document.getElementById('daily-mode');
 const trendsMode = document.getElementById('trends-mode');
 const educativeMode = document.getElementById('educative-mode');
 const voiceSwapMode = document.getElementById('voiceswap-mode');
+const schedulerMode = document.getElementById('scheduler-mode');
 const publishForm = document.getElementById('publish-form');
 const generateForm = document.getElementById('generate-form');
 const editImageForm = document.getElementById('edit-image-form');
@@ -189,6 +190,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         dailyMode?.classList.remove('active');
         trendsMode?.classList.remove('active');
         educativeMode?.classList.remove('active');
+        schedulerMode?.classList.remove('active');
         
         if (mode === 'publish') {
             publishMode?.classList.add('active');
@@ -214,6 +216,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
             loadTrendNews();
         } else if (mode === 'educative') {
             educativeMode?.classList.add('active');
+        } else if (mode === 'scheduler') {
+            schedulerMode?.classList.add('active');
+            initScheduler();
         }
     });
 });
@@ -4679,6 +4684,881 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
 });
 
 // ========== END VOICE SWAP MODE ==========
+
+// ========== CONTENT SCHEDULER MODE ==========
+(function() {
+    // State
+    let schedulerCurrentWeekStart = null; // Monday of current displayed week
+    let schedulerItems = [];
+    let schedulerSelectedDate = null; // Date being edited in modal
+    let schedulerEditingId = null; // If editing an existing item
+
+    // Content type labels and info
+    const CONTENT_TYPES = {
+        generate: { label: 'Contenido IA', color: '#3b82f6', icon: '✨' },
+        carousel: { label: 'Carousel', color: '#ec4899', icon: '🎠' },
+        educative: { label: 'Educativo', color: '#10b981', icon: '📚' },
+        video: { label: 'Video IA', color: '#8b5cf6', icon: '🎬' },
+        voice_video: { label: 'Voice Video', color: '#f59e0b', icon: '🎤' },
+        trends: { label: 'Tendencias', color: '#06b6d4', icon: '📈' }
+    };
+
+    const DAY_NAMES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+    const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+
+    // ---- Utility functions ----
+    function getMonday(d) {
+        const date = new Date(d);
+        const day = date.getDay();
+        const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+        return new Date(date.setDate(diff));
+    }
+
+    function formatDate(d) {
+        return d.toISOString().split('T')[0];
+    }
+
+    function getWeekLabel(monday) {
+        const d = new Date(monday);
+        const jan1 = new Date(d.getFullYear(), 0, 1);
+        const days = Math.floor((d - jan1) / 86400000);
+        const weekNum = Math.ceil((days + jan1.getDay() + 1) / 7);
+        return `${d.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+    }
+
+    function formatWeekDisplay(monday) {
+        const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        const friday = new Date(monday);
+        friday.setDate(friday.getDate() + 4);
+        const mStart = months[monday.getMonth()];
+        const mEnd = months[friday.getMonth()];
+        if (mStart === mEnd) {
+            return `${monday.getDate()} - ${friday.getDate()} ${mStart} ${monday.getFullYear()}`;
+        }
+        return `${monday.getDate()} ${mStart} - ${friday.getDate()} ${mEnd} ${monday.getFullYear()}`;
+    }
+
+    // ---- Initialize ----
+    window.initScheduler = function() {
+        if (!schedulerCurrentWeekStart) {
+            schedulerCurrentWeekStart = getMonday(new Date());
+        }
+        renderWeekHeader();
+        renderWeekGrid();
+        loadScheduleItems();
+        bindSchedulerEvents();
+    };
+
+    let _schedulerEventsBound = false;
+    function bindSchedulerEvents() {
+        if (_schedulerEventsBound) return;
+        _schedulerEventsBound = true;
+
+        document.getElementById('scheduler-prev-week')?.addEventListener('click', () => {
+            schedulerCurrentWeekStart.setDate(schedulerCurrentWeekStart.getDate() - 7);
+            renderWeekHeader();
+            renderWeekGrid();
+            loadScheduleItems();
+        });
+
+        document.getElementById('scheduler-next-week')?.addEventListener('click', () => {
+            schedulerCurrentWeekStart.setDate(schedulerCurrentWeekStart.getDate() + 7);
+            renderWeekHeader();
+            renderWeekGrid();
+            loadScheduleItems();
+        });
+
+        document.getElementById('refresh-schedule-btn')?.addEventListener('click', () => {
+            loadScheduleItems();
+        });
+
+        // Modal events
+        document.getElementById('schedule-modal-close')?.addEventListener('click', closeScheduleModal);
+        document.getElementById('schedule-modal-cancel')?.addEventListener('click', closeScheduleModal);
+        document.getElementById('schedule-modal-save')?.addEventListener('click', saveScheduleItem);
+
+        // Content type change
+        document.getElementById('sched_content_type')?.addEventListener('change', (e) => {
+            renderDynamicFields(e.target.value);
+        });
+
+        // Close modal on overlay click
+        document.getElementById('schedule-modal')?.addEventListener('click', (e) => {
+            if (e.target === document.getElementById('schedule-modal')) closeScheduleModal();
+        });
+    }
+
+    function renderWeekHeader() {
+        const label = document.getElementById('scheduler-week-label');
+        if (label) label.textContent = 'Semana del ' + formatWeekDisplay(schedulerCurrentWeekStart);
+    }
+
+    function renderWeekGrid() {
+        const grid = document.getElementById('scheduler-week-grid');
+        if (!grid) return;
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let html = '';
+        for (let i = 0; i < 5; i++) {
+            const date = new Date(schedulerCurrentWeekStart);
+            date.setDate(date.getDate() + i);
+            const dateStr = formatDate(date);
+            const isToday = date.getTime() === today.getTime();
+            const isPast = date < today;
+            
+            const dayItems = schedulerItems.filter(item => item.scheduled_date === dateStr);
+            
+            let itemsHtml = '';
+            dayItems.forEach(item => {
+                const ct = CONTENT_TYPES[item.content_type] || { label: item.content_type, icon: '📄' };
+                itemsHtml += `
+                    <div class="scheduler-day-item status-${item.status}" data-id="${item.id}" title="${item.title}">
+                        <span class="type-dot ${item.content_type}"></span>
+                        <span class="item-title">${ct.icon} ${item.title}</span>
+                        <span class="item-time">${(item.scheduled_time || '08:00').substring(0, 5)}</span>
+                    </div>`;
+            });
+
+            html += `
+                <div class="scheduler-day-card ${isToday ? 'today' : ''} ${isPast ? 'past' : ''}" data-date="${dateStr}">
+                    <div class="scheduler-day-header">
+                        <span class="day-name">${DAY_NAMES[i]}</span>
+                        <span class="day-date">${date.getDate()}/${date.getMonth() + 1}</span>
+                    </div>
+                    <div class="scheduler-day-content">
+                        ${itemsHtml}
+                        <button class="add-schedule-btn" data-date="${dateStr}" data-day="${DAY_KEYS[i]}">
+                            + Agregar
+                        </button>
+                    </div>
+                </div>`;
+        }
+        grid.innerHTML = html;
+
+        // Bind add buttons
+        grid.querySelectorAll('.add-schedule-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                openScheduleModal(btn.dataset.date, btn.dataset.day);
+            });
+        });
+
+        // Bind item clicks (for viewing/editing)
+        grid.querySelectorAll('.scheduler-day-item').forEach(el => {
+            el.addEventListener('click', () => {
+                const item = schedulerItems.find(i => i.id === el.dataset.id);
+                if (item) openScheduleModal(item.scheduled_date, item.day_of_week, item);
+            });
+        });
+    }
+
+    function renderItemsList() {
+        const list = document.getElementById('scheduler-items-list');
+        if (!list) return;
+
+        // Get items for current week
+        const weekEnd = new Date(schedulerCurrentWeekStart);
+        weekEnd.setDate(weekEnd.getDate() + 4);
+        const startStr = formatDate(schedulerCurrentWeekStart);
+        const endStr = formatDate(weekEnd);
+
+        const weekItems = schedulerItems.filter(item => 
+            item.scheduled_date >= startStr && item.scheduled_date <= endStr
+        ).sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date) || (a.scheduled_time || '').localeCompare(b.scheduled_time || ''));
+
+        if (weekItems.length === 0) {
+            list.innerHTML = '<p class="no-items-msg">No hay contenido programado para esta semana. Haz clic en "+ Agregar" en cualquier día.</p>';
+            return;
+        }
+
+        list.innerHTML = weekItems.map(item => {
+            const ct = CONTENT_TYPES[item.content_type] || { label: item.content_type, color: '#94a3b8' };
+            const dateObj = new Date(item.scheduled_date + 'T12:00:00');
+            const dayName = DAY_NAMES[DAY_KEYS.indexOf(item.day_of_week)] || '';
+            const dateDisplay = `${dayName} ${dateObj.getDate()}/${dateObj.getMonth() + 1}`;
+            const timeDisplay = (item.scheduled_time || '08:00').substring(0, 5);
+
+            return `
+                <div class="sched-item-row" data-id="${item.id}">
+                    <span class="sched-item-type-badge type-${item.content_type}">${ct.label}</span>
+                    <div class="sched-item-info">
+                        <div class="sched-item-title">${item.title}</div>
+                        <div class="sched-item-meta">${dateDisplay} a las ${timeDisplay}</div>
+                    </div>
+                    <span class="sched-item-status ${item.status}">${item.status === 'scheduled' ? '⏰ Programado' : item.status === 'generating' ? '⚙️ Generando' : item.status === 'generated' ? '✅ Generado' : item.status === 'failed' ? '❌ Fallido' : '🚫 Cancelado'}</span>
+                    <div class="sched-item-actions">
+                        ${item.status === 'scheduled' ? `
+                        <button class="btn-icon sched-run-now" data-id="${item.id}" title="Generar ahora">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        </button>
+                        <button class="btn-icon btn-danger sched-delete" data-id="${item.id}" title="Eliminar">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>` : ''}
+                        ${item.status === 'generated' && item.generated_post_id ? `
+                        <button class="btn-icon sched-view-post" data-post-id="${item.generated_post_id}" title="Ver post">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </button>` : ''}
+                    </div>
+                </div>`;
+        }).join('');
+
+        // Bind actions
+        list.querySelectorAll('.sched-run-now').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                triggerScheduleItemNow(btn.dataset.id);
+            });
+        });
+
+        list.querySelectorAll('.sched-delete').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteScheduleItem(btn.dataset.id);
+            });
+        });
+
+        list.querySelectorAll('.sched-view-post').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Switch to publish tab to see posts
+                document.querySelector('.tab-btn[data-mode="publish"]')?.click();
+                showToast('Ve el post generado en la lista de Posts', 'info');
+            });
+        });
+    }
+
+    // ---- Load from Supabase ----
+    async function loadScheduleItems() {
+        if (!supabaseClient) {
+            showToast('Supabase no configurado', 'error');
+            return;
+        }
+
+        try {
+            // Load items for current week +/- a bit for flexibility
+            const weekEnd = new Date(schedulerCurrentWeekStart);
+            weekEnd.setDate(weekEnd.getDate() + 4);
+
+            const { data, error } = await supabaseClient
+                .from('content_schedule')
+                .select('*')
+                .gte('scheduled_date', formatDate(schedulerCurrentWeekStart))
+                .lte('scheduled_date', formatDate(weekEnd))
+                .order('scheduled_date', { ascending: true })
+                .order('scheduled_time', { ascending: true });
+
+            if (error) throw error;
+            schedulerItems = data || [];
+        } catch (err) {
+            console.error('Error loading schedule:', err);
+            // If table doesn't exist yet, just show empty
+            schedulerItems = [];
+        }
+
+        renderWeekGrid();
+        renderItemsList();
+    }
+
+    // ---- Modal ----
+    function openScheduleModal(dateStr, dayOfWeek, existingItem) {
+        schedulerSelectedDate = dateStr;
+        schedulerEditingId = existingItem?.id || null;
+
+        const modal = document.getElementById('schedule-modal');
+        const title = document.getElementById('schedule-modal-title');
+        const dateObj = new Date(dateStr + 'T12:00:00');
+        const dayIdx = DAY_KEYS.indexOf(dayOfWeek);
+        const dayName = dayIdx >= 0 ? DAY_NAMES[dayIdx] : '';
+
+        title.textContent = existingItem 
+            ? `Editar: ${existingItem.title}`
+            : `Programar para ${dayName} ${dateObj.getDate()}/${dateObj.getMonth() + 1}`;
+
+        // Reset form
+        const typeSelect = document.getElementById('sched_content_type');
+        const timeInput = document.getElementById('sched_time');
+
+        if (existingItem) {
+            typeSelect.value = existingItem.content_type;
+            timeInput.value = (existingItem.scheduled_time || '08:00').substring(0, 5);
+            renderDynamicFields(existingItem.content_type, existingItem.webhook_data, existingItem.title);
+        } else {
+            typeSelect.value = '';
+            timeInput.value = '08:00';
+            document.getElementById('sched-dynamic-fields').innerHTML = '';
+        }
+
+        // Update save button
+        const saveBtn = document.getElementById('schedule-modal-save');
+        saveBtn.innerHTML = existingItem 
+            ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg> Actualizar'
+            : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line></svg> Programar';
+
+        modal.style.display = 'flex';
+    }
+
+    function closeScheduleModal() {
+        document.getElementById('schedule-modal').style.display = 'none';
+        schedulerSelectedDate = null;
+        schedulerEditingId = null;
+    }
+
+    // ---- Dynamic Fields per content type ----
+    function renderDynamicFields(contentType, existingData, existingTitle) {
+        const container = document.getElementById('sched-dynamic-fields');
+        if (!container) return;
+
+        const d = existingData || {};
+
+        switch (contentType) {
+            case 'generate':
+                container.innerHTML = `
+                    <div class="sched-type-info">Genera contenido completo: copy + imagen con IA. Usa el mismo flujo que "Generate Content".</div>
+                    <div class="form-group">
+                        <label>Título / Nombre *</label>
+                        <input type="text" id="sched_f_title" value="${existingTitle || ''}" placeholder="Ej: Post sobre Cloud Computing" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Topic *</label>
+                            <input type="text" id="sched_f_topic" value="${d.topic || ''}" placeholder="Ej: 5G Network Infrastructure" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Headline *</label>
+                            <input type="text" id="sched_f_headline" value="${d.headline || ''}" placeholder="3-5 palabras max">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Post Type *</label>
+                            <select id="sched_f_post_type">
+                                <option value="Educational" ${d.post_type === 'Educational' ? 'selected' : ''}>Educational</option>
+                                <option value="Thought Leadership" ${d.post_type === 'Thought Leadership' ? 'selected' : ''}>Thought Leadership</option>
+                                <option value="Case Study/Storytelling" ${d.post_type === 'Case Study/Storytelling' ? 'selected' : ''}>Case Study/Storytelling</option>
+                                <option value="Company News" ${d.post_type === 'Company News' ? 'selected' : ''}>Company News</option>
+                                <option value="Standard Infographic" ${d.post_type === 'Standard Infographic' ? 'selected' : ''}>Standard Infographic</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Visual Style *</label>
+                            <select id="sched_f_visual_style">
+                                <option value="Infographic" ${d.visual_style === 'Infographic' ? 'selected' : ''}>Infographic</option>
+                                <option value="Realistic Photography" ${d.visual_style === 'Realistic Photography' ? 'selected' : ''}>Realistic Photography</option>
+                                <option value="Modern 3D" ${d.visual_style === 'Modern 3D' ? 'selected' : ''}>Modern 3D</option>
+                                <option value="Isometric Architecture" ${d.visual_style === 'Isometric Architecture' ? 'selected' : ''}>Isometric Architecture</option>
+                                <option value="Tech Close-up" ${d.visual_style === 'Tech Close-up' ? 'selected' : ''}>Tech Close-up</option>
+                                <option value="Data Hero" ${d.visual_style === 'Data Hero' ? 'selected' : ''}>Data Hero</option>
+                                <option value="Glassmorphism" ${d.visual_style === 'Glassmorphism' ? 'selected' : ''}>Glassmorphism</option>
+                                <option value="Minimalist Corporate Flyer" ${d.visual_style === 'Minimalist Corporate Flyer' ? 'selected' : ''}>Minimalist Corporate Flyer</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Data Points</label>
+                        <input type="text" id="sched_f_data_points" value="${d.data_points || ''}" placeholder="Ej: 75% faster deployment, $2M cost reduction">
+                    </div>
+                    <div class="form-group">
+                        <label>Context</label>
+                        <textarea id="sched_f_context" rows="3" placeholder="Contexto adicional...">${d.context || ''}</textarea>
+                    </div>`;
+                break;
+
+            case 'carousel':
+                const slides = d.slides || [{ slide_number: 1, headline: '', subtext: '' }, { slide_number: 2, headline: '', subtext: '' }, { slide_number: 3, headline: '', subtext: '' }];
+                container.innerHTML = `
+                    <div class="sched-type-info">Genera un carousel de Instagram con múltiples slides visualmente consistentes.</div>
+                    <div class="form-group">
+                        <label>Título / Nombre *</label>
+                        <input type="text" id="sched_f_title" value="${existingTitle || ''}" placeholder="Ej: Carousel sobre servicios" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Topic</label>
+                            <input type="text" id="sched_f_topic" value="${d.topic || ''}" placeholder="Ej: Cloud Services">
+                        </div>
+                        <div class="form-group">
+                            <label>Visual Style *</label>
+                            <select id="sched_f_visual_style">
+                                <option value="Infographic" ${d.visual_style === 'Infographic' ? 'selected' : ''}>Infographic</option>
+                                <option value="Modern 3D" ${d.visual_style === 'Modern 3D' ? 'selected' : ''}>Modern 3D</option>
+                                <option value="Glassmorphism" ${d.visual_style === 'Glassmorphism' ? 'selected' : ''}>Glassmorphism</option>
+                                <option value="Isometric Architecture" ${d.visual_style === 'Isometric Architecture' ? 'selected' : ''}>Isometric Architecture</option>
+                                <option value="Realistic Photography" ${d.visual_style === 'Realistic Photography' ? 'selected' : ''}>Realistic Photography</option>
+                                <option value="Data Hero" ${d.visual_style === 'Data Hero' ? 'selected' : ''}>Data Hero</option>
+                                <option value="Minimalist Corporate" ${d.visual_style === 'Minimalist Corporate' ? 'selected' : ''}>Minimalist Corporate</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Context</label>
+                        <textarea id="sched_f_context" rows="2" placeholder="Instrucciones especiales...">${d.context || ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Slides</label>
+                        <div class="sched-slides-container" id="sched-slides-container">
+                            ${slides.map((s, i) => `
+                                <div class="sched-slide-row" data-slide="${i + 1}">
+                                    <span class="sched-slide-num">#${i + 1}</span>
+                                    <input type="text" class="sched-slide-headline" value="${s.headline || ''}" placeholder="Headline del slide ${i + 1}">
+                                    <input type="text" class="sched-slide-subtext" value="${s.subtext || ''}" placeholder="Subtext (opcional)">
+                                    ${i >= 1 ? '<button type="button" class="sched-remove-slide" title="Eliminar">&times;</button>' : '<span></span>'}
+                                </div>`).join('')}
+                        </div>
+                        <button type="button" class="sched-add-slide-btn" id="sched-add-slide">+ Agregar Slide</button>
+                    </div>`;
+                bindSlideEvents();
+                break;
+
+            case 'educative':
+                container.innerHTML = `
+                    <div class="sched-type-info">Genera un carousel educativo para liderazgo de pensamiento con IA.</div>
+                    <div class="form-group">
+                        <label>Título / Nombre *</label>
+                        <input type="text" id="sched_f_title" value="${existingTitle || ''}" placeholder="Ej: Educativo sobre AI" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Content Pillar *</label>
+                            <select id="sched_f_pillar">
+                                <option value="Educación & Tendencias Tecnológicas" ${d.pillar === 'Educación & Tendencias Tecnológicas' ? 'selected' : ''}>Educación & Tendencias Tecnológicas</option>
+                                <option value="AI & Automatización" ${d.pillar === 'AI & Automatización' ? 'selected' : ''}>AI & Automatización</option>
+                                <option value="Cloud & Infraestructura" ${d.pillar === 'Cloud & Infraestructura' ? 'selected' : ''}>Cloud & Infraestructura</option>
+                                <option value="Transformación Digital" ${d.pillar === 'Transformación Digital' ? 'selected' : ''}>Transformación Digital</option>
+                                <option value="Ciberseguridad" ${d.pillar === 'Ciberseguridad' ? 'selected' : ''}>Ciberseguridad</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Theme *</label>
+                            <select id="sched_f_theme">
+                                <option value="AI & Smart Business Solutions" ${d.theme === 'AI & Smart Business Solutions' ? 'selected' : ''}>AI & Smart Business Solutions</option>
+                                <option value="Cost Reduction & Efficiency" ${d.theme === 'Cost Reduction & Efficiency' ? 'selected' : ''}>Cost Reduction & Efficiency</option>
+                                <option value="Productivity & Automation" ${d.theme === 'Productivity & Automation' ? 'selected' : ''}>Productivity & Automation</option>
+                                <option value="Digital Innovation" ${d.theme === 'Digital Innovation' ? 'selected' : ''}>Digital Innovation</option>
+                                <option value="Business Intelligence" ${d.theme === 'Business Intelligence' ? 'selected' : ''}>Business Intelligence</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Topic / Question *</label>
+                        <input type="text" id="sched_f_topic" value="${d.topic || ''}" placeholder="Ej: How AI reduces operational costs by 40%">
+                    </div>
+                    <div class="form-group">
+                        <label>Context (opcional)</label>
+                        <textarea id="sched_f_context" rows="3" placeholder="Puntos a cubrir, estadísticas...">${d.context || ''}</textarea>
+                    </div>`;
+                break;
+
+            case 'video':
+                container.innerHTML = `
+                    <div class="sched-type-info">Genera un video con IA usando Veo 3.1. Requiere 2 imágenes de inicio (una por parte).</div>
+                    <div class="form-group">
+                        <label>Título / Nombre *</label>
+                        <input type="text" id="sched_f_title" value="${existingTitle || ''}" placeholder="Ej: Video intro empresa" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Video Description *</label>
+                        <textarea id="sched_f_prompt" rows="3" placeholder="Describe el video que quieres crear...">${d.prompt || ''}</textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Imagen Inicio Part 1 *</label>
+                            <input type="url" id="sched_f_start_image_url" value="${d.start_image_url || ''}" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label>Imagen Inicio Part 2 *</label>
+                            <input type="url" id="sched_f_second_image_url" value="${d.second_image_url || ''}" placeholder="https://...">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>MSI Service *</label>
+                            <select id="sched_f_service">
+                                <option value="company_intro" ${d.service === 'company_intro' ? 'selected' : ''}>Introduce the Company</option>
+                                <option value="data_security" ${d.service === 'data_security' ? 'selected' : ''}>Data Security & Cloud</option>
+                                <option value="bpo" ${d.service === 'bpo' ? 'selected' : ''}>BPO</option>
+                                <option value="it_cybersecurity" ${d.service === 'it_cybersecurity' ? 'selected' : ''}>IT & Cybersecurity</option>
+                                <option value="it_outsourcing" ${d.service === 'it_outsourcing' ? 'selected' : ''}>IT Outsourcing</option>
+                                <option value="ai_solutions" ${d.service === 'ai_solutions' ? 'selected' : ''}>AI Solutions</option>
+                                <option value="executive_consulting" ${d.service === 'executive_consulting' ? 'selected' : ''}>Executive Consulting</option>
+                                <option value="workforce_agility" ${d.service === 'workforce_agility' ? 'selected' : ''}>Workforce Agility</option>
+                                <option value="telecom" ${d.service === 'telecom' ? 'selected' : ''}>Telecom</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Duration</label>
+                            <select id="sched_f_duration">
+                                <option value="8" ${d.duration === '8' || d.duration === 8 ? 'selected' : ''}>8s per part (16s total)</option>
+                                <option value="6" ${d.duration === '6' || d.duration === 6 ? 'selected' : ''}>6s per part (12s total)</option>
+                                <option value="5" ${d.duration === '5' || d.duration === 5 ? 'selected' : ''}>5s per part (10s total)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Additional Context</label>
+                        <input type="text" id="sched_f_video_topic" value="${d.topic || ''}" placeholder="Ej: Enterprise clients">
+                    </div>`;
+                break;
+
+            case 'voice_video':
+                container.innerHTML = `
+                    <div class="sched-type-info">Genera un video de 16s con voz consistente: Image-to-Video + Video Extension.</div>
+                    <div class="form-group">
+                        <label>Título / Nombre *</label>
+                        <input type="text" id="sched_f_title" value="${existingTitle || ''}" placeholder="Ej: Voice video servicios" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Video Description *</label>
+                        <textarea id="sched_f_prompt" rows="3" placeholder="Describe el video...">${d.prompt || ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Start Image URL *</label>
+                        <input type="url" id="sched_f_start_image_url" value="${d.start_image_url || ''}" placeholder="https://...">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>MSI Service *</label>
+                            <select id="sched_f_service">
+                                <option value="company_intro" ${d.service === 'company_intro' ? 'selected' : ''}>Introduce the Company</option>
+                                <option value="data_security" ${d.service === 'data_security' ? 'selected' : ''}>Data Security & Cloud</option>
+                                <option value="bpo" ${d.service === 'bpo' ? 'selected' : ''}>BPO</option>
+                                <option value="it_cybersecurity" ${d.service === 'it_cybersecurity' ? 'selected' : ''}>IT & Cybersecurity</option>
+                                <option value="it_outsourcing" ${d.service === 'it_outsourcing' ? 'selected' : ''}>IT Outsourcing</option>
+                                <option value="ai_solutions" ${d.service === 'ai_solutions' ? 'selected' : ''}>AI Solutions</option>
+                                <option value="executive_consulting" ${d.service === 'executive_consulting' ? 'selected' : ''}>Executive Consulting</option>
+                                <option value="workforce_agility" ${d.service === 'workforce_agility' ? 'selected' : ''}>Workforce Agility</option>
+                                <option value="telecom" ${d.service === 'telecom' ? 'selected' : ''}>Telecom</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Additional Context</label>
+                            <input type="text" id="sched_f_video_topic" value="${d.topic || ''}" placeholder="Ej: SMBs, Fortune 500">
+                        </div>
+                    </div>`;
+                break;
+
+            case 'trends':
+                container.innerHTML = `
+                    <div class="sched-type-info">Ejecuta el workflow de tendencias para scrape de noticias y generación de contenido desde trends.</div>
+                    <div class="form-group">
+                        <label>Título / Nombre *</label>
+                        <input type="text" id="sched_f_title" value="${existingTitle || 'Contenido desde Tendencias'}" placeholder="Ej: Trends del día" required>
+                    </div>
+                    <p style="font-size:13px;color:var(--text-secondary);margin-top:8px;">Este tipo ejecutará automáticamente el workflow de tendencias que scrapeará noticias y podrá generar contenido basado en las tendencias del momento.</p>`;
+                break;
+
+            default:
+                container.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:20px;">Selecciona un tipo de contenido para ver los campos.</p>';
+        }
+    }
+
+    function bindSlideEvents() {
+        setTimeout(() => {
+            const addBtn = document.getElementById('sched-add-slide');
+            if (addBtn) {
+                addBtn.addEventListener('click', () => {
+                    const container = document.getElementById('sched-slides-container');
+                    const count = container.querySelectorAll('.sched-slide-row').length + 1;
+                    if (count > 10) { showToast('Máximo 10 slides', 'error'); return; }
+                    const row = document.createElement('div');
+                    row.className = 'sched-slide-row';
+                    row.dataset.slide = count;
+                    row.innerHTML = `
+                        <span class="sched-slide-num">#${count}</span>
+                        <input type="text" class="sched-slide-headline" placeholder="Headline del slide ${count}">
+                        <input type="text" class="sched-slide-subtext" placeholder="Subtext (opcional)">
+                        <button type="button" class="sched-remove-slide" title="Eliminar">&times;</button>`;
+                    container.appendChild(row);
+                    bindRemoveSlideEvents();
+                });
+            }
+            bindRemoveSlideEvents();
+        }, 50);
+    }
+
+    function bindRemoveSlideEvents() {
+        document.querySelectorAll('.sched-remove-slide').forEach(btn => {
+            btn.onclick = function() {
+                this.closest('.sched-slide-row').remove();
+                // Renumber
+                document.querySelectorAll('#sched-slides-container .sched-slide-row').forEach((row, i) => {
+                    row.dataset.slide = i + 1;
+                    row.querySelector('.sched-slide-num').textContent = `#${i + 1}`;
+                });
+            };
+        });
+    }
+
+    // ---- Collect form data ----
+    function collectScheduleData() {
+        const contentType = document.getElementById('sched_content_type').value;
+        const time = document.getElementById('sched_time').value;
+        const titleEl = document.getElementById('sched_f_title');
+        const title = titleEl ? titleEl.value.trim() : '';
+
+        if (!contentType) { showToast('Selecciona un tipo de contenido', 'error'); return null; }
+        if (!title) { showToast('Ingresa un título', 'error'); return null; }
+
+        let webhookData = {};
+
+        switch (contentType) {
+            case 'generate': {
+                const topic = document.getElementById('sched_f_topic')?.value.trim();
+                const headline = document.getElementById('sched_f_headline')?.value.trim();
+                if (!topic || !headline) { showToast('Topic y Headline son requeridos', 'error'); return null; }
+                webhookData = {
+                    topic,
+                    headline,
+                    post_type: document.getElementById('sched_f_post_type')?.value || 'Educational',
+                    visual_style: document.getElementById('sched_f_visual_style')?.value || 'Infographic',
+                    data_points: document.getElementById('sched_f_data_points')?.value.trim() || '',
+                    context: document.getElementById('sched_f_context')?.value.trim() || '',
+                    orientation: '4:5'
+                };
+                break;
+            }
+            case 'carousel': {
+                const slides = [];
+                document.querySelectorAll('#sched-slides-container .sched-slide-row').forEach((row, i) => {
+                    const headline = row.querySelector('.sched-slide-headline')?.value.trim() || '';
+                    const subtext = row.querySelector('.sched-slide-subtext')?.value.trim() || '';
+                    if (headline) slides.push({ slide_number: i + 1, headline, subtext });
+                });
+                if (slides.length < 1) { showToast('Al menos 1 slide con headline', 'error'); return null; }
+                webhookData = {
+                    topic: document.getElementById('sched_f_topic')?.value.trim() || '',
+                    visual_style: document.getElementById('sched_f_visual_style')?.value || 'Infographic',
+                    context: document.getElementById('sched_f_context')?.value.trim() || '',
+                    color_palette: { primary: '#207CE5', secondary: '#004AAD', accent: '#FFFDF1', dark: '#2B2B2B' },
+                    slides
+                };
+                break;
+            }
+            case 'educative': {
+                const topic = document.getElementById('sched_f_topic')?.value.trim();
+                if (!topic) { showToast('Topic es requerido', 'error'); return null; }
+                webhookData = {
+                    topic,
+                    pillar: document.getElementById('sched_f_pillar')?.value || 'Educación & Tendencias Tecnológicas',
+                    theme: document.getElementById('sched_f_theme')?.value || 'AI & Smart Business Solutions',
+                    context: document.getElementById('sched_f_context')?.value.trim() || ''
+                };
+                break;
+            }
+            case 'video': {
+                const prompt = document.getElementById('sched_f_prompt')?.value.trim();
+                const startImg = document.getElementById('sched_f_start_image_url')?.value.trim();
+                const secondImg = document.getElementById('sched_f_second_image_url')?.value.trim();
+                if (!prompt) { showToast('Video description requerida', 'error'); return null; }
+                if (!startImg || !secondImg) { showToast('Ambas imágenes de inicio son requeridas', 'error'); return null; }
+                webhookData = {
+                    prompt,
+                    start_image_url: startImg,
+                    second_image_url: secondImg,
+                    service: document.getElementById('sched_f_service')?.value || 'company_intro',
+                    duration: document.getElementById('sched_f_duration')?.value || '8',
+                    topic: document.getElementById('sched_f_video_topic')?.value.trim() || ''
+                };
+                break;
+            }
+            case 'voice_video': {
+                const prompt = document.getElementById('sched_f_prompt')?.value.trim();
+                const startImg = document.getElementById('sched_f_start_image_url')?.value.trim();
+                if (!prompt) { showToast('Video description requerida', 'error'); return null; }
+                if (!startImg) { showToast('Start image URL requerida', 'error'); return null; }
+                webhookData = {
+                    prompt,
+                    start_image_url: startImg,
+                    service: document.getElementById('sched_f_service')?.value || 'company_intro',
+                    duration: '8',
+                    topic: document.getElementById('sched_f_video_topic')?.value.trim() || ''
+                };
+                break;
+            }
+            case 'trends': {
+                webhookData = { trigger: 'scheduled' };
+                break;
+            }
+        }
+
+        // Determine day_of_week from schedulerSelectedDate
+        const dateObj = new Date(schedulerSelectedDate + 'T12:00:00');
+        const jsDay = dateObj.getDay(); // 0=Sun, 1=Mon, ...
+        const dayOfWeek = DAY_KEYS[jsDay - 1] || 'monday';
+
+        return {
+            scheduled_date: schedulerSelectedDate,
+            scheduled_time: time + ':00',
+            day_of_week: dayOfWeek,
+            week_label: getWeekLabel(schedulerCurrentWeekStart),
+            content_type: contentType,
+            title,
+            webhook_data: webhookData,
+            status: 'scheduled'
+        };
+    }
+
+    // ---- Save ----
+    async function saveScheduleItem() {
+        const data = collectScheduleData();
+        if (!data) return;
+
+        if (!supabaseClient) { showToast('Supabase no configurado', 'error'); return; }
+
+        const saveBtn = document.getElementById('schedule-modal-save');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="spinner" style="width:16px;height:16px;"></span> Guardando...';
+
+        try {
+            if (schedulerEditingId) {
+                // Update existing
+                const { error } = await supabaseClient
+                    .from('content_schedule')
+                    .update({
+                        scheduled_time: data.scheduled_time,
+                        content_type: data.content_type,
+                        title: data.title,
+                        webhook_data: data.webhook_data
+                    })
+                    .eq('id', schedulerEditingId);
+                if (error) throw error;
+                showToast('Programación actualizada ✅', 'success');
+            } else {
+                // Insert new
+                const { error } = await supabaseClient
+                    .from('content_schedule')
+                    .insert(data);
+                if (error) throw error;
+                showToast('Contenido programado ✅', 'success');
+            }
+
+            closeScheduleModal();
+            await loadScheduleItems();
+        } catch (err) {
+            console.error('Error saving schedule:', err);
+            showToast('Error al guardar: ' + err.message, 'error');
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalText;
+        }
+    }
+
+    // ---- Delete ----
+    async function deleteScheduleItem(id) {
+        if (!confirm('¿Eliminar esta programación?')) return;
+        if (!supabaseClient) return;
+
+        try {
+            const { error } = await supabaseClient
+                .from('content_schedule')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+            showToast('Programación eliminada', 'info');
+            await loadScheduleItems();
+        } catch (err) {
+            console.error('Error deleting schedule:', err);
+            showToast('Error al eliminar: ' + err.message, 'error');
+        }
+    }
+
+    // ---- Trigger Now (manual) ----
+    async function triggerScheduleItemNow(id) {
+        const item = schedulerItems.find(i => i.id === id);
+        if (!item) return;
+        if (!confirm(`¿Generar ahora "${item.title}"?`)) return;
+
+        showToast('Iniciando generación...', 'info');
+
+        // Update status to generating
+        if (supabaseClient) {
+            await supabaseClient.from('content_schedule').update({ status: 'generating' }).eq('id', id);
+        }
+
+        try {
+            const result = await callContentWebhook(item.content_type, item.webhook_data);
+            
+            // Update status to generated
+            if (supabaseClient) {
+                const updateData = { status: 'generated', generated_at: new Date().toISOString() };
+                if (result?.post_id) updateData.generated_post_id = result.post_id;
+                await supabaseClient.from('content_schedule').update(updateData).eq('id', id);
+            }
+
+            showToast(`"${item.title}" generado exitosamente ✅`, 'success');
+        } catch (err) {
+            console.error('Error triggering schedule item:', err);
+            if (supabaseClient) {
+                await supabaseClient.from('content_schedule').update({ status: 'failed', error_message: err.message }).eq('id', id);
+            }
+            showToast('Error en generación: ' + err.message, 'error');
+        }
+
+        await loadScheduleItems();
+    }
+
+    // ---- Call the appropriate webhook ----
+    async function callContentWebhook(contentType, webhookData) {
+        let webhookUrl = '';
+        let payload = { ...webhookData };
+
+        switch (contentType) {
+            case 'generate':
+                webhookUrl = n8nGenerateWebhook;
+                break;
+            case 'carousel':
+                webhookUrl = n8nCarouselWebhook;
+                break;
+            case 'educative':
+                webhookUrl = n8nEducativeWebhook;
+                break;
+            case 'video':
+                webhookUrl = n8nVideoWebhook;
+                break;
+            case 'voice_video':
+                webhookUrl = n8nVoiceVideoWebhook;
+                break;
+            case 'trends':
+                webhookUrl = CONFIG.n8n?.trendsWebhook;
+                payload = { trigger: 'scheduled', timestamp: new Date().toISOString() };
+                break;
+            default:
+                throw new Error('Unknown content type: ' + contentType);
+        }
+
+        if (!webhookUrl) throw new Error('Webhook URL not configured for ' + contentType);
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 480000); // 8 min timeout
+
+        try {
+            const response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Webhook error ${response.status}: ${text.substring(0, 200)}`);
+            }
+
+            const result = await response.json().catch(() => ({}));
+            return {
+                post_id: result?.data?.post_id || result?.post_id || null,
+                success: result?.success || true
+            };
+        } catch (err) {
+            clearTimeout(timeoutId);
+            throw err;
+        }
+    }
+})();
+// ========== END CONTENT SCHEDULER MODE ==========
 
 // Initialize
 if (supabaseUrl === 'YOUR_SUPABASE_URL' || !supabaseUrl) {

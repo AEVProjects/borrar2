@@ -1,0 +1,415 @@
+{
+  "name": "MSI Content Scheduler - Auto Generate",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7,
+              "triggerAtMinute": 50
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        220,
+        300
+      ],
+      "id": "cs-0001-schedule-trigger",
+      "name": "Daily Trigger (7:50 AM)"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "msi-scheduler-run",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        220,
+        520
+      ],
+      "id": "cs-0002-manual-webhook",
+      "name": "Manual Trigger Webhook",
+      "webhookId": "msi-scheduler-run"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Query Supabase for today's scheduled content\nconst today = new Date().toISOString().split('T')[0];\nconst now = new Date().toTimeString().substring(0, 8);\n\n// Pass current date/time for the query\nreturn [{ json: { today, current_time: now, trigger_source: $input.item.json.body?.trigger || 'scheduled' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        400
+      ],
+      "id": "cs-0003-prepare-query",
+      "name": "Prepare Query"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM content_schedule WHERE scheduled_date = '{{ $json.today }}' AND status = 'scheduled' ORDER BY scheduled_time ASC",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        700,
+        400
+      ],
+      "id": "cs-0004-query-supabase",
+      "name": "Get Today's Schedule",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cs-cond-has-items",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        920,
+        400
+      ],
+      "id": "cs-0005-has-items",
+      "name": "Has Items?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process each scheduled item and prepare webhook calls\nconst item = $input.item.json;\nconst webhookData = typeof item.webhook_data === 'string' ? JSON.parse(item.webhook_data) : item.webhook_data;\nconst contentType = item.content_type;\n\n// Map content types to their webhook paths\nconst WEBHOOK_PATHS = {\n  'generate': '/webhook/70738d02-4bd8-4dac-853f-ba4836aafaf5',\n  'carousel': '/webhook/msi-carousel-v12',\n  'educative': '/webhook/msi-educative-carousel',\n  'video': '/webhook/msi-video-gen',\n  'voice_video': '/webhook/msi-video-extend',\n  'trends': '/webhook/msi-trends-content'\n};\n\nconst N8N_BASE = 'https://n8nmsi.app.n8n.cloud';\nconst webhookPath = WEBHOOK_PATHS[contentType];\n\nif (!webhookPath) {\n  throw new Error('Unknown content_type: ' + contentType);\n}\n\nconst webhookUrl = N8N_BASE + webhookPath;\n\n// For trends, override payload\nlet payload = webhookData;\nif (contentType === 'trends') {\n  payload = { trigger: 'scheduled', timestamp: new Date().toISOString() };\n}\n\nreturn [{ json: { \n  schedule_id: item.id, \n  content_type: contentType, \n  title: item.title,\n  webhook_url: webhookUrl, \n  payload,\n  scheduled_date: item.scheduled_date\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        300
+      ],
+      "id": "cs-0006-prepare-webhook",
+      "name": "Prepare Webhook Call"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE content_schedule SET status = 'generating', updated_at = NOW() WHERE id = '{{ $json.schedule_id }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1360,
+        300
+      ],
+      "id": "cs-0007-set-generating",
+      "name": "Set Status: Generating",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Prepare Webhook Call').item.json.webhook_url }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Prepare Webhook Call').item.json.payload) }}",
+        "options": {
+          "timeout": 480000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1580,
+        300
+      ],
+      "id": "cs-0008-call-webhook",
+      "name": "Call Content Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract post_id from response if available\nconst response = $input.item.json;\nconst scheduleId = $('Prepare Webhook Call').item.json.schedule_id;\nconst title = $('Prepare Webhook Call').item.json.title;\n\nlet postId = null;\ntry {\n  postId = response?.data?.post_id || response?.post_id || null;\n} catch(e) {}\n\nreturn [{ json: { \n  schedule_id: scheduleId, \n  title,\n  post_id: postId, \n  success: true,\n  response_preview: JSON.stringify(response).substring(0, 500)\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1800,
+        300
+      ],
+      "id": "cs-0009-process-response",
+      "name": "Process Response"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ 'UPDATE content_schedule SET status = \\'generated\\', generated_at = NOW(), updated_at = NOW()' + ($json.post_id ? ', generated_post_id = \\'' + $json.post_id + '\\'' : '') + ' WHERE id = \\'' + $json.schedule_id + '\\'' }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        2020,
+        300
+      ],
+      "id": "cs-0010-set-generated",
+      "name": "Set Status: Generated",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle webhook call errors\nconst scheduleId = $('Prepare Webhook Call').item.json.schedule_id;\nconst title = $('Prepare Webhook Call').item.json.title;\nconst error = $input.item.json;\n\nreturn [{ json: { \n  schedule_id: scheduleId, \n  title,\n  error_message: error?.message || JSON.stringify(error).substring(0, 500),\n  success: false\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1800,
+        520
+      ],
+      "id": "cs-0011-handle-error",
+      "name": "Handle Error"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE content_schedule SET status = 'failed', error_message = '{{ $json.error_message }}', updated_at = NOW() WHERE id = '{{ $json.schedule_id }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        2020,
+        520
+      ],
+      "id": "cs-0012-set-failed",
+      "name": "Set Status: Failed",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'No items scheduled for today' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1140,
+        520
+      ],
+      "id": "cs-0013-respond-empty",
+      "name": "Respond: No Items"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Scheduler completed', results: $items().map(i => ({ title: i.json.title, success: i.json.success })) }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2240,
+        400
+      ],
+      "id": "cs-0014-respond-results",
+      "name": "Respond: Results"
+    }
+  ],
+  "connections": {
+    "Daily Trigger (7:50 AM)": {
+      "main": [
+        [
+          {
+            "node": "Prepare Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Query": {
+      "main": [
+        [
+          {
+            "node": "Get Today's Schedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Today's Schedule": {
+      "main": [
+        [
+          {
+            "node": "Has Items?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Items?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Webhook Call",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: No Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Webhook Call": {
+      "main": [
+        [
+          {
+            "node": "Set Status: Generating",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Status: Generating": {
+      "main": [
+        [
+          {
+            "node": "Call Content Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Content Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Response": {
+      "main": [
+        [
+          {
+            "node": "Set Status: Generated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Status: Generated": {
+      "main": [
+        [
+          {
+            "node": "Respond: Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Error": {
+      "main": [
+        [
+          {
+            "node": "Set Status: Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Status: Failed": {
+      "main": [
+        [
+          {
+            "node": "Respond: Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": ""
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b5116c87255060ddf18db8a2b1b90e34b38f50f44815cf784a0b8a92b6bb4e6e"
+  },
+  "tags": []
+}

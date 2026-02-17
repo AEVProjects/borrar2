@@ -30,8 +30,9 @@ window.APP_CONFIG = {
         dailyWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-auto-daily', // Del workflow "MSI Auto Daily"
         trendsWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-trends-content', // Del workflow "MSI Trends Content Flow"
         voiceVideoWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-video-extend', // Del workflow "Voice Video Extend" - Image-to-Video + Video Extension
-        educativeWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-educative-carousel' // Del workflow "MSI Educative Carousel Gen Flow"
-
+        educativeWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-educative-carousel', // Del workflow "MSI Educative Carousel Gen Flow"
+        voiceSwapWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-voice-swap', // Del workflow "MSI Voice Swap - ElevenLabs"
+        schedulerWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-scheduler-run' // Del workflow "MSI Content Scheduler"
     },
     
     // Security token - Este valor NO se puede cambiar desde el frontend
