@@ -25,7 +25,7 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "msi-scheduler-run",
-        "responseMode": "responseNode",
+        "responseMode": "lastNode",
         "options": {
           "allowedOrigins": "*"
         }
@@ -42,7 +42,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Query Supabase for today's scheduled content\nconst today = new Date().toISOString().split('T')[0];\nconst now = new Date().toTimeString().substring(0, 8);\n\n// Pass current date/time for the query\nreturn [{ json: { today, current_time: now, trigger_source: $input.item.json.body?.trigger || 'scheduled' } }];"
+        "jsCode": "// Prepare date for today's scheduled items query\nconst today = new Date().toISOString().split('T')[0];\nconst now = new Date().toTimeString().substring(0, 8);\n\nlet triggerSource = 'scheduled';\ntry {\n  triggerSource = $input.item.json.body?.trigger || 'scheduled';\n} catch(e) {}\n\nreturn [{ json: { today, current_time: now, trigger_source: triggerSource } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -69,8 +69,8 @@
       "name": "Get Today's Schedule",
       "credentials": {
         "postgres": {
-          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
-          "name": "Supabase PostgreSQL"
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
         }
       }
     },
@@ -110,15 +110,29 @@
     },
     {
       "parameters": {
-        "jsCode": "// Process each scheduled item and prepare webhook calls\nconst item = $input.item.json;\nconst webhookData = typeof item.webhook_data === 'string' ? JSON.parse(item.webhook_data) : item.webhook_data;\nconst contentType = item.content_type;\n\n// Map content types to their webhook paths\nconst WEBHOOK_PATHS = {\n  'generate': '/webhook/70738d02-4bd8-4dac-853f-ba4836aafaf5',\n  'carousel': '/webhook/msi-carousel-v12',\n  'educative': '/webhook/msi-educative-carousel',\n  'video': '/webhook/msi-video-gen',\n  'voice_video': '/webhook/msi-video-extend',\n  'trends': '/webhook/msi-trends-content'\n};\n\nconst N8N_BASE = 'https://n8nmsi.app.n8n.cloud';\nconst webhookPath = WEBHOOK_PATHS[contentType];\n\nif (!webhookPath) {\n  throw new Error('Unknown content_type: ' + contentType);\n}\n\nconst webhookUrl = N8N_BASE + webhookPath;\n\n// For trends, override payload\nlet payload = webhookData;\nif (contentType === 'trends') {\n  payload = { trigger: 'scheduled', timestamp: new Date().toISOString() };\n}\n\nreturn [{ json: { \n  schedule_id: item.id, \n  content_type: contentType, \n  title: item.title,\n  webhook_url: webhookUrl, \n  payload,\n  scheduled_date: item.scheduled_date\n} }];"
+        "batchSize": 1,
+        "options": {}
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
       "position": [
         1140,
         300
       ],
-      "id": "cs-0006-prepare-webhook",
+      "id": "cs-0006-loop-items",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process current scheduled item and prepare webhook call\nconst item = $input.item.json;\nconst webhookData = typeof item.webhook_data === 'string' ? JSON.parse(item.webhook_data) : item.webhook_data;\nconst contentType = item.content_type;\n\n// Map content types to their webhook paths\nconst WEBHOOK_PATHS = {\n  'generate': '/webhook/70738d02-4bd8-4dac-853f-ba4836aafaf5',\n  'carousel': '/webhook/msi-carousel-v12',\n  'educative': '/webhook/msi-educative-carousel',\n  'video': '/webhook/msi-video-gen',\n  'voice_video': '/webhook/msi-video-extend',\n  'trends': '/webhook/msi-trends-content'\n};\n\nconst N8N_BASE = 'https://n8nmsi.app.n8n.cloud';\nconst webhookPath = WEBHOOK_PATHS[contentType];\n\nif (!webhookPath) {\n  return [{ json: {\n    schedule_id: item.id,\n    title: item.title,\n    content_type: contentType,\n    error: true,\n    error_message: 'Unknown content_type: ' + contentType\n  }}];\n}\n\nconst webhookUrl = N8N_BASE + webhookPath;\n\n// For trends, override payload\nlet payload = webhookData;\nif (contentType === 'trends') {\n  payload = { trigger: 'scheduled', timestamp: new Date().toISOString() };\n}\n\nreturn [{ json: {\n  schedule_id: item.id,\n  content_type: contentType,\n  title: item.title,\n  webhook_url: webhookUrl,\n  payload,\n  scheduled_date: item.scheduled_date,\n  error: false\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        300
+      ],
+      "id": "cs-0007-prepare-webhook",
       "name": "Prepare Webhook Call"
     },
     {
@@ -130,15 +144,15 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        1360,
+        1580,
         300
       ],
-      "id": "cs-0007-set-generating",
+      "id": "cs-0008-set-generating",
       "name": "Set Status: Generating",
       "credentials": {
         "postgres": {
-          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
-          "name": "Supabase PostgreSQL"
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
         }
       }
     },
@@ -156,24 +170,59 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1580,
+        1800,
         300
       ],
-      "id": "cs-0008-call-webhook",
-      "name": "Call Content Webhook"
+      "id": "cs-0009-call-webhook",
+      "name": "Call Content Webhook",
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "// Extract post_id from response if available\nconst response = $input.item.json;\nconst scheduleId = $('Prepare Webhook Call').item.json.schedule_id;\nconst title = $('Prepare Webhook Call').item.json.title;\n\nlet postId = null;\ntry {\n  postId = response?.data?.post_id || response?.post_id || null;\n} catch(e) {}\n\nreturn [{ json: { \n  schedule_id: scheduleId, \n  title,\n  post_id: postId, \n  success: true,\n  response_preview: JSON.stringify(response).substring(0, 500)\n} }];"
+        "jsCode": "// Check if webhook call succeeded or failed\nconst response = $input.item.json;\nconst scheduleId = $('Prepare Webhook Call').item.json.schedule_id;\nconst title = $('Prepare Webhook Call').item.json.title;\n\n// Check for error indicators from HTTP request\nconst hasError = response?.error || response?.code === 'ERR_NON_2XX_STATUS_CODE' || response?.statusCode >= 400;\n\nif (hasError) {\n  const errorMsg = response?.message || response?.error || JSON.stringify(response).substring(0, 300);\n  return [{ json: {\n    schedule_id: scheduleId,\n    title,\n    success: false,\n    error_message: errorMsg\n  }}];\n}\n\n// Success - extract post_id if available\nlet postId = null;\ntry {\n  postId = response?.data?.post_id || response?.post_id || null;\n} catch(e) {}\n\nreturn [{ json: {\n  schedule_id: scheduleId,\n  title,\n  post_id: postId,\n  success: true\n} }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1800,
+        2020,
         300
       ],
-      "id": "cs-0009-process-response",
-      "name": "Process Response"
+      "id": "cs-0010-check-result",
+      "name": "Check Result"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cs-cond-success",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2240,
+        300
+      ],
+      "id": "cs-0011-success-check",
+      "name": "Success?"
     },
     {
       "parameters": {
@@ -184,81 +233,51 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        2020,
-        300
+        2460,
+        200
       ],
-      "id": "cs-0010-set-generated",
+      "id": "cs-0012-set-generated",
       "name": "Set Status: Generated",
       "credentials": {
         "postgres": {
-          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
-          "name": "Supabase PostgreSQL"
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "// Handle webhook call errors\nconst scheduleId = $('Prepare Webhook Call').item.json.schedule_id;\nconst title = $('Prepare Webhook Call').item.json.title;\nconst error = $input.item.json;\n\nreturn [{ json: { \n  schedule_id: scheduleId, \n  title,\n  error_message: error?.message || JSON.stringify(error).substring(0, 500),\n  success: false\n} }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1800,
-        520
-      ],
-      "id": "cs-0011-handle-error",
-      "name": "Handle Error"
-    },
-    {
-      "parameters": {
         "operation": "executeQuery",
-        "query": "UPDATE content_schedule SET status = 'failed', error_message = '{{ $json.error_message }}', updated_at = NOW() WHERE id = '{{ $json.schedule_id }}'",
+        "query": "UPDATE content_schedule SET status = 'failed', error_message = '{{ $json.error_message.substring(0, 500).replace(/'/g, \"''\") }}', updated_at = NOW() WHERE id = '{{ $json.schedule_id }}'",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        2020,
-        520
+        2460,
+        440
       ],
-      "id": "cs-0012-set-failed",
+      "id": "cs-0013-set-failed",
       "name": "Set Status: Failed",
       "credentials": {
         "postgres": {
-          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
-          "name": "Supabase PostgreSQL"
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
         }
       }
     },
     {
       "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, message: 'No items scheduled for today' }) }}",
-        "options": {}
+        "jsCode": "return [{ json: { success: true, message: 'No items scheduled for today', items_processed: 0 } }];"
       },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         1140,
         520
       ],
-      "id": "cs-0013-respond-empty",
-      "name": "Respond: No Items"
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, message: 'Scheduler completed', results: $items().map(i => ({ title: i.json.title, success: i.json.success })) }) }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        2240,
-        400
-      ],
-      "id": "cs-0014-respond-results",
-      "name": "Respond: Results"
+      "id": "cs-0014-no-items",
+      "name": "No Items Response"
     }
   ],
   "connections": {
@@ -310,14 +329,26 @@
       "main": [
         [
           {
-            "node": "Prepare Webhook Call",
+            "node": "Loop Over Items",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Respond: No Items",
+            "node": "No Items Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        null,
+        [
+          {
+            "node": "Prepare Webhook Call",
             "type": "main",
             "index": 0
           }
@@ -350,18 +381,36 @@
       "main": [
         [
           {
-            "node": "Process Response",
+            "node": "Check Result",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Process Response": {
+    "Check Result": {
+      "main": [
+        [
+          {
+            "node": "Success?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success?": {
       "main": [
         [
           {
             "node": "Set Status: Generated",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Status: Failed",
             "type": "main",
             "index": 0
           }
@@ -372,18 +421,7 @@
       "main": [
         [
           {
-            "node": "Respond: Results",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Handle Error": {
-      "main": [
-        [
-          {
-            "node": "Set Status: Failed",
+            "node": "Loop Over Items",
             "type": "main",
             "index": 0
           }
@@ -394,7 +432,7 @@
       "main": [
         [
           {
-            "node": "Respond: Results",
+            "node": "Loop Over Items",
             "type": "main",
             "index": 0
           }

@@ -4706,6 +4706,114 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
     const DAY_NAMES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
     const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
+    // ---- DAY PRESETS (Mon-Fri) ----
+    // These define the default content type and pre-filled data for each day of the week.
+    // The user can still change the content type and fields in the modal.
+    const DAY_PRESETS = {
+        monday: {
+            content_type: 'educative',
+            label: 'Carrusel Educativo',
+            title_prefix: 'Educativo',
+            defaults: {
+                pillar: 'Educación & Tendencias Tecnológicas',
+                theme: 'AI & Smart Business Solutions',
+                topic: '',
+                context: ''
+            },
+            topics_pool: [
+                'Cómo AI mejora la eficiencia operativa',
+                'Automatización de procesos empresariales',
+                'AI aplicada a soporte y operaciones',
+                'Reducción de costos mediante automatización',
+                'Productividad empresarial con AI'
+            ]
+        },
+        tuesday: {
+            content_type: 'generate',
+            label: 'Servicio Destacado - IT Outsourcing',
+            title_prefix: 'IT Outsourcing',
+            defaults: {
+                topic: '',
+                headline: '',
+                post_type: 'Educational',
+                visual_style: 'Realistic Photography',
+                data_points: '',
+                context: 'MSI Technologies IT Outsourcing Service. Focus: access to specialized talent, operational scalability, IT cost optimization, operational continuity, specialized IT support.',
+                orientation: '4:5'
+            },
+            topics_pool: [
+                'Acceso a talento especializado sin aumentar estructura',
+                'Escalabilidad operativa con IT outsourcing',
+                'Optimización de costos tecnológicos',
+                'Continuidad operativa con soporte IT dedicado',
+                'Soporte IT especializado para empresas'
+            ]
+        },
+        wednesday: {
+            content_type: 'carousel',
+            label: 'Carrusel Noticias & Actualidad Tech',
+            title_prefix: 'Tech News',
+            defaults: {
+                topic: '',
+                visual_style: 'Modern 3D',
+                context: 'Format: Tech News Carousel. Structure per slide: What happened, Business impact, MSI perspective. Pillar: Trends & Innovation.',
+                slides: [
+                    { slide_number: 1, headline: '', subtext: '' },
+                    { slide_number: 2, headline: '', subtext: '' },
+                    { slide_number: 3, headline: '', subtext: '' }
+                ]
+            },
+            topics_pool: [
+                'IA empresarial - últimas novedades',
+                'Ciberseguridad global - amenazas y soluciones',
+                'Innovación tecnológica empresarial',
+                'Cloud adoption y transformación digital',
+                'Automatización empresarial con AI'
+            ]
+        },
+        thursday: {
+            content_type: 'generate',
+            label: 'Servicio Destacado - Cybersecurity',
+            title_prefix: 'Cybersecurity',
+            defaults: {
+                topic: '',
+                headline: '',
+                post_type: 'Educational',
+                visual_style: 'Tech Close-up',
+                data_points: '',
+                context: 'MSI Technologies Cybersecurity Service. Focus: protection against cyberattacks, enterprise data security, prevention and continuous monitoring, cloud environment security, operational continuity.',
+                orientation: '4:5'
+            },
+            topics_pool: [
+                'Protección contra ciberataques modernos',
+                'Seguridad de datos empresariales',
+                'Prevención y monitoreo continuo de amenazas',
+                'Seguridad en entornos cloud',
+                'Continuidad operativa ante incidentes de seguridad'
+            ]
+        },
+        friday: {
+            content_type: 'video',
+            label: 'Video - Workforce Agility / Team Solutions',
+            title_prefix: 'Workforce Agility',
+            defaults: {
+                prompt: '',
+                start_image_url: '',
+                second_image_url: '',
+                service: 'workforce_agility',
+                duration: '8',
+                topic: 'Workforce Agility & Team Solutions'
+            },
+            topics_pool: [
+                'Equipos dedicados alineados al negocio',
+                'Escalabilidad de talento tecnológico',
+                'Equipos nearshore integrados',
+                'Productividad mediante equipos especializados',
+                'Flexibilidad para proyectos y crecimiento'
+            ]
+        }
+    };
+
     // ---- Utility functions ----
     function getMonday(d) {
         const date = new Date(d);
@@ -4809,6 +4917,9 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
             const isPast = date < today;
             
             const dayItems = schedulerItems.filter(item => item.scheduled_date === dateStr);
+            const dayKey = DAY_KEYS[i];
+            const preset = DAY_PRESETS[dayKey];
+            const presetCt = preset ? CONTENT_TYPES[preset.content_type] : null;
             
             let itemsHtml = '';
             dayItems.forEach(item => {
@@ -4821,6 +4932,11 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
                     </div>`;
             });
 
+            // Show preset badge if no items yet
+            const presetBadge = preset && dayItems.length === 0
+                ? `<div class="scheduler-day-preset-badge type-${preset.content_type}"><span class="type-dot ${preset.content_type}"></span> ${preset.label}</div>`
+                : '';
+
             html += `
                 <div class="scheduler-day-card ${isToday ? 'today' : ''} ${isPast ? 'past' : ''}" data-date="${dateStr}">
                     <div class="scheduler-day-header">
@@ -4828,9 +4944,10 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
                         <span class="day-date">${date.getDate()}/${date.getMonth() + 1}</span>
                     </div>
                     <div class="scheduler-day-content">
+                        ${presetBadge}
                         ${itemsHtml}
                         <button class="add-schedule-btn" data-date="${dateStr}" data-day="${DAY_KEYS[i]}">
-                            + Agregar
+                            + ${dayItems.length === 0 ? 'Programar' : 'Agregar'}
                         </button>
                     </div>
                 </div>`;
@@ -4984,9 +5101,31 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
             timeInput.value = (existingItem.scheduled_time || '08:00').substring(0, 5);
             renderDynamicFields(existingItem.content_type, existingItem.webhook_data, existingItem.title);
         } else {
-            typeSelect.value = '';
-            timeInput.value = '08:00';
-            document.getElementById('sched-dynamic-fields').innerHTML = '';
+            // Apply day preset if available
+            const preset = DAY_PRESETS[dayOfWeek];
+            if (preset) {
+                typeSelect.value = preset.content_type;
+                timeInput.value = '08:00';
+                // Pick a random topic from the pool for suggestion
+                const randomTopic = preset.topics_pool[Math.floor(Math.random() * preset.topics_pool.length)];
+                const presetData = { ...preset.defaults };
+                // Set topic suggestion
+                if (preset.content_type === 'educative') {
+                    presetData.topic = presetData.topic || randomTopic;
+                } else if (preset.content_type === 'generate') {
+                    presetData.topic = presetData.topic || randomTopic;
+                } else if (preset.content_type === 'carousel') {
+                    presetData.topic = presetData.topic || randomTopic;
+                } else if (preset.content_type === 'video') {
+                    presetData.prompt = presetData.prompt || '';
+                }
+                const defaultTitle = `${preset.title_prefix} - ${randomTopic}`;
+                renderDynamicFields(preset.content_type, presetData, defaultTitle);
+            } else {
+                typeSelect.value = '';
+                timeInput.value = '08:00';
+                document.getElementById('sched-dynamic-fields').innerHTML = '';
+            }
         }
 
         // Update save button
