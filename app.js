@@ -4121,7 +4121,7 @@ function switchTab(mode) {
     }
 }
 
-// Trigger trends workflow manually
+// Trigger trends workflow with user-chosen topic
 async function triggerTrendsWorkflow() {
     const webhookUrl = CONFIG.n8n?.trendsWebhook;
     
@@ -4130,14 +4130,29 @@ async function triggerTrendsWorkflow() {
         console.warn('Para usar esta función, configura n8n.trendsWebhook en config.js');
         return;
     }
+
+    const topicInput = document.getElementById('trends-topic-input');
+    const contextInput = document.getElementById('trends-context-input');
+    const topic = topicInput?.value?.trim();
+    const context = contextInput?.value?.trim() || '';
+
+    if (!topic) {
+        showToast('Escribe un tema para buscar tendencias', 'error');
+        topicInput?.focus();
+        return;
+    }
     
     try {
-        showProgressAlert('Ejecutando Workflow', 'Buscando tendencias y generando contenido...');
+        showProgressAlert('Buscando Tendencias', `Buscando noticias sobre "${topic}"...`);
         
         const response = await fetch(webhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ trigger: 'manual', timestamp: new Date().toISOString() })
+            body: JSON.stringify({ 
+                topic: topic,
+                context: context,
+                timestamp: new Date().toISOString() 
+            })
         });
         
         if (!response.ok) {
@@ -4145,7 +4160,7 @@ async function triggerTrendsWorkflow() {
         }
         
         hideProgressAlert();
-        showSuccessAlert('Workflow Ejecutado', 'El workflow de trends se ejecutó correctamente. Las noticias se actualizarán pronto.');
+        showSuccessAlert('Búsqueda Completada', `Se buscaron tendencias sobre "${topic}". Las noticias se actualizarán pronto.`);
         
         // Reload news after a delay
         setTimeout(loadTrendNews, 5000);
@@ -4153,7 +4168,7 @@ async function triggerTrendsWorkflow() {
     } catch (err) {
         console.error('Error triggering workflow:', err);
         hideProgressAlert();
-        showToast('Error al ejecutar el workflow', 'error');
+        showToast('Error al ejecutar el workflow de trends', 'error');
     }
 }
 

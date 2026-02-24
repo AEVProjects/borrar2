@@ -1007,7 +1007,7 @@
                             </svg>
                             Trend News Monitor
                         </h2>
-                        <span class="trends-subtitle">Noticias scrapeadas automáticamente de tendencias</span>
+                        <span class="trends-subtitle">Busca noticias por tema y genera contenido para redes</span>
                     </div>
                     <div class="trends-actions">
                         <button id="refresh-trends-btn" class="btn btn-secondary">
@@ -1017,11 +1017,26 @@
                             </svg>
                             Actualizar
                         </button>
-                        <button id="trigger-trends-workflow-btn" class="btn btn-primary">
+                    </div>
+                </div>
+
+                <!-- Topic Search -->
+                <div class="trends-topic-search" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:20px;">
+                    <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:220px;">
+                            <label for="trends-topic-input" style="display:block;font-size:13px;font-weight:600;color:#4a5568;margin-bottom:6px;">Tema a buscar</label>
+                            <input type="text" id="trends-topic-input" placeholder="Ej: 5G technology, cloud computing, cybersecurity..." style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#207CE5'" onblur="this.style.borderColor='#e2e8f0'">
+                        </div>
+                        <div style="flex:1;min-width:220px;">
+                            <label for="trends-context-input" style="display:block;font-size:13px;font-weight:600;color:#4a5568;margin-bottom:6px;">Contexto adicional <span style="font-weight:400;color:#a0aec0;">(opcional)</span></label>
+                            <input type="text" id="trends-context-input" placeholder="Ej: enfocado en empresas, últimas novedades..." style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#207CE5'" onblur="this.style.borderColor='#e2e8f0'">
+                        </div>
+                        <button id="trigger-trends-workflow-btn" class="btn btn-primary" style="white-space:nowrap;padding:10px 20px;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                             </svg>
-                            Ejecutar Workflow
+                            Buscar Tendencias
                         </button>
                     </div>
                 </div>
@@ -1042,7 +1057,7 @@
                     </div>
                     <div class="stat-card">
                         <div class="stat-value" id="last-scrape-time">-</div>
-                        <div class="stat-label">Último Scrape</div>
+                        <div class="stat-label">Última Búsqueda</div>
                     </div>
                 </div>
 

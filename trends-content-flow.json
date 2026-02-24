@@ -2,24 +2,6 @@
   "name": "Trends Content Generator",
   "nodes": [
     {
-      "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "hours",
-              "hoursInterval": 6
-            }
-          ]
-        }
-      },
-      "id": "trigger-schedule",
-      "name": "Schedule Trigger",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [0, 300],
-      "notes": "Ejecuta cada 6 horas"
-    },
-    {
       "parameters": {},
       "id": "trigger-manual",
       "name": "Manual Trigger",
@@ -41,11 +23,11 @@
       "typeVersion": 2,
       "position": [0, 500],
       "webhookId": "msi-trends-content",
-      "notes": "Para ejecutar desde la web"
+      "notes": "Recibe topic y context desde la web"
     },
     {
       "parameters": {
-        "jsCode": "// ========================================\n// WORKFLOW CONFIGURATION - MSI TECHNOLOGIES\n// ========================================\n\nreturn [{\n  json: {\n    brandName: \"MSI Technologies\",\n    brandDescription: \"MSI Technologies helps businesses modernize infrastructure, implement cloud solutions, cybersecurity, digital transformation, and innovative technology. Target: CTOs, IT Directors, tech decision-makers.\",\n    \n    searchQueries: [\n      \"Enterprise Cloud Computing\",\n      \"Cybersecurity Threats 2026\",\n      \"AI Machine Learning Business\",\n      \"IT Infrastructure Modernization\",\n      \"Digital Transformation Technology\",\n      \"DevOps Automation Enterprise\",\n      \"Zero Trust Security Architecture\",\n      \"Data Center Cloud Migration\",\n      \"Enterprise Software Development\",\n      \"Business Technology Innovation\"\n    ],\n    \n    googleTrendsRegion: \"US\",\n    newsLanguage: \"en\",\n    newsCountry: \"us\",\n    maxTrends: 5,\n    maxNews: 5,\n    \n    visualStyles: [\"Glassmorphism\", \"Modern 3D\", \"Isometric\", \"Data Hero\", \"Infographic\", \"Realistic Photography\"],\n    postTypes: [\"Educational\", \"Industry News\", \"Tips & Tricks\", \"Thought Leadership\"],\n    \n    // Webhook URL for content generation (update with your n8n URL)\n    contentWebhookUrl: \"https://n8nmsi.app.n8n.cloud/webhook/msi-carousel-v12\"\n  }\n}];"
+        "jsCode": "// ========================================\n// WORKFLOW CONFIGURATION - MSI TECHNOLOGIES\n// ========================================\n// Accepts topic from webhook or manual trigger\n// Use $input to safely get data regardless of which trigger fired\nconst inputData = $input.first().json;\nconst webhookBody = inputData.body || inputData;\nconst inputTopic = webhookBody.topic || '';\nconst inputContext = webhookBody.context || '';\n\nreturn [{\n  json: {\n    brandName: \"MSI Technologies\",\n    brandDescription: \"MSI Technologies is a multinational company with 20+ years of experience specializing in two major areas:\\n\\n1. TELECOM SERVICES: Network Planning & RF Optimization (indoor/outdoor), Workforce Agility (specialized engineering & design), IoT Solutions (connected devices), Engineering & Consulting.\\n\\n2. DIGITAL SERVICES: Data Security & Cloud Computing, IT Management & Cybersecurity, AI & Smart Business Solutions, Business Process Outsourcing (BPO), IT Outsourcing, Executive Consulting.\\n\\nExpertise: Staff Augmentation, Information Systems, Software, Cybersecurity, and Telecommunications. Target: CTOs, IT Directors, tech decision-makers.\",\n    \n    // Topic provided by user via webhook\n    userTopic: inputTopic,\n    userContext: inputContext,\n    \n    googleTrendsRegion: \"US\",\n    newsLanguage: \"en\",\n    newsCountry: \"us\",\n    maxTrends: 5,\n    maxNews: 5,\n    \n    visualStyles: [\"Glassmorphism\", \"Modern 3D\", \"Isometric\", \"Data Hero\", \"Infographic\", \"Realistic Photography\"],\n    postTypes: [\"Educational\", \"Industry News\", \"Tips & Tricks\", \"Thought Leadership\"],\n    \n    // Webhook URL for content generation\n    contentWebhookUrl: \"https://n8nmsi.app.n8n.cloud/webhook/msi-carousel-v12\"\n  }\n}];"
       },
       "id": "config-node",
       "name": "Workflow Configuration",
@@ -55,10 +37,10 @@
     },
     {
       "parameters": {
-        "jsCode": "const config = $input.first().json;\nconst queries = config.searchQueries;\nconst randomIndex = Math.floor(Math.random() * queries.length);\nconst selectedQuery = queries[randomIndex];\n\nreturn [{\n  json: {\n    ...config,\n    searchQuery: selectedQuery\n  }\n}];"
+        "jsCode": "const config = $input.first().json;\n\n// Use the topic provided by the user - NO random selection\nconst searchQuery = config.userTopic || 'AI Business Solutions';\n\nreturn [{\n  json: {\n    ...config,\n    searchQuery: searchQuery\n  }\n}];"
       },
       "id": "select-query",
-      "name": "Select Random Query",
+      "name": "Use Topic Query",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [440, 200]
@@ -91,7 +73,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const input = $input.first().json;\nconst config = $('Select Random Query').first().json;\nconst maxTrends = config.maxTrends || 5;\n\nlet relatedQueries = [];\n\nif (input.related_queries) {\n  if (input.related_queries.rising) {\n    relatedQueries = relatedQueries.concat(\n      input.related_queries.rising.map(q => ({ query: q.query, type: 'rising', value: q.value || 'Breakout' }))\n    );\n  }\n  if (input.related_queries.top) {\n    relatedQueries = relatedQueries.concat(\n      input.related_queries.top.map(q => ({ query: q.query, type: 'top', value: q.value || 100 }))\n    );\n  }\n}\n\nif (relatedQueries.length === 0) {\n  relatedQueries = [{ query: config.searchQuery, type: 'original', value: 100 }];\n}\n\nconst rising = relatedQueries.filter(q => q.type === 'rising');\nconst top = relatedQueries.filter(q => q.type === 'top');\nconst filtered = [...rising, ...top].slice(0, maxTrends);\n\nreturn [{\n  json: {\n    trends: filtered,\n    trendsJson: JSON.stringify(filtered, null, 2),\n    brandName: config.brandName,\n    brandDescription: config.brandDescription,\n    originalQuery: config.searchQuery,\n    visualStyles: config.visualStyles,\n    postTypes: config.postTypes,\n    maxNews: config.maxNews,\n    newsLanguage: config.newsLanguage,\n    newsCountry: config.newsCountry,\n    contentWebhookUrl: config.contentWebhookUrl\n  }\n}];"
+        "jsCode": "const input = $input.first().json;\nconst config = $('Use Topic Query').first().json;\nconst maxTrends = config.maxTrends || 5;\n\nlet relatedQueries = [];\n\nif (input.related_queries) {\n  if (input.related_queries.rising) {\n    relatedQueries = relatedQueries.concat(\n      input.related_queries.rising.map(q => ({ query: q.query, type: 'rising', value: q.value || 'Breakout' }))\n    );\n  }\n  if (input.related_queries.top) {\n    relatedQueries = relatedQueries.concat(\n      input.related_queries.top.map(q => ({ query: q.query, type: 'top', value: q.value || 100 }))\n    );\n  }\n}\n\nif (relatedQueries.length === 0) {\n  relatedQueries = [{ query: config.searchQuery, type: 'original', value: 100 }];\n}\n\nconst rising = relatedQueries.filter(q => q.type === 'rising');\nconst top = relatedQueries.filter(q => q.type === 'top');\nconst filtered = [...rising, ...top].slice(0, maxTrends);\n\nreturn [{\n  json: {\n    trends: filtered,\n    trendsJson: JSON.stringify(filtered, null, 2),\n    brandName: config.brandName,\n    brandDescription: config.brandDescription,\n    originalQuery: config.searchQuery,\n    visualStyles: config.visualStyles,\n    postTypes: config.postTypes,\n    maxNews: config.maxNews,\n    newsLanguage: config.newsLanguage,\n    newsCountry: config.newsCountry,\n    contentWebhookUrl: config.contentWebhookUrl\n  }\n}];"
       },
       "id": "filter-trends",
       "name": "Filter Top Trends",
@@ -104,7 +86,7 @@
         "promptType": "define",
         "text": "=Trending queries for {{ $json.brandName }}:\n\n{{ $json.trendsJson }}\n\nBrand: {{ $json.brandDescription }}\n\nSelect the BEST technology-related query. It MUST be about: cloud, cybersecurity, IT, software, AI, data, DevOps, enterprise technology, or digital transformation.\n\nDO NOT select location-specific or non-tech topics.\n\nRespond with ONLY the query text.",
         "options": {
-          "systemMessage": "You are a B2B technology content strategist. Select ONLY technology-related trending topics suitable for LinkedIn content targeting CTOs and IT Directors.\n\nVALID TOPICS: Cloud computing, cybersecurity, AI/ML, software development, DevOps, IT infrastructure, data analytics, digital transformation, enterprise technology.\n\nINVALID TOPICS: Sports, entertainment, politics, celebrities, local news, weather, general news not about technology.\n\nRespond with ONLY the query text, nothing else."
+          "systemMessage": "You are a B2B technology content strategist for MSI Technologies - a multinational company with 20+ years specializing in Telecom Services (Network Planning, RF Optimization, IoT, Engineering) and Digital Services (Cloud, Cybersecurity, AI Solutions, BPO, IT Outsourcing, Executive Consulting).\n\nSelect ONLY the trending topic that BEST relates to MSI's actual services. Prioritize topics about: network optimization, RF engineering, IoT solutions, cloud computing, cybersecurity, AI automation, IT outsourcing, staff augmentation, BPO, telecommunications, data security, smart business solutions.\n\nINVALID TOPICS: Sports, entertainment, politics, celebrities, local news, weather, anything unrelated to MSI's services.\n\nRespond with ONLY the query text, nothing else."
         }
       },
       "id": "ai-select-trend",
@@ -238,9 +220,9 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=# TECHNOLOGY CONTENT FOR {{ $json.brandName }}\n\n## Trending Tech Topic: {{ $json.selectedTrend }}\n\n## Brand: {{ $json.brandDescription }}\n\n## NEWS ARTICLES WITH FULL CONTENT:\n{{ $json.news.map(n => `### ${n.index}. ${n.title}\\nSource: ${n.source} | Date: ${n.date}\\n\\n**Summary:** ${n.snippet}\\n\\n**Full Content:**\\n${n.content}\\n\\n---`).join('\\n\\n') }}\n\n## Visual Styles: {{ $json.visualStyles.join(', ') }}\n## Post Types: {{ $json.postTypes.join(', ') }}\n\n---\n\nBased on the TECHNOLOGY news articles above, generate ONE LinkedIn post about TECHNOLOGY for B2B audience. Focus on: cloud, cybersecurity, AI, software, IT infrastructure, DevOps, or digital transformation.\n\nRespond ONLY with this JSON:\n{\n  \"topic\": \"2-3 word TECHNOLOGY topic\",\n  \"post_type\": \"Educational|Industry News|Tips & Tricks|Thought Leadership\",\n  \"visual_style\": \"Glassmorphism|Modern 3D|Isometric|Data Hero|Infographic|Realistic Photography\",\n  \"headline\": \"5-8 word TECHNOLOGY headline for image\",\n  \"data_points\": \"Specific tech stats, numbers, or facts FROM the articles\",\n  \"context\": \"Key TECHNOLOGY insights from the articles + how MSI Technologies helps with this\"\n}",
+        "text": "=# TECHNOLOGY CONTENT FOR {{ $json.brandName }}\n\n## Trending Tech Topic: {{ $json.selectedTrend }}\n\n## Brand: {{ $json.brandDescription }}\n\n## NEWS ARTICLES WITH FULL CONTENT:\n{{ $json.news.map(n => `### ${n.index}. ${n.title}\\nSource: ${n.source} | Date: ${n.date}\\n\\n**Summary:** ${n.snippet}\\n\\n**Full Content:**\\n${n.content}\\n\\n---`).join('\\n\\n') }}\n\n## Visual Styles: {{ $json.visualStyles.join(', ') }}\n## Post Types: {{ $json.postTypes.join(', ') }}\n\n---\n\nBased on the news articles above, generate ONE LinkedIn post for MSI Technologies' B2B audience.\nConnect the topic to MSI's SPECIFIC services: Telecom (Network Planning, RF Optimization, IoT, Engineering) or Digital (Cloud, Cybersecurity, AI Solutions, BPO, IT Outsourcing, Consulting).\n\nRespond ONLY with this JSON:\n{\n  \"topic\": \"2-3 word topic matching MSI services\",\n  \"post_type\": \"Educational|Industry News|Tips & Tricks|Thought Leadership\",\n  \"visual_style\": \"Glassmorphism|Modern 3D|Isometric|Data Hero|Infographic|Realistic Photography\",\n  \"headline\": \"5-8 word headline connecting news to MSI expertise\",\n  \"data_points\": \"Specific stats, numbers, or facts FROM the articles\",\n  \"context\": \"Key insights from the articles + WHICH specific MSI service area applies and HOW MSI helps\"\n}",
         "options": {
-          "systemMessage": "You are MSI Technologies content strategist. Generate B2B LinkedIn content for CTOs/IT Directors.\n\nIMPORTANT RULES:\n1. ONLY generate content about TECHNOLOGY topics: cloud computing, cybersecurity, AI/ML, software development, DevOps, IT infrastructure, data analytics, digital transformation.\n2. Use the ACTUAL CONTENT from the news articles provided. Extract real tech data, statistics, and insights.\n3. If the articles are NOT about technology, generate content about the original search query instead.\n4. DO NOT create content about sports, entertainment, politics, or non-tech topics.\n\nRespond with valid JSON only."
+          "systemMessage": "You are the content strategist for MSI Technologies - a multinational company with 20+ years of experience.\n\nMSI TECHNOLOGIES SERVICES:\n1. TELECOM: Network Planning & RF Optimization, Workforce Agility, IoT Solutions, Engineering & Consulting\n2. DIGITAL: Data Security & Cloud Computing, IT Management & Cybersecurity, AI & Smart Business Solutions, BPO, IT Outsourcing, Executive Consulting\n\nIMPORTANT RULES:\n1. Generate content that connects the news topic to MSI's ACTUAL services listed above.\n2. Use the ACTUAL CONTENT from the news articles. Extract real data, stats, and insights.\n3. Always frame the content showing HOW MSI Technologies helps with this specific topic.\n4. Connect insights to specific MSI service areas (e.g. if topic is about 5G → connect to MSI's Network Planning & RF Optimization).\n5. If articles are NOT relevant to MSI's services, generate content about the original topic framed through MSI's expertise.\n6. DO NOT create content about sports, entertainment, politics, or non-tech topics.\n\nRespond with valid JSON only."
         }
       },
       "id": "ai-generate-post",
@@ -337,11 +319,10 @@
     }
   ],
   "connections": {
-    "Schedule Trigger": { "main": [[{ "node": "Workflow Configuration", "type": "main", "index": 0 }]] },
     "Manual Trigger": { "main": [[{ "node": "Workflow Configuration", "type": "main", "index": 0 }]] },
     "Webhook Trigger": { "main": [[{ "node": "Workflow Configuration", "type": "main", "index": 0 }]] },
-    "Workflow Configuration": { "main": [[{ "node": "Select Random Query", "type": "main", "index": 0 }]] },
-    "Select Random Query": { "main": [[{ "node": "Get Google Trends", "type": "main", "index": 0 }]] },
+    "Workflow Configuration": { "main": [[{ "node": "Use Topic Query", "type": "main", "index": 0 }]] },
+    "Use Topic Query": { "main": [[{ "node": "Get Google Trends", "type": "main", "index": 0 }]] },
     "Get Google Trends": { "main": [[{ "node": "Filter Top Trends", "type": "main", "index": 0 }]] },
     "Filter Top Trends": { "main": [[{ "node": "AI: Select Best Trend", "type": "main", "index": 0 }]] },
     "AI: Select Best Trend": { "main": [[{ "node": "Prepare Selected Trend", "type": "main", "index": 0 }]] },

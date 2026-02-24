@@ -1,5 +1,7 @@
 {
   "name": "msi-workflow",
   "private": true,
-  "dependencies": {}
+  "dependencies": {
+    "@supabase/supabase-js": "^2.97.0"
+  }
 }
