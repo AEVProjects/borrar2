@@ -22,7 +22,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{\n  json: {\n    API_KEY: 'AIzaSyB9VPZyevI9FaK4O0U28BDFLFFQ2ksjMDQ',\n    EP: 'us-east1-aiplatform.googleapis.com',\n    PJ: 'video-gen-msi',\n    LOC: 'us-east1',\n    MDL: 'veo-3.1-generate-001',\n    STORAGE_URI_PART1: 'gs://video-bucket-for-msi-920206/part1/',\n    STORAGE_URI_PART2: 'gs://video-bucket-for-msi-920206/part2/'\n  }\n}];"
+        "jsCode": "return [{\n  json: {\n    API_KEY: 'AIzaSyB9VPZyevI9FaK4O0U28BDFLFFQ2ksjMDQ',\n    EP: 'us-east1-aiplatform.googleapis.com',\n    PJ: 'video-gen-msi',\n    LOC: 'us-east1',\n    MDL: 'veo-3.1-generate-001',\n    MDL_EXTEND: 'veo-3.1-generate-preview',\n    STORAGE_URI_PART1: 'gs://video-bucket-for-msi-920206/part1/',\n    STORAGE_URI_PART2: 'gs://video-bucket-for-msi-920206/part2/'\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -102,7 +102,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const creds = $('Publicar Credenciales').item.json;\nconst API_KEY = creds.API_KEY;\nconst s = $input.item.json;\nconst EP = creds.EP;\nconst PJ = creds.PJ;\nconst LOC = creds.LOC;\nconst MDL = creds.MDL;\nconst veoRes = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://' + EP + '/v1/projects/' + PJ + '/locations/' + LOC + '/publishers/google/models/' + MDL + ':predictLongRunning?key=' + API_KEY,\n  headers: { 'Content-Type':'application/json' },\n  body: JSON.stringify({\n    instances: [{ prompt: s.PROMPT_PART2, image: { bytesBase64Encoded: s.LAST_FRAME_B64, mimeType: 'image/jpeg' } }],\n    parameters: { aspectRatio: s.ASPECT_RATIO, resolution: '720p', sampleCount: 1, durationSeconds: parseInt(s.DURATION), personGeneration: 'allow_all', addWatermark: false, includeRaiReason: true, generateAudio: true, storageUri: creds.STORAGE_URI_PART2, negativePrompt: 'background music, soundtrack, instrumental music, musical score, ambient music, piano, guitar, drums, orchestra, synthesizer, melody, rhythm, cinematic score, dramatic music, soft music, upbeat music, ambient sounds, ambient noise, room tone, wind sound, traffic noise, nature sounds, transition animation, visual transitions, fade, dissolve, wipe, crossfade, scene change, new background, different setting, camera movement, camera pan, camera zoom, dolly, static, blurry, text, letters, words, subtitles, captions, watermark, frozen face, closed mouth, logo animation, logo zoom, logo glow, logo enlargement, logo movement' }\n  }),\n  timeout: 30000\n});\nif (!veoRes.name) throw new Error('Veo Part 2 failed: ' + JSON.stringify(veoRes).substring(0, 300));\n\nreturn [{ json: { op2: veoRes.name, video1_gcs_uri: s.video1_gcs_uri, DURATION: s.DURATION, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT } }];"
+        "jsCode": "// ============================================================\n// Submit Part 2 as VIDEO-TO-VIDEO EXTENSION (not image-to-video)\n// Uses the GCS URI from Part 1 as the video input.\n// This leverages Veo 3.1's \"last second rule\" - the model samples\n// the last ~24 frames (1 second) of Part 1 to extract latent vectors\n// for voice timbre, visual identity, and motion continuity.\n// ============================================================\nconst creds = $('Publicar Credenciales').item.json;\nconst API_KEY = creds.API_KEY;\nconst s = $input.item.json;\nconst EP = creds.EP;\nconst PJ = creds.PJ;\nconst LOC = creds.LOC;\nconst MDL = creds.MDL_EXTEND;\n\n// KEY DIFFERENCE: Use video.gcsUri + mimeType for video extension mode\n// Extension only supported on veo-3.1-generate-preview (NOT -001)\nconst veoRes = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://' + EP + '/v1/projects/' + PJ + '/locations/' + LOC + '/publishers/google/models/' + MDL + ':predictLongRunning?key=' + API_KEY,\n  headers: { 'Content-Type':'application/json' },\n  body: JSON.stringify({\n    instances: [{ prompt: s.PROMPT_PART2, video: { gcsUri: s.video1_gcs_uri, mimeType: 'video/mp4' } }],\n    parameters: { storageUri: creds.STORAGE_URI_PART2, sampleCount: 1, generateAudio: true, personGeneration: 'allow_all', negativePrompt: 'different voice, voice change, new speaker, different accent, different tone, different pitch, background music, soundtrack, instrumental music, musical score, ambient music, piano, guitar, drums, orchestra, synthesizer, melody, cinematic score, transition animation, fade, dissolve, wipe, crossfade, scene change, new background, different setting, camera movement, camera pan, camera zoom, static, blurry, text, subtitles, watermark, frozen face, closed mouth' }\n  }),\n  timeout: 30000\n});\nif (!veoRes.name) throw new Error('Veo Part 2 (extend) failed: ' + JSON.stringify(veoRes).substring(0, 300));\n\nreturn [{ json: { op2: veoRes.name, video1_gcs_uri: s.video1_gcs_uri, DURATION: s.DURATION, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -130,7 +130,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const creds = $('Publicar Credenciales').item.json;\nconst API_KEY = creds.API_KEY;\nconst s = $input.item.json;\nconst EP = creds.EP;\nconst PJ = creds.PJ;\nconst LOC = creds.LOC;\nconst MDL = creds.MDL;\nconst res = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://' + EP + '/v1/projects/' + PJ + '/locations/' + LOC + '/publishers/google/models/' + MDL + ':fetchPredictOperation?key=' + API_KEY,\n  headers: { 'Content-Type':'application/json' },\n  body: JSON.stringify({ operationName: s.op2 }),\n  timeout: 15000\n});\nlet videoUri = res.response?.videos?.[0]?.gcsUri || res.response?.videos?.[0]?.uri || '';\nif (!videoUri) throw new Error('Part 2 not ready: ' + JSON.stringify(res).substring(0, 400));\n\nreturn [{ json: { video1_gcs_uri: s.video1_gcs_uri, video2_gcs_uri: videoUri, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT, DURATION: s.DURATION } }];"
+        "jsCode": "const creds = $('Publicar Credenciales').item.json;\nconst API_KEY = creds.API_KEY;\nconst s = $input.item.json;\nconst EP = creds.EP;\nconst PJ = creds.PJ;\nconst LOC = creds.LOC;\nconst MDL = creds.MDL_EXTEND;\nconst res = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://' + EP + '/v1/projects/' + PJ + '/locations/' + LOC + '/publishers/google/models/' + MDL + ':fetchPredictOperation?key=' + API_KEY,\n  headers: { 'Content-Type':'application/json' },\n  body: JSON.stringify({ operationName: s.op2 }),\n  timeout: 15000\n});\nlet videoUri = res.response?.videos?.[0]?.gcsUri || res.response?.videos?.[0]?.uri || '';\nif (!videoUri) throw new Error('Part 2 (extend) not ready: ' + JSON.stringify(res).substring(0, 400));\n\nreturn [{ json: { video1_gcs_uri: s.video1_gcs_uri, video2_gcs_uri: videoUri, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT, DURATION: s.DURATION } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -206,19 +206,6 @@
       ],
       "id": "e2b00002-bbbb-4002-c002-000000000014",
       "name": "Respond Success"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Extract last frame from Part 1 video to use as start image for Part 2\n// This ensures visual continuity between video parts\nconst { execSync } = require('child_process');\nconst fs = require('fs');\nconst os = require('os');\nconst path = require('path');\n\nconst s = $input.item.json;\n\n// Convert GCS URI to public URL\nfunction makePublicUrl(gsUri) {\n  const m = gsUri.match(/^gs:\\/\\/([^\\/]+)\\/(.+)$/);\n  if (!m) return gsUri;\n  const bucket = m[1];\n  const objPath = m[2].split('/').map(p => encodeURIComponent(p)).join('/');\n  return 'https://storage.googleapis.com/' + bucket + '/' + objPath;\n}\n\nconst videoUrl = makePublicUrl(s.video1_gcs_uri);\nconst tmpDir = os.tmpdir();\nconst ts = Date.now();\nconst tmpVideo = path.join(tmpDir, 'veo_part1_' + ts + '.mp4');\nconst tmpFrame = path.join(tmpDir, 'veo_lastframe_' + ts + '.jpg');\n\ntry {\n  // Download Part 1 video from public GCS URL\n  const videoBuffer = await this.helpers.httpRequest({\n    method: 'GET', url: videoUrl, encoding: 'arraybuffer', timeout: 120000\n  });\n  fs.writeFileSync(tmpVideo, Buffer.from(videoBuffer));\n\n  // Extract last frame using ffmpeg (-sseof -0.1 seeks to 0.1s before end of file)\n  execSync('ffmpeg -sseof -0.1 -i \"' + tmpVideo + '\" -vframes 1 -q:v 2 \"' + tmpFrame + '\" -y', { timeout: 30000 });\n\n  const frameBuffer = fs.readFileSync(tmpFrame);\n  const b64 = frameBuffer.toString('base64');\n\n  // Cleanup temp files\n  try { fs.unlinkSync(tmpVideo); } catch(e) {}\n  try { fs.unlinkSync(tmpFrame); } catch(e) {}\n\n  if (b64.length < 100) throw new Error('Last frame extraction produced empty result');\n\n  return [{ json: {\n    LAST_FRAME_B64: b64,\n    PROMPT_PART2: s.PROMPT_PART2,\n    DURATION: s.DURATION,\n    ASPECT_RATIO: s.ASPECT_RATIO,\n    POST_ID: s.POST_ID,\n    ORIGINAL_PROMPT: s.ORIGINAL_PROMPT,\n    video1_gcs_uri: s.video1_gcs_uri\n  } }];\n} catch (err) {\n  // Cleanup on error\n  try { fs.unlinkSync(tmpVideo); } catch(e) {}\n  try { fs.unlinkSync(tmpFrame); } catch(e) {}\n  throw new Error('Failed to extract last frame from Part 1 video: ' + err.message);\n}"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        88656,
-        -1616
-      ],
-      "id": "e2b00002-bbbb-4002-c002-000000000015",
-      "name": "Extract Last Frame"
     }
   ],
   "connections": {
@@ -292,7 +279,7 @@
       "main": [
         [
           {
-            "node": "Extract Last Frame",
+            "node": "Submit Part 2",
             "type": "main",
             "index": 0
           }
@@ -348,17 +335,6 @@
         [
           {
             "node": "Respond Success",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Extract Last Frame": {
-      "main": [
-        [
-          {
-            "node": "Submit Part 2",
             "type": "main",
             "index": 0
           }
