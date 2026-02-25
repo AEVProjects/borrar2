@@ -12,7 +12,10 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [87040, -1616],
+      "position": [
+        87040,
+        -1616
+      ],
       "id": "e2b00002-bbbb-4002-c002-000000000001",
       "name": "Webhook - Video Approved",
       "webhookId": "msi-video-approved-gen"
@@ -23,47 +26,49 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [87200, -1808],
+      "position": [
+        87200,
+        -1808
+      ],
       "id": "e2b00002-bbbb-4002-c002-000000000002",
       "name": "Publicar Credenciales"
     },
     {
       "parameters": {
-        "jsCode": "// Read approved data from the webhook (not from $input which is Publicar Credenciales)\nconst webhookData = $('Webhook - Video Approved').item.json;\nlet data = webhookData.body || webhookData;\nif (typeof data === 'string') {\n  try { data = JSON.parse(data); } catch (e) { }\n}\n\nconst approved1 = data.approved_prompt_part1 || '';\nconst approved2 = data.approved_prompt_part2 || '';\nconst start_image_url = data.start_image_url || null;\nconst second_image_url = data.second_image_url || null;\nconst aspect_ratio = data.aspect_ratio || '9:16';\nconst duration = String(Math.min(parseInt(data.duration || '8'), 8));\nconst post_id = data.post_id || null;\nconst prompt = data.prompt || '';\nconst service = data.service || 'company_intro';\n\nif (!approved1 || approved1.length < 10) throw new Error('approved_prompt_part1 is required (min 10 chars)');\nif (!approved2 || approved2.length < 10) throw new Error('approved_prompt_part2 is required (min 10 chars)');\nif (!start_image_url) throw new Error('start_image_url is required');\nif (!second_image_url) throw new Error('second_image_url is required');\n\nreturn [{ json: {\n  PROMPT_PART1: approved1,\n  PROMPT_PART2: approved2,\n  DURATION: duration,\n  ASPECT_RATIO: aspect_ratio,\n  POST_ID: post_id,\n  ORIGINAL_PROMPT: prompt,\n  SERVICE: service,\n  START_IMAGE_URL: start_image_url,\n  SECOND_IMAGE_URL: second_image_url\n} }];"
+        "jsCode": "// Read approved data from the webhook (not from $input which is Publicar Credenciales)\nconst webhookData = $('Webhook - Video Approved').item.json;\nlet data = webhookData.body || webhookData;\nif (typeof data === 'string') {\n  try { data = JSON.parse(data); } catch (e) { }\n}\n\nconst approved1 = data.approved_prompt_part1 || '';\nconst approved2 = data.approved_prompt_part2 || '';\nconst start_image_url = data.start_image_url || null;\nconst aspect_ratio = data.aspect_ratio || '9:16';\nconst duration = String(Math.min(parseInt(data.duration || '8'), 8));\nconst post_id = data.post_id || null;\nconst prompt = data.prompt || '';\nconst service = data.service || 'company_intro';\n\nif (!approved1 || approved1.length < 10) throw new Error('approved_prompt_part1 is required (min 10 chars)');\nif (!approved2 || approved2.length < 10) throw new Error('approved_prompt_part2 is required (min 10 chars)');\nif (!start_image_url) throw new Error('start_image_url is required');\n// second_image_url is no longer required - last frame of Part 1 video will be used for Part 2\n\nreturn [{ json: {\n  PROMPT_PART1: approved1,\n  PROMPT_PART2: approved2,\n  DURATION: duration,\n  ASPECT_RATIO: aspect_ratio,\n  POST_ID: post_id,\n  ORIGINAL_PROMPT: prompt,\n  SERVICE: service,\n  START_IMAGE_URL: start_image_url\n} }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [87424, -1616],
+      "position": [
+        87424,
+        -1616
+      ],
       "id": "e2b00002-bbbb-4002-c002-000000000003",
       "name": "Format Approved Input"
     },
     {
       "parameters": {
-        "jsCode": "// Download start image and base64 encode it (~15s max)\nconst s = $input.item.json;\nconst imgBuffer = await this.helpers.httpRequest({\n  method: 'GET', url: s.START_IMAGE_URL, encoding: 'arraybuffer', timeout: 15000\n});\nconst b64 = Buffer.from(imgBuffer).toString('base64');\nif (b64.length < 100) throw new Error('Start image download failed');\n\nreturn [{ json: { IMAGE_B64: b64, PROMPT_PART1: s.PROMPT_PART1, PROMPT_PART2: s.PROMPT_PART2, DURATION: s.DURATION, ASPECT_RATIO: s.ASPECT_RATIO, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT, SERVICE: s.SERVICE, SECOND_IMAGE_URL: s.SECOND_IMAGE_URL } }];"
+        "jsCode": "// Download start image and base64 encode it (~15s max)\nconst s = $input.item.json;\nconst imgBuffer = await this.helpers.httpRequest({\n  method: 'GET', url: s.START_IMAGE_URL, encoding: 'arraybuffer', timeout: 15000\n});\nconst b64 = Buffer.from(imgBuffer).toString('base64');\nif (b64.length < 100) throw new Error('Start image download failed');\n\nreturn [{ json: { IMAGE_B64: b64, PROMPT_PART1: s.PROMPT_PART1, PROMPT_PART2: s.PROMPT_PART2, DURATION: s.DURATION, ASPECT_RATIO: s.ASPECT_RATIO, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT, SERVICE: s.SERVICE } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [87648, -1616],
+      "position": [
+        87648,
+        -1616
+      ],
       "id": "e2b00002-bbbb-4002-c002-000000000004",
       "name": "Download Image 1"
     },
     {
       "parameters": {
-        "jsCode": "// Download second image early (before Veo calls) to avoid post-Wait timeout\nconst s = $input.item.json;\nconst imgBuffer = await this.helpers.httpRequest({\n  method: 'GET', url: s.SECOND_IMAGE_URL, encoding: 'arraybuffer', timeout: 15000\n});\nconst b64 = Buffer.from(imgBuffer).toString('base64');\nif (b64.length < 100) throw new Error('Second image download failed');\n\nreturn [{ json: { IMAGE_B64: s.IMAGE_B64, IMAGE_B64_2: b64, PROMPT_PART1: s.PROMPT_PART1, PROMPT_PART2: s.PROMPT_PART2, DURATION: s.DURATION, ASPECT_RATIO: s.ASPECT_RATIO, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT, SERVICE: s.SERVICE } }];"
+        "jsCode": "const creds = $('Publicar Credenciales').item.json;\nconst API_KEY = creds.API_KEY;\nconst s = $input.item.json;\nconst EP = creds.EP;\nconst PJ = creds.PJ;\nconst LOC = creds.LOC;\nconst MDL = creds.MDL;\nconst veoRes = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://' + EP + '/v1/projects/' + PJ + '/locations/' + LOC + '/publishers/google/models/' + MDL + ':predictLongRunning?key=' + API_KEY,\n  headers: { 'Content-Type':'application/json' },\n  body: JSON.stringify({\n    instances: [{ prompt: s.PROMPT_PART1, image: { bytesBase64Encoded: s.IMAGE_B64, mimeType: 'image/jpeg' } }],\n    parameters: { aspectRatio: s.ASPECT_RATIO, resolution: '720p', sampleCount: 1, durationSeconds: parseInt(s.DURATION), personGeneration: 'allow_all', addWatermark: false, includeRaiReason: true, generateAudio: true, storageUri: creds.STORAGE_URI_PART1, negativePrompt: 'background music, soundtrack, instrumental music, musical score, ambient music, piano, guitar, drums, orchestra, synthesizer, melody, rhythm, cinematic score, dramatic music, soft music, upbeat music, ambient sounds, ambient noise, room tone, wind sound, traffic noise, nature sounds, transition animation, visual transitions, fade, dissolve, wipe, crossfade, scene change, new background, different setting, camera movement, camera pan, camera zoom, dolly, static, blurry, text, letters, words, subtitles, captions, watermark, frozen face, closed mouth, logo animation, logo zoom, logo glow, logo enlargement, logo movement' }\n  }),\n  timeout: 30000\n});\nif (!veoRes.name) throw new Error('Veo Part 1 failed: ' + JSON.stringify(veoRes).substring(0, 300));\n\nreturn [{ json: { op1: veoRes.name, PROMPT_PART2: s.PROMPT_PART2, DURATION: s.DURATION, ASPECT_RATIO: s.ASPECT_RATIO, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [87872, -1616],
-      "id": "e2b00002-bbbb-4002-c002-000000000005",
-      "name": "Download Image 2"
-    },
-    {
-      "parameters": {
-        "jsCode": "const creds = $('Publicar Credenciales').item.json;\nconst API_KEY = creds.API_KEY;\nconst s = $input.item.json;\nconst EP = creds.EP;\nconst PJ = creds.PJ;\nconst LOC = creds.LOC;\nconst MDL = creds.MDL;\nconst veoRes = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://' + EP + '/v1/projects/' + PJ + '/locations/' + LOC + '/publishers/google/models/' + MDL + ':predictLongRunning?key=' + API_KEY,\n  headers: { 'Content-Type':'application/json' },\n  body: JSON.stringify({\n    instances: [{ prompt: s.PROMPT_PART1, image: { bytesBase64Encoded: s.IMAGE_B64, mimeType: 'image/jpeg' } }],\n    parameters: { aspectRatio: s.ASPECT_RATIO, resolution: '720p', sampleCount: 1, durationSeconds: parseInt(s.DURATION), personGeneration: 'allow_all', addWatermark: false, includeRaiReason: true, generateAudio: true, storageUri: creds.STORAGE_URI_PART1, negativePrompt: 'background music, soundtrack, instrumental music, musical score, ambient music, piano, guitar, drums, orchestra, synthesizer, melody, rhythm, cinematic score, dramatic music, soft music, upbeat music, ambient sounds, ambient noise, room tone, wind sound, traffic noise, nature sounds, transition animation, visual transitions, fade, dissolve, wipe, crossfade, scene change, new background, different setting, camera movement, camera pan, camera zoom, dolly, static, blurry, text, letters, words, subtitles, captions, watermark, frozen face, closed mouth, logo animation, logo zoom, logo glow, logo enlargement, logo movement' }\n  }),\n  timeout: 30000\n});\nif (!veoRes.name) throw new Error('Veo Part 1 failed: ' + JSON.stringify(veoRes).substring(0, 300));\n\nreturn [{ json: { op1: veoRes.name, PROMPT_PART2: s.PROMPT_PART2, DURATION: s.DURATION, ASPECT_RATIO: s.ASPECT_RATIO, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT, IMAGE_B64_2: s.IMAGE_B64_2 } }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [88096, -1616],
+      "position": [
+        88096,
+        -1616
+      ],
       "id": "e2b00002-bbbb-4002-c002-000000000006",
       "name": "Submit Part 1"
     },
@@ -74,28 +79,37 @@
       },
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [88320, -1616],
+      "position": [
+        88320,
+        -1616
+      ],
       "id": "e2b00002-bbbb-4002-c002-000000000007",
       "name": "Wait Part 1",
       "webhookId": "veo3-approved-wait-1"
     },
     {
       "parameters": {
-        "jsCode": "const creds = $('Publicar Credenciales').item.json;\nconst API_KEY = creds.API_KEY;\nconst s = $input.item.json;\nconst EP = creds.EP;\nconst PJ = creds.PJ;\nconst LOC = creds.LOC;\nconst MDL = creds.MDL;\nconst res = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://' + EP + '/v1/projects/' + PJ + '/locations/' + LOC + '/publishers/google/models/' + MDL + ':fetchPredictOperation?key=' + API_KEY,\n  headers: { 'Content-Type':'application/json' },\n  body: JSON.stringify({ operationName: s.op1 }),\n  timeout: 15000\n});\nlet videoUri = res.response?.videos?.[0]?.gcsUri || res.response?.videos?.[0]?.uri || '';\nif (!videoUri) throw new Error('Part 1 not ready: ' + JSON.stringify(res).substring(0, 400));\n\nreturn [{ json: { video1_gcs_uri: videoUri, PROMPT_PART2: s.PROMPT_PART2, DURATION: s.DURATION, ASPECT_RATIO: s.ASPECT_RATIO, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT, IMAGE_B64_2: s.IMAGE_B64_2 } }];"
+        "jsCode": "const creds = $('Publicar Credenciales').item.json;\nconst API_KEY = creds.API_KEY;\nconst s = $input.item.json;\nconst EP = creds.EP;\nconst PJ = creds.PJ;\nconst LOC = creds.LOC;\nconst MDL = creds.MDL;\nconst res = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://' + EP + '/v1/projects/' + PJ + '/locations/' + LOC + '/publishers/google/models/' + MDL + ':fetchPredictOperation?key=' + API_KEY,\n  headers: { 'Content-Type':'application/json' },\n  body: JSON.stringify({ operationName: s.op1 }),\n  timeout: 15000\n});\nlet videoUri = res.response?.videos?.[0]?.gcsUri || res.response?.videos?.[0]?.uri || '';\nif (!videoUri) throw new Error('Part 1 not ready: ' + JSON.stringify(res).substring(0, 400));\n\nreturn [{ json: { video1_gcs_uri: videoUri, PROMPT_PART2: s.PROMPT_PART2, DURATION: s.DURATION, ASPECT_RATIO: s.ASPECT_RATIO, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [88544, -1616],
+      "position": [
+        88544,
+        -1616
+      ],
       "id": "e2b00002-bbbb-4002-c002-000000000008",
       "name": "Fetch Part 1"
     },
     {
       "parameters": {
-        "jsCode": "const creds = $('Publicar Credenciales').item.json;\nconst API_KEY = creds.API_KEY;\nconst s = $input.item.json;\nconst EP = creds.EP;\nconst PJ = creds.PJ;\nconst LOC = creds.LOC;\nconst MDL = creds.MDL;\nconst veoRes = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://' + EP + '/v1/projects/' + PJ + '/locations/' + LOC + '/publishers/google/models/' + MDL + ':predictLongRunning?key=' + API_KEY,\n  headers: { 'Content-Type':'application/json' },\n  body: JSON.stringify({\n    instances: [{ prompt: s.PROMPT_PART2, image: { bytesBase64Encoded: s.IMAGE_B64_2, mimeType: 'image/jpeg' } }],\n    parameters: { aspectRatio: s.ASPECT_RATIO, resolution: '720p', sampleCount: 1, durationSeconds: parseInt(s.DURATION), personGeneration: 'allow_all', addWatermark: false, includeRaiReason: true, generateAudio: true, storageUri: creds.STORAGE_URI_PART2, negativePrompt: 'background music, soundtrack, instrumental music, musical score, ambient music, piano, guitar, drums, orchestra, synthesizer, melody, rhythm, cinematic score, dramatic music, soft music, upbeat music, ambient sounds, ambient noise, room tone, wind sound, traffic noise, nature sounds, transition animation, visual transitions, fade, dissolve, wipe, crossfade, scene change, new background, different setting, camera movement, camera pan, camera zoom, dolly, static, blurry, text, letters, words, subtitles, captions, watermark, frozen face, closed mouth, logo animation, logo zoom, logo glow, logo enlargement, logo movement' }\n  }),\n  timeout: 30000\n});\nif (!veoRes.name) throw new Error('Veo Part 2 failed: ' + JSON.stringify(veoRes).substring(0, 300));\n\nreturn [{ json: { op2: veoRes.name, video1_gcs_uri: s.video1_gcs_uri, DURATION: s.DURATION, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT } }];"
+        "jsCode": "const creds = $('Publicar Credenciales').item.json;\nconst API_KEY = creds.API_KEY;\nconst s = $input.item.json;\nconst EP = creds.EP;\nconst PJ = creds.PJ;\nconst LOC = creds.LOC;\nconst MDL = creds.MDL;\nconst veoRes = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://' + EP + '/v1/projects/' + PJ + '/locations/' + LOC + '/publishers/google/models/' + MDL + ':predictLongRunning?key=' + API_KEY,\n  headers: { 'Content-Type':'application/json' },\n  body: JSON.stringify({\n    instances: [{ prompt: s.PROMPT_PART2, image: { bytesBase64Encoded: s.LAST_FRAME_B64, mimeType: 'image/jpeg' } }],\n    parameters: { aspectRatio: s.ASPECT_RATIO, resolution: '720p', sampleCount: 1, durationSeconds: parseInt(s.DURATION), personGeneration: 'allow_all', addWatermark: false, includeRaiReason: true, generateAudio: true, storageUri: creds.STORAGE_URI_PART2, negativePrompt: 'background music, soundtrack, instrumental music, musical score, ambient music, piano, guitar, drums, orchestra, synthesizer, melody, rhythm, cinematic score, dramatic music, soft music, upbeat music, ambient sounds, ambient noise, room tone, wind sound, traffic noise, nature sounds, transition animation, visual transitions, fade, dissolve, wipe, crossfade, scene change, new background, different setting, camera movement, camera pan, camera zoom, dolly, static, blurry, text, letters, words, subtitles, captions, watermark, frozen face, closed mouth, logo animation, logo zoom, logo glow, logo enlargement, logo movement' }\n  }),\n  timeout: 30000\n});\nif (!veoRes.name) throw new Error('Veo Part 2 failed: ' + JSON.stringify(veoRes).substring(0, 300));\n\nreturn [{ json: { op2: veoRes.name, video1_gcs_uri: s.video1_gcs_uri, DURATION: s.DURATION, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [88768, -1616],
+      "position": [
+        88768,
+        -1616
+      ],
       "id": "e2b00002-bbbb-4002-c002-000000000009",
       "name": "Submit Part 2"
     },
@@ -106,7 +120,10 @@
       },
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [88992, -1616],
+      "position": [
+        88992,
+        -1616
+      ],
       "id": "e2b00002-bbbb-4002-c002-000000000010",
       "name": "Wait Part 2",
       "webhookId": "veo3-approved-wait-2"
@@ -117,7 +134,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [89216, -1616],
+      "position": [
+        89216,
+        -1616
+      ],
       "id": "e2b00002-bbbb-4002-c002-000000000011",
       "name": "Fetch Part 2"
     },
@@ -127,7 +147,10 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [89440, -1616],
+      "position": [
+        89440,
+        -1616
+      ],
       "id": "e2b00002-bbbb-4002-c002-000000000012",
       "name": "Generate URLs"
     },
@@ -139,7 +162,10 @@
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [89664, -1616],
+      "position": [
+        89664,
+        -1616
+      ],
       "id": "e2b00002-bbbb-4002-c002-000000000013",
       "name": "Update DB",
       "credentials": {
@@ -174,9 +200,25 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [89888, -1616],
+      "position": [
+        89888,
+        -1616
+      ],
       "id": "e2b00002-bbbb-4002-c002-000000000014",
       "name": "Respond Success"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract last frame from Part 1 video to use as start image for Part 2\n// This ensures visual continuity between video parts\nconst { execSync } = require('child_process');\nconst fs = require('fs');\nconst os = require('os');\nconst path = require('path');\n\nconst s = $input.item.json;\n\n// Convert GCS URI to public URL\nfunction makePublicUrl(gsUri) {\n  const m = gsUri.match(/^gs:\\/\\/([^\\/]+)\\/(.+)$/);\n  if (!m) return gsUri;\n  const bucket = m[1];\n  const objPath = m[2].split('/').map(p => encodeURIComponent(p)).join('/');\n  return 'https://storage.googleapis.com/' + bucket + '/' + objPath;\n}\n\nconst videoUrl = makePublicUrl(s.video1_gcs_uri);\nconst tmpDir = os.tmpdir();\nconst ts = Date.now();\nconst tmpVideo = path.join(tmpDir, 'veo_part1_' + ts + '.mp4');\nconst tmpFrame = path.join(tmpDir, 'veo_lastframe_' + ts + '.jpg');\n\ntry {\n  // Download Part 1 video from public GCS URL\n  const videoBuffer = await this.helpers.httpRequest({\n    method: 'GET', url: videoUrl, encoding: 'arraybuffer', timeout: 120000\n  });\n  fs.writeFileSync(tmpVideo, Buffer.from(videoBuffer));\n\n  // Extract last frame using ffmpeg (-sseof -0.1 seeks to 0.1s before end of file)\n  execSync('ffmpeg -sseof -0.1 -i \"' + tmpVideo + '\" -vframes 1 -q:v 2 \"' + tmpFrame + '\" -y', { timeout: 30000 });\n\n  const frameBuffer = fs.readFileSync(tmpFrame);\n  const b64 = frameBuffer.toString('base64');\n\n  // Cleanup temp files\n  try { fs.unlinkSync(tmpVideo); } catch(e) {}\n  try { fs.unlinkSync(tmpFrame); } catch(e) {}\n\n  if (b64.length < 100) throw new Error('Last frame extraction produced empty result');\n\n  return [{ json: {\n    LAST_FRAME_B64: b64,\n    PROMPT_PART2: s.PROMPT_PART2,\n    DURATION: s.DURATION,\n    ASPECT_RATIO: s.ASPECT_RATIO,\n    POST_ID: s.POST_ID,\n    ORIGINAL_PROMPT: s.ORIGINAL_PROMPT,\n    video1_gcs_uri: s.video1_gcs_uri\n  } }];\n} catch (err) {\n  // Cleanup on error\n  try { fs.unlinkSync(tmpVideo); } catch(e) {}\n  try { fs.unlinkSync(tmpFrame); } catch(e) {}\n  throw new Error('Failed to extract last frame from Part 1 video: ' + err.message);\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        88656,
+        -1616
+      ],
+      "id": "e2b00002-bbbb-4002-c002-000000000015",
+      "name": "Extract Last Frame"
     }
   ],
   "connections": {
@@ -217,17 +259,6 @@
       "main": [
         [
           {
-            "node": "Download Image 2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Download Image 2": {
-      "main": [
-        [
-          {
             "node": "Submit Part 1",
             "type": "main",
             "index": 0
@@ -261,7 +292,7 @@
       "main": [
         [
           {
-            "node": "Submit Part 2",
+            "node": "Extract Last Frame",
             "type": "main",
             "index": 0
           }
@@ -317,6 +348,17 @@
         [
           {
             "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Last Frame": {
+      "main": [
+        [
+          {
+            "node": "Submit Part 2",
             "type": "main",
             "index": 0
           }
