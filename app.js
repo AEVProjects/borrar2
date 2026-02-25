@@ -150,7 +150,6 @@ const publishMode = document.getElementById('publish-mode');
 const generateMode = document.getElementById('generate-mode');
 const editMode = document.getElementById('edit-mode');
 const videoMode = document.getElementById('video-mode');
-const videoApprovalMode = document.getElementById('videoapproval-mode');
 const voiceVideoMode = document.getElementById('voicevideo-mode');
 const carouselMode = document.getElementById('carousel-mode');
 const dailyMode = document.getElementById('daily-mode');
@@ -188,7 +187,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         generateMode?.classList.remove('active');
         editMode?.classList.remove('active');
         videoMode?.classList.remove('active');
-        videoApprovalMode?.classList.remove('active');
         voiceVideoMode?.classList.remove('active');
         voiceSwapMode?.classList.remove('active');
         carouselMode?.classList.remove('active');
@@ -206,8 +204,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
             loadEditPosts(); // Load posts when switching to edit tab
         } else if (mode === 'video') {
             videoMode?.classList.add('active');
-        } else if (mode === 'videoapproval') {
-            videoApprovalMode?.classList.add('active');
             loadLatestPendingVideoPreview();
         } else if (mode === 'voicevideo') {
             voiceVideoMode?.classList.add('active');
@@ -2061,9 +2057,9 @@ function updateSpeechAnalysis() {
 function loadVideoApprovalData(previewData) {
     videoApprovalData = { ...previewData };
 
-    const emptyState = document.getElementById('video-approval-empty');
+    const step2 = document.getElementById('video-step2');
     const form = document.getElementById('video-approval-form');
-    if (emptyState) emptyState.style.display = 'none';
+    if (step2) step2.style.display = 'block';
     if (form) form.style.display = 'block';
 
     const mappings = {
@@ -2103,9 +2099,9 @@ function loadVideoApprovalData(previewData) {
 
 function clearVideoApprovalData() {
     videoApprovalData = null;
-    const emptyState = document.getElementById('video-approval-empty');
+    const step2 = document.getElementById('video-step2');
     const form = document.getElementById('video-approval-form');
-    if (emptyState) emptyState.style.display = 'block';
+    if (step2) step2.style.display = 'none';
     if (form) {
         form.reset();
         form.style.display = 'none';
@@ -2368,8 +2364,10 @@ if (videoForm) {
                 setTimeout(() => {
                     hideProgressAlert();
                     loadVideoApprovalData(previewData);
-                    showSuccessAlert('Preview Ready', 'Review and approve the script in the Video Approval tab.');
-                    switchTab('videoapproval');
+                    // Scroll down to Step 2 within the same tab
+                    const step2El = document.getElementById('video-step2');
+                    if (step2El) step2El.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    showToast('Script preview ready! Review below and approve to generate.', 'success');
                 }, 300);
             } else {
                 hideProgressAlert();
@@ -2482,7 +2480,9 @@ if (videoApprovalForm) {
                     hideProgressAlert();
                     renderVideoGenerationResult(result, payload);
                     if (typeof loadPosts === 'function') loadPosts();
-                    switchTab('video');
+                    // Scroll to results within same tab
+                    const resultsEl = document.getElementById('video-results');
+                    if (resultsEl) resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }, 500);
             } else {
                 hideProgressAlert();
@@ -2528,6 +2528,9 @@ if (regenerateVideoBtn) {
         if (mergeProgress) mergeProgress.style.display = 'none';
         if (playerSection) playerSection.style.display = 'none';
         if (actionsDiv) actionsDiv.style.display = 'none';
+        // Scroll back to Step 1 form — keep images/settings so user can re-generate
+        const videoFormCard = document.querySelector('#video-mode > .card.form-card');
+        if (videoFormCard) videoFormCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
         // Scroll to form
         videoForm?.scrollIntoView({ behavior: 'smooth' });
     });
