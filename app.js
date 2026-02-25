@@ -103,7 +103,8 @@ const n8nPublishWebhook = CONFIG.n8nPublishWebhook || CONFIG.n8n?.publishWebhook
 const n8nGenerateWebhook = CONFIG.n8nGenerateWebhook || CONFIG.n8n?.generateWebhook;
 const n8nEditWebhook = CONFIG.n8nEditWebhook || CONFIG.n8n?.editWebhook;
 const n8nVideoWebhook = CONFIG.n8nVideoWebhook || CONFIG.n8n?.videoWebhook;
-const n8nVideoScriptPreviewWebhook = CONFIG.n8nVideoScriptPreviewWebhook || CONFIG.n8n?.videoScriptPreviewWebhook;
+const n8nVideoPreviewWebhook = CONFIG.n8nVideoPreviewWebhook || CONFIG.n8n?.videoPreviewWebhook;
+const n8nVideoApprovedWebhook = CONFIG.n8nVideoApprovedWebhook || CONFIG.n8n?.videoApprovedWebhook;
 const n8nCarouselWebhook = CONFIG.n8nCarouselWebhook || CONFIG.n8n?.carouselWebhook;
 const n8nEducativeWebhook = CONFIG.n8nEducativeWebhook || CONFIG.n8n?.educativeWebhook;
 const n8nVoiceVideoWebhook = CONFIG.n8nVoiceVideoWebhook || CONFIG.n8n?.voiceVideoWebhook;
@@ -161,6 +162,7 @@ const publishForm = document.getElementById('publish-form');
 const generateForm = document.getElementById('generate-form');
 const editImageForm = document.getElementById('edit-image-form');
 const videoForm = document.getElementById('video-form');
+const videoApprovalForm = document.getElementById('video-approval-form');
 const voiceVideoForm = document.getElementById('voice-video-form');
 const carouselForm = document.getElementById('carousel-form');
 const educativeForm = document.getElementById('educative-form');
@@ -206,6 +208,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
             videoMode?.classList.add('active');
         } else if (mode === 'videoapproval') {
             videoApprovalMode?.classList.add('active');
+            loadLatestPendingVideoPreview();
         } else if (mode === 'voicevideo') {
             voiceVideoMode?.classList.add('active');
         } else if (mode === 'voiceswap') {
@@ -2002,6 +2005,219 @@ if (document.readyState !== 'loading') {
 
 // ========== VIDEO GENERATION ==========
 
+let videoApprovalData = null;
+
+function normalizePreviewData(result) {
+    const fromData = result?.data || result || {};
+    return {
+        post_id: fromData.post_id || null,
+        original_prompt: fromData.prompt || fromData.original_prompt || '',
+        service: fromData.service || 'company_intro',
+        duration: String(fromData.duration || '8'),
+        aspect_ratio: fromData.aspect_ratio || '9:16',
+        start_image_url: fromData.start_image_url || '',
+        second_image_url: fromData.second_image_url || '',
+        prompt_part1: fromData.prompt_part1 || '',
+        prompt_part2: fromData.prompt_part2 || ''
+    };
+}
+
+// Extract spoken dialogue from a Veo prompt ("person says: ..." pattern)
+function extractDialogue(prompt) {
+    if (!prompt) return { dialogue: '', wordCount: 0 };
+    const match = prompt.match(/says?:\s*(.+?)(?:\.|Clear American|Voice only|Static camera|Person speaks|$)/i);
+    const dialogue = match ? match[1].trim() : '';
+    const wordCount = dialogue ? dialogue.split(/\s+/).length : 0;
+    return { dialogue, wordCount };
+}
+
+// Update the speech analysis panel from current prompt values
+function updateSpeechAnalysis() {
+    const p1 = document.getElementById('approval_prompt_part1')?.value || '';
+    const p2 = document.getElementById('approval_prompt_part2')?.value || '';
+    const a1 = extractDialogue(p1);
+    const a2 = extractDialogue(p2);
+
+    const analysisPanel = document.getElementById('approval-speech-analysis');
+    if (analysisPanel) analysisPanel.style.display = (a1.dialogue || a2.dialogue) ? 'block' : 'none';
+
+    const d1El = document.getElementById('analysis-dialogue-1');
+    const d2El = document.getElementById('analysis-dialogue-2');
+    const w1El = document.getElementById('analysis-wordcount-1');
+    const w2El = document.getElementById('analysis-wordcount-2');
+
+    if (d1El) d1El.textContent = a1.dialogue ? `"${a1.dialogue}"` : '— no dialogue detected';
+    if (d2El) d2El.textContent = a2.dialogue ? `"${a2.dialogue}"` : '— no dialogue detected';
+
+    const badge = (count) => {
+        const color = count > 15 ? '#e53e3e' : count > 12 ? '#d69e2e' : '#38a169';
+        const label = count > 15 ? 'OVER LIMIT' : 'OK';
+        return `${count} words / 15 max · <span style="color:${color}; font-weight:600;">${label}</span> · ~${(count / 2.5).toFixed(1)}s speaking time`;
+    };
+    if (w1El) w1El.innerHTML = a1.wordCount > 0 ? badge(a1.wordCount) : '';
+    if (w2El) w2El.innerHTML = a2.wordCount > 0 ? badge(a2.wordCount) : '';
+}
+
+function loadVideoApprovalData(previewData) {
+    videoApprovalData = { ...previewData };
+
+    const emptyState = document.getElementById('video-approval-empty');
+    const form = document.getElementById('video-approval-form');
+    if (emptyState) emptyState.style.display = 'none';
+    if (form) form.style.display = 'block';
+
+    const mappings = {
+        approval_post_id: previewData.post_id || '',
+        approval_original_prompt: previewData.original_prompt || '',
+        approval_service: previewData.service || '',
+        approval_duration: `${previewData.duration || '8'}s`,
+        approval_start_image_url: previewData.start_image_url || '',
+        approval_second_image_url: previewData.second_image_url || '',
+        approval_prompt_part1: previewData.prompt_part1 || '',
+        approval_prompt_part2: previewData.prompt_part2 || ''
+    };
+
+    Object.entries(mappings).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value;
+    });
+
+    // Show image previews
+    const imgPreviewRow = document.getElementById('approval-images-preview');
+    const img1 = document.getElementById('approval_start_image_preview');
+    const img2 = document.getElementById('approval_second_image_preview');
+    const url1 = previewData.start_image_url || '';
+    const url2 = previewData.second_image_url || '';
+
+    if (url1 && url2 && img1 && img2 && imgPreviewRow) {
+        img1.src = url1;
+        img2.src = url2;
+        imgPreviewRow.style.display = 'flex';
+        img1.onerror = () => { img1.style.display = 'none'; };
+        img2.onerror = () => { img2.style.display = 'none'; };
+    }
+
+    // Update speech analysis
+    updateSpeechAnalysis();
+}
+
+function clearVideoApprovalData() {
+    videoApprovalData = null;
+    const emptyState = document.getElementById('video-approval-empty');
+    const form = document.getElementById('video-approval-form');
+    if (emptyState) emptyState.style.display = 'block';
+    if (form) {
+        form.reset();
+        form.style.display = 'none';
+    }
+    // Hide extras
+    const imgPreview = document.getElementById('approval-images-preview');
+    const analysis = document.getElementById('approval-speech-analysis');
+    if (imgPreview) imgPreview.style.display = 'none';
+    if (analysis) analysis.style.display = 'none';
+}
+
+// Live-update speech analysis when user edits prompts
+document.getElementById('approval_prompt_part1')?.addEventListener('input', updateSpeechAnalysis);
+document.getElementById('approval_prompt_part2')?.addEventListener('input', updateSpeechAnalysis);
+
+async function loadLatestPendingVideoPreview() {
+    if (!supabaseClient) return;
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('social_posts')
+            .select('id, post_copy, strategy_analysis, image_prompt, image_url, created_at')
+            .eq('post_type', 'Video Preview')
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (error) {
+            console.warn('Could not load pending video preview:', error.message);
+            return;
+        }
+
+        if (!data || !data.length) return;
+
+        const row = data[0];
+        let meta = {};
+        try {
+            meta = row.post_copy ? JSON.parse(row.post_copy) : {};
+        } catch (_) {
+            meta = {};
+        }
+
+        if (!row.strategy_analysis || !row.image_prompt) return;
+
+        loadVideoApprovalData({
+            post_id: row.id,
+            original_prompt: meta.original_prompt || '',
+            service: meta.service || 'company_intro',
+            duration: String(meta.duration || '8'),
+            aspect_ratio: meta.aspect_ratio || '9:16',
+            start_image_url: meta.start_image_url || row.image_url || '',
+            second_image_url: meta.second_image_url || '',
+            prompt_part1: row.strategy_analysis,
+            prompt_part2: row.image_prompt
+        });
+    } catch (err) {
+        console.warn('Error loading pending preview:', err?.message || err);
+    }
+}
+
+function renderVideoGenerationResult(result, inputData) {
+    const videoResults = document.getElementById('video-results');
+    const mergeProgress = document.getElementById('video-merge-progress');
+    const playerSection = document.getElementById('video-player-section');
+    const videoPart1 = document.getElementById('generated-video-part1');
+    const videoPart2 = document.getElementById('generated-video-part2');
+    const dlBtnPart1 = document.getElementById('download-video-part1');
+    const dlBtnPart2 = document.getElementById('download-video-part2');
+    const actionsDiv = document.getElementById('video-result-actions');
+    const promptUsed = document.getElementById('video-prompt-used');
+
+    const url1 = result.data.video1_url;
+    const url2 = result.data.video2_url;
+
+    if (videoResults) {
+        videoResults.style.display = 'block';
+        videoResults.scrollIntoView({ behavior: 'smooth' });
+    }
+    if (mergeProgress) mergeProgress.style.display = 'none';
+    if (playerSection) playerSection.style.display = 'block';
+    if (actionsDiv) { actionsDiv.style.display = 'flex'; }
+
+    if (videoPart1) {
+        videoPart1.src = url1;
+        videoPart1.play().catch(() => {});
+        videoPart1.addEventListener('ended', () => {
+            if (videoPart2) {
+                videoPart2.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                videoPart2.play().catch(() => {});
+            }
+        }, { once: true });
+    }
+    if (videoPart2) videoPart2.src = url2;
+
+    if (dlBtnPart1) {
+        dlBtnPart1.href = url1;
+        dlBtnPart1.download = 'msi-video-part1.mp4';
+    }
+    if (dlBtnPart2) {
+        dlBtnPart2.href = url2;
+        dlBtnPart2.download = 'msi-video-part2.mp4';
+    }
+
+    if (promptUsed) {
+        const shownPrompt = result.data.prompt || inputData?.prompt || '';
+        const shownDuration = result.data.duration || `${inputData?.duration || 8}s`;
+        promptUsed.innerHTML = `<strong>Prompt:</strong> ${escapeHtml(shownPrompt)}<br><strong>Duration:</strong> ${escapeHtml(String(shownDuration))}`;
+    }
+
+    showSuccessAlert('Video Ready!', 'Both video parts are ready to play and download.');
+}
+
 // Start image preview for video
 const videoStartImageInput = document.getElementById('video_start_image_url');
 const videoStartImagePreviewContainer = document.getElementById('video-start-image-preview-container');
@@ -2044,297 +2260,257 @@ if (videoSecondImageInput) {
 
 // Video Form Submit
 let _videoGenerating = false; // Guard against double submission
-let _videoPreviewing = false;
-
-function extractSpeechFromPrompt(prompt) {
-    const colonMatch = String(prompt || '').match(/says?:\s*(.+?)(?:\.|$)/i);
-    return colonMatch ? colonMatch[1].trim() : '';
-}
-
-function estimateSpeechSeconds(speechText) {
-    const words = speechText ? speechText.split(/\s+/).filter(Boolean).length : 0;
-    return (words / 2.5).toFixed(1);
-}
-
-function getVideoFormPayload(formElement) {
-    const formData = new FormData(formElement);
-    return {
-        prompt: formData.get('prompt'),
-        service: formData.get('service') || 'company_intro',
-        duration: formData.get('duration'),
-        topic: formData.get('topic') || '',
-        start_image_url: formData.get('start_image_url') || null,
-        second_image_url: formData.get('second_image_url') || null
-    };
-}
-
-function validateVideoPayload(data) {
-    if (!data.prompt) throw new Error('Please enter a video description');
-    if (!data.start_image_url) throw new Error('Start image URL is required');
-    if (!data.second_image_url) throw new Error('Second part image URL is required');
-}
-
-function showVideoScriptPreview(previewData) {
-    const panel = document.getElementById('video-script-preview-panel');
-    const part1El = document.getElementById('video-script-part1');
-    const part2El = document.getElementById('video-script-part2');
-    const p1SpeechEl = document.getElementById('video-script-part1-speech');
-    const p2SpeechEl = document.getElementById('video-script-part2-speech');
-    const p1SecondsEl = document.getElementById('video-script-part1-seconds');
-    const p2SecondsEl = document.getElementById('video-script-part2-seconds');
-
-    const p1 = previewData.part1_prompt || '';
-    const p2 = previewData.part2_prompt || '';
-    const p1Speech = extractSpeechFromPrompt(p1);
-    const p2Speech = extractSpeechFromPrompt(p2);
-
-    if (part1El) part1El.value = p1;
-    if (part2El) part2El.value = p2;
-    if (p1SpeechEl) p1SpeechEl.textContent = p1Speech || 'No speech detected';
-    if (p2SpeechEl) p2SpeechEl.textContent = p2Speech || 'No speech detected';
-    if (p1SecondsEl) p1SecondsEl.textContent = estimateSpeechSeconds(p1Speech);
-    if (p2SecondsEl) p2SecondsEl.textContent = estimateSpeechSeconds(p2Speech);
-    if (panel) panel.style.display = 'block';
-}
-
-async function runApprovedVideoGeneration(data, triggerButton) {
-    if (_videoGenerating) {
-        showToast('Video generation already in progress. Please wait.', 'warning');
-        return;
-    }
-
-    _videoGenerating = true;
-    const originalText = triggerButton.innerHTML;
-    triggerButton.disabled = true;
-    triggerButton.innerHTML = '<span class="spinner"></span> Generating (5-6 min)...';
-
-    showProgressAlert(
-        'Generating Video',
-        'Creating your video with Veo 3 AI... ',
-        'This takes about 5-6 minutes. Do NOT close this page.'
-    );
-
-    const abortCtrl = new AbortController();
-    const abortTimeout = setTimeout(() => abortCtrl.abort(), 480000);
-
-    try {
-        updateProgress(10, 'Sending approved script to Veo 3...');
-
-        if (!n8nVideoWebhook) {
-            throw new Error('Video webhook URL not configured. Add videoWebhook to config.js');
-        }
-
-        const response = await fetch(n8nVideoWebhook, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-            signal: abortCtrl.signal
-        });
-
-        updateProgress(15, 'Generating video parts...');
-
-        const startTime = Date.now();
-        const progressTimer = setInterval(() => {
-            const elapsed = (Date.now() - startTime) / 1000;
-            if (elapsed < 60) updateProgress(30, 'Submitting Part 1 to Veo 3...');
-            else if (elapsed < 180) updateProgress(45, `Generating Part 1... (${Math.round(elapsed)}s)`);
-            else if (elapsed < 240) updateProgress(65, 'Submitting Part 2 to Veo 3...');
-            else if (elapsed < 360) updateProgress(80, `Generating Part 2... (${Math.round(elapsed)}s)`);
-            else updateProgress(90, `Almost done... (${Math.round(elapsed)}s)`);
-        }, 3000);
-
-        let result;
-        try {
-            result = await response.json();
-        } catch (parseError) {
-            clearInterval(progressTimer);
-            hideProgressAlert();
-            showToast('Video generation request sent but response could not be parsed. Check n8n logs.', 'warning');
-            return;
-        }
-        clearInterval(progressTimer);
-
-        if (result.success && result.data?.video1_url) {
-            updateProgress(95, 'Saving video to database...');
-
-            const videoResults = document.getElementById('video-results');
-            const mergeProgress = document.getElementById('video-merge-progress');
-            const playerSection = document.getElementById('video-player-section');
-            const videoPart1 = document.getElementById('generated-video-part1');
-            const videoPart2 = document.getElementById('generated-video-part2');
-            const dlBtnPart1 = document.getElementById('download-video-part1');
-            const dlBtnPart2 = document.getElementById('download-video-part2');
-            const actionsDiv = document.getElementById('video-result-actions');
-            const promptUsed = document.getElementById('video-prompt-used');
-
-            const url1 = result.data.video1_url;
-            const url2 = result.data.video2_url;
-
-            if (videoResults) {
-                videoResults.style.display = 'block';
-                videoResults.scrollIntoView({ behavior: 'smooth' });
-            }
-            if (mergeProgress) mergeProgress.style.display = 'none';
-            if (playerSection) playerSection.style.display = 'block';
-            if (actionsDiv) actionsDiv.style.display = 'flex';
-
-            if (videoPart1) {
-                videoPart1.src = url1;
-                videoPart1.play().catch(() => {});
-                videoPart1.addEventListener('ended', () => {
-                    if (videoPart2) {
-                        videoPart2.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        videoPart2.play().catch(() => {});
-                    }
-                }, { once: true });
-            }
-            if (videoPart2) videoPart2.src = url2;
-
-            if (dlBtnPart1) {
-                dlBtnPart1.href = url1;
-                dlBtnPart1.download = 'msi-video-part1.mp4';
-            }
-            if (dlBtnPart2) {
-                dlBtnPart2.href = url2;
-                dlBtnPart2.download = 'msi-video-part2.mp4';
-            }
-
-            if (promptUsed) {
-                promptUsed.innerHTML = `<strong>Approved Script Used:</strong><br><pre style="white-space:pre-wrap;font-family:inherit;">Part 1: ${data.approved_prompt_part1 || '-'}\n\nPart 2: ${data.approved_prompt_part2 || '-'}</pre><strong>Duration:</strong> ${(parseInt(data.duration || '8') * 2)}s total`;
-            }
-
-            hideProgressAlert();
-            showSuccessAlert('Video Ready!', 'Both video parts are ready to play and download.');
-            showToast('Video generated from approved script!', 'success');
-            if (typeof loadPosts === 'function') loadPosts();
-        } else {
-            hideProgressAlert();
-            showToast(result.message || 'Video generation failed', 'error');
-        }
-    } catch (error) {
-        console.error('Video generation error:', error);
-        hideProgressAlert();
-        if (error.name === 'AbortError') {
-            showToast('Video generation timed out after 8 minutes. Check n8n execution logs.', 'error');
-        } else {
-            showToast('Error generating video: ' + error.message, 'error');
-        }
-    } finally {
-        clearTimeout(abortTimeout);
-        triggerButton.disabled = false;
-        triggerButton.innerHTML = originalText;
-        _videoGenerating = false;
-    }
-}
-
 if (videoForm) {
     videoForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-
-        if (_videoPreviewing) {
-            showToast('Script preview already in progress. Please wait.', 'warning');
+        
+        // Prevent double submission
+        if (_videoGenerating) {
+            showToast('Video generation already in progress. Please wait.', 'warning');
             return;
         }
-
-        const data = getVideoFormPayload(e.target);
-        try {
-            validateVideoPayload(data);
-        } catch (validationError) {
-            showToast(validationError.message, 'error');
+        
+        const formData = new FormData(e.target);
+        
+        const data = {
+            prompt: formData.get('prompt'),
+            service: formData.get('service') || 'company_intro',
+            duration: formData.get('duration'),
+            topic: formData.get('topic') || '',
+            start_image_url: formData.get('start_image_url') || null,
+            second_image_url: formData.get('second_image_url') || null
+        };
+        
+        if (!data.prompt) {
+            showToast('Please enter a video description', 'error');
             return;
         }
-
-        _videoPreviewing = true;
+        
+        if (!data.start_image_url) {
+            showToast('Start image URL is required', 'error');
+            return;
+        }
+        
+        if (!data.second_image_url) {
+            showToast('Second part image URL is required', 'error');
+            return;
+        }
+        
+        _videoGenerating = true;
         const btn = e.target.querySelector('button[type="submit"]');
         const originalText = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span> Generating script preview...';
-
+        btn.innerHTML = '<span class="spinner"></span> Creating preview...';
+        
+        // Show progress
         showProgressAlert(
             'Generating Script Preview',
-            'Writing part 1 and part 2 script...',
-            'Review and approve script before final video generation.'
+            'AI is generating the two-part script for your review...',
+            'This usually takes under 1 minute.'
         );
-
+        
+        // AbortController with 8 minute timeout (workflow takes ~6 min)
         const abortCtrl = new AbortController();
-        const abortTimeout = setTimeout(() => abortCtrl.abort(), 120000);
-
+        const abortTimeout = setTimeout(() => abortCtrl.abort(), 480000);
+        
         try {
-            updateProgress(15, 'Sending data to script preview workflow...');
-
-            if (!n8nVideoScriptPreviewWebhook) {
-                throw new Error('Video script preview webhook URL not configured. Add videoScriptPreviewWebhook to config.js');
+            updateProgress(10, 'Sending request to Veo 3...');
+            
+            console.log('=== VIDEO SCRIPT PREVIEW ===');
+            console.log('Webhook:', n8nVideoPreviewWebhook);
+            
+            if (!n8nVideoPreviewWebhook) {
+                throw new Error('Video preview webhook URL not configured. Add videoPreviewWebhook to config.js');
             }
-
-            const response = await fetch(n8nVideoScriptPreviewWebhook, {
+            
+            const response = await fetch(n8nVideoPreviewWebhook, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
                 signal: abortCtrl.signal
             });
-
+            console.log('Response status:', response.status);
+            
+            updateProgress(40, 'AI is writing the video script...');
+            
+            // preview workflow is fast; keep UI responsive
+            const progressTimer = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                if (elapsed < 10) updateProgress(55, 'Building script structure...');
+                else if (elapsed < 25) updateProgress(75, `Finalizing preview... (${Math.round(elapsed)}s)`);
+                else updateProgress(90, `Almost done... (${Math.round(elapsed)}s)`);
+            }, 3000);
+            const startTime = Date.now();
+            
             let result;
             try {
                 result = await response.json();
             } catch (parseError) {
+                clearInterval(progressTimer);
                 hideProgressAlert();
-                showToast('Script preview response could not be parsed. Check n8n logs.', 'warning');
+                showToast('Preview request sent but response could not be parsed. Check n8n logs.', 'warning');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                _videoGenerating = false;
                 return;
             }
+            clearInterval(progressTimer);
+            
+            console.log('=== VIDEO PREVIEW RESULT ===', JSON.stringify(result).substring(0, 500));
 
-            if (result.success && result.data?.part1_prompt && result.data?.part2_prompt) {
-                updateProgress(100, 'Script preview ready');
-                hideProgressAlert();
-                showVideoScriptPreview(result.data);
-                const approvalTab = document.querySelector('.tab-btn[data-mode="videoapproval"]');
-                if (approvalTab) approvalTab.click();
-                showToast('Script preview generated. Review and approve to continue.', 'success');
+            if (result.success) {
+                const previewData = normalizePreviewData(result);
+                if (!previewData.prompt_part1 || !previewData.prompt_part2) {
+                    throw new Error('Preview did not return both prompt parts');
+                }
+
+                updateProgress(100, 'Preview ready');
+                setTimeout(() => {
+                    hideProgressAlert();
+                    loadVideoApprovalData(previewData);
+                    showSuccessAlert('Preview Ready', 'Review and approve the script in the Video Approval tab.');
+                    switchTab('videoapproval');
+                }, 300);
             } else {
                 hideProgressAlert();
-                showToast(result.message || 'Script preview failed', 'error');
+                showToast(result.message || 'Video preview failed', 'error');
             }
+            
         } catch (error) {
-            console.error('Video preview error:', error);
+            console.error('Video generation error:', error);
             hideProgressAlert();
             if (error.name === 'AbortError') {
-                showToast('Script preview timed out. Check n8n execution logs.', 'error');
+                showToast('Preview timed out. Check n8n execution logs.', 'error');
             } else {
-                showToast('Error generating script preview: ' + error.message, 'error');
+                showToast('Error generating preview: ' + error.message, 'error');
             }
         } finally {
             clearTimeout(abortTimeout);
             btn.disabled = false;
             btn.innerHTML = originalText;
-            _videoPreviewing = false;
+            _videoGenerating = false;
         }
     });
 }
 
-const generateApprovedVideoBtn = document.getElementById('generate-approved-video');
-if (generateApprovedVideoBtn) {
-    generateApprovedVideoBtn.addEventListener('click', async () => {
-        if (!videoForm) return;
-        const data = getVideoFormPayload(videoForm);
+let _videoApprovalGenerating = false;
+if (videoApprovalForm) {
+    videoApprovalForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (_videoApprovalGenerating) {
+            showToast('Video generation already in progress. Please wait.', 'warning');
+            return;
+        }
+
+        if (!videoApprovalData) {
+            showToast('No preview data loaded', 'error');
+            return;
+        }
+
+        if (!n8nVideoApprovedWebhook) {
+            showToast('Video approved webhook not configured. Add videoApprovedWebhook to config.js', 'error');
+            return;
+        }
+
+        const approvedPrompt1 = document.getElementById('approval_prompt_part1')?.value?.trim() || '';
+        const approvedPrompt2 = document.getElementById('approval_prompt_part2')?.value?.trim() || '';
+
+        if (approvedPrompt1.length < 10 || approvedPrompt2.length < 10) {
+            showToast('Both prompt parts are required (min 10 chars)', 'error');
+            return;
+        }
+
+        const payload = {
+            post_id: videoApprovalData.post_id,
+            prompt: videoApprovalData.original_prompt,
+            service: videoApprovalData.service,
+            duration: videoApprovalData.duration,
+            aspect_ratio: videoApprovalData.aspect_ratio || '9:16',
+            start_image_url: videoApprovalData.start_image_url,
+            second_image_url: videoApprovalData.second_image_url,
+            approved_prompt_part1: approvedPrompt1,
+            approved_prompt_part2: approvedPrompt2
+        };
+
+        _videoApprovalGenerating = true;
+        const btn = document.getElementById('approve-generate-btn');
+        const originalText = btn?.innerHTML || 'Approve and Generate Video';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Generating (5-6 min)...';
+        }
+
+        showProgressAlert(
+            'Generating Video',
+            'Creating your final video with approved prompts...',
+            'This takes about 5-6 minutes. Do NOT close this page.'
+        );
+
+        const abortCtrl = new AbortController();
+        const abortTimeout = setTimeout(() => abortCtrl.abort(), 480000);
+        let progressTimer = null;
+        const startTime = Date.now();
+
         try {
-            validateVideoPayload(data);
-        } catch (validationError) {
-            showToast(validationError.message, 'error');
-            return;
+            updateProgress(10, 'Sending approved script to Veo 3...');
+
+            const response = await fetch(n8nVideoApprovedWebhook, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: abortCtrl.signal
+            });
+
+            updateProgress(15, 'Submitting Part 1...');
+
+            progressTimer = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                if (elapsed < 30) updateProgress(20, 'Submitting Part 1 to Veo 3...');
+                else if (elapsed < 180) updateProgress(40, `Generating Part 1... (${Math.round(elapsed)}s)`);
+                else if (elapsed < 240) updateProgress(60, 'Submitting Part 2 to Veo 3...');
+                else if (elapsed < 360) updateProgress(75, `Generating Part 2... (${Math.round(elapsed)}s)`);
+                else updateProgress(85, `Almost done... (${Math.round(elapsed)}s)`);
+            }, 3000);
+
+            const result = await response.json();
+            if (progressTimer) clearInterval(progressTimer);
+
+            if (result.success && result.data?.video1_url) {
+                updateProgress(100, 'Video parts ready!');
+                setTimeout(() => {
+                    hideProgressAlert();
+                    renderVideoGenerationResult(result, payload);
+                    if (typeof loadPosts === 'function') loadPosts();
+                    switchTab('video');
+                }, 500);
+            } else {
+                hideProgressAlert();
+                showToast(result.message || 'Approved generation failed', 'error');
+            }
+        } catch (error) {
+            console.error('Approved video generation error:', error);
+            hideProgressAlert();
+            if (error.name === 'AbortError') {
+                showToast('Video generation timed out after 8 minutes. Check n8n execution logs.', 'error');
+            } else {
+                showToast('Error generating video: ' + error.message, 'error');
+            }
+        } finally {
+            clearTimeout(abortTimeout);
+            if (progressTimer) clearInterval(progressTimer);
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+            _videoApprovalGenerating = false;
         }
-
-        const part1Prompt = (document.getElementById('video-script-part1')?.value || '').trim();
-        const part2Prompt = (document.getElementById('video-script-part2')?.value || '').trim();
-        if (!part1Prompt || !part2Prompt) {
-            showToast('Generate and review script preview first.', 'warning');
-            return;
-        }
-
-        data.approved_prompt_part1 = part1Prompt;
-        data.approved_prompt_part2 = part2Prompt;
-
-        await runApprovedVideoGeneration(data, generateApprovedVideoBtn);
     });
 }
+
+document.getElementById('clear-video-approval-btn')?.addEventListener('click', () => {
+    clearVideoApprovalData();
+});
 
 // Regenerate video button
 const regenerateVideoBtn = document.getElementById('regenerate-video');

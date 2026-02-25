@@ -1,0 +1,332 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "msi-video-approved-gen",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*",
+          "rawBody": false
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [87040, -1616],
+      "id": "e2b00002-bbbb-4002-c002-000000000001",
+      "name": "Webhook - Video Approved",
+      "webhookId": "msi-video-approved-gen"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    API_KEY: 'AIzaSyB9VPZyevI9FaK4O0U28BDFLFFQ2ksjMDQ',\n    EP: 'us-east1-aiplatform.googleapis.com',\n    PJ: 'video-gen-msi',\n    LOC: 'us-east1',\n    MDL: 'veo-3.1-generate-001',\n    STORAGE_URI_PART1: 'gs://video-bucket-for-msi-920206/part1/',\n    STORAGE_URI_PART2: 'gs://video-bucket-for-msi-920206/part2/'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [87200, -1808],
+      "id": "e2b00002-bbbb-4002-c002-000000000002",
+      "name": "Publicar Credenciales"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Read approved data from the webhook (not from $input which is Publicar Credenciales)\nconst webhookData = $('Webhook - Video Approved').item.json;\nlet data = webhookData.body || webhookData;\nif (typeof data === 'string') {\n  try { data = JSON.parse(data); } catch (e) { }\n}\n\nconst approved1 = data.approved_prompt_part1 || '';\nconst approved2 = data.approved_prompt_part2 || '';\nconst start_image_url = data.start_image_url || null;\nconst second_image_url = data.second_image_url || null;\nconst aspect_ratio = data.aspect_ratio || '9:16';\nconst duration = String(Math.min(parseInt(data.duration || '8'), 8));\nconst post_id = data.post_id || null;\nconst prompt = data.prompt || '';\nconst service = data.service || 'company_intro';\n\nif (!approved1 || approved1.length < 10) throw new Error('approved_prompt_part1 is required (min 10 chars)');\nif (!approved2 || approved2.length < 10) throw new Error('approved_prompt_part2 is required (min 10 chars)');\nif (!start_image_url) throw new Error('start_image_url is required');\nif (!second_image_url) throw new Error('second_image_url is required');\n\nreturn [{ json: {\n  PROMPT_PART1: approved1,\n  PROMPT_PART2: approved2,\n  DURATION: duration,\n  ASPECT_RATIO: aspect_ratio,\n  POST_ID: post_id,\n  ORIGINAL_PROMPT: prompt,\n  SERVICE: service,\n  START_IMAGE_URL: start_image_url,\n  SECOND_IMAGE_URL: second_image_url\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [87424, -1616],
+      "id": "e2b00002-bbbb-4002-c002-000000000003",
+      "name": "Format Approved Input"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Download start image and base64 encode it (~15s max)\nconst s = $input.item.json;\nconst imgBuffer = await this.helpers.httpRequest({\n  method: 'GET', url: s.START_IMAGE_URL, encoding: 'arraybuffer', timeout: 15000\n});\nconst b64 = Buffer.from(imgBuffer).toString('base64');\nif (b64.length < 100) throw new Error('Start image download failed');\n\nreturn [{ json: { IMAGE_B64: b64, PROMPT_PART1: s.PROMPT_PART1, PROMPT_PART2: s.PROMPT_PART2, DURATION: s.DURATION, ASPECT_RATIO: s.ASPECT_RATIO, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT, SERVICE: s.SERVICE, SECOND_IMAGE_URL: s.SECOND_IMAGE_URL } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [87648, -1616],
+      "id": "e2b00002-bbbb-4002-c002-000000000004",
+      "name": "Download Image 1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Download second image early (before Veo calls) to avoid post-Wait timeout\nconst s = $input.item.json;\nconst imgBuffer = await this.helpers.httpRequest({\n  method: 'GET', url: s.SECOND_IMAGE_URL, encoding: 'arraybuffer', timeout: 15000\n});\nconst b64 = Buffer.from(imgBuffer).toString('base64');\nif (b64.length < 100) throw new Error('Second image download failed');\n\nreturn [{ json: { IMAGE_B64: s.IMAGE_B64, IMAGE_B64_2: b64, PROMPT_PART1: s.PROMPT_PART1, PROMPT_PART2: s.PROMPT_PART2, DURATION: s.DURATION, ASPECT_RATIO: s.ASPECT_RATIO, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT, SERVICE: s.SERVICE } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [87872, -1616],
+      "id": "e2b00002-bbbb-4002-c002-000000000005",
+      "name": "Download Image 2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const creds = $('Publicar Credenciales').item.json;\nconst API_KEY = creds.API_KEY;\nconst s = $input.item.json;\nconst EP = creds.EP;\nconst PJ = creds.PJ;\nconst LOC = creds.LOC;\nconst MDL = creds.MDL;\nconst veoRes = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://' + EP + '/v1/projects/' + PJ + '/locations/' + LOC + '/publishers/google/models/' + MDL + ':predictLongRunning?key=' + API_KEY,\n  headers: { 'Content-Type':'application/json' },\n  body: JSON.stringify({\n    instances: [{ prompt: s.PROMPT_PART1, image: { bytesBase64Encoded: s.IMAGE_B64, mimeType: 'image/jpeg' } }],\n    parameters: { aspectRatio: s.ASPECT_RATIO, resolution: '720p', sampleCount: 1, durationSeconds: parseInt(s.DURATION), personGeneration: 'allow_all', addWatermark: false, includeRaiReason: true, generateAudio: true, storageUri: creds.STORAGE_URI_PART1, negativePrompt: 'background music, soundtrack, instrumental music, musical score, ambient music, piano, guitar, drums, orchestra, synthesizer, melody, rhythm, cinematic score, dramatic music, soft music, upbeat music, ambient sounds, ambient noise, room tone, wind sound, traffic noise, nature sounds, transition animation, visual transitions, fade, dissolve, wipe, crossfade, scene change, new background, different setting, camera movement, camera pan, camera zoom, dolly, static, blurry, text, letters, words, subtitles, captions, watermark, frozen face, closed mouth, logo animation, logo zoom, logo glow, logo enlargement, logo movement' }\n  }),\n  timeout: 30000\n});\nif (!veoRes.name) throw new Error('Veo Part 1 failed: ' + JSON.stringify(veoRes).substring(0, 300));\n\nreturn [{ json: { op1: veoRes.name, PROMPT_PART2: s.PROMPT_PART2, DURATION: s.DURATION, ASPECT_RATIO: s.ASPECT_RATIO, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT, IMAGE_B64_2: s.IMAGE_B64_2 } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [88096, -1616],
+      "id": "e2b00002-bbbb-4002-c002-000000000006",
+      "name": "Submit Part 1"
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [88320, -1616],
+      "id": "e2b00002-bbbb-4002-c002-000000000007",
+      "name": "Wait Part 1",
+      "webhookId": "veo3-approved-wait-1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const creds = $('Publicar Credenciales').item.json;\nconst API_KEY = creds.API_KEY;\nconst s = $input.item.json;\nconst EP = creds.EP;\nconst PJ = creds.PJ;\nconst LOC = creds.LOC;\nconst MDL = creds.MDL;\nconst res = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://' + EP + '/v1/projects/' + PJ + '/locations/' + LOC + '/publishers/google/models/' + MDL + ':fetchPredictOperation?key=' + API_KEY,\n  headers: { 'Content-Type':'application/json' },\n  body: JSON.stringify({ operationName: s.op1 }),\n  timeout: 15000\n});\nlet videoUri = res.response?.videos?.[0]?.gcsUri || res.response?.videos?.[0]?.uri || '';\nif (!videoUri) throw new Error('Part 1 not ready: ' + JSON.stringify(res).substring(0, 400));\n\nreturn [{ json: { video1_gcs_uri: videoUri, PROMPT_PART2: s.PROMPT_PART2, DURATION: s.DURATION, ASPECT_RATIO: s.ASPECT_RATIO, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT, IMAGE_B64_2: s.IMAGE_B64_2 } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [88544, -1616],
+      "id": "e2b00002-bbbb-4002-c002-000000000008",
+      "name": "Fetch Part 1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const creds = $('Publicar Credenciales').item.json;\nconst API_KEY = creds.API_KEY;\nconst s = $input.item.json;\nconst EP = creds.EP;\nconst PJ = creds.PJ;\nconst LOC = creds.LOC;\nconst MDL = creds.MDL;\nconst veoRes = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://' + EP + '/v1/projects/' + PJ + '/locations/' + LOC + '/publishers/google/models/' + MDL + ':predictLongRunning?key=' + API_KEY,\n  headers: { 'Content-Type':'application/json' },\n  body: JSON.stringify({\n    instances: [{ prompt: s.PROMPT_PART2, image: { bytesBase64Encoded: s.IMAGE_B64_2, mimeType: 'image/jpeg' } }],\n    parameters: { aspectRatio: s.ASPECT_RATIO, resolution: '720p', sampleCount: 1, durationSeconds: parseInt(s.DURATION), personGeneration: 'allow_all', addWatermark: false, includeRaiReason: true, generateAudio: true, storageUri: creds.STORAGE_URI_PART2, negativePrompt: 'background music, soundtrack, instrumental music, musical score, ambient music, piano, guitar, drums, orchestra, synthesizer, melody, rhythm, cinematic score, dramatic music, soft music, upbeat music, ambient sounds, ambient noise, room tone, wind sound, traffic noise, nature sounds, transition animation, visual transitions, fade, dissolve, wipe, crossfade, scene change, new background, different setting, camera movement, camera pan, camera zoom, dolly, static, blurry, text, letters, words, subtitles, captions, watermark, frozen face, closed mouth, logo animation, logo zoom, logo glow, logo enlargement, logo movement' }\n  }),\n  timeout: 30000\n});\nif (!veoRes.name) throw new Error('Veo Part 2 failed: ' + JSON.stringify(veoRes).substring(0, 300));\n\nreturn [{ json: { op2: veoRes.name, video1_gcs_uri: s.video1_gcs_uri, DURATION: s.DURATION, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [88768, -1616],
+      "id": "e2b00002-bbbb-4002-c002-000000000009",
+      "name": "Submit Part 2"
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [88992, -1616],
+      "id": "e2b00002-bbbb-4002-c002-000000000010",
+      "name": "Wait Part 2",
+      "webhookId": "veo3-approved-wait-2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const creds = $('Publicar Credenciales').item.json;\nconst API_KEY = creds.API_KEY;\nconst s = $input.item.json;\nconst EP = creds.EP;\nconst PJ = creds.PJ;\nconst LOC = creds.LOC;\nconst MDL = creds.MDL;\nconst res = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://' + EP + '/v1/projects/' + PJ + '/locations/' + LOC + '/publishers/google/models/' + MDL + ':fetchPredictOperation?key=' + API_KEY,\n  headers: { 'Content-Type':'application/json' },\n  body: JSON.stringify({ operationName: s.op2 }),\n  timeout: 15000\n});\nlet videoUri = res.response?.videos?.[0]?.gcsUri || res.response?.videos?.[0]?.uri || '';\nif (!videoUri) throw new Error('Part 2 not ready: ' + JSON.stringify(res).substring(0, 400));\n\nreturn [{ json: { video1_gcs_uri: s.video1_gcs_uri, video2_gcs_uri: videoUri, POST_ID: s.POST_ID, ORIGINAL_PROMPT: s.ORIGINAL_PROMPT, DURATION: s.DURATION } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [89216, -1616],
+      "id": "e2b00002-bbbb-4002-c002-000000000011",
+      "name": "Fetch Part 2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate public GCS URLs (no Service Account needed)\n// IMPORTANT: Your bucket must be publicly readable.\n// Run: gsutil iam ch allUsers:objectViewer gs://video-bucket-for-msi-920206\nconst s = $input.item.json;\n\nfunction makePublicUrl(gsUri) {\n  const m = gsUri.match(/^gs:\\/\\/([^\\/]+)\\/(.+)$/);\n  if (!m) return gsUri;\n  const bucket = m[1];\n  const objPath = m[2].split('/').map(p => encodeURIComponent(p)).join('/');\n  return 'https://storage.googleapis.com/' + bucket + '/' + objPath;\n}\n\nreturn [{ json: {\n  video1_gcs_uri: s.video1_gcs_uri,\n  video2_gcs_uri: s.video2_gcs_uri,\n  video1_url: makePublicUrl(s.video1_gcs_uri),\n  video2_url: makePublicUrl(s.video2_gcs_uri),\n  POST_ID: s.POST_ID,\n  ORIGINAL_PROMPT: s.ORIGINAL_PROMPT,\n  DURATION: s.DURATION\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [89440, -1616],
+      "id": "e2b00002-bbbb-4002-c002-000000000012",
+      "name": "Generate URLs"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.POST_ID && $json.POST_ID.length > 10 ? `UPDATE social_posts SET post_type = 'Video', video_part1_uri = '${$json.video1_gcs_uri}', video_part2_uri = '${$json.video2_gcs_uri}', video1_signed_url = '${$json.video1_url}', video2_signed_url = '${$json.video2_url}', status = 'video_completed', updated_at = NOW() WHERE id = '${$json.POST_ID}' RETURNING *` : `INSERT INTO social_posts (post_type, status, headline, post_copy, image_url, video_part1_uri, video_part2_uri, video1_signed_url, video2_signed_url, created_at, updated_at) VALUES ('Video', 'video_completed', LEFT('${($json.ORIGINAL_PROMPT || '').replace(/'/g, \"''\")}', 120), '${($json.ORIGINAL_PROMPT || '').replace(/'/g, \"''\")}', '${$json.video1_url}', '${$json.video1_gcs_uri}', '${$json.video2_gcs_uri}', '${$json.video1_url}', '${$json.video2_url}', NOW(), NOW()) RETURNING *` }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [89664, -1616],
+      "id": "e2b00002-bbbb-4002-c002-000000000013",
+      "name": "Update DB",
+      "credentials": {
+        "postgres": {
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Video generated and saved to database', data: { video1_url: $('Generate URLs').item.json.video1_url, video2_url: $('Generate URLs').item.json.video2_url, video1_gcs_uri: $('Generate URLs').item.json.video1_gcs_uri, video2_gcs_uri: $('Generate URLs').item.json.video2_gcs_uri, post_id: $('Update DB').item.json?.id || $('Generate URLs').item.json.POST_ID, db_saved: true, duration: (parseInt($('Generate URLs').item.json.DURATION) * 2) + 's', prompt: $('Generate URLs').item.json.ORIGINAL_PROMPT, service: $('Format Approved Input').item.json.SERVICE } }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, GET, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [89888, -1616],
+      "id": "e2b00002-bbbb-4002-c002-000000000014",
+      "name": "Respond Success"
+    }
+  ],
+  "connections": {
+    "Webhook - Video Approved": {
+      "main": [
+        [
+          {
+            "node": "Publicar Credenciales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publicar Credenciales": {
+      "main": [
+        [
+          {
+            "node": "Format Approved Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Approved Input": {
+      "main": [
+        [
+          {
+            "node": "Download Image 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image 1": {
+      "main": [
+        [
+          {
+            "node": "Download Image 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image 2": {
+      "main": [
+        [
+          {
+            "node": "Submit Part 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit Part 1": {
+      "main": [
+        [
+          {
+            "node": "Wait Part 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Part 1": {
+      "main": [
+        [
+          {
+            "node": "Fetch Part 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Part 1": {
+      "main": [
+        [
+          {
+            "node": "Submit Part 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit Part 2": {
+      "main": [
+        [
+          {
+            "node": "Wait Part 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Part 2": {
+      "main": [
+        [
+          {
+            "node": "Fetch Part 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Part 2": {
+      "main": [
+        [
+          {
+            "node": "Generate URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate URLs": {
+      "main": [
+        [
+          {
+            "node": "Update DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update DB": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b5116c87255060ddf18db8a2b1b90e34b38f50f44815cf784a0b8a92b6bb4e6e"
+  }
+}
