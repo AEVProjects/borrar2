@@ -149,6 +149,7 @@ const publishMode = document.getElementById('publish-mode');
 const generateMode = document.getElementById('generate-mode');
 const editMode = document.getElementById('edit-mode');
 const videoMode = document.getElementById('video-mode');
+const videoApprovalMode = document.getElementById('videoapproval-mode');
 const voiceVideoMode = document.getElementById('voicevideo-mode');
 const carouselMode = document.getElementById('carousel-mode');
 const dailyMode = document.getElementById('daily-mode');
@@ -185,6 +186,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         generateMode?.classList.remove('active');
         editMode?.classList.remove('active');
         videoMode?.classList.remove('active');
+        videoApprovalMode?.classList.remove('active');
         voiceVideoMode?.classList.remove('active');
         voiceSwapMode?.classList.remove('active');
         carouselMode?.classList.remove('active');
@@ -202,6 +204,8 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
             loadEditPosts(); // Load posts when switching to edit tab
         } else if (mode === 'video') {
             videoMode?.classList.add('active');
+        } else if (mode === 'videoapproval') {
+            videoApprovalMode?.classList.add('active');
         } else if (mode === 'voicevideo') {
             voiceVideoMode?.classList.add('active');
         } else if (mode === 'voiceswap') {
@@ -2282,6 +2286,8 @@ if (videoForm) {
                 updateProgress(100, 'Script preview ready');
                 hideProgressAlert();
                 showVideoScriptPreview(result.data);
+                const approvalTab = document.querySelector('.tab-btn[data-mode="videoapproval"]');
+                if (approvalTab) approvalTab.click();
                 showToast('Script preview generated. Review and approve to continue.', 'success');
             } else {
                 hideProgressAlert();

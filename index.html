@@ -48,6 +48,13 @@
                     </svg>
                     Generate Video
                 </button>
+                <button class="tab-btn" data-mode="videoapproval">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 12l2 2 4-4"></path>
+                        <circle cx="12" cy="12" r="10"></circle>
+                    </svg>
+                    Video Approval
+                </button>
                 <button class="tab-btn" data-mode="voicevideo">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
@@ -508,21 +515,8 @@
                 </form>
 
                 <div id="video-script-preview-panel" style="display:none;margin-top:20px;padding:16px;border:2px solid #dbeafe;border-radius:10px;background:#f8fbff;">
-                    <h3 style="margin-bottom:10px;color:#1f2937;">Script Preview (Review Before Video)</h3>
-                    <p style="margin-bottom:12px;color:#64748b;font-size:14px;">Edit prompts if needed, then approve and generate the final video.</p>
-                    <div class="form-group">
-                        <label for="video-script-part1">Part 1 Prompt</label>
-                        <textarea id="video-script-part1" rows="5"></textarea>
-                        <small class="form-hint">Speech: <span id="video-script-part1-speech">-</span> · Est. speech: <span id="video-script-part1-seconds">-</span>s</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="video-script-part2">Part 2 Prompt</label>
-                        <textarea id="video-script-part2" rows="5"></textarea>
-                        <small class="form-hint">Speech: <span id="video-script-part2-speech">-</span> · Est. speech: <span id="video-script-part2-seconds">-</span>s</small>
-                    </div>
-                    <button type="button" class="btn btn-primary" id="generate-approved-video">
-                        Approve Script & Generate Video
-                    </button>
+                    <h3 style="margin-bottom:10px;color:#1f2937;">Script Preview Ready</h3>
+                    <p style="margin-bottom:12px;color:#64748b;font-size:14px;">Now go to the <strong>Video Approval</strong> tab to review, edit, and accept the script before generation.</p>
                 </div>
             </div>
 
@@ -577,6 +571,30 @@
                         <button id="regenerate-video" class="btn btn-secondary">Generate Another</button>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Video Approval Mode -->
+        <div id="videoapproval-mode" class="mode-content">
+            <div class="card form-card">
+                <h2>Video Script Approval</h2>
+                <p style="color:#64748b;margin-bottom:16px;">Review the generated prompts, adjust if needed, then approve to generate the final video.</p>
+
+                <div class="form-group">
+                    <label for="video-script-part1">Part 1 Prompt</label>
+                    <textarea id="video-script-part1" rows="5" placeholder="Generate script preview first from Generate Video tab."></textarea>
+                    <small class="form-hint">Speech: <span id="video-script-part1-speech">-</span> · Est. speech: <span id="video-script-part1-seconds">-</span>s</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="video-script-part2">Part 2 Prompt</label>
+                    <textarea id="video-script-part2" rows="5" placeholder="Generate script preview first from Generate Video tab."></textarea>
+                    <small class="form-hint">Speech: <span id="video-script-part2-speech">-</span> · Est. speech: <span id="video-script-part2-seconds">-</span>s</small>
+                </div>
+
+                <button type="button" class="btn btn-primary" id="generate-approved-video">
+                    Accept Script & Generate Video
+                </button>
             </div>
         </div>
 
