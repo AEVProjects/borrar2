@@ -499,13 +499,31 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-video">
+                    <button type="submit" class="btn btn-primary btn-video" id="video-preview-submit">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polygon points="5 3 19 12 5 21 5 3"></polygon>
                         </svg>
-                        Generate Video
+                        Generate Script Preview
                     </button>
                 </form>
+
+                <div id="video-script-preview-panel" style="display:none;margin-top:20px;padding:16px;border:2px solid #dbeafe;border-radius:10px;background:#f8fbff;">
+                    <h3 style="margin-bottom:10px;color:#1f2937;">Script Preview (Review Before Video)</h3>
+                    <p style="margin-bottom:12px;color:#64748b;font-size:14px;">Edit prompts if needed, then approve and generate the final video.</p>
+                    <div class="form-group">
+                        <label for="video-script-part1">Part 1 Prompt</label>
+                        <textarea id="video-script-part1" rows="5"></textarea>
+                        <small class="form-hint">Speech: <span id="video-script-part1-speech">-</span> · Est. speech: <span id="video-script-part1-seconds">-</span>s</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="video-script-part2">Part 2 Prompt</label>
+                        <textarea id="video-script-part2" rows="5"></textarea>
+                        <small class="form-hint">Speech: <span id="video-script-part2-speech">-</span> · Est. speech: <span id="video-script-part2-seconds">-</span>s</small>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="generate-approved-video">
+                        Approve Script & Generate Video
+                    </button>
+                </div>
             </div>
 
             <!-- Video Results -->

@@ -1,0 +1,179 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "msi-video-script-preview",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*",
+          "rawBody": false
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        850,
+        220
+      ],
+      "id": "dcdeaf97-02ca-4d8e-92c5-4a316564d6f1",
+      "name": "Webhook - Video Script Preview",
+      "webhookId": "msi-video-script-preview"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.item.json;\nlet data = input.body || input;\nif (typeof data === 'string') {\n  try { data = JSON.parse(data); } catch (e) { }\n}\n\nconst prompt = data.prompt || data.video_prompt || '';\nconst start_image_url = data.start_image_url || data.imageUrl || null;\nconst second_image_url = data.second_image_url || data.end_image_url || null;\nconst aspect_ratio = data.aspect_ratio || data.aspectRatio || '9:16';\nconst service = data.service || 'company_intro';\nconst post_id = data.post_id || data.postId || null;\nconst topic = data.topic || '';\nconst duration = Math.min(parseInt(data.duration || '8'), 8);\n\nif (!prompt || prompt.length < 3) throw new Error('prompt is required');\nif (!start_image_url) throw new Error('start_image_url is required');\nif (!second_image_url || second_image_url.length < 5) throw new Error('second_image_url is required');\n\nreturn [{ json: { prompt, duration: String(duration), aspect_ratio, service, post_id, topic, start_image_url, second_image_url } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1070,
+        220
+      ],
+      "id": "f145f8ae-c7b2-40e1-9c8c-a58713af727c",
+      "name": "Format Video Input"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=\"You write Veo 3.1 image-to-video prompts for MSI Technologies.\\n\\nVideo duration: \" + $json.duration + \"s per part. Two parts from reference images.\\n\\nSERVICE: \" + $json.service + \"\\nCONTEXT: \" + $json.prompt + \"\\nAUDIENCE: \" + ($json.topic || 'Business professionals') + \"\\n\\nTHE VIDEO HAS TWO PARTS WITH TWO DIFFERENT PURPOSES:\\n\\nPART 1 — SERVICES: The first person presents MSI Technologies and highlights key services.\\nPART 2 — WHY CHOOSE MSI: The second person explains differentiators (20+ years, nearshore, cost reduction, Talentor global presence).\\n\\nCRITICAL SPEECH TIMING:\\n- Max 15 spoken words per part\\n- Natural speech ~2.5 words/second\\n- Keep speech concise and persuasive\\n\\nPROMPT FORMAT (for each part):\\n- Line 1: Motion direction\\n- Line 2: The person says: [exact words here]\\n- Camera static\\n- Voice: clear American accent, warm professional tone\\n\\nOutput format: PART1_PROMPT ||| PART2_PROMPT\"",
+        "options": {
+          "systemMessage": "You write Veo 3.1 image-to-video prompts for MSI Technologies. RULES: 1) Write EXACT dialogue with colon syntax (person says: words here). 2) MAX 15 spoken words per part. 3) Never describe background or clothing. 4) Camera static. 5) PART 1 = services. PART 2 = why choose MSI. 6) Include clear American accent, warm professional tone in each part. Format: PART1_PROMPT ||| PART2_PROMPT."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1290,
+        220
+      ],
+      "id": "3e59d7e8-5939-4948-a664-412f2db4bdce",
+      "name": "Agent: Video Script"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1370,
+        430
+      ],
+      "id": "ec460e93-fcb6-4c18-b056-756eb3fcc640",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "oF4jKBK0jRbwEPWt",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const agentOutput = $('Agent: Video Script').item.json.output || '';\nconst f = $('Format Video Input').item.json;\n\nlet p1 = '', p2 = '';\nif (agentOutput.includes('|||')) {\n  const parts = agentOutput.split('|||');\n  p1 = (parts[0] || '').trim();\n  p2 = (parts[1] || '').trim();\n} else {\n  p1 = agentOutput.substring(0, 300);\n  p2 = agentOutput.substring(0, 300);\n}\n\nfunction extractSpeech(prompt) {\n  const match = String(prompt || '').match(/says?:\\s*(.+?)(?:\\.|$)/i);\n  return match ? match[1].trim() : '';\n}\n\nfunction countWords(text) {\n  return text ? text.split(/\\s+/).filter(Boolean).length : 0;\n}\n\nconst speech1 = extractSpeech(p1);\nconst speech2 = extractSpeech(p2);\nconst words1 = countWords(speech1);\nconst words2 = countWords(speech2);\n\nreturn [{\n  json: {\n    part1_prompt: p1,\n    part2_prompt: p2,\n    part1_speech: speech1,\n    part2_speech: speech2,\n    part1_word_count: words1,\n    part2_word_count: words2,\n    part1_estimated_seconds: Number((words1 / 2.5).toFixed(1)),\n    part2_estimated_seconds: Number((words2 / 2.5).toFixed(1)),\n    duration_per_part: f.duration,\n    total_estimated_duration: Number((parseInt(f.duration) * 2).toFixed(1)),\n    original_prompt: f.prompt,\n    service: f.service,\n    topic: f.topic,\n    start_image_url: f.start_image_url,\n    second_image_url: f.second_image_url\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1530,
+        220
+      ],
+      "id": "714ff175-b7b0-4a68-84bc-8d2d66b77d93",
+      "name": "Build Script Preview"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Script preview generated', data: $('Build Script Preview').item.json }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, GET, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1760,
+        220
+      ],
+      "id": "d07f8dbe-fb91-42f0-9bfe-c868f415f8b6",
+      "name": "Respond Script Preview"
+    }
+  ],
+  "connections": {
+    "Webhook - Video Script Preview": {
+      "main": [
+        [
+          {
+            "node": "Format Video Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Video Input": {
+      "main": [
+        [
+          {
+            "node": "Agent: Video Script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent: Video Script": {
+      "main": [
+        [
+          {
+            "node": "Build Script Preview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent: Video Script",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Script Preview": {
+      "main": [
+        [
+          {
+            "node": "Respond Script Preview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

@@ -103,6 +103,7 @@ const n8nPublishWebhook = CONFIG.n8nPublishWebhook || CONFIG.n8n?.publishWebhook
 const n8nGenerateWebhook = CONFIG.n8nGenerateWebhook || CONFIG.n8n?.generateWebhook;
 const n8nEditWebhook = CONFIG.n8nEditWebhook || CONFIG.n8n?.editWebhook;
 const n8nVideoWebhook = CONFIG.n8nVideoWebhook || CONFIG.n8n?.videoWebhook;
+const n8nVideoScriptPreviewWebhook = CONFIG.n8nVideoScriptPreviewWebhook || CONFIG.n8n?.videoScriptPreviewWebhook;
 const n8nCarouselWebhook = CONFIG.n8nCarouselWebhook || CONFIG.n8n?.carouselWebhook;
 const n8nEducativeWebhook = CONFIG.n8nEducativeWebhook || CONFIG.n8n?.educativeWebhook;
 const n8nVoiceVideoWebhook = CONFIG.n8nVoiceVideoWebhook || CONFIG.n8n?.voiceVideoWebhook;
@@ -2039,274 +2040,293 @@ if (videoSecondImageInput) {
 
 // Video Form Submit
 let _videoGenerating = false; // Guard against double submission
+let _videoPreviewing = false;
+
+function extractSpeechFromPrompt(prompt) {
+    const colonMatch = String(prompt || '').match(/says?:\s*(.+?)(?:\.|$)/i);
+    return colonMatch ? colonMatch[1].trim() : '';
+}
+
+function estimateSpeechSeconds(speechText) {
+    const words = speechText ? speechText.split(/\s+/).filter(Boolean).length : 0;
+    return (words / 2.5).toFixed(1);
+}
+
+function getVideoFormPayload(formElement) {
+    const formData = new FormData(formElement);
+    return {
+        prompt: formData.get('prompt'),
+        service: formData.get('service') || 'company_intro',
+        duration: formData.get('duration'),
+        topic: formData.get('topic') || '',
+        start_image_url: formData.get('start_image_url') || null,
+        second_image_url: formData.get('second_image_url') || null
+    };
+}
+
+function validateVideoPayload(data) {
+    if (!data.prompt) throw new Error('Please enter a video description');
+    if (!data.start_image_url) throw new Error('Start image URL is required');
+    if (!data.second_image_url) throw new Error('Second part image URL is required');
+}
+
+function showVideoScriptPreview(previewData) {
+    const panel = document.getElementById('video-script-preview-panel');
+    const part1El = document.getElementById('video-script-part1');
+    const part2El = document.getElementById('video-script-part2');
+    const p1SpeechEl = document.getElementById('video-script-part1-speech');
+    const p2SpeechEl = document.getElementById('video-script-part2-speech');
+    const p1SecondsEl = document.getElementById('video-script-part1-seconds');
+    const p2SecondsEl = document.getElementById('video-script-part2-seconds');
+
+    const p1 = previewData.part1_prompt || '';
+    const p2 = previewData.part2_prompt || '';
+    const p1Speech = extractSpeechFromPrompt(p1);
+    const p2Speech = extractSpeechFromPrompt(p2);
+
+    if (part1El) part1El.value = p1;
+    if (part2El) part2El.value = p2;
+    if (p1SpeechEl) p1SpeechEl.textContent = p1Speech || 'No speech detected';
+    if (p2SpeechEl) p2SpeechEl.textContent = p2Speech || 'No speech detected';
+    if (p1SecondsEl) p1SecondsEl.textContent = estimateSpeechSeconds(p1Speech);
+    if (p2SecondsEl) p2SecondsEl.textContent = estimateSpeechSeconds(p2Speech);
+    if (panel) panel.style.display = 'block';
+}
+
+async function runApprovedVideoGeneration(data, triggerButton) {
+    if (_videoGenerating) {
+        showToast('Video generation already in progress. Please wait.', 'warning');
+        return;
+    }
+
+    _videoGenerating = true;
+    const originalText = triggerButton.innerHTML;
+    triggerButton.disabled = true;
+    triggerButton.innerHTML = '<span class="spinner"></span> Generating (5-6 min)...';
+
+    showProgressAlert(
+        'Generating Video',
+        'Creating your video with Veo 3 AI... ',
+        'This takes about 5-6 minutes. Do NOT close this page.'
+    );
+
+    const abortCtrl = new AbortController();
+    const abortTimeout = setTimeout(() => abortCtrl.abort(), 480000);
+
+    try {
+        updateProgress(10, 'Sending approved script to Veo 3...');
+
+        if (!n8nVideoWebhook) {
+            throw new Error('Video webhook URL not configured. Add videoWebhook to config.js');
+        }
+
+        const response = await fetch(n8nVideoWebhook, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+            signal: abortCtrl.signal
+        });
+
+        updateProgress(15, 'Generating video parts...');
+
+        const startTime = Date.now();
+        const progressTimer = setInterval(() => {
+            const elapsed = (Date.now() - startTime) / 1000;
+            if (elapsed < 60) updateProgress(30, 'Submitting Part 1 to Veo 3...');
+            else if (elapsed < 180) updateProgress(45, `Generating Part 1... (${Math.round(elapsed)}s)`);
+            else if (elapsed < 240) updateProgress(65, 'Submitting Part 2 to Veo 3...');
+            else if (elapsed < 360) updateProgress(80, `Generating Part 2... (${Math.round(elapsed)}s)`);
+            else updateProgress(90, `Almost done... (${Math.round(elapsed)}s)`);
+        }, 3000);
+
+        let result;
+        try {
+            result = await response.json();
+        } catch (parseError) {
+            clearInterval(progressTimer);
+            hideProgressAlert();
+            showToast('Video generation request sent but response could not be parsed. Check n8n logs.', 'warning');
+            return;
+        }
+        clearInterval(progressTimer);
+
+        if (result.success && result.data?.video1_url) {
+            updateProgress(95, 'Saving video to database...');
+
+            const videoResults = document.getElementById('video-results');
+            const mergeProgress = document.getElementById('video-merge-progress');
+            const playerSection = document.getElementById('video-player-section');
+            const videoPart1 = document.getElementById('generated-video-part1');
+            const videoPart2 = document.getElementById('generated-video-part2');
+            const dlBtnPart1 = document.getElementById('download-video-part1');
+            const dlBtnPart2 = document.getElementById('download-video-part2');
+            const actionsDiv = document.getElementById('video-result-actions');
+            const promptUsed = document.getElementById('video-prompt-used');
+
+            const url1 = result.data.video1_url;
+            const url2 = result.data.video2_url;
+
+            if (videoResults) {
+                videoResults.style.display = 'block';
+                videoResults.scrollIntoView({ behavior: 'smooth' });
+            }
+            if (mergeProgress) mergeProgress.style.display = 'none';
+            if (playerSection) playerSection.style.display = 'block';
+            if (actionsDiv) actionsDiv.style.display = 'flex';
+
+            if (videoPart1) {
+                videoPart1.src = url1;
+                videoPart1.play().catch(() => {});
+                videoPart1.addEventListener('ended', () => {
+                    if (videoPart2) {
+                        videoPart2.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        videoPart2.play().catch(() => {});
+                    }
+                }, { once: true });
+            }
+            if (videoPart2) videoPart2.src = url2;
+
+            if (dlBtnPart1) {
+                dlBtnPart1.href = url1;
+                dlBtnPart1.download = 'msi-video-part1.mp4';
+            }
+            if (dlBtnPart2) {
+                dlBtnPart2.href = url2;
+                dlBtnPart2.download = 'msi-video-part2.mp4';
+            }
+
+            if (promptUsed) {
+                promptUsed.innerHTML = `<strong>Approved Script Used:</strong><br><pre style="white-space:pre-wrap;font-family:inherit;">Part 1: ${data.approved_prompt_part1 || '-'}\n\nPart 2: ${data.approved_prompt_part2 || '-'}</pre><strong>Duration:</strong> ${(parseInt(data.duration || '8') * 2)}s total`;
+            }
+
+            hideProgressAlert();
+            showSuccessAlert('Video Ready!', 'Both video parts are ready to play and download.');
+            showToast('Video generated from approved script!', 'success');
+            if (typeof loadPosts === 'function') loadPosts();
+        } else {
+            hideProgressAlert();
+            showToast(result.message || 'Video generation failed', 'error');
+        }
+    } catch (error) {
+        console.error('Video generation error:', error);
+        hideProgressAlert();
+        if (error.name === 'AbortError') {
+            showToast('Video generation timed out after 8 minutes. Check n8n execution logs.', 'error');
+        } else {
+            showToast('Error generating video: ' + error.message, 'error');
+        }
+    } finally {
+        clearTimeout(abortTimeout);
+        triggerButton.disabled = false;
+        triggerButton.innerHTML = originalText;
+        _videoGenerating = false;
+    }
+}
+
 if (videoForm) {
     videoForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
-        // Prevent double submission
-        if (_videoGenerating) {
-            showToast('Video generation already in progress. Please wait.', 'warning');
+
+        if (_videoPreviewing) {
+            showToast('Script preview already in progress. Please wait.', 'warning');
             return;
         }
-        
-        const formData = new FormData(e.target);
-        
-        const data = {
-            prompt: formData.get('prompt'),
-            service: formData.get('service') || 'company_intro',
-            duration: formData.get('duration'),
-            topic: formData.get('topic') || '',
-            start_image_url: formData.get('start_image_url') || null,
-            second_image_url: formData.get('second_image_url') || null
-        };
-        
-        if (!data.prompt) {
-            showToast('Please enter a video description', 'error');
+
+        const data = getVideoFormPayload(e.target);
+        try {
+            validateVideoPayload(data);
+        } catch (validationError) {
+            showToast(validationError.message, 'error');
             return;
         }
-        
-        if (!data.start_image_url) {
-            showToast('Start image URL is required', 'error');
-            return;
-        }
-        
-        if (!data.second_image_url) {
-            showToast('Second part image URL is required', 'error');
-            return;
-        }
-        
-        _videoGenerating = true;
+
+        _videoPreviewing = true;
         const btn = e.target.querySelector('button[type="submit"]');
         const originalText = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span> Generating (5-6 min)...';
-        
-        // Show progress
+        btn.innerHTML = '<span class="spinner"></span> Generating script preview...';
+
         showProgressAlert(
-            'Generating Video',
-            'Creating your video with Veo 3 AI...',
-            'This takes about 5-6 minutes. Do NOT close this page.'
+            'Generating Script Preview',
+            'Writing part 1 and part 2 script...',
+            'Review and approve script before final video generation.'
         );
-        
-        // AbortController with 8 minute timeout (workflow takes ~6 min)
+
         const abortCtrl = new AbortController();
-        const abortTimeout = setTimeout(() => abortCtrl.abort(), 480000);
-        
+        const abortTimeout = setTimeout(() => abortCtrl.abort(), 120000);
+
         try {
-            updateProgress(10, 'Sending request to Veo 3...');
-            
-            console.log('=== VIDEO GENERATION ===');
-            console.log('Webhook:', n8nVideoWebhook);
-            
-            if (!n8nVideoWebhook) {
-                throw new Error('Video webhook URL not configured. Add videoWebhook to config.js');
+            updateProgress(15, 'Sending data to script preview workflow...');
+
+            if (!n8nVideoScriptPreviewWebhook) {
+                throw new Error('Video script preview webhook URL not configured. Add videoScriptPreviewWebhook to config.js');
             }
-            
-            const response = await fetch(n8nVideoWebhook, {
+
+            const response = await fetch(n8nVideoScriptPreviewWebhook, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
                 signal: abortCtrl.signal
             });
-            console.log('Response status:', response.status);
-            
-            updateProgress(15, 'AI is writing the video script...');
-            
-            // n8n keeps connection open for ~6min (2 waits + processing)
-            // Show incremental progress while waiting
-            const progressTimer = setInterval(() => {
-                const elapsed = (Date.now() - startTime) / 1000;
-                if (elapsed < 30) updateProgress(20, 'AI is writing the video script...');
-                else if (elapsed < 60) updateProgress(30, 'Submitting Part 1 to Veo 3...');
-                else if (elapsed < 180) updateProgress(40, `Generating Part 1... (${Math.round(elapsed)}s)`);
-                else if (elapsed < 210) updateProgress(55, 'Fetching Part 1 result...');
-                else if (elapsed < 240) updateProgress(60, 'Submitting Part 2 to Veo 3...');
-                else if (elapsed < 360) updateProgress(75, `Generating Part 2... (${Math.round(elapsed)}s)`);
-                else updateProgress(85, `Almost done... (${Math.round(elapsed)}s)`);
-            }, 3000);
-            const startTime = Date.now();
-            
+
             let result;
             try {
                 result = await response.json();
             } catch (parseError) {
-                clearInterval(progressTimer);
                 hideProgressAlert();
-                showToast('Video generation request sent but response could not be parsed. Check n8n logs.', 'warning');
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-                _videoGenerating = false;
+                showToast('Script preview response could not be parsed. Check n8n logs.', 'warning');
                 return;
             }
-            clearInterval(progressTimer);
-            
-            console.log('=== VIDEO RESULT ===', JSON.stringify(result).substring(0, 500));
-            
-            if (result.success && result.data?.video1_url) {
-                updateProgress(95, 'Saving video to database...');
-                console.log('Video URLs received, saving to DB...');
-                
-                // Check if workflow already saved to DB
-                let videoSaved = !!(result.data.db_saved);
-                if (videoSaved) {
-                    console.log('Video already saved to DB by n8n workflow (post_id:', result.data.post_id, ')');
-                    showToast('Video generated and saved to database!', 'success');
-                    if (typeof loadPosts === 'function') loadPosts();
-                }
-                
-                // Fallback: Save video data to Supabase client-side if workflow didn't save
-                if (!videoSaved && supabaseClient) {
-                    // Strategy 1: Full insert with video columns + video_completed status
-                    try {
-                        const { error: err1 } = await supabaseClient.from('social_posts').insert({
-                            post_type: 'Video',
-                            status: 'video_completed',
-                            headline: (data.prompt || '').substring(0, 120),
-                            post_copy: data.prompt || '',
-                            image_url: result.data.video1_url,
-                            video_part1_uri: result.data.video1_gcs_uri || '',
-                            video_part2_uri: result.data.video2_gcs_uri || '',
-                            video1_signed_url: result.data.video1_url || '',
-                            video2_signed_url: result.data.video2_url || ''
-                        });
-                        if (!err1) { videoSaved = true; console.log('Video saved (strategy 1: full)'); }
-                        else { console.warn('Strategy 1 failed:', err1.message); }
-                    } catch (e1) { console.warn('Strategy 1 exception:', e1.message); }
 
-                    // Strategy 2: Video columns but 'completed' status (CHECK constraint may not have video_completed)
-                    if (!videoSaved) {
-                        try {
-                            const { error: err2 } = await supabaseClient.from('social_posts').insert({
-                                post_type: 'Video',
-                                status: 'completed',
-                                headline: (data.prompt || '').substring(0, 120),
-                                post_copy: data.prompt || '',
-                                image_url: result.data.video1_url,
-                                video_part1_uri: result.data.video1_gcs_uri || '',
-                                video_part2_uri: result.data.video2_gcs_uri || '',
-                                video1_signed_url: result.data.video1_url || '',
-                                video2_signed_url: result.data.video2_url || ''
-                            });
-                            if (!err2) { videoSaved = true; console.log('Video saved (strategy 2: completed status)'); }
-                            else { console.warn('Strategy 2 failed:', err2.message); }
-                        } catch (e2) { console.warn('Strategy 2 exception:', e2.message); }
-                    }
-
-                    // Strategy 3: No video columns (migration not run), video_completed status
-                    if (!videoSaved) {
-                        try {
-                            const { error: err3 } = await supabaseClient.from('social_posts').insert({
-                                post_type: 'Video',
-                                status: 'video_completed',
-                                headline: (data.prompt || '').substring(0, 120),
-                                post_copy: data.prompt || '',
-                                image_url: JSON.stringify([result.data.video1_url, result.data.video2_url])
-                            });
-                            if (!err3) { videoSaved = true; console.log('Video saved (strategy 3: no video cols)'); }
-                            else { console.warn('Strategy 3 failed:', err3.message); }
-                        } catch (e3) { console.warn('Strategy 3 exception:', e3.message); }
-                    }
-
-                    // Strategy 4: Minimal - no video columns, 'completed' status
-                    if (!videoSaved) {
-                        try {
-                            const { error: err4 } = await supabaseClient.from('social_posts').insert({
-                                post_type: 'Video',
-                                status: 'completed',
-                                headline: (data.prompt || '').substring(0, 120),
-                                post_copy: data.prompt || '',
-                                image_url: JSON.stringify([result.data.video1_url, result.data.video2_url])
-                            });
-                            if (!err4) { videoSaved = true; console.log('Video saved (strategy 4: minimal)'); }
-                            else { console.warn('Strategy 4 failed:', err4.message); showToast('DB Error: ' + err4.message, 'error'); }
-                        } catch (e4) { console.error('All DB strategies failed:', e4.message); showToast('Could not save video to DB: ' + e4.message, 'error'); }
-                    }
-
-                    if (videoSaved) {
-                        showToast('Video saved to database!', 'success');
-                        // Refresh posts list
-                        if (typeof loadPosts === 'function') loadPosts();
-                    }
-                }
-                
-                updateProgress(100, 'Video parts ready!');
-                
-                setTimeout(async () => {
-                    hideProgressAlert();
-                    
-                    const videoResults = document.getElementById('video-results');
-                    const mergeProgress = document.getElementById('video-merge-progress');
-                    const playerSection = document.getElementById('video-player-section');
-                    const videoPart1 = document.getElementById('generated-video-part1');
-                    const videoPart2 = document.getElementById('generated-video-part2');
-                    const dlBtnPart1 = document.getElementById('download-video-part1');
-                    const dlBtnPart2 = document.getElementById('download-video-part2');
-                    const actionsDiv = document.getElementById('video-result-actions');
-                    const promptUsed = document.getElementById('video-prompt-used');
-                    
-                    const url1 = result.data.video1_url;
-                    const url2 = result.data.video2_url;
-                    
-                    // Show results container
-                    if (videoResults) {
-                        videoResults.style.display = 'block';
-                        videoResults.scrollIntoView({ behavior: 'smooth' });
-                    }
-                    if (mergeProgress) mergeProgress.style.display = 'none';
-                    if (playerSection) playerSection.style.display = 'block';
-                    if (actionsDiv) { actionsDiv.style.display = 'flex'; }
-
-                    // Set both video sources
-                    if (videoPart1) {
-                        videoPart1.src = url1;
-                        videoPart1.play().catch(() => {});
-                        // Auto-play Part 2 when Part 1 ends
-                        videoPart1.addEventListener('ended', () => {
-                            if (videoPart2) {
-                                videoPart2.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                videoPart2.play().catch(() => {});
-                            }
-                        }, { once: true });
-                    }
-                    if (videoPart2) {
-                        videoPart2.src = url2;
-                    }
-
-                    // Set download links for both parts
-                    if (dlBtnPart1) {
-                        dlBtnPart1.href = url1;
-                        dlBtnPart1.download = 'msi-video-part1.mp4';
-                    }
-                    if (dlBtnPart2) {
-                        dlBtnPart2.href = url2;
-                        dlBtnPart2.download = 'msi-video-part2.mp4';
-                    }
-
-                    if (promptUsed && result.data.prompt) {
-                        promptUsed.innerHTML = `<strong>Prompt:</strong> ${result.data.prompt}<br><strong>Duration:</strong> ${result.data.duration}`;
-                    }
-
-                    showSuccessAlert('Video Ready!', 'Both video parts are ready to play and download.');
-                }, 500);
+            if (result.success && result.data?.part1_prompt && result.data?.part2_prompt) {
+                updateProgress(100, 'Script preview ready');
+                hideProgressAlert();
+                showVideoScriptPreview(result.data);
+                showToast('Script preview generated. Review and approve to continue.', 'success');
             } else {
                 hideProgressAlert();
-                showToast(result.message || 'Video generation failed', 'error');
+                showToast(result.message || 'Script preview failed', 'error');
             }
-            
         } catch (error) {
-            console.error('Video generation error:', error);
+            console.error('Video preview error:', error);
             hideProgressAlert();
             if (error.name === 'AbortError') {
-                showToast('Video generation timed out after 8 minutes. Check n8n execution logs.', 'error');
+                showToast('Script preview timed out. Check n8n execution logs.', 'error');
             } else {
-                showToast('Error generating video: ' + error.message, 'error');
+                showToast('Error generating script preview: ' + error.message, 'error');
             }
         } finally {
             clearTimeout(abortTimeout);
             btn.disabled = false;
             btn.innerHTML = originalText;
-            _videoGenerating = false;
+            _videoPreviewing = false;
         }
+    });
+}
+
+const generateApprovedVideoBtn = document.getElementById('generate-approved-video');
+if (generateApprovedVideoBtn) {
+    generateApprovedVideoBtn.addEventListener('click', async () => {
+        if (!videoForm) return;
+        const data = getVideoFormPayload(videoForm);
+        try {
+            validateVideoPayload(data);
+        } catch (validationError) {
+            showToast(validationError.message, 'error');
+            return;
+        }
+
+        const part1Prompt = (document.getElementById('video-script-part1')?.value || '').trim();
+        const part2Prompt = (document.getElementById('video-script-part2')?.value || '').trim();
+        if (!part1Prompt || !part2Prompt) {
+            showToast('Generate and review script preview first.', 'warning');
+            return;
+        }
+
+        data.approved_prompt_part1 = part1Prompt;
+        data.approved_prompt_part2 = part2Prompt;
+
+        await runApprovedVideoGeneration(data, generateApprovedVideoBtn);
     });
 }
 
