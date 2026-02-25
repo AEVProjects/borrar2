@@ -22,7 +22,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{\n  json: {\n    EP: 'us-east1-aiplatform.googleapis.com',\n    PJ: 'video-gen-msi',\n    LOC: 'us-east1',\n    MDL: 'veo-3.1-generate-001',\n    MDL_EXTEND: 'veo-3.1-generate-preview',\n    STORAGE_URI_PART1: 'gs://video-bucket-for-msi-920206/approved-part1/',\n    STORAGE_URI_PART2: 'gs://video-bucket-for-msi-920206/approved-part2/'\n  }\n}];"
+        "jsCode": "return [{\n  json: {\n    EP: 'us-central1-aiplatform.googleapis.com',\n    PJ: 'video-gen-msi',\n    LOC: 'us-central1',\n    MDL: 'veo-3.1-generate-001',\n    MDL_EXTEND: 'veo-3.1-generate-preview',\n    STORAGE_URI_PART1: 'gs://video-bucket-for-msi-920206/approved-part1/',\n    STORAGE_URI_PART2: 'gs://video-bucket-for-msi-920206/approved-part2/'\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
