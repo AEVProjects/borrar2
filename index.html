@@ -538,7 +538,7 @@
                     <!-- Speech Analysis -->
                     <div id="approval-speech-analysis" style="display:none; margin-bottom:20px; padding:16px; background:#f0f5ff; border-radius:10px; border-left:4px solid #207CE5;">
                         <h4 style="margin:0 0 12px; color:#2d3748; font-size:15px;">Speech Analysis</h4>
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
                             <div>
                                 <h5 style="margin:0 0 6px; color:#4a5568; font-size:13px;">Part 1 — Dialogue</h5>
                                 <p id="analysis-dialogue-1" style="font-style:italic; color:#2d3748; margin:0 0 6px; font-size:14px; line-height:1.5;">—</p>
@@ -548,6 +548,11 @@
                                 <h5 style="margin:0 0 6px; color:#4a5568; font-size:13px;">Part 2 — Dialogue</h5>
                                 <p id="analysis-dialogue-2" style="font-style:italic; color:#2d3748; margin:0 0 6px; font-size:14px; line-height:1.5;">—</p>
                                 <span id="analysis-wordcount-2" style="font-size:12px; color:#718096;"></span>
+                            </div>
+                            <div>
+                                <h5 style="margin:0 0 6px; color:#4a5568; font-size:13px;">Part 3 — Dialogue</h5>
+                                <p id="analysis-dialogue-3" style="font-style:italic; color:#2d3748; margin:0 0 6px; font-size:14px; line-height:1.5;">—</p>
+                                <span id="analysis-wordcount-3" style="font-size:12px; color:#718096;"></span>
                             </div>
                         </div>
                     </div>
@@ -562,6 +567,12 @@
                         <label for="approval_prompt_part2">Prompt Part 2 — Why Choose MSI (Editable)</label>
                         <textarea id="approval_prompt_part2" name="approved_prompt_part2" rows="7" required></textarea>
                         <small class="form-hint">Edit the Veo 3.1 prompt for Part 2. The person says: [dialogue] format defines what will be spoken.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="approval_prompt_part3">Prompt Part 3 — Call to Action (Editable)</label>
+                        <textarea id="approval_prompt_part3" name="approved_prompt_part3" rows="7" required></textarea>
+                        <small class="form-hint">Edit the Veo 3.1 prompt for Part 3. The closing call to action — contact MSI, schedule consultation.</small>
                     </div>
 
                     <div class="result-actions" style="display:flex; gap:12px; flex-wrap:wrap;">
@@ -604,6 +615,12 @@
                                 Your browser does not support the video tag.
                             </video>
                         </div>
+                        <h3 style="margin-top:24px;margin-bottom:12px;color:#2d3748;">Part 3</h3>
+                        <div class="video-player">
+                            <video id="generated-video-part3" controls style="width: 100%; max-height: 600px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
                         <div id="video-prompt-used" class="video-prompt-used" style="margin-top: 16px; padding: 16px; background: #f7fafc; border-radius: 8px; border-left: 4px solid #207CE5;"></div>
                     </div>
 
@@ -623,6 +640,14 @@
                                 <line x1="12" y1="15" x2="12" y2="3"></line>
                             </svg>
                             Download Part 2
+                        </a>
+                        <a id="download-video-part3" href="#" download="video-part3.mp4" class="btn btn-primary" style="font-size:16px;padding:12px 24px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download Part 3
                         </a>
                         <button id="regenerate-video" class="btn btn-secondary">Generate Another Video</button>
                     </div>

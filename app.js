@@ -2013,7 +2013,8 @@ function normalizePreviewData(result) {
         aspect_ratio: fromData.aspect_ratio || '9:16',
         start_image_url: fromData.start_image_url || '',
         prompt_part1: fromData.prompt_part1 || '',
-        prompt_part2: fromData.prompt_part2 || ''
+        prompt_part2: fromData.prompt_part2 || '',
+        prompt_part3: fromData.prompt_part3 || ''
     };
 }
 
@@ -2030,19 +2031,24 @@ function extractDialogue(prompt) {
 function updateSpeechAnalysis() {
     const p1 = document.getElementById('approval_prompt_part1')?.value || '';
     const p2 = document.getElementById('approval_prompt_part2')?.value || '';
+    const p3 = document.getElementById('approval_prompt_part3')?.value || '';
     const a1 = extractDialogue(p1);
     const a2 = extractDialogue(p2);
+    const a3 = extractDialogue(p3);
 
     const analysisPanel = document.getElementById('approval-speech-analysis');
-    if (analysisPanel) analysisPanel.style.display = (a1.dialogue || a2.dialogue) ? 'block' : 'none';
+    if (analysisPanel) analysisPanel.style.display = (a1.dialogue || a2.dialogue || a3.dialogue) ? 'block' : 'none';
 
     const d1El = document.getElementById('analysis-dialogue-1');
     const d2El = document.getElementById('analysis-dialogue-2');
+    const d3El = document.getElementById('analysis-dialogue-3');
     const w1El = document.getElementById('analysis-wordcount-1');
     const w2El = document.getElementById('analysis-wordcount-2');
+    const w3El = document.getElementById('analysis-wordcount-3');
 
     if (d1El) d1El.textContent = a1.dialogue ? `"${a1.dialogue}"` : '— no dialogue detected';
     if (d2El) d2El.textContent = a2.dialogue ? `"${a2.dialogue}"` : '— no dialogue detected';
+    if (d3El) d3El.textContent = a3.dialogue ? `"${a3.dialogue}"` : '— no dialogue detected';
 
     const badge = (count) => {
         const color = count > 15 ? '#e53e3e' : count > 12 ? '#d69e2e' : '#38a169';
@@ -2051,6 +2057,7 @@ function updateSpeechAnalysis() {
     };
     if (w1El) w1El.innerHTML = a1.wordCount > 0 ? badge(a1.wordCount) : '';
     if (w2El) w2El.innerHTML = a2.wordCount > 0 ? badge(a2.wordCount) : '';
+    if (w3El) w3El.innerHTML = a3.wordCount > 0 ? badge(a3.wordCount) : '';
 }
 
 function loadVideoApprovalData(previewData) {
@@ -2066,7 +2073,8 @@ function loadVideoApprovalData(previewData) {
         approval_duration: `${previewData.duration || '8'}s`,
         approval_start_image_url: previewData.start_image_url || '',
         approval_prompt_part1: previewData.prompt_part1 || '',
-        approval_prompt_part2: previewData.prompt_part2 || ''
+        approval_prompt_part2: previewData.prompt_part2 || '',
+        approval_prompt_part3: previewData.prompt_part3 || ''
     };
 
     Object.entries(mappings).forEach(([id, value]) => {
@@ -2105,6 +2113,7 @@ function clearVideoApprovalData() {
 // Live-update speech analysis when user edits prompts
 document.getElementById('approval_prompt_part1')?.addEventListener('input', updateSpeechAnalysis);
 document.getElementById('approval_prompt_part2')?.addEventListener('input', updateSpeechAnalysis);
+document.getElementById('approval_prompt_part3')?.addEventListener('input', updateSpeechAnalysis);
 
 async function loadLatestPendingVideoPreview() {
     if (!supabaseClient) return;
@@ -2143,7 +2152,8 @@ async function loadLatestPendingVideoPreview() {
             aspect_ratio: meta.aspect_ratio || '9:16',
             start_image_url: meta.start_image_url || row.image_url || '',
             prompt_part1: row.strategy_analysis,
-            prompt_part2: row.image_prompt
+            prompt_part2: row.image_prompt,
+            prompt_part3: meta.prompt_part3 || ''
         });
     } catch (err) {
         console.warn('Error loading pending preview:', err?.message || err);
@@ -2156,13 +2166,16 @@ function renderVideoGenerationResult(result, inputData) {
     const playerSection = document.getElementById('video-player-section');
     const videoPart1 = document.getElementById('generated-video-part1');
     const videoPart2 = document.getElementById('generated-video-part2');
+    const videoPart3 = document.getElementById('generated-video-part3');
     const dlBtnPart1 = document.getElementById('download-video-part1');
     const dlBtnPart2 = document.getElementById('download-video-part2');
+    const dlBtnPart3 = document.getElementById('download-video-part3');
     const actionsDiv = document.getElementById('video-result-actions');
     const promptUsed = document.getElementById('video-prompt-used');
 
     const url1 = result.data.video1_url;
     const url2 = result.data.video2_url;
+    const url3 = result.data.video3_url;
 
     if (videoResults) {
         videoResults.style.display = 'block';
@@ -2182,7 +2195,16 @@ function renderVideoGenerationResult(result, inputData) {
             }
         }, { once: true });
     }
-    if (videoPart2) videoPart2.src = url2;
+    if (videoPart2) {
+        videoPart2.src = url2;
+        videoPart2.addEventListener('ended', () => {
+            if (videoPart3) {
+                videoPart3.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                videoPart3.play().catch(() => {});
+            }
+        }, { once: true });
+    }
+    if (videoPart3) videoPart3.src = url3;
 
     if (dlBtnPart1) {
         dlBtnPart1.href = url1;
@@ -2192,6 +2214,10 @@ function renderVideoGenerationResult(result, inputData) {
         dlBtnPart2.href = url2;
         dlBtnPart2.download = 'msi-video-part2.mp4';
     }
+    if (dlBtnPart3) {
+        dlBtnPart3.href = url3;
+        dlBtnPart3.download = 'msi-video-part3.mp4';
+    }
 
     if (promptUsed) {
         const shownPrompt = result.data.prompt || inputData?.prompt || '';
@@ -2199,7 +2225,7 @@ function renderVideoGenerationResult(result, inputData) {
         promptUsed.innerHTML = `<strong>Prompt:</strong> ${escapeHtml(shownPrompt)}<br><strong>Duration:</strong> ${escapeHtml(String(shownDuration))}`;
     }
 
-    showSuccessAlert('Video Ready!', 'Both video parts are ready to play and download.');
+    showSuccessAlert('Video Ready!', 'All three video parts are ready to play and download.');
 }
 
 // Start image preview for video
@@ -2263,7 +2289,7 @@ if (videoForm) {
         // Show progress
         showProgressAlert(
             'Generating Script Preview',
-            'AI is generating the two-part script for your review...',
+            'AI is generating the three-part script for your review...',
             'This usually takes under 1 minute.'
         );
         
@@ -2318,8 +2344,8 @@ if (videoForm) {
 
             if (result.success) {
                 const previewData = normalizePreviewData(result);
-                if (!previewData.prompt_part1 || !previewData.prompt_part2) {
-                    throw new Error('Preview did not return both prompt parts');
+                if (!previewData.prompt_part1 || !previewData.prompt_part2 || !previewData.prompt_part3) {
+                    throw new Error('Preview did not return all three prompt parts');
                 }
 
                 updateProgress(100, 'Preview ready');
@@ -2375,9 +2401,10 @@ if (videoApprovalForm) {
 
         const approvedPrompt1 = document.getElementById('approval_prompt_part1')?.value?.trim() || '';
         const approvedPrompt2 = document.getElementById('approval_prompt_part2')?.value?.trim() || '';
+        const approvedPrompt3 = document.getElementById('approval_prompt_part3')?.value?.trim() || '';
 
-        if (approvedPrompt1.length < 10 || approvedPrompt2.length < 10) {
-            showToast('Both prompt parts are required (min 10 chars)', 'error');
+        if (approvedPrompt1.length < 10 || approvedPrompt2.length < 10 || approvedPrompt3.length < 10) {
+            showToast('All three prompt parts are required (min 10 chars each)', 'error');
             return;
         }
 
@@ -2389,7 +2416,8 @@ if (videoApprovalForm) {
             aspect_ratio: videoApprovalData.aspect_ratio || '9:16',
             start_image_url: videoApprovalData.start_image_url,
             approved_prompt_part1: approvedPrompt1,
-            approved_prompt_part2: approvedPrompt2
+            approved_prompt_part2: approvedPrompt2,
+            approved_prompt_part3: approvedPrompt3
         };
 
         _videoApprovalGenerating = true;
@@ -2397,13 +2425,13 @@ if (videoApprovalForm) {
         const originalText = btn?.innerHTML || 'Approve and Generate Video';
         if (btn) {
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Generating (5-6 min)...';
+            btn.innerHTML = '<span class="spinner"></span> Generating (7-9 min)...';
         }
 
         showProgressAlert(
             'Generating Video',
             'Creating your final video with approved prompts...',
-            'This takes about 5-6 minutes. Do NOT close this page.'
+            'This takes about 7-9 minutes (3 parts). Do NOT close this page.'
         );
 
         const abortCtrl = new AbortController();
@@ -2425,11 +2453,13 @@ if (videoApprovalForm) {
 
             progressTimer = setInterval(() => {
                 const elapsed = (Date.now() - startTime) / 1000;
-                if (elapsed < 30) updateProgress(20, 'Submitting Part 1 to Veo 3...');
-                else if (elapsed < 180) updateProgress(40, `Generating Part 1... (${Math.round(elapsed)}s)`);
-                else if (elapsed < 240) updateProgress(60, 'Submitting Part 2 to Veo 3...');
-                else if (elapsed < 360) updateProgress(75, `Generating Part 2... (${Math.round(elapsed)}s)`);
-                else updateProgress(85, `Almost done... (${Math.round(elapsed)}s)`);
+                if (elapsed < 30) updateProgress(15, 'Submitting Part 1 to Veo 3...');
+                else if (elapsed < 180) updateProgress(30, `Generating Part 1... (${Math.round(elapsed)}s)`);
+                else if (elapsed < 210) updateProgress(45, 'Submitting Part 2 to Veo 3...');
+                else if (elapsed < 360) updateProgress(55, `Generating Part 2... (${Math.round(elapsed)}s)`);
+                else if (elapsed < 390) updateProgress(70, 'Submitting Part 3 to Veo 3...');
+                else if (elapsed < 540) updateProgress(80, `Generating Part 3... (${Math.round(elapsed)}s)`);
+                else updateProgress(90, `Almost done... (${Math.round(elapsed)}s)`);
             }, 3000);
 
             const result = await response.json();
@@ -2480,11 +2510,13 @@ if (regenerateVideoBtn) {
         const videoResults = document.getElementById('video-results');
         const videoPart1 = document.getElementById('generated-video-part1');
         const videoPart2 = document.getElementById('generated-video-part2');
+        const videoPart3 = document.getElementById('generated-video-part3');
         const mergeProgress = document.getElementById('video-merge-progress');
         const playerSection = document.getElementById('video-player-section');
         const actionsDiv = document.getElementById('video-result-actions');
         if (videoPart1) { videoPart1.pause(); videoPart1.src = ''; }
         if (videoPart2) { videoPart2.pause(); videoPart2.src = ''; }
+        if (videoPart3) { videoPart3.pause(); videoPart3.src = ''; }
         if (videoResults) videoResults.style.display = 'none';
         if (mergeProgress) mergeProgress.style.display = 'none';
         if (playerSection) playerSection.style.display = 'none';
