@@ -434,18 +434,7 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="video_second_image_url">Imagen de Inicio de Segunda Parte *</label>
-                        <input type="url" id="video_second_image_url" name="second_image_url" required placeholder="https://example.com/mi-imagen-parte2.jpg">
-                        <small class="form-hint">Imagen para la segunda parte del video (REQUERIDA). El video tendrá 2 partes, cada una iniciando desde su imagen.</small>
-                    </div>
 
-                    <div class="form-group" id="video-second-image-preview-container" style="display: none;">
-                        <label>Second Part Image Preview</label>
-                        <div id="video-second-image-preview" class="edit-image-preview">
-                            <img id="video-second-image-img" src="" alt="Second part image preview" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                        </div>
-                    </div>
 
                     <div class="form-group">
                         <label for="video_service">MSI Service Focus *</label>
@@ -489,7 +478,7 @@
                                 <option value="6">6 seconds per part (12s total)</option>
                                 <option value="5">5 seconds per part (10s total)</option>
                             </select>
-                            <small class="form-hint">Se generan 2 videos de esta duración, uno por cada imagen</small>
+                            <small class="form-hint">Se generan 2 partes de esta duración (video extension automática)</small>
                         </div>
 
                         <div class="form-group">
@@ -508,8 +497,8 @@
                 </form>
             </div>
 
-            <!-- Step 2: Script Approval (hidden until preview is generated) -->
-            <div id="video-step2" class="card form-card" style="display:none; margin-top:24px; border-left:4px solid #207CE5;">
+            <!-- Step 2: Script Approval (always visible) -->
+            <div id="video-step2" class="card form-card" style="margin-top:24px; border-left:4px solid #207CE5;">
                 <h2 style="display:flex; align-items:center; gap:10px;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#207CE5" stroke-width="2"><path d="M9 12l2 2 4-4"></path><circle cx="12" cy="12" r="10"></circle></svg>
                     Step 2: Review &amp; Approve Script
@@ -535,27 +524,15 @@
                         </div>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="approval_start_image_url">Start image URL</label>
-                            <input type="url" id="approval_start_image_url" name="start_image_url" readonly style="background:#f7fafc;">
-                        </div>
-                        <div class="form-group">
-                            <label for="approval_second_image_url">Second image URL</label>
-                            <input type="url" id="approval_second_image_url" name="second_image_url" readonly style="background:#f7fafc;">
-                        </div>
+                    <div class="form-group">
+                        <label for="approval_start_image_url">Start image URL</label>
+                        <input type="url" id="approval_start_image_url" name="start_image_url" readonly style="background:#f7fafc;">
                     </div>
 
-                    <!-- Image Previews -->
-                    <div class="form-row" id="approval-images-preview" style="display:none; margin-bottom:20px;">
-                        <div class="form-group" style="text-align:center;">
-                            <label>Part 1 — Start Image</label>
-                            <img id="approval_start_image_preview" src="" alt="Part 1 image" style="max-width:100%; max-height:220px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1); margin-top:8px;">
-                        </div>
-                        <div class="form-group" style="text-align:center;">
-                            <label>Part 2 — Second Image</label>
-                            <img id="approval_second_image_preview" src="" alt="Part 2 image" style="max-width:100%; max-height:220px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1); margin-top:8px;">
-                        </div>
+                    <!-- Image Preview -->
+                    <div id="approval-images-preview" style="display:none; margin-bottom:20px; text-align:center;">
+                        <label>Start Image</label>
+                        <img id="approval_start_image_preview" src="" alt="Start image" style="max-width:100%; max-height:220px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1); margin-top:8px;">
                     </div>
 
                     <!-- Speech Analysis -->

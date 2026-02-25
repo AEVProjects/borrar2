@@ -2012,7 +2012,6 @@ function normalizePreviewData(result) {
         duration: String(fromData.duration || '8'),
         aspect_ratio: fromData.aspect_ratio || '9:16',
         start_image_url: fromData.start_image_url || '',
-        second_image_url: fromData.second_image_url || '',
         prompt_part1: fromData.prompt_part1 || '',
         prompt_part2: fromData.prompt_part2 || ''
     };
@@ -2057,9 +2056,7 @@ function updateSpeechAnalysis() {
 function loadVideoApprovalData(previewData) {
     videoApprovalData = { ...previewData };
 
-    const step2 = document.getElementById('video-step2');
     const form = document.getElementById('video-approval-form');
-    if (step2) step2.style.display = 'block';
     if (form) form.style.display = 'block';
 
     const mappings = {
@@ -2068,7 +2065,6 @@ function loadVideoApprovalData(previewData) {
         approval_service: previewData.service || '',
         approval_duration: `${previewData.duration || '8'}s`,
         approval_start_image_url: previewData.start_image_url || '',
-        approval_second_image_url: previewData.second_image_url || '',
         approval_prompt_part1: previewData.prompt_part1 || '',
         approval_prompt_part2: previewData.prompt_part2 || ''
     };
@@ -2078,19 +2074,15 @@ function loadVideoApprovalData(previewData) {
         if (el) el.value = value;
     });
 
-    // Show image previews
+    // Show image preview
     const imgPreviewRow = document.getElementById('approval-images-preview');
     const img1 = document.getElementById('approval_start_image_preview');
-    const img2 = document.getElementById('approval_second_image_preview');
     const url1 = previewData.start_image_url || '';
-    const url2 = previewData.second_image_url || '';
 
-    if (url1 && url2 && img1 && img2 && imgPreviewRow) {
+    if (url1 && img1 && imgPreviewRow) {
         img1.src = url1;
-        img2.src = url2;
-        imgPreviewRow.style.display = 'flex';
+        imgPreviewRow.style.display = 'block';
         img1.onerror = () => { img1.style.display = 'none'; };
-        img2.onerror = () => { img2.style.display = 'none'; };
     }
 
     // Update speech analysis
@@ -2099,12 +2091,9 @@ function loadVideoApprovalData(previewData) {
 
 function clearVideoApprovalData() {
     videoApprovalData = null;
-    const step2 = document.getElementById('video-step2');
     const form = document.getElementById('video-approval-form');
-    if (step2) step2.style.display = 'none';
     if (form) {
         form.reset();
-        form.style.display = 'none';
     }
     // Hide extras
     const imgPreview = document.getElementById('approval-images-preview');
@@ -2153,7 +2142,6 @@ async function loadLatestPendingVideoPreview() {
             duration: String(meta.duration || '8'),
             aspect_ratio: meta.aspect_ratio || '9:16',
             start_image_url: meta.start_image_url || row.image_url || '',
-            second_image_url: meta.second_image_url || '',
             prompt_part1: row.strategy_analysis,
             prompt_part2: row.image_prompt
         });
@@ -2234,26 +2222,6 @@ if (videoStartImageInput) {
     });
 }
 
-// Second image preview for video
-const videoSecondImageInput = document.getElementById('video_second_image_url');
-const videoSecondImagePreviewContainer = document.getElementById('video-second-image-preview-container');
-const videoSecondImageImg = document.getElementById('video-second-image-img');
-
-if (videoSecondImageInput) {
-    videoSecondImageInput.addEventListener('input', (e) => {
-        const url = e.target.value.trim();
-        if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-            videoSecondImageImg.src = url;
-            videoSecondImagePreviewContainer.style.display = 'block';
-            videoSecondImageImg.onerror = () => {
-                videoSecondImagePreviewContainer.style.display = 'none';
-            };
-        } else {
-            videoSecondImagePreviewContainer.style.display = 'none';
-        }
-    });
-}
-
 // Video Form Submit
 let _videoGenerating = false; // Guard against double submission
 if (videoForm) {
@@ -2273,8 +2241,7 @@ if (videoForm) {
             service: formData.get('service') || 'company_intro',
             duration: formData.get('duration'),
             topic: formData.get('topic') || '',
-            start_image_url: formData.get('start_image_url') || null,
-            second_image_url: formData.get('second_image_url') || null
+            start_image_url: formData.get('start_image_url') || null
         };
         
         if (!data.prompt) {
@@ -2284,11 +2251,6 @@ if (videoForm) {
         
         if (!data.start_image_url) {
             showToast('Start image URL is required', 'error');
-            return;
-        }
-        
-        if (!data.second_image_url) {
-            showToast('Second part image URL is required', 'error');
             return;
         }
         
@@ -2426,7 +2388,6 @@ if (videoApprovalForm) {
             duration: videoApprovalData.duration,
             aspect_ratio: videoApprovalData.aspect_ratio || '9:16',
             start_image_url: videoApprovalData.start_image_url,
-            second_image_url: videoApprovalData.second_image_url,
             approved_prompt_part1: approvedPrompt1,
             approved_prompt_part2: approvedPrompt2
         };
