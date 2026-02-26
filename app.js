@@ -3822,6 +3822,8 @@ function renderTrendNews() {
     grid.innerHTML = paginatedNews.map((news, idx) => {
         const cardClass = news.is_used ? 'news-card used' : 'news-card';
         const dateStr = news.news_date || formatRelativeDate(news.scraped_at);
+        // Check if this news was AI-ranked (saved by the flow = AI selected top 3)
+        const isAiRanked = !news.is_used; // Recently saved news that hasn't been used yet
         const hasContent = news.content && news.content.length > 0;
         const encodedContent = btoa(encodeURIComponent(news.content || ''));
         const encodedSnippet = btoa(encodeURIComponent(news.snippet || ''));
@@ -3872,6 +3874,12 @@ function renderTrendNews() {
                     </svg>
                     ${escapeHtml(news.trend_query || 'Sin trend')}
                 </div>
+                ${isAiRanked ? `
+                <div style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#f0f9ff,#e0f2fe);color:#0369a1;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;margin-top:6px;border:1px solid #bae6fd;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                    AI Top Pick
+                </div>
+                ` : ''}
                 <div class="news-card-actions">
                     <button class="btn btn-send-to-daily" onclick="sendTrendToDaily('${encodedTitle}', '${encodedSnippet}', '${encodedTrend}', '${encodedContent}'); return false;" title="Enviar a Auto Daily con contenido completo">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -4331,6 +4339,7 @@ async function triggerTrendsWorkflow() {
 
     const topicInput = document.getElementById('trends-topic-input');
     const contextInput = document.getElementById('trends-context-input');
+    const triggerBtn = document.getElementById('trigger-trends-workflow-btn');
     const topic = topicInput?.value?.trim();
     const context = contextInput?.value?.trim() || '';
 
@@ -4339,9 +4348,28 @@ async function triggerTrendsWorkflow() {
         topicInput?.focus();
         return;
     }
+
+    // Disable button during execution
+    if (triggerBtn) {
+        triggerBtn.disabled = true;
+        triggerBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin" style="animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> Buscando...`;
+    }
     
     try {
-        showProgressAlert('Buscando Tendencias', `Buscando noticias sobre "${topic}"...`);
+        showProgressAlert('Buscando Tendencias', `Analizando noticias sobre "${topic}"...`, 'Paso 1/4: Buscando trends en Google...');
+        
+        // Simulate progressive updates while waiting for the webhook
+        const progressSteps = [
+            { delay: 3000, percent: 20, status: 'Paso 1/4: Identificando tendencias relevantes...' },
+            { delay: 8000, percent: 40, status: 'Paso 2/4: Recabando noticias del último mes...' },
+            { delay: 15000, percent: 55, status: 'Paso 2/4: Extrayendo contenido de artículos...' },
+            { delay: 25000, percent: 70, status: 'Paso 3/4: AI seleccionando las 3 noticias más relevantes...' },
+            { delay: 40000, percent: 85, status: 'Paso 4/4: Generando contenido para redes...' },
+            { delay: 60000, percent: 92, status: 'Finalizando... (esto puede tomar un momento)' }
+        ];
+        const progressTimers = progressSteps.map(step => 
+            setTimeout(() => updateProgress(step.percent, step.status), step.delay)
+        );
         
         const response = await fetch(webhookUrl, {
             method: 'POST',
@@ -4353,20 +4381,55 @@ async function triggerTrendsWorkflow() {
             })
         });
         
+        // Clear progress timers
+        progressTimers.forEach(t => clearTimeout(t));
+        
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
         
-        hideProgressAlert();
-        showSuccessAlert('Búsqueda Completada', `Se buscaron tendencias sobre "${topic}". Las noticias se actualizarán pronto.`);
+        let result = null;
+        try {
+            result = await response.json();
+            console.log('Trends workflow result:', result);
+        } catch (e) {
+            // Response might not be JSON
+        }
         
-        // Reload news after a delay
-        setTimeout(loadTrendNews, 5000);
+        updateProgress(100, '¡Completado!');
+        
+        // Build success message
+        let successMsg = `Se encontraron y rankearon las noticias más relevantes sobre "${topic}".`;
+        if (result?.post?.headline) {
+            successMsg += `\n\nPost generado: ${result.post.headline}`;
+        }
+        if (result?.post?.id) {
+            successMsg += `\nRevisa la sección Generate Content para ver el resultado.`;
+        }
+        
+        hideProgressAlert();
+        showSuccessAlert('Top 3 Noticias Encontradas', successMsg);
+        
+        // Reload news immediately since response means DB is already updated
+        await loadTrendNews();
         
     } catch (err) {
         console.error('Error triggering workflow:', err);
         hideProgressAlert();
-        showToast('Error al ejecutar el workflow de trends', 'error');
+        
+        let errorMsg = 'Error al ejecutar el workflow de trends';
+        if (err.message === 'Failed to fetch') {
+            errorMsg = 'No se pudo conectar al servidor n8n. Verifica que esté activo.';
+        } else if (err.message.includes('HTTP')) {
+            errorMsg = `Error del servidor: ${err.message}`;
+        }
+        showToast(errorMsg, 'error');
+    } finally {
+        // Restore button
+        if (triggerBtn) {
+            triggerBtn.disabled = false;
+            triggerBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Buscar Tendencias`;
+        }
     }
 }
 
