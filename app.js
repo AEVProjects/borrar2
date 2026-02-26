@@ -2021,8 +2021,8 @@ function normalizePreviewData(result) {
 // Extract spoken dialogue from a Veo prompt ("person says: ..." pattern)
 function extractDialogue(prompt) {
     if (!prompt) return { dialogue: '', wordCount: 0 };
-    const match = prompt.match(/says?:\s*(.+?)(?:\.|Clear American|Voice only|Static camera|Person speaks|$)/i);
-    const dialogue = match ? match[1].trim() : '';
+    const match = prompt.match(/says?:\s*(.+?)(?:[.?!]\s|Speaks? with|Clear American|Voice only|Static camera|Person (?:speaks|starts|finishes|holds)|Camera follows|$)/i);
+    const dialogue = match ? match[1].trim().replace(/[.?!]$/, '') : '';
     const wordCount = dialogue ? dialogue.split(/\s+/).length : 0;
     return { dialogue, wordCount };
 }
