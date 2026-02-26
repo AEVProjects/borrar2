@@ -4356,15 +4356,15 @@ async function triggerTrendsWorkflow() {
     }
     
     try {
-        showProgressAlert('Buscando Tendencias', `Analizando noticias sobre "${topic}"...`, 'Paso 1/4: Buscando trends en Google...');
+        showProgressAlert('Buscando Noticias', `Buscando noticias sobre "${topic}"...`, 'Paso 1/3: Buscando noticias del último mes...');
         
-        // Simulate progressive updates while waiting for the webhook
+        // Progressive updates while waiting
         const progressSteps = [
-            { delay: 3000, percent: 20, status: 'Paso 1/4: Identificando tendencias relevantes...' },
-            { delay: 8000, percent: 40, status: 'Paso 2/4: Recabando noticias del último mes...' },
-            { delay: 15000, percent: 55, status: 'Paso 2/4: Extrayendo contenido de artículos...' },
-            { delay: 25000, percent: 70, status: 'Paso 3/4: AI seleccionando las 3 noticias más relevantes...' },
-            { delay: 40000, percent: 85, status: 'Paso 4/4: Generando contenido para redes...' },
+            { delay: 3000, percent: 15, status: 'Paso 1/3: Buscando noticias recientes...' },
+            { delay: 8000, percent: 30, status: 'Paso 1/3: Extrayendo contenido de artículos...' },
+            { delay: 15000, percent: 50, status: 'Paso 2/3: Analizando y filtrando noticias...' },
+            { delay: 25000, percent: 70, status: 'Paso 3/3: AI seleccionando las 3 más interesantes...' },
+            { delay: 40000, percent: 85, status: 'Paso 3/3: Guardando resultados...' },
             { delay: 60000, percent: 92, status: 'Finalizando... (esto puede tomar un momento)' }
         ];
         const progressTimers = progressSteps.map(step => 
@@ -4397,21 +4397,48 @@ async function triggerTrendsWorkflow() {
         }
         
         updateProgress(100, '¡Completado!');
-        
-        // Build success message
-        let successMsg = `Se encontraron y rankearon las noticias más relevantes sobre "${topic}".`;
-        if (result?.post?.headline) {
-            successMsg += `\n\nPost generado: ${result.post.headline}`;
-        }
-        if (result?.post?.id) {
-            successMsg += `\nRevisa la sección Generate Content para ver el resultado.`;
-        }
-        
         hideProgressAlert();
-        showSuccessAlert('Top 3 Noticias Encontradas', successMsg);
         
-        // Reload news immediately since response means DB is already updated
+        // Reload news from DB to get the newly saved articles
         await loadTrendNews();
+        
+        // AUTO-SELECT the top 3 news returned by the workflow
+        if (result?.news && Array.isArray(result.news) && result.news.length > 0) {
+            selectedNewsForCarousel = [];
+            const returnedIds = result.news.map(n => n.id).filter(id => id);
+            
+            // Match returned news IDs with loaded news from DB
+            for (const newsId of returnedIds) {
+                const matchingNews = trendsData.news.find(n => n.id == newsId);
+                if (matchingNews && selectedNewsForCarousel.length < 3) {
+                    selectedNewsForCarousel.push(matchingNews);
+                }
+            }
+            
+            console.log('Auto-selected news:', selectedNewsForCarousel.map(n => n.title));
+            
+            // Re-render to show selections
+            renderTrendNews();
+            
+            // Show success with count
+            const count = selectedNewsForCarousel.length;
+            showSuccessAlert(
+                `Top ${count} Noticias sobre "${topic}"`,
+                `Se encontraron las ${count} noticias más relevantes sobre "${topic}".\n\n` +
+                result.news.map((n, i) => `${i+1}. ${n.title}`).join('\n') +
+                `\n\n✅ Ya están seleccionadas. Haz clic en "Generar Carrusel" para crear el contenido.`
+            );
+            
+            // Scroll to the carousel button
+            setTimeout(() => {
+                const carouselBtn = document.getElementById('send-to-carousel-btn');
+                if (carouselBtn) {
+                    carouselBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 500);
+        } else {
+            showSuccessAlert('Búsqueda Completada', `Se buscaron noticias sobre "${topic}". Revisa los resultados y selecciona 3 para generar un carrusel.`);
+        }
         
     } catch (err) {
         console.error('Error triggering workflow:', err);
@@ -4428,7 +4455,7 @@ async function triggerTrendsWorkflow() {
         // Restore button
         if (triggerBtn) {
             triggerBtn.disabled = false;
-            triggerBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Buscar Tendencias`;
+            triggerBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Buscar Noticias`;
         }
     }
 }
