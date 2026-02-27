@@ -1,239 +1,243 @@
-{
-  "nodes": [
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "msi-video-preview",
-        "responseMode": "responseNode",
-        "options": {
-          "allowedOrigins": "*",
-          "rawBody": false
-        }
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [
-        87040,
-        -1616
-      ],
-      "id": "d1a00001-aaaa-4001-b001-000000000001",
-      "name": "Webhook - Video Preview",
-      "webhookId": "msi-video-preview"
-    },
-    {
-      "parameters": {
-        "jsCode": "const input = $input.item.json;\nlet data = input.body || input;\nif (typeof data === 'string') {\n  try { data = JSON.parse(data); } catch (e) { }\n}\n\nconst prompt = data.prompt || data.video_prompt || '';\nconst start_image_url = data.start_image_url || data.imageUrl || null;\nconst aspect_ratio = data.aspect_ratio || data.aspectRatio || '9:16';\nconst service = data.service || 'company_intro';\nconst post_id = data.post_id || data.postId || null;\nconst topic = data.topic || '';\nconst duration = Math.min(parseInt(data.duration || '8'), 8);\n\nif (!prompt || prompt.length < 3) throw new Error('prompt is required');\nif (!start_image_url) throw new Error('start_image_url is required');\n\nconst SERVICE_CATALOG = {\n  workforce_agility: {\n    name: 'Workforce Agility',\n    tagline: 'Adapt, Evolve and Excel in a Changing Market',\n    pillars: 'Talent Optimization, Flexible Workforce, Employee Upskilling',\n    value: 'We help you build a future-ready workforce by fostering adaptability, innovation, and efficiency.',\n    pain_points: 'rigid teams that cannot scale, skills gaps slowing growth, inability to adapt to market shifts',\n    keywords: 'agile workforce, upskilling, talent optimization, adaptability, future-ready, flexible teams',\n    hook: 'Your workforce cannot keep up with a market that changes every single day.',\n    offer: 'MSI builds agile teams with upskilling and talent optimization for lasting adaptability.',\n    cta: 'Build a future-ready workforce today. Contact MSI for a free consultation now.'\n  },\n  it_outsourcing: {\n    name: 'IT Outsourcing Solutions',\n    tagline: 'Expert IT Teams Without the Overhead',\n    pillars: 'Managed IT Services, Dedicated Development Teams, Infrastructure Management',\n    value: 'Access top-tier IT talent and managed services at a fraction of in-house costs, with full accountability.',\n    pain_points: 'overloaded internal IT teams, expensive contractors who underdeliver, technology debt piling up',\n    keywords: 'managed IT, dedicated teams, infrastructure, cost-effective technology, IT support',\n    hook: 'Your IT team is overwhelmed and expensive contractors are not delivering real results.',\n    offer: 'MSI provides dedicated IT teams fully managed and accountable saving you up to sixty percent.',\n    cta: 'Stop overspending on IT. Let MSI manage it. Schedule your free consultation today.'\n  },\n  ai_solutions: {\n    name: 'AI and Smart Business Solutions',\n    tagline: 'Accelerate Your Business with Intelligent Automation',\n    pillars: 'AI Strategy, Process Automation, Predictive Analytics, AI Integration',\n    value: 'We implement practical AI solutions that automate workflows, unlock insights, and give you a competitive edge.',\n    pain_points: 'competitors moving faster with AI, manual processes wasting time, missed data-driven opportunities',\n    keywords: 'artificial intelligence, automation, predictive analytics, AI integration, intelligent workflows',\n    hook: 'Your competitors use AI to move twice as fast while you still do things manually.',\n    offer: 'MSI implements AI automation and predictive analytics tailored to your exact business needs.',\n    cta: 'Do not fall behind on AI. Contact MSI and accelerate your business starting today.'\n  },\n  cybersecurity: {\n    name: 'Cybersecurity',\n    tagline: 'Protect Your Business from Every Digital Threat',\n    pillars: 'Threat Detection, Compliance, Security Audits, Incident Response',\n    value: 'Comprehensive cybersecurity that shields your data, ensures compliance, and gives you peace of mind.',\n    pain_points: 'data breaches costing millions, compliance failures, lack of internal security expertise',\n    keywords: 'cybersecurity, threat detection, compliance, data protection, security audits, incident response',\n    hook: 'One data breach could cost your company millions and most businesses are unprepared.',\n    offer: 'MSI provides threat detection compliance audits and incident response to protect your business.',\n    cta: 'Do not wait for a breach. Secure your business with MSI. Get a free audit today.'\n  },\n  it_cybersecurity: {\n    name: 'IT Management and Cybersecurity',\n    tagline: 'Protect Your Business from Every Digital Threat',\n    pillars: 'Threat Detection, Compliance, Security Audits, Incident Response, IT Management',\n    value: 'Comprehensive cybersecurity and IT management that shields your data, ensures compliance, and gives you peace of mind.',\n    pain_points: 'data breaches costing millions, compliance failures, lack of internal security expertise',\n    keywords: 'cybersecurity, IT management, threat detection, compliance, data protection, security audits',\n    hook: 'One data breach could cost your company millions and most businesses are unprepared.',\n    offer: 'MSI provides threat detection compliance audits and incident response to protect your business.',\n    cta: 'Do not wait for a breach. Secure your business with MSI. Get a free audit today.'\n  },\n  data_security: {\n    name: 'Data Security and Cloud Computing',\n    tagline: 'Secure Cloud Solutions for Modern Business',\n    pillars: 'Cloud Security, Data Protection, Cloud Migration, Infrastructure Security',\n    value: 'End-to-end data security and cloud computing solutions that protect your assets and enable digital growth.',\n    pain_points: 'vulnerable cloud environments, data loss risks, insecure digital infrastructure',\n    keywords: 'data security, cloud computing, cloud security, data protection, secure infrastructure',\n    hook: 'Your data is only as safe as your weakest cloud security link and most have gaps.',\n    offer: 'MSI delivers end-to-end cloud security and data protection built for modern business.',\n    cta: 'Secure your cloud infrastructure with MSI. Schedule a free security assessment today.'\n  },\n  bpo: {\n    name: 'Business Process Outsourcing',\n    tagline: 'Streamline Operations, Focus on What Matters',\n    pillars: 'Back-Office Support, Customer Service, Data Processing, Administrative Excellence',\n    value: 'Outsource repetitive operations to trained professionals so your team focuses on growth and strategy.',\n    pain_points: 'teams buried in repetitive tasks, high operational costs, losing focus on core business',\n    keywords: 'business process outsourcing, back-office, customer service, operational efficiency, cost reduction',\n    hook: 'Your team wastes hours on repetitive tasks that trained professionals could handle better.',\n    offer: 'MSI handles back-office and customer service with pre-vetted professionals saving you forty percent.',\n    cta: 'Free your team to focus on growth. Contact MSI for streamlined operations today.'\n  },\n  consulting: {\n    name: 'Executive Consulting',\n    tagline: 'Navigate Digital Transformation with Confidence',\n    pillars: 'Digital Strategy, Technology Roadmaps, Change Management, Process Optimization',\n    value: 'Expert consulting that guides your digital transformation with proven strategies and measurable results.',\n    pain_points: 'failed digital transformations, no clear technology roadmap, resistance to change within teams',\n    keywords: 'digital transformation, consulting, technology strategy, change management, process optimization',\n    hook: 'Navigating digital transformation alone is why most companies fail in the first two years.',\n    offer: 'MSI delivers proven digital strategies and change management with twenty years of experience.',\n    cta: 'Transform with confidence. Let MSI guide your digital journey. Book a consultation today.'\n  },\n  executive_consulting: {\n    name: 'Executive Consulting',\n    tagline: 'Navigate Digital Transformation with Confidence',\n    pillars: 'Digital Strategy, Technology Roadmaps, Change Management, Process Optimization',\n    value: 'Expert consulting that guides your digital transformation with proven strategies and measurable results.',\n    pain_points: 'failed digital transformations, no clear technology roadmap, resistance to change within teams',\n    keywords: 'digital transformation, consulting, technology strategy, change management, process optimization',\n    hook: 'Navigating digital transformation alone is why most companies fail in the first two years.',\n    offer: 'MSI delivers proven digital strategies and change management with twenty years of experience.',\n    cta: 'Transform with confidence. Let MSI guide your digital journey. Book a consultation today.'\n  },\n  telecom: {\n    name: 'Telecom Services',\n    tagline: 'Reliable Connectivity That Powers Your Business',\n    pillars: 'Network Infrastructure, Unified Communications, Cloud Connectivity, Telecom Management',\n    value: 'End-to-end telecom solutions that ensure seamless connectivity, reduce downtime, and optimize costs.',\n    pain_points: 'poor network reliability killing productivity, outdated telecom infrastructure, high connectivity costs',\n    keywords: 'telecom, network infrastructure, unified communications, cloud connectivity, reliable network',\n    hook: 'Poor network infrastructure is silently killing your business productivity every single day.',\n    offer: 'MSI delivers end-to-end telecom solutions with reliable connectivity and optimized costs.',\n    cta: 'Upgrade your network infrastructure with MSI. Contact us for a free assessment today.'\n  },\n  company_intro: {\n    name: 'MSI Technologies - Company Introduction',\n    tagline: 'One Partner for IT, Staffing, AI, and Cybersecurity',\n    pillars: 'Full-Service Technology, Nearshore Talent, AI Solutions, Security',\n    value: 'MSI Technologies is your single partner for IT, staffing, AI, cybersecurity, and digital transformation - 20+ years, 40+ countries.',\n    pain_points: 'managing multiple vendors, fragmented technology strategy, no single trusted partner',\n    keywords: 'MSI Technologies, full-service, one partner, nearshore, IT staffing AI cybersecurity',\n    hook: 'What if one company could handle your IT staffing AI and cybersecurity all at once.',\n    offer: 'MSI has served hundreds of businesses across forty countries for over twenty years.',\n    cta: 'Simplify everything with one partner. Contact MSI Technologies for a free consultation.'\n  },\n  staffing: {\n    name: 'Nearshore Staffing',\n    tagline: 'Top Talent, Your Time Zone, Half the Cost',\n    pillars: 'Nearshore Staffing, Pre-Vetted Talent, Same Time Zone, Cultural Alignment',\n    value: 'College-educated, triple-tested, fluent English professionals working in your time zone at 40-60% savings.',\n    pain_points: 'high cost of US-based hires, remote talent quality concerns, time zone and communication gaps',\n    keywords: 'nearshore staffing, pre-vetted talent, same time zone, fluent English, cost savings, cultural fit',\n    hook: 'You could hire skilled pre-vetted talent at half the cost in your same time zone.',\n    offer: 'MSI provides college-educated fluent English professionals triple-tested and saving you sixty percent.',\n    cta: 'Stop overpaying for talent. Get MSI nearshore staffing. Schedule a free call today.'\n  },\n  nearshore_staffing: {\n    name: 'Nearshore Staffing',\n    tagline: 'Top Talent, Your Time Zone, Half the Cost',\n    pillars: 'Nearshore Staffing, Pre-Vetted Talent, Same Time Zone, Cultural Alignment',\n    value: 'College-educated, triple-tested, fluent English professionals working in your time zone at 40-60% savings.',\n    pain_points: 'high cost of US-based hires, remote talent quality concerns, time zone and communication gaps',\n    keywords: 'nearshore staffing, pre-vetted talent, same time zone, fluent English, cost savings, cultural fit',\n    hook: 'You could hire skilled pre-vetted talent at half the cost in your same time zone.',\n    offer: 'MSI provides college-educated fluent English professionals triple-tested and saving you sixty percent.',\n    cta: 'Stop overpaying for talent. Get MSI nearshore staffing. Schedule a free call today.'\n  }\n};\n\nconst svc = SERVICE_CATALOG[service] || SERVICE_CATALOG['company_intro'];\nconst serviceContext = 'SERVICE NAME: ' + svc.name + '\\nTAGLINE: ' + svc.tagline + '\\nPILLARS: ' + svc.pillars + '\\nVALUE PROPOSITION: ' + svc.value + '\\nPAIN POINTS TO ADDRESS: ' + svc.pain_points + '\\nKEYWORDS TO USE: ' + svc.keywords + '\\nHOOK EXAMPLE: The person says: ' + svc.hook + '\\nOFFER EXAMPLE: The person says: ' + svc.offer + '\\nCTA EXAMPLE: The person says: ' + svc.cta;\nconst serviceExample = svc.hook + ' ||| ' + svc.offer + ' ||| ' + svc.cta;\nconst serviceName = svc.name;\n\nreturn [{ json: { _videoScene: prompt, duration: String(duration), aspect_ratio, service, post_id, topic, start_image_url, serviceContext, serviceExample, serviceName } }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        87264,
-        -1616
-      ],
-      "id": "d1a00001-aaaa-4001-b001-000000000002",
-      "name": "Format Video Input"
-    },
-    {
-      "parameters": {
-        "jsCode": "// FILTER: Only pass service-related fields to the AI Agent.\n// This prevents the LLM from seeing video description, URLs, or other data that could confuse it.\nconst f = $('Format Video Input').item.json;\nreturn [{ json: { serviceContext: f.serviceContext, serviceName: f.serviceName, serviceExample: f.serviceExample, topic: f.topic || '' } }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        87376,
-        -1616
-      ],
-      "id": "d1a00001-aaaa-4001-b001-000000000008",
-      "name": "Filter for Agent"
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "=\"You generate ONLY the spoken dialogue for a 3-part MSI Technologies sales video.\\n\\nYour job is SIMPLE: write THREE dialogue lines (what the person SAYS). Nothing else. No scene description, no actions, no emotions, no camera directions. The scene is handled separately.\\n\\nIMPORTANT - You are writing dialogue EXCLUSIVELY for this service:\\n\" + $json.serviceContext + \"\\n\\nAUDIENCE: \" + ($json.topic || 'Business professionals') + \"\\n\\nWRITE THREE DIALOGUE LINES following this sales funnel:\\n\\nLINE 1 - HOOK (Pain Point): A bold opening line using the PAIN POINTS and KEYWORDS above. Make the viewer stop scrolling. Directly address their problem related to \" + $json.serviceName + \".\\n\\nLINE 2 - OFFER (Value + Proof): Explain what MSI delivers using the PILLARS and VALUE PROPOSITION of \" + $json.serviceName + \" above. Include credibility (20+ years, hundreds of businesses, 40+ countries, 40-60% savings - pick what fits).\\n\\nLINE 3 - CTA (Close): A strong closing call to action for \" + $json.serviceName + \". Make the viewer feel they must act now.\\n\\nRULES:\\n- Each line: MINIMUM 10, MAXIMUM 15 words. Count carefully.\\n- Use ONLY vocabulary from \" + $json.serviceName + \" above. Use the KEYWORDS, PILLARS, and PAIN POINTS provided. NEVER use vocabulary from a different MSI service.\\n- The three lines form a coherent sales narrative about \" + $json.serviceName + \".\\n- Do NOT add any scene description, action, emotion, camera direction, voice description, or accent instruction. ONLY dialogue.\\n\\nOUTPUT FORMAT (exactly this, nothing else):\\nLINE1_DIALOGUE ||| LINE2_DIALOGUE ||| LINE3_DIALOGUE\\n\\nExample output for \" + $json.serviceName + \":\\n\" + $json.serviceExample",
-        "options": {
-          "systemMessage": "=\"You are a dialogue-only writer for MSI Technologies sales videos. You MUST write dialogue ONLY about \" + $json.serviceName + \". You receive a SERVICE description with pain points, pillars, value proposition, and examples. Your ONLY job is to output THREE dialogue lines separated by |||. LINE 1 = Hook using the service pain points provided. LINE 2 = Offer using the service pillars and value provided. LINE 3 = CTA close. CRITICAL RULES: 1) Each line 10-15 words. 2) Use ONLY the vocabulary, keywords, and pillars from \" + $json.serviceName + \" - NEVER invent terms or use vocabulary from other services. 3) Output ONLY dialogue text. No scene, action, camera, voice, or emotion descriptions. 4) Format: LINE1 ||| LINE2 ||| LINE3. Nothing else.\""
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 1.7,
-      "position": [
-        87488,
-        -1616
-      ],
-      "id": "d1a00001-aaaa-4001-b001-000000000003",
-      "name": "Agent: Video Script"
-    },
-    {
-      "parameters": {
-        "modelName": "models/gemini-2.5-flash",
-        "options": {
-          "temperature": 0
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-      "typeVersion": 1,
-      "position": [
-        87568,
-        -1392
-      ],
-      "id": "d1a00001-aaaa-4001-b001-000000000004",
-      "name": "Google Gemini Chat Model",
-      "credentials": {
-        "googlePalmApi": {
-          "id": "oF4jKBK0jRbwEPWt",
-          "name": "Google Gemini(PaLM) Api account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "const agentOutput = $('Agent: Video Script').item.json.output || '';\nconst f = $('Format Video Input').item.json;\n\n// The agent now outputs ONLY dialogue lines: LINE1 ||| LINE2 ||| LINE3\nlet d1 = '', d2 = '', d3 = '';\nif (agentOutput.includes('|||')) {\n  const parts = agentOutput.split('|||');\n  d1 = parts[0].trim();\n  d2 = (parts[1] || '').trim();\n  d3 = (parts[2] || '').trim();\n} else {\n  d1 = agentOutput.substring(0, 200).trim();\n  d2 = agentOutput.substring(0, 200).trim();\n  d3 = agentOutput.substring(0, 200).trim();\n}\n\n// Clean up: remove any 'person says:' prefix the AI might have added\nfunction cleanDialogue(text) {\n  return text.replace(/^.*?\\bsays?:\\s*/i, '').replace(/^[\\-\\u2013\\u2014\\u2022]\\s*/, '').trim();\n}\nd1 = cleanDialogue(d1);\nd2 = cleanDialogue(d2);\nd3 = cleanDialogue(d3);\n\n// VALIDATION: Check if AI output actually matches the requested service\n// If the AI hallucinated (talked about wrong service), fall back to catalog examples\nconst serviceKeywords = (f.serviceContext || '').toLowerCase();\nconst keywordsLine = serviceKeywords.split('keywords to use:')[1] || '';\nconst kwList = keywordsLine.split('hook example:')[0].split(',').map(k => k.trim().split(' ')[0]).filter(k => k.length > 3);\nconst allDialogue = (d1 + ' ' + d2 + ' ' + d3).toLowerCase();\nconst matchCount = kwList.filter(kw => allDialogue.includes(kw)).length;\n\n// If fewer than 2 keywords match, AI hallucinated - use catalog examples as fallback\nif (matchCount < 2 && f.serviceExample) {\n  console.log('WARNING: AI hallucinated (only ' + matchCount + '/' + kwList.length + ' keywords matched). Using catalog fallback.');\n  const fallback = f.serviceExample.split('|||');\n  d1 = (fallback[0] || d1).trim();\n  d2 = (fallback[1] || d2).trim();\n  d3 = (fallback[2] || d3).trim();\n}\n\n// Word count validation\nfunction wordCount(text) { return text ? text.split(/\\s+/).length : 0; }\nif (wordCount(d1) > 18) console.log('WARNING: Line 1 has ' + wordCount(d1) + ' words (max 15)');\nif (wordCount(d2) > 18) console.log('WARNING: Line 2 has ' + wordCount(d2) + ' words (max 15)');\nif (wordCount(d3) > 18) console.log('WARNING: Line 3 has ' + wordCount(d3) + ' words (max 15)');\n\n// === BUILD FINAL VEO PROMPTS ===\n// Scene comes from _videoScene (isolated from AI agent input)\nconst scene = f._videoScene;\n\n// Compact voice instruction (shared)\nconst voice = ' Clear American accent, professional tone. Voice only, no music.';\n\n// PART 1: Full scene establishes the visual\nconst p1 = scene + ' The person says: ' + d1 + '.' + voice + ' Person finishes speaking by second 6, holds still pose for last 2 seconds. No waving. Camera follows smoothly.';\n\n// PART 2: Continuation - keep the same scene/action (walking, etc.) from part 1\nconst p2 = 'Continuing seamlessly from the previous scene. ' + scene + ' The person says: ' + d2 + '.' + voice + ' Person starts after a natural beat, finishes by second 6, holds still for last 2 seconds. No waving. Camera follows smoothly.';\n\n// PART 3: Final continuation - keep the same scene/action, ends with still pose\nconst p3 = 'Continuing seamlessly from the previous scene. ' + scene + ' The person says: ' + d3 + '.' + voice + ' Person starts after a natural beat, finishes by second 5, then holds COMPLETELY STILL looking at camera for last 3 seconds. No waving, no farewell. Camera follows smoothly.';\n\nreturn [{\n  json: {\n    PROMPT_PART1: p1,\n    PROMPT_PART2: p2,\n    PROMPT_PART3: p3,\n    DIALOGUE_1: d1,\n    DIALOGUE_2: d2,\n    DIALOGUE_3: d3,\n    DURATION: f.duration,\n    ASPECT_RATIO: f.aspect_ratio,\n    POST_ID: f.post_id,\n    ORIGINAL_PROMPT: f._videoScene,\n    SERVICE: f.service,\n    START_IMAGE_URL: f.start_image_url\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        87840,
-        -1616
-      ],
-      "id": "d1a00001-aaaa-4001-b001-000000000005",
-      "name": "Build Settings"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "={{ `INSERT INTO social_posts (post_type, status, strategy_analysis, image_prompt, post_copy, image_url, headline, created_at, updated_at) VALUES ('Video Preview', 'pending', '${($json.PROMPT_PART1 || '').replace(/'/g, \"''\")}', '${($json.PROMPT_PART2 || '').replace(/'/g, \"''\")}', '${JSON.stringify({original_prompt: $json.ORIGINAL_PROMPT || '', service: $json.SERVICE || 'company_intro', duration: $json.DURATION || '8', aspect_ratio: $json.ASPECT_RATIO || '9:16', start_image_url: $json.START_IMAGE_URL || '', prompt_part3: $json.PROMPT_PART3 || ''}).replace(/'/g, \"''\")}', '${($json.START_IMAGE_URL || '').replace(/'/g, \"''\")}', '${($json.ORIGINAL_PROMPT || '').substring(0, 120).replace(/'/g, \"''\")}', NOW(), NOW()) RETURNING *` }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        88064,
-        -1616
-      ],
-      "id": "d1a00001-aaaa-4001-b001-000000000006",
-      "name": "Save Preview",
-      "credentials": {
-        "postgres": {
-          "id": "WnTYs2zvPoE7hDJE",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, message: 'Script preview generated', data: { post_id: $json.id || '', prompt: $('Build Settings').item.json.ORIGINAL_PROMPT || '', service: $('Build Settings').item.json.SERVICE || '', duration: $('Build Settings').item.json.DURATION || '8', aspect_ratio: $('Build Settings').item.json.ASPECT_RATIO || '9:16', start_image_url: $('Build Settings').item.json.START_IMAGE_URL || '', prompt_part1: $('Build Settings').item.json.PROMPT_PART1 || '', prompt_part2: $('Build Settings').item.json.PROMPT_PART2 || '', prompt_part3: $('Build Settings').item.json.PROMPT_PART3 || '' } }) }}",
-        "options": {
-          "responseHeaders": {
-            "entries": [
-              {
-                "name": "Access-Control-Allow-Origin",
-                "value": "*"
-              },
-              {
-                "name": "Access-Control-Allow-Methods",
-                "value": "POST, GET, OPTIONS"
-              },
-              {
-                "name": "Access-Control-Allow-Headers",
-                "value": "Content-Type"
-              }
-            ]
-          }
-        }
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        88288,
-        -1616
-      ],
-      "id": "d1a00001-aaaa-4001-b001-000000000007",
-      "name": "Respond Preview"
-    }
-  ],
-  "connections": {
-    "Webhook - Video Preview": {
-      "main": [
-        [
-          {
-            "node": "Format Video Input",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Format Video Input": {
-      "main": [
-        [
-          {
-            "node": "Filter for Agent",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Filter for Agent": {
-      "main": [
-        [
-          {
-            "node": "Agent: Video Script",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Google Gemini Chat Model": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Agent: Video Script",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Agent: Video Script": {
-      "main": [
-        [
-          {
-            "node": "Build Settings",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Build Settings": {
-      "main": [
-        [
-          {
-            "node": "Save Preview",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Save Preview": {
-      "main": [
-        [
-          {
-            "node": "Respond Preview",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "pinData": {},
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "b5116c87255060ddf18db8a2b1b90e34b38f50f44815cf784a0b8a92b6bb4e6e"
-  }
+﻿{
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "httpMethod":  "POST",
+                                         "path":  "msi-video-preview",
+                                         "responseMode":  "responseNode",
+                                         "options":  {
+                                                         "allowedOrigins":  "*",
+                                                         "rawBody":  false
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.webhook",
+                      "typeVersion":  2,
+                      "position":  [
+                                       87040,
+                                       -1616
+                                   ],
+                      "id":  "d1a00001-aaaa-4001-b001-000000000001",
+                      "name":  "Webhook - Video Preview",
+                      "webhookId":  "msi-video-preview"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const input = $input.item.json;\nlet data = input.body || input;\nif (typeof data === \u0027string\u0027) {\n  try { data = JSON.parse(data); } catch (e) { }\n}\n\nconst prompt = data.prompt || data.video_prompt || \u0027\u0027;\nconst start_image_url = data.start_image_url || data.imageUrl || null;\nconst aspect_ratio = data.aspect_ratio || data.aspectRatio || \u00279:16\u0027;\nconst service = data.service || \u0027company_intro\u0027;\nconst post_id = data.post_id || data.postId || null;\nconst topic = data.topic || \u0027\u0027;\nconst duration = Math.min(parseInt(data.duration || \u00278\u0027), 8);\n\nif (!prompt || prompt.length \u003c 3) throw new Error(\u0027prompt is required\u0027);\nif (!start_image_url) throw new Error(\u0027start_image_url is required\u0027);\n\nconst SERVICE_CATALOG = {\n  workforce_agility: {\n    name: \u0027Workforce Agility\u0027,\n    tagline: \u0027Adapt, Evolve and Excel in a Changing Market\u0027,\n    pillars: \u0027Talent Optimization, Flexible Workforce, Employee Upskilling\u0027,\n    value: \u0027We help you build a future-ready workforce by fostering adaptability, innovation, and efficiency.\u0027,\n    pain_points: \u0027rigid teams that cannot scale, skills gaps slowing growth, inability to adapt to market shifts\u0027,\n    keywords: \u0027agile workforce, upskilling, talent optimization, adaptability, future-ready, flexible teams\u0027,\n    hook: \u0027Your workforce cannot keep up with a market that changes every single day.\u0027,\n    offer: \u0027MSI builds agile teams with upskilling and talent optimization for lasting adaptability.\u0027,\n    cta: \u0027Build a future-ready workforce today. Contact MSI for a free consultation now.\u0027\n  },\n  it_outsourcing: {\n    name: \u0027IT Outsourcing Solutions\u0027,\n    tagline: \u0027Expert IT Teams Without the Overhead\u0027,\n    pillars: \u0027Managed IT Services, Dedicated Development Teams, Infrastructure Management\u0027,\n    value: \u0027Access top-tier IT talent and managed services at a fraction of in-house costs, with full accountability.\u0027,\n    pain_points: \u0027overloaded internal IT teams, expensive contractors who underdeliver, technology debt piling up\u0027,\n    keywords: \u0027managed IT, dedicated teams, infrastructure, cost-effective technology, IT support\u0027,\n    hook: \u0027Your IT team is overwhelmed and expensive contractors are not delivering real results.\u0027,\n    offer: \u0027MSI provides dedicated IT teams fully managed and accountable saving you up to sixty percent.\u0027,\n    cta: \u0027Stop overspending on IT. Let MSI manage it. Schedule your free consultation today.\u0027\n  },\n  ai_solutions: {\n    name: \u0027AI and Smart Business Solutions\u0027,\n    tagline: \u0027Accelerate Your Business with Intelligent Automation\u0027,\n    pillars: \u0027AI Strategy, Process Automation, Predictive Analytics, AI Integration\u0027,\n    value: \u0027We implement practical AI solutions that automate workflows, unlock insights, and give you a competitive edge.\u0027,\n    pain_points: \u0027competitors moving faster with AI, manual processes wasting time, missed data-driven opportunities\u0027,\n    keywords: \u0027artificial intelligence, automation, predictive analytics, AI integration, intelligent workflows\u0027,\n    hook: \u0027Your competitors use AI to move twice as fast while you still do things manually.\u0027,\n    offer: \u0027MSI implements AI automation and predictive analytics tailored to your exact business needs.\u0027,\n    cta: \u0027Do not fall behind on AI. Contact MSI and accelerate your business starting today.\u0027\n  },\n  cybersecurity: {\n    name: \u0027Cybersecurity\u0027,\n    tagline: \u0027Protect Your Business from Every Digital Threat\u0027,\n    pillars: \u0027Threat Detection, Compliance, Security Audits, Incident Response\u0027,\n    value: \u0027Comprehensive cybersecurity that shields your data, ensures compliance, and gives you peace of mind.\u0027,\n    pain_points: \u0027data breaches costing millions, compliance failures, lack of internal security expertise\u0027,\n    keywords: \u0027cybersecurity, threat detection, compliance, data protection, security audits, incident response\u0027,\n    hook: \u0027One data breach could cost your company millions and most businesses are unprepared.\u0027,\n    offer: \u0027MSI provides threat detection compliance audits and incident response to protect your business.\u0027,\n    cta: \u0027Do not wait for a breach. Secure your business with MSI. Get a free audit today.\u0027\n  },\n  it_cybersecurity: {\n    name: \u0027IT Management and Cybersecurity\u0027,\n    tagline: \u0027Protect Your Business from Every Digital Threat\u0027,\n    pillars: \u0027Threat Detection, Compliance, Security Audits, Incident Response, IT Management\u0027,\n    value: \u0027Comprehensive cybersecurity and IT management that shields your data, ensures compliance, and gives you peace of mind.\u0027,\n    pain_points: \u0027data breaches costing millions, compliance failures, lack of internal security expertise\u0027,\n    keywords: \u0027cybersecurity, IT management, threat detection, compliance, data protection, security audits\u0027,\n    hook: \u0027One data breach could cost your company millions and most businesses are unprepared.\u0027,\n    offer: \u0027MSI provides threat detection compliance audits and incident response to protect your business.\u0027,\n    cta: \u0027Do not wait for a breach. Secure your business with MSI. Get a free audit today.\u0027\n  },\n  data_security: {\n    name: \u0027Data Security and Cloud Computing\u0027,\n    tagline: \u0027Secure Cloud Solutions for Modern Business\u0027,\n    pillars: \u0027Cloud Security, Data Protection, Cloud Migration, Infrastructure Security\u0027,\n    value: \u0027End-to-end data security and cloud computing solutions that protect your assets and enable digital growth.\u0027,\n    pain_points: \u0027vulnerable cloud environments, data loss risks, insecure digital infrastructure\u0027,\n    keywords: \u0027data security, cloud computing, cloud security, data protection, secure infrastructure\u0027,\n    hook: \u0027Your data is only as safe as your weakest cloud security link and most have gaps.\u0027,\n    offer: \u0027MSI delivers end-to-end cloud security and data protection built for modern business.\u0027,\n    cta: \u0027Secure your cloud infrastructure with MSI. Schedule a free security assessment today.\u0027\n  },\n  bpo: {\n    name: \u0027Business Process Outsourcing\u0027,\n    tagline: \u0027Streamline Operations, Focus on What Matters\u0027,\n    pillars: \u0027Back-Office Support, Customer Service, Data Processing, Administrative Excellence\u0027,\n    value: \u0027Outsource repetitive operations to trained professionals so your team focuses on growth and strategy.\u0027,\n    pain_points: \u0027teams buried in repetitive tasks, high operational costs, losing focus on core business\u0027,\n    keywords: \u0027business process outsourcing, back-office, customer service, operational efficiency, cost reduction\u0027,\n    hook: \u0027Your team wastes hours on repetitive tasks that trained professionals could handle better.\u0027,\n    offer: \u0027MSI handles back-office and customer service with pre-vetted professionals saving you forty percent.\u0027,\n    cta: \u0027Free your team to focus on growth. Contact MSI for streamlined operations today.\u0027\n  },\n  consulting: {\n    name: \u0027Executive Consulting\u0027,\n    tagline: \u0027Navigate Digital Transformation with Confidence\u0027,\n    pillars: \u0027Digital Strategy, Technology Roadmaps, Change Management, Process Optimization\u0027,\n    value: \u0027Expert consulting that guides your digital transformation with proven strategies and measurable results.\u0027,\n    pain_points: \u0027failed digital transformations, no clear technology roadmap, resistance to change within teams\u0027,\n    keywords: \u0027digital transformation, consulting, technology strategy, change management, process optimization\u0027,\n    hook: \u0027Navigating digital transformation alone is why most companies fail in the first two years.\u0027,\n    offer: \u0027MSI delivers proven digital strategies and change management with twenty years of experience.\u0027,\n    cta: \u0027Transform with confidence. Let MSI guide your digital journey. Book a consultation today.\u0027\n  },\n  executive_consulting: {\n    name: \u0027Executive Consulting\u0027,\n    tagline: \u0027Navigate Digital Transformation with Confidence\u0027,\n    pillars: \u0027Digital Strategy, Technology Roadmaps, Change Management, Process Optimization\u0027,\n    value: \u0027Expert consulting that guides your digital transformation with proven strategies and measurable results.\u0027,\n    pain_points: \u0027failed digital transformations, no clear technology roadmap, resistance to change within teams\u0027,\n    keywords: \u0027digital transformation, consulting, technology strategy, change management, process optimization\u0027,\n    hook: \u0027Navigating digital transformation alone is why most companies fail in the first two years.\u0027,\n    offer: \u0027MSI delivers proven digital strategies and change management with twenty years of experience.\u0027,\n    cta: \u0027Transform with confidence. Let MSI guide your digital journey. Book a consultation today.\u0027\n  },\n  telecom: {\n    name: \u0027Telecom Services\u0027,\n    tagline: \u0027Reliable Connectivity That Powers Your Business\u0027,\n    pillars: \u0027Network Infrastructure, Unified Communications, Cloud Connectivity, Telecom Management\u0027,\n    value: \u0027End-to-end telecom solutions that ensure seamless connectivity, reduce downtime, and optimize costs.\u0027,\n    pain_points: \u0027poor network reliability killing productivity, outdated telecom infrastructure, high connectivity costs\u0027,\n    keywords: \u0027telecom, network infrastructure, unified communications, cloud connectivity, reliable network\u0027,\n    hook: \u0027Poor network infrastructure is silently killing your business productivity every single day.\u0027,\n    offer: \u0027MSI delivers end-to-end telecom solutions with reliable connectivity and optimized costs.\u0027,\n    cta: \u0027Upgrade your network infrastructure with MSI. Contact us for a free assessment today.\u0027\n  },\n  company_intro: {\n    name: \u0027MSI Technologies - Company Introduction\u0027,\n    tagline: \u0027One Partner for IT, Staffing, AI, and Cybersecurity\u0027,\n    pillars: \u0027Full-Service Technology, Nearshore Talent, AI Solutions, Security\u0027,\n    value: \u0027MSI Technologies is your single partner for IT, staffing, AI, cybersecurity, and digital transformation - 20+ years, 40+ countries.\u0027,\n    pain_points: \u0027managing multiple vendors, fragmented technology strategy, no single trusted partner\u0027,\n    keywords: \u0027MSI Technologies, full-service, one partner, nearshore, IT staffing AI cybersecurity\u0027,\n    hook: \u0027What if one company could handle your IT staffing AI and cybersecurity all at once.\u0027,\n    offer: \u0027MSI has served hundreds of businesses across forty countries for over twenty years.\u0027,\n    cta: \u0027Simplify everything with one partner. Contact MSI Technologies for a free consultation.\u0027\n  },\n  staffing: {\n    name: \u0027Nearshore Staffing\u0027,\n    tagline: \u0027Top Talent, Your Time Zone, Half the Cost\u0027,\n    pillars: \u0027Nearshore Staffing, Pre-Vetted Talent, Same Time Zone, Cultural Alignment\u0027,\n    value: \u0027College-educated, triple-tested, fluent English professionals working in your time zone at 40-60% savings.\u0027,\n    pain_points: \u0027high cost of US-based hires, remote talent quality concerns, time zone and communication gaps\u0027,\n    keywords: \u0027nearshore staffing, pre-vetted talent, same time zone, fluent English, cost savings, cultural fit\u0027,\n    hook: \u0027You could hire skilled pre-vetted talent at half the cost in your same time zone.\u0027,\n    offer: \u0027MSI provides college-educated fluent English professionals triple-tested and saving you sixty percent.\u0027,\n    cta: \u0027Stop overpaying for talent. Get MSI nearshore staffing. Schedule a free call today.\u0027\n  },\n  nearshore_staffing: {\n    name: \u0027Nearshore Staffing\u0027,\n    tagline: \u0027Top Talent, Your Time Zone, Half the Cost\u0027,\n    pillars: \u0027Nearshore Staffing, Pre-Vetted Talent, Same Time Zone, Cultural Alignment\u0027,\n    value: \u0027College-educated, triple-tested, fluent English professionals working in your time zone at 40-60% savings.\u0027,\n    pain_points: \u0027high cost of US-based hires, remote talent quality concerns, time zone and communication gaps\u0027,\n    keywords: \u0027nearshore staffing, pre-vetted talent, same time zone, fluent English, cost savings, cultural fit\u0027,\n    hook: \u0027You could hire skilled pre-vetted talent at half the cost in your same time zone.\u0027,\n    offer: \u0027MSI provides college-educated fluent English professionals triple-tested and saving you sixty percent.\u0027,\n    cta: \u0027Stop overpaying for talent. Get MSI nearshore staffing. Schedule a free call today.\u0027\n  }\n};\n\nconst svc = SERVICE_CATALOG[service] || SERVICE_CATALOG[\u0027company_intro\u0027];\nconst serviceContext = \u0027SERVICE NAME: \u0027 + svc.name + \u0027\\nTAGLINE: \u0027 + svc.tagline + \u0027\\nPILLARS: \u0027 + svc.pillars + \u0027\\nVALUE PROPOSITION: \u0027 + svc.value + \u0027\\nPAIN POINTS TO ADDRESS: \u0027 + svc.pain_points + \u0027\\nKEYWORDS TO USE: \u0027 + svc.keywords + \u0027\\nHOOK EXAMPLE: The person says: \u0027 + svc.hook + \u0027\\nOFFER EXAMPLE: The person says: \u0027 + svc.offer + \u0027\\nCTA EXAMPLE: The person says: \u0027 + svc.cta;\nconst serviceExample = svc.hook + \u0027 ||| \u0027 + svc.offer + \u0027 ||| \u0027 + svc.cta;\nconst serviceName = svc.name;\nconst companyContext = \u0027WHY MSI CONTEXT: Global nearshore presence in 40+ countries across five continents through Talentor International. 20+ years of multinational experience. 700 global employees. Deep expertise in human capital, information systems, software, cybersecurity, telecom, cloud, and engineering services.\u0027;\n\nreturn [{ json: { _videoScene: prompt, duration: String(duration), aspect_ratio, service, post_id, topic, start_image_url, serviceContext, serviceExample, serviceName, companyContext } }];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       87264,
+                                       -1616
+                                   ],
+                      "id":  "d1a00001-aaaa-4001-b001-000000000002",
+                      "name":  "Format Video Input"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "// FILTER: Only pass service-related fields to the AI Agent.\n// This prevents the LLM from seeing video description, URLs, or other data that could confuse it.\nconst f = $(\u0027Format Video Input\u0027).item.json;\nreturn [{ json: { serviceContext: f.serviceContext, serviceName: f.serviceName, serviceExample: f.serviceExample, companyContext: f.companyContext, topic: f.topic || \u0027\u0027 } }];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       87376,
+                                       -1616
+                                   ],
+                      "id":  "d1a00001-aaaa-4001-b001-000000000008",
+                      "name":  "Filter for Agent"
+                  },
+                  {
+                      "parameters":  {
+                                         "promptType":  "define",
+                                         "text":  "=\"You generate ONLY the spoken dialogue for a 3-part MSI Technologies sales video.\\n\\nYour job is SIMPLE: write THREE dialogue lines (what the person SAYS). Nothing else. No scene description, no actions, no emotions, no camera directions. The scene is handled separately.\\n\\nIMPORTANT - You are writing dialogue EXCLUSIVELY for this service:\\n\" + $json.serviceContext + \"\\n\\nWHY MSI FACTS (use for proof in line 2 ending):\\n\" + ($json.companyContext || \u0027\u0027) + \"\\n\\nAUDIENCE: \" + ($json.topic || \u0027Business professionals\u0027) + \"\\n\\nWRITE THREE DIALOGUE LINES following this sales funnel:\\n\\nLINE 1 - HOOK (Pain Point): A bold opening line using the PAIN POINTS and KEYWORDS above. Make the viewer stop scrolling. Directly address their problem related to \" + $json.serviceName + \".\\n\\nLINE 2 - OFFER (Value + Proof + Why MSI): Explain what MSI delivers using the PILLARS and VALUE PROPOSITION of \" + $json.serviceName + \" above. End LINE 2 with a short Why MSI proof clause, choosing ONE fact from WHY MSI FACTS (40+ countries, five continents/Talentor alliance, 20+ years, 700 global employees, multinational expertise).\\n\\nLINE 3 - CTA + Why MSI (Close): A strong closing call to action for \" + $json.serviceName + \". Add a short why choose MSI proof phrase (different from line 2) using one WHY MSI fact, then close with urgency.\\n\\nRULES:\\n- Character length per line: MINIMUM 90, MAXIMUM 180 characters.\\n- Use ONLY vocabulary from \" + $json.serviceName + \" above for service claims. Use the KEYWORDS, PILLARS, and PAIN POINTS provided. NEVER use vocabulary from a different MSI service.\\n- The three lines form a coherent sales narrative about \" + $json.serviceName + \".\\n- Do NOT add any scene description, action, emotion, camera direction, voice description, or accent instruction. ONLY dialogue.\\n\\nOUTPUT FORMAT (exactly this, nothing else):\\nLINE1_DIALOGUE ||| LINE2_DIALOGUE ||| LINE3_DIALOGUE\\n\\nExample output for \" + $json.serviceName + \":\\n\" + $json.serviceExample",
+                                         "options":  {
+                                                         "systemMessage":  "=\"You are a dialogue-only writer for MSI Technologies sales videos. You MUST write dialogue ONLY about \" + $json.serviceName + \". You receive SERVICE details plus WHY MSI proof facts. Your ONLY job is to output THREE dialogue lines separated by |||. LINE 1 = Hook using the service pain points provided. LINE 2 = Offer using service pillars/value and end with one Why MSI proof fact. LINE 3 = CTA close with an additional Why MSI proof phrase different from line 2. CRITICAL RULES: 1) Each line 90-180 characters. 2) Use ONLY the vocabulary, keywords, and pillars from \" + $json.serviceName + \" for service claims - NEVER invent terms or use vocabulary from other services. 3) Output ONLY dialogue text. No scene, action, camera, voice, or emotion descriptions. 4) Format: LINE1 ||| LINE2 ||| LINE3. Nothing else.\""
+                                                     }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.agent",
+                      "typeVersion":  1.7,
+                      "position":  [
+                                       87488,
+                                       -1616
+                                   ],
+                      "id":  "d1a00001-aaaa-4001-b001-000000000003",
+                      "name":  "Agent: Video Script"
+                  },
+                  {
+                      "parameters":  {
+                                         "modelName":  "models/gemini-2.5-flash",
+                                         "options":  {
+                                                         "temperature":  0
+                                                     }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+                      "typeVersion":  1,
+                      "position":  [
+                                       87568,
+                                       -1392
+                                   ],
+                      "id":  "d1a00001-aaaa-4001-b001-000000000004",
+                      "name":  "Google Gemini Chat Model",
+                      "credentials":  {
+                                          "googlePalmApi":  {
+                                                                "id":  "oF4jKBK0jRbwEPWt",
+                                                                "name":  "Google Gemini(PaLM) Api account"
+                                                            }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const agentOutput = $(\u0027Agent: Video Script\u0027).item.json.output || \u0027\u0027;\nconst f = $(\u0027Format Video Input\u0027).item.json;\n\n// The agent now outputs ONLY dialogue lines: LINE1 ||| LINE2 ||| LINE3\nlet d1 = \u0027\u0027, d2 = \u0027\u0027, d3 = \u0027\u0027;\nif (agentOutput.includes(\u0027|||\u0027)) {\n  const parts = agentOutput.split(\u0027|||\u0027);\n  d1 = parts[0].trim();\n  d2 = (parts[1] || \u0027\u0027).trim();\n  d3 = (parts[2] || \u0027\u0027).trim();\n} else {\n  d1 = agentOutput.substring(0, 220).trim();\n  d2 = agentOutput.substring(0, 220).trim();\n  d3 = agentOutput.substring(0, 220).trim();\n}\n\n// Clean up: remove any \u0027person says:\u0027 prefix the AI might have added\nfunction cleanDialogue(text) {\n  return text.replace(/^.*?\\bsays?:\\s*/i, \u0027\u0027).replace(/^[\\-\\u2013\\u2014\\u2022]\\s*/, \u0027\u0027).trim();\n}\nd1 = cleanDialogue(d1);\nd2 = cleanDialogue(d2);\nd3 = cleanDialogue(d3);\n\n// VALIDATION: Check if AI output actually matches the requested service\n// If the AI hallucinated (talked about wrong service), fall back to catalog examples\nconst serviceKeywords = (f.serviceContext || \u0027\u0027).toLowerCase();\nconst keywordsLine = serviceKeywords.split(\u0027keywords to use:\u0027)[1] || \u0027\u0027;\nconst kwList = keywordsLine.split(\u0027hook example:\u0027)[0].split(\u0027,\u0027).map(k =\u003e k.trim().split(\u0027 \u0027)[0]).filter(k =\u003e k.length \u003e 3);\nconst allDialogue = (d1 + \u0027 \u0027 + d2 + \u0027 \u0027 + d3).toLowerCase();\nconst matchCount = kwList.filter(kw =\u003e allDialogue.includes(kw)).length;\n\n// If fewer than 2 keywords match, AI hallucinated - use catalog examples as fallback\nif (matchCount \u003c 2 \u0026\u0026 f.serviceExample) {\n  console.log(\u0027WARNING: AI hallucinated (only \u0027 + matchCount + \u0027/\u0027 + kwList.length + \u0027 keywords matched). Using catalog fallback.\u0027);\n  const fallback = f.serviceExample.split(\u0027|||\u0027);\n  d1 = (fallback[0] || d1).trim();\n  d2 = (fallback[1] || d2).trim();\n  d3 = (fallback[2] || d3).trim();\n}\n\n// Character length validation (more robust than word count for variable word sizes)\nfunction charCount(text) { return text ? text.length : 0; }\nif (charCount(d1) \u003c 90 || charCount(d1) \u003e 180) console.log(\u0027WARNING: Line 1 has \u0027 + charCount(d1) + \u0027 chars (target 90-180)\u0027);\nif (charCount(d2) \u003c 90 || charCount(d2) \u003e 180) console.log(\u0027WARNING: Line 2 has \u0027 + charCount(d2) + \u0027 chars (target 90-180)\u0027);\nif (charCount(d3) \u003c 90 || charCount(d3) \u003e 180) console.log(\u0027WARNING: Line 3 has \u0027 + charCount(d3) + \u0027 chars (target 90-180)\u0027);\n\n// Ensure line 2 closes with a Why MSI proof clause\nconst whyMsiPool = [\n  \u0027with global nearshore reach across 40+ countries and five continents.\u0027,\n  \u0027backed by 20+ years of multinational delivery experience.\u0027,\n  \u0027powered by 700 global employees and cross-functional experts.\u0027,\n  \u0027through our Talentor alliance with global operational proximity.\u0027\n];\nconst hasWhyMsi = /40\\+ countries|five continents|20\\+ years|700 global employees|Talentor/i.test(d2);\nif (!hasWhyMsi) {\n  const reason = whyMsiPool[Math.floor(Math.random() * whyMsiPool.length)];\n  d2 = (d2.replace(/[.!?]*$/, \u0027\u0027) + \u0027 - Why MSI: \u0027 + reason).trim();\n}\n\nconst hasWhyMsiLine3 = /40\\+ countries|five continents|20\\+ years|700 global employees|Talentor/i.test(d3);\nif (!hasWhyMsiLine3) {\n  const reason3 = whyMsiPool[Math.floor(Math.random() * whyMsiPool.length)];\n  d3 = (d3.replace(/[.!?]*$/, \u0027\u0027) + \u0027 Choose MSI: \u0027 + reason3).trim();\n}\n\nconst svcMatch = (f.serviceContext || \u0027\u0027).match(/SERVICE NAME:\\s*([^\\n]+)/i);\nconst svcName = svcMatch ? svcMatch[1].trim() : \u0027this service\u0027;\n\nfunction ensureCharRange(text, minChars, maxChars, fillers) {\n  let output = (text || \u0027\u0027).trim();\n  let i = 0;\n  while (output.length \u003c minChars \u0026\u0026 i \u003c fillers.length * 2) {\n    output = (output.replace(/[.!?]*$/, \u0027\u0027) + \u0027 \u0027 + fillers[i % fillers.length]).trim();\n    i++;\n  }\n  if (output.length \u003e maxChars) {\n    output = output.slice(0, maxChars).replace(/[\\s,;:-]+$/, \u0027\u0027).trim();\n  }\n  return output;\n}\n\nconst fillers1 = [\n  \u0027This \u0027 + svcName + \u0027 gap keeps draining productivity and delaying business growth.\u0027,\n  \u0027Ignoring this issue increases costs, slows delivery, and weakens competitive performance.\u0027\n];\nconst fillers2 = [\n  \u0027MSI delivers measurable outcomes with accountable execution tailored to your operations.\u0027,\n  \u0027You gain reliable delivery speed, quality, and control without adding internal overhead.\u0027\n];\nconst fillers3 = [\n  \u0027Book your MSI consultation now and activate a faster, safer implementation path.\u0027,\n  \u0027Start with MSI today to reduce risk and accelerate results with proven experts.\u0027\n];\n\nd1 = ensureCharRange(d1, 110, 170, fillers1);\nd2 = ensureCharRange(d2, 110, 170, fillers2);\nd3 = ensureCharRange(d3, 110, 170, fillers3);\n\n// === BUILD FINAL VEO PROMPTS ===\n// Scene comes from _videoScene (isolated from AI agent input)\nconst scene = f._videoScene;\n\n// Compact voice instruction (shared)\nconst voice = \u0027 Clear American accent, professional tone. Voice only, no music.\u0027;\n\n// PART 1: Full scene establishes the visual\nconst p1 = scene + \u0027 The person says: \u0027 + d1 + \u0027.\u0027 + voice + \u0027 Person finishes speaking by second 7, holds still pose for last 1 second. No waving. Camera follows smoothly.\u0027;\n\n// PART 2: Continuation - maintain exact same camera angle, walking motion, and scene from part 1\nconst p2 = \u0027Continuing seamlessly from the previous scene. Same camera angle, same walking pace, same direction, no camera changes. \u0027 + scene + \u0027 The person says: \u0027 + d2 + \u0027.\u0027 + voice + \u0027 The person keeps walking naturally while speaking. Person finishes speaking by second 7, then keeps walking in same direction for last 1 second. No waving, no stopping. Same camera angle throughout.\u0027;\n\n// PART 3: Final continuation - maintain same camera and walking, ends with still pose\nconst p3 = \u0027Continuing seamlessly from the previous scene. Same camera angle, same walking pace, same direction, no camera changes. \u0027 + scene + \u0027 The person says: \u0027 + d3 + \u0027.\u0027 + voice + \u0027 The person keeps walking naturally while speaking. Person finishes speaking by second 6, then slows to a stop and holds COMPLETELY STILL looking at camera for last 2 seconds. No waving, no farewell. Same camera angle throughout.\u0027;\n\nreturn [{\n  json: {\n    PROMPT_PART1: p1,\n    PROMPT_PART2: p2,\n    PROMPT_PART3: p3,\n    DIALOGUE_1: d1,\n    DIALOGUE_2: d2,\n    DIALOGUE_3: d3,\n    DURATION: f.duration,\n    ASPECT_RATIO: f.aspect_ratio,\n    POST_ID: f.post_id,\n    ORIGINAL_PROMPT: f._videoScene,\n    SERVICE: f.service,\n    START_IMAGE_URL: f.start_image_url\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       87840,
+                                       -1616
+                                   ],
+                      "id":  "d1a00001-aaaa-4001-b001-000000000005",
+                      "name":  "Build Settings"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "={{ `INSERT INTO social_posts (post_type, status, strategy_analysis, image_prompt, post_copy, image_url, headline, created_at, updated_at) VALUES (\u0027Video Preview\u0027, \u0027pending\u0027, \u0027${($json.PROMPT_PART1 || \u0027\u0027).replace(/\u0027/g, \"\u0027\u0027\")}\u0027, \u0027${($json.PROMPT_PART2 || \u0027\u0027).replace(/\u0027/g, \"\u0027\u0027\")}\u0027, \u0027${JSON.stringify({original_prompt: $json.ORIGINAL_PROMPT || \u0027\u0027, service: $json.SERVICE || \u0027company_intro\u0027, duration: $json.DURATION || \u00278\u0027, aspect_ratio: $json.ASPECT_RATIO || \u00279:16\u0027, start_image_url: $json.START_IMAGE_URL || \u0027\u0027, prompt_part3: $json.PROMPT_PART3 || \u0027\u0027}).replace(/\u0027/g, \"\u0027\u0027\")}\u0027, \u0027${($json.START_IMAGE_URL || \u0027\u0027).replace(/\u0027/g, \"\u0027\u0027\")}\u0027, \u0027${($json.ORIGINAL_PROMPT || \u0027\u0027).substring(0, 120).replace(/\u0027/g, \"\u0027\u0027\")}\u0027, NOW(), NOW()) RETURNING *` }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       88064,
+                                       -1616
+                                   ],
+                      "id":  "d1a00001-aaaa-4001-b001-000000000006",
+                      "name":  "Save Preview",
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "WnTYs2zvPoE7hDJE",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "respondWith":  "json",
+                                         "responseBody":  "={{ JSON.stringify({ success: true, message: \u0027Script preview generated\u0027, data: { post_id: $json.id || \u0027\u0027, prompt: $(\u0027Build Settings\u0027).item.json.ORIGINAL_PROMPT || \u0027\u0027, service: $(\u0027Build Settings\u0027).item.json.SERVICE || \u0027\u0027, duration: $(\u0027Build Settings\u0027).item.json.DURATION || \u00278\u0027, aspect_ratio: $(\u0027Build Settings\u0027).item.json.ASPECT_RATIO || \u00279:16\u0027, start_image_url: $(\u0027Build Settings\u0027).item.json.START_IMAGE_URL || \u0027\u0027, prompt_part1: $(\u0027Build Settings\u0027).item.json.PROMPT_PART1 || \u0027\u0027, prompt_part2: $(\u0027Build Settings\u0027).item.json.PROMPT_PART2 || \u0027\u0027, prompt_part3: $(\u0027Build Settings\u0027).item.json.PROMPT_PART3 || \u0027\u0027 } }) }}",
+                                         "options":  {
+                                                         "responseHeaders":  {
+                                                                                 "entries":  [
+                                                                                                 {
+                                                                                                     "name":  "Access-Control-Allow-Origin",
+                                                                                                     "value":  "*"
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "name":  "Access-Control-Allow-Methods",
+                                                                                                     "value":  "POST, GET, OPTIONS"
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "name":  "Access-Control-Allow-Headers",
+                                                                                                     "value":  "Content-Type"
+                                                                                                 }
+                                                                                             ]
+                                                                             }
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.respondToWebhook",
+                      "typeVersion":  1.1,
+                      "position":  [
+                                       88288,
+                                       -1616
+                                   ],
+                      "id":  "d1a00001-aaaa-4001-b001-000000000007",
+                      "name":  "Respond Preview"
+                  }
+              ],
+    "connections":  {
+                        "Webhook - Video Preview":  {
+                                                        "main":  [
+                                                                     [
+                                                                         {
+                                                                             "node":  "Format Video Input",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         }
+                                                                     ]
+                                                                 ]
+                                                    },
+                        "Format Video Input":  {
+                                                   "main":  [
+                                                                [
+                                                                    {
+                                                                        "node":  "Filter for Agent",
+                                                                        "type":  "main",
+                                                                        "index":  0
+                                                                    }
+                                                                ]
+                                                            ]
+                                               },
+                        "Filter for Agent":  {
+                                                 "main":  [
+                                                              [
+                                                                  {
+                                                                      "node":  "Agent: Video Script",
+                                                                      "type":  "main",
+                                                                      "index":  0
+                                                                  }
+                                                              ]
+                                                          ]
+                                             },
+                        "Google Gemini Chat Model":  {
+                                                         "ai_languageModel":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "Agent: Video Script",
+                                                                                          "type":  "ai_languageModel",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                     },
+                        "Agent: Video Script":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Build Settings",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "Build Settings":  {
+                                               "main":  [
+                                                            [
+                                                                {
+                                                                    "node":  "Save Preview",
+                                                                    "type":  "main",
+                                                                    "index":  0
+                                                                }
+                                                            ]
+                                                        ]
+                                           },
+                        "Save Preview":  {
+                                             "main":  [
+                                                          [
+                                                              {
+                                                                  "node":  "Respond Preview",
+                                                                  "type":  "main",
+                                                                  "index":  0
+                                                              }
+                                                          ]
+                                                      ]
+                                         }
+                    },
+    "pinData":  {
+
+                },
+    "meta":  {
+                 "templateCredsSetupCompleted":  true,
+                 "instanceId":  "b5116c87255060ddf18db8a2b1b90e34b38f50f44815cf784a0b8a92b6bb4e6e"
+             }
 }
