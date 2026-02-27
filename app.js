@@ -2021,7 +2021,7 @@ function normalizePreviewData(result) {
 // Extract spoken dialogue from a Veo prompt ("person says: ..." pattern)
 function extractDialogue(prompt) {
     if (!prompt) return { dialogue: '', wordCount: 0, charCount: 0 };
-    const match = prompt.match(/says?:\s*(.+?)(?:[.?!]\s|Speaks? with|Clear American|Voice only|Static camera|Person (?:speaks|starts|finishes|holds)|Camera follows|$)/i);
+    const match = prompt.match(/says?:\s*(.+?)(?:Speaks? with|Clear American|Voice only|Static camera|Person (?:speaks|starts|finishes|holds)|Camera follows|$)/i);
     const dialogue = match ? match[1].trim().replace(/[.?!]$/, '') : '';
     const wordCount = dialogue ? dialogue.split(/\s+/).length : 0;
     const charCount = dialogue ? dialogue.length : 0;
@@ -2052,9 +2052,9 @@ function updateSpeechAnalysis() {
     if (d3El) d3El.textContent = a3.dialogue ? `"${a3.dialogue}"` : '— no dialogue detected';
 
     const badge = (chars, words) => {
-        const color = chars > 170 ? '#e53e3e' : chars < 110 ? '#d69e2e' : '#38a169';
-        const label = chars > 170 ? 'OVER LIMIT' : chars < 110 ? 'TOO SHORT' : 'OK';
-        return `${chars} chars / 110-170 target · <span style="color:${color}; font-weight:600;">${label}</span> · ~${(words / 2.5).toFixed(1)}s speaking time`;
+        const color = chars > 140 ? '#e53e3e' : chars < 110 ? '#d69e2e' : '#38a169';
+        const label = chars > 140 ? 'OVER LIMIT' : chars < 110 ? 'TOO SHORT' : 'OK';
+        return `${chars} chars / 110-140 target · <span style="color:${color}; font-weight:600;">${label}</span> · ~${(words / 2.5).toFixed(1)}s speaking time`;
     };
     if (w1El) w1El.innerHTML = a1.charCount > 0 ? badge(a1.charCount, a1.wordCount) : '';
     if (w2El) w2El.innerHTML = a2.charCount > 0 ? badge(a2.charCount, a2.wordCount) : '';
