@@ -157,6 +157,7 @@ const trendsMode = document.getElementById('trends-mode');
 const educativeMode = document.getElementById('educative-mode');
 const voiceSwapMode = document.getElementById('voiceswap-mode');
 const schedulerMode = document.getElementById('scheduler-mode');
+const leadsMode = document.getElementById('leads-mode');
 const publishForm = document.getElementById('publish-form');
 const generateForm = document.getElementById('generate-form');
 const editImageForm = document.getElementById('edit-image-form');
@@ -194,6 +195,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         trendsMode?.classList.remove('active');
         educativeMode?.classList.remove('active');
         schedulerMode?.classList.remove('active');
+        leadsMode?.classList.remove('active');
         
         if (mode === 'publish') {
             publishMode?.classList.add('active');
@@ -223,6 +225,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         } else if (mode === 'scheduler') {
             schedulerMode?.classList.add('active');
             initScheduler();
+        } else if (mode === 'leads') {
+            leadsMode?.classList.add('active');
+            initLeadsMode();
         }
     });
 });
@@ -6002,6 +6007,341 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
     }
 })();
 // ========== END CONTENT SCHEDULER MODE ==========
+
+// ========== LEADS MODE ==========
+(function() {
+    let leadsData = [];
+    let filteredLeads = [];
+    let selectedLeadIds = new Set();
+    let currentPage = 1;
+    const PAGE_SIZE = 25;
+    let leadsInitialized = false;
+    let industries = [];
+    let seniorities = [];
+
+    window.initLeadsMode = async function() {
+        if (leadsInitialized && leadsData.length > 0) return;
+        leadsInitialized = true;
+        setupLeadsEventListeners();
+        await loadLeads();
+    };
+
+    function setupLeadsEventListeners() {
+        // Search
+        const searchInput = document.getElementById('leads-search');
+        let searchTimer;
+        searchInput?.addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => { filterLeads(); }, 300);
+        });
+
+        // Filters
+        document.getElementById('leads-filter-industry')?.addEventListener('change', filterLeads);
+        document.getElementById('leads-filter-seniority')?.addEventListener('change', filterLeads);
+
+        // Select all
+        document.getElementById('leads-select-all')?.addEventListener('change', (e) => {
+            const visible = getCurrentPageLeads();
+            if (e.target.checked) {
+                visible.forEach(l => selectedLeadIds.add(l.id));
+            } else {
+                visible.forEach(l => selectedLeadIds.delete(l.id));
+            }
+            renderLeadsTable();
+            updateSelectedCount();
+        });
+
+        // Pagination
+        document.getElementById('leads-prev-page')?.addEventListener('click', () => {
+            if (currentPage > 1) { currentPage--; renderLeadsTable(); }
+        });
+        document.getElementById('leads-next-page')?.addEventListener('click', () => {
+            const totalPages = Math.ceil(filteredLeads.length / PAGE_SIZE);
+            if (currentPage < totalPages) { currentPage++; renderLeadsTable(); }
+        });
+
+        // Refresh
+        document.getElementById('leads-refresh-btn')?.addEventListener('click', async () => {
+            leadsData = [];
+            await loadLeads();
+        });
+
+        // Send email button
+        document.getElementById('leads-send-email-btn')?.addEventListener('click', openEmailModal);
+
+        // Email modal close/cancel
+        document.getElementById('leads-email-modal-close')?.addEventListener('click', closeEmailModal);
+        document.getElementById('leads-email-cancel')?.addEventListener('click', closeEmailModal);
+        document.getElementById('leads-email-send')?.addEventListener('click', sendPersonalizedEmails);
+    }
+
+    async function loadLeads() {
+        if (!supabaseClient) {
+            document.getElementById('leads-table-body').innerHTML = '<tr><td colspan="10" class="leads-loading">Supabase not connected</td></tr>';
+            return;
+        }
+
+        document.getElementById('leads-table-body').innerHTML = '<tr><td colspan="10" class="leads-loading">Loading leads...</td></tr>';
+
+        try {
+            const { data, error } = await supabaseClient
+                .from('apollo_leads')
+                .select('*')
+                .order('id', { ascending: true });
+
+            if (error) throw error;
+
+            leadsData = data || [];
+            
+            // Extract unique industries and seniorities for filters
+            industries = [...new Set(leadsData.map(l => l.industry).filter(Boolean))].sort();
+            seniorities = [...new Set(leadsData.map(l => l.seniority).filter(Boolean))].sort();
+
+            populateFilters();
+            filterLeads();
+            
+            document.getElementById('leads-count').textContent = `${leadsData.length} leads loaded`;
+        } catch (err) {
+            console.error('Error loading leads:', err);
+            document.getElementById('leads-table-body').innerHTML = `<tr><td colspan="10" class="leads-loading">Error: ${err.message}</td></tr>`;
+        }
+    }
+
+    function populateFilters() {
+        const indSelect = document.getElementById('leads-filter-industry');
+        const senSelect = document.getElementById('leads-filter-seniority');
+        
+        if (indSelect) {
+            indSelect.innerHTML = '<option value="">All Industries</option>' +
+                industries.map(i => `<option value="${i}">${i}</option>`).join('');
+        }
+        if (senSelect) {
+            senSelect.innerHTML = '<option value="">All Seniority</option>' +
+                seniorities.map(s => `<option value="${s}">${s}</option>`).join('');
+        }
+    }
+
+    function filterLeads() {
+        const search = (document.getElementById('leads-search')?.value || '').toLowerCase();
+        const filterIndustry = document.getElementById('leads-filter-industry')?.value || '';
+        const filterSeniority = document.getElementById('leads-filter-seniority')?.value || '';
+
+        filteredLeads = leadsData.filter(lead => {
+            // Search match
+            if (search) {
+                const searchStr = `${lead.first_name || ''} ${lead.last_name || ''} ${lead.company_name || ''} ${lead.email || ''} ${lead.industry || ''} ${lead.title || ''} ${lead.city || ''}`.toLowerCase();
+                if (!searchStr.includes(search)) return false;
+            }
+            // Industry filter
+            if (filterIndustry && lead.industry !== filterIndustry) return false;
+            // Seniority filter
+            if (filterSeniority && lead.seniority !== filterSeniority) return false;
+            return true;
+        });
+
+        currentPage = 1;
+        renderLeadsTable();
+        document.getElementById('leads-count').textContent = `${filteredLeads.length} of ${leadsData.length} leads`;
+    }
+
+    function getCurrentPageLeads() {
+        const start = (currentPage - 1) * PAGE_SIZE;
+        return filteredLeads.slice(start, start + PAGE_SIZE);
+    }
+
+    function renderLeadsTable() {
+        const tbody = document.getElementById('leads-table-body');
+        const pageLeads = getCurrentPageLeads();
+        const totalPages = Math.ceil(filteredLeads.length / PAGE_SIZE);
+
+        if (pageLeads.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" class="leads-loading">No leads found</td></tr>';
+        } else {
+            tbody.innerHTML = pageLeads.map(lead => {
+                const checked = selectedLeadIds.has(lead.id) ? 'checked' : '';
+                const stageBadge = lead.stage ? `<span class="leads-stage leads-stage-${(lead.stage || '').toLowerCase().replace(/\s+/g, '-')}">${lead.stage}</span>` : '-';
+                return `<tr class="${checked ? 'leads-row-selected' : ''}">
+                    <td><input type="checkbox" class="lead-checkbox" data-id="${lead.id}" ${checked}></td>
+                    <td class="leads-name-cell">
+                        <strong>${lead.first_name || ''} ${lead.last_name || ''}</strong>
+                        ${lead.person_linkedin_url ? `<a href="${lead.person_linkedin_url}" target="_blank" class="leads-linkedin-icon" title="LinkedIn Profile">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="#0077b5"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                        </a>` : ''}
+                    </td>
+                    <td class="leads-title-cell" title="${lead.title || ''}">${truncate(lead.title, 40)}</td>
+                    <td><strong>${lead.company_name || '-'}</strong></td>
+                    <td class="leads-email-cell"><a href="mailto:${lead.email}">${lead.email || '-'}</a></td>
+                    <td>${lead.industry || '-'}</td>
+                    <td>${lead.seniority || '-'}</td>
+                    <td>${lead.city || '-'}${lead.state ? ', ' + lead.state : ''}</td>
+                    <td>${stageBadge}</td>
+                    <td>
+                        <button class="btn btn-secondary btn-small leads-email-single" data-id="${lead.id}" title="Send email to this lead">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        // Update pagination
+        document.getElementById('leads-page-info').textContent = `Page ${currentPage} of ${totalPages || 1} (${filteredLeads.length} leads)`;
+        document.getElementById('leads-prev-page').disabled = currentPage <= 1;
+        document.getElementById('leads-next-page').disabled = currentPage >= totalPages;
+
+        // Update select-all checkbox state
+        const allOnPage = pageLeads.every(l => selectedLeadIds.has(l.id));
+        const selectAllCb = document.getElementById('leads-select-all');
+        if (selectAllCb) selectAllCb.checked = pageLeads.length > 0 && allOnPage;
+
+        // Bind checkbox events
+        document.querySelectorAll('.lead-checkbox').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const id = parseInt(e.target.dataset.id);
+                if (e.target.checked) {
+                    selectedLeadIds.add(id);
+                } else {
+                    selectedLeadIds.delete(id);
+                }
+                updateSelectedCount();
+                e.target.closest('tr').classList.toggle('leads-row-selected', e.target.checked);
+            });
+        });
+
+        // Bind single email buttons
+        document.querySelectorAll('.leads-email-single').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(e.currentTarget.dataset.id);
+                selectedLeadIds.clear();
+                selectedLeadIds.add(id);
+                updateSelectedCount();
+                openEmailModal();
+            });
+        });
+    }
+
+    function updateSelectedCount() {
+        const count = selectedLeadIds.size;
+        document.getElementById('leads-selected-count').textContent = count;
+        document.getElementById('leads-send-email-btn').disabled = count === 0;
+    }
+
+    function truncate(str, max) {
+        if (!str) return '-';
+        return str.length > max ? str.substring(0, max) + '...' : str;
+    }
+
+    // Email Modal
+    function openEmailModal() {
+        if (selectedLeadIds.size === 0) {
+            showToast('Select at least one lead first', 'warning');
+            return;
+        }
+
+        const modal = document.getElementById('leads-email-modal');
+        const recipientsDiv = document.getElementById('leads-email-recipients');
+
+        const selected = leadsData.filter(l => selectedLeadIds.has(l.id));
+        recipientsDiv.innerHTML = `
+            <div class="leads-recipients-header">Sending to ${selected.length} recipient(s):</div>
+            <div class="leads-recipients-list">
+                ${selected.map(l => `
+                    <div class="leads-recipient-chip">
+                        <strong>${l.first_name} ${l.last_name}</strong> - ${l.company_name}
+                        <small>&lt;${l.email}&gt;</small>
+                    </div>
+                `).join('')}
+            </div>`;
+
+        modal.style.display = 'flex';
+    }
+
+    function closeEmailModal() {
+        document.getElementById('leads-email-modal').style.display = 'none';
+    }
+
+    async function sendPersonalizedEmails() {
+        const service = document.getElementById('leads-email-service')?.value;
+        const tone = document.getElementById('leads-email-tone')?.value || 'professional';
+        const context = document.getElementById('leads-email-context')?.value || '';
+
+        if (!service) {
+            showToast('Please select an MSI service to promote', 'warning');
+            return;
+        }
+
+        const selected = leadsData.filter(l => selectedLeadIds.has(l.id));
+        if (selected.length === 0) {
+            showToast('No leads selected', 'warning');
+            return;
+        }
+
+        const webhookUrl = CONFIG?.n8n?.emailOutreachWebhook;
+        if (!webhookUrl) {
+            showToast('Email outreach webhook not configured in config.js', 'error');
+            return;
+        }
+
+        // Show progress
+        const sendBtn = document.getElementById('leads-email-send');
+        const originalText = sendBtn.innerHTML;
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<div class="spinner"></div> Generating emails...';
+
+        try {
+            const payload = {
+                leads: selected.map(l => ({
+                    id: l.id,
+                    first_name: l.first_name,
+                    last_name: l.last_name,
+                    email: l.email,
+                    title: l.title,
+                    company_name: l.company_name,
+                    industry: l.industry,
+                    num_employees: l.num_employees,
+                    keywords: l.keywords,
+                    technologies: l.technologies,
+                    city: l.city,
+                    state: l.state,
+                    website: l.website
+                })),
+                service: service,
+                tone: tone,
+                additional_context: context
+            };
+
+            const response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Webhook error ${response.status}: ${text.substring(0, 200)}`);
+            }
+
+            const result = await response.json().catch(() => ({}));
+            
+            closeEmailModal();
+            selectedLeadIds.clear();
+            updateSelectedCount();
+            renderLeadsTable();
+            
+            showToast(`Personalized emails sent to ${selected.length} lead(s)!`, 'success');
+        } catch (err) {
+            console.error('Error sending emails:', err);
+            showToast(`Error: ${err.message}`, 'error');
+        } finally {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = originalText;
+        }
+    }
+})();
+// ========== END LEADS MODE ==========
 
 // Initialize
 if (supabaseUrl === 'YOUR_SUPABASE_URL' || !supabaseUrl) {

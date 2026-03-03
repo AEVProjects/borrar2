@@ -110,6 +110,15 @@
                     </svg>
                     Scheduler
                 </button>
+                <button class="tab-btn" data-mode="leads">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Leads
+                </button>
             </div>
         </nav>
 
@@ -1478,6 +1487,132 @@
                                 <line x1="8" y1="2" x2="8" y2="6"></line>
                             </svg>
                             Programar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leads Mode -->
+        <div id="leads-mode" class="mode-content">
+            <div class="leads-container">
+                <!-- Header -->
+                <div class="leads-header">
+                    <div class="leads-title-group">
+                        <h2>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                            Apollo Leads
+                        </h2>
+                        <span class="leads-subtitle" id="leads-count">Loading...</span>
+                    </div>
+                    <div class="leads-actions">
+                        <input type="text" id="leads-search" class="leads-search-input" placeholder="Search by name, company, email, industry...">
+                        <select id="leads-filter-industry" class="leads-filter-select">
+                            <option value="">All Industries</option>
+                        </select>
+                        <select id="leads-filter-seniority" class="leads-filter-select">
+                            <option value="">All Seniority</option>
+                        </select>
+                        <button id="leads-send-email-btn" class="btn btn-primary btn-small" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                            Send Personalized Email (<span id="leads-selected-count">0</span>)
+                        </button>
+                        <button id="leads-refresh-btn" class="btn btn-secondary btn-small">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Leads Table -->
+                <div class="card leads-table-card">
+                    <div class="leads-table-wrapper">
+                        <table class="leads-table" id="leads-table">
+                            <thead>
+                                <tr>
+                                    <th class="leads-checkbox-col"><input type="checkbox" id="leads-select-all"></th>
+                                    <th>Name</th>
+                                    <th>Title</th>
+                                    <th>Company</th>
+                                    <th>Email</th>
+                                    <th>Industry</th>
+                                    <th>Seniority</th>
+                                    <th>City</th>
+                                    <th>Stage</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leads-table-body">
+                                <tr><td colspan="10" class="leads-loading">Loading leads...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Pagination -->
+                    <div class="leads-pagination" id="leads-pagination">
+                        <button id="leads-prev-page" class="btn btn-secondary btn-small" disabled>&laquo; Previous</button>
+                        <span id="leads-page-info">Page 1</span>
+                        <button id="leads-next-page" class="btn btn-secondary btn-small">Next &raquo;</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Email Compose Modal -->
+            <div id="leads-email-modal" class="schedule-modal-overlay" style="display:none;">
+                <div class="schedule-modal" style="max-width:700px;">
+                    <div class="schedule-modal-header">
+                        <h3>Send Personalized Email</h3>
+                        <button id="leads-email-modal-close" class="schedule-modal-close">&times;</button>
+                    </div>
+                    <div class="schedule-modal-body">
+                        <div class="leads-email-recipients" id="leads-email-recipients">
+                            <!-- Selected leads will appear here -->
+                        </div>
+                        <div class="form-group">
+                            <label for="leads-email-service">MSI Service to Promote *</label>
+                            <select id="leads-email-service" required>
+                                <option value="">Select service...</option>
+                                <option value="Cybersecurity">Cybersecurity</option>
+                                <option value="Cloud Migration">Cloud Migration</option>
+                                <option value="AI Integration">AI Integration</option>
+                                <option value="IT Infrastructure Modernization">IT Infrastructure Modernization</option>
+                                <option value="Managed IT Services">Managed IT Services</option>
+                                <option value="Data Analytics">Data Analytics</option>
+                                <option value="Network Security">Network Security</option>
+                                <option value="Digital Transformation">Digital Transformation</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="leads-email-tone">Tone</label>
+                            <select id="leads-email-tone">
+                                <option value="professional">Professional</option>
+                                <option value="friendly">Friendly</option>
+                                <option value="consultative">Consultative</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="leads-email-context">Additional Context (optional)</label>
+                            <textarea id="leads-email-context" rows="3" placeholder="E.g., We met at a conference, reference a recent news about their company..."></textarea>
+                        </div>
+                    </div>
+                    <div class="schedule-modal-footer">
+                        <button id="leads-email-cancel" class="btn btn-secondary">Cancel</button>
+                        <button id="leads-email-send" class="btn btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                            Generate &amp; Send Emails
                         </button>
                     </div>
                 </div>
