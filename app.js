@@ -6264,14 +6264,8 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
     }
 
     async function sendPersonalizedEmails() {
-        const service = document.getElementById('leads-email-service')?.value;
         const tone = document.getElementById('leads-email-tone')?.value || 'professional';
         const context = document.getElementById('leads-email-context')?.value || '';
-
-        if (!service) {
-            showToast('Please select an MSI service to promote', 'warning');
-            return;
-        }
 
         const selected = leadsData.filter(l => selectedLeadIds.has(l.id));
         if (selected.length === 0) {
@@ -6308,7 +6302,6 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
                     state: l.state,
                     website: l.website
                 })),
-                service: service,
                 tone: tone,
                 additional_context: context
             };

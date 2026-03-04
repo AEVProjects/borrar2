@@ -3459,6 +3459,36 @@ input[type="checkbox"].post-checkbox {
     color: var(--text-secondary);
 }
 
+.leads-auto-service-info {
+    display: flex;
+    gap: 12px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+    border-radius: 10px;
+    margin-bottom: 16px;
+    border: 1px solid #bbdefb;
+}
+
+.leads-auto-service-info svg {
+    flex-shrink: 0;
+    color: var(--primary-color);
+    margin-top: 2px;
+}
+
+.leads-auto-service-info strong {
+    display: block;
+    font-size: 13px;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.leads-auto-service-info p {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+}
+
 @media (max-width: 1200px) {
     .leads-actions {
         width: 100%;
