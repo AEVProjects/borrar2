@@ -38,6 +38,29 @@ window.APP_CONFIG = {
         emailOutreachWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-email-outreach' // Del workflow "MSI Email Outreach"
     },
     
+    // Apollo.io Configuration
+    // Required for sending emails through Apollo sequences
+    // Get your Master API key at: https://app.apollo.io/#/settings/integrations/api
+    // You MUST use a Master API key (not regular) for sequence operations
+    apollo: {
+        apiKey: 'YOUR_APOLLO_MASTER_API_KEY',
+        // Email account ID: run GET https://api.apollo.io/api/v1/email_accounts to find it
+        emailAccountId: 'YOUR_APOLLO_EMAIL_ACCOUNT_ID',
+        // Map each MSI service to an Apollo Sequence ID
+        // Create sequences in Apollo UI first, then find IDs via API:
+        // POST https://api.apollo.io/api/v1/emailer_campaigns/search
+        sequenceMap: {
+            'Cybersecurity': 'SEQUENCE_ID_HERE',
+            'Cloud Migration': 'SEQUENCE_ID_HERE',
+            'AI Integration': 'SEQUENCE_ID_HERE',
+            'IT Infrastructure Modernization': 'SEQUENCE_ID_HERE',
+            'Managed IT Services': 'SEQUENCE_ID_HERE',
+            'Data Analytics': 'SEQUENCE_ID_HERE',
+            'Network Security': 'SEQUENCE_ID_HERE',
+            'Digital Transformation': 'SEQUENCE_ID_HERE'
+        }
+    },
+    
     // Security token - Este valor NO se puede cambiar desde el frontend
     // Si necesitas rotarlo, cambia este valor y actualiza n8n
     webhookToken: 'msi_2024_secure_e8f4a9c2b1d5',

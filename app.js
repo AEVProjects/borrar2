@@ -6279,11 +6279,25 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
             return;
         }
 
+        // Apollo config
+        const apolloApiKey = CONFIG?.apollo?.apiKey || '';
+        const emailAccountId = CONFIG?.apollo?.emailAccountId || '';
+        const sequenceMap = CONFIG?.apollo?.sequenceMap || {};
+
+        if (!apolloApiKey) {
+            showToast('Apollo API key not configured in config.js (apollo.apiKey)', 'error');
+            return;
+        }
+        if (!emailAccountId) {
+            showToast('Apollo email account ID not configured in config.js (apollo.emailAccountId)', 'error');
+            return;
+        }
+
         // Show progress
         const sendBtn = document.getElementById('leads-email-send');
         const originalText = sendBtn.innerHTML;
         sendBtn.disabled = true;
-        sendBtn.innerHTML = '<div class="spinner"></div> Generating emails...';
+        sendBtn.innerHTML = '<div class="spinner"></div> Adding to Apollo sequences...';
 
         try {
             const payload = {
@@ -6303,7 +6317,10 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
                     website: l.website
                 })),
                 tone: tone,
-                additional_context: context
+                additional_context: context,
+                apollo_api_key: apolloApiKey,
+                email_account_id: emailAccountId,
+                sequence_map: sequenceMap
             };
 
             const response = await fetch(webhookUrl, {
@@ -6324,9 +6341,9 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
             updateSelectedCount();
             renderLeadsTable();
             
-            showToast(`Personalized emails sent to ${selected.length} lead(s)!`, 'success');
+            showToast(`${selected.length} lead(s) added to Apollo sequences! Track stats in Apollo dashboard.`, 'success');
         } catch (err) {
-            console.error('Error sending emails:', err);
+            console.error('Error adding to Apollo sequences:', err);
             showToast(`Error: ${err.message}`, 'error');
         } finally {
             sendBtn.disabled = false;
