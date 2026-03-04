@@ -1496,6 +1496,27 @@
         <!-- Leads Mode -->
         <div id="leads-mode" class="mode-content">
             <div class="leads-container">
+                <!-- Sub-tabs: Apollo Leads | LinkedIn Leads -->
+                <div class="leads-subtabs">
+                    <button class="leads-subtab active" data-subtab="apollo">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        Apollo Leads
+                    </button>
+                    <button class="leads-subtab" data-subtab="linkedin">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="#0077b5">
+                            <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                        </svg>
+                        LinkedIn Leads
+                    </button>
+                </div>
+
+                <!-- ===== APOLLO LEADS PANEL ===== -->
+                <div id="leads-panel-apollo" class="leads-panel active">
                 <!-- Header -->
                 <div class="leads-header">
                     <div class="leads-title-group">
@@ -1565,6 +1586,102 @@
                         <button id="leads-next-page" class="btn btn-secondary btn-small">Next &raquo;</button>
                     </div>
                 </div>
+                </div><!-- END leads-panel-apollo -->
+
+                <!-- ===== LINKEDIN LEADS PANEL ===== -->
+                <div id="leads-panel-linkedin" class="leads-panel" style="display:none;">
+                    <div class="leads-header">
+                        <div class="leads-title-group">
+                            <h2>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#0077b5">
+                                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                                </svg>
+                                LinkedIn Leads
+                            </h2>
+                            <span class="leads-subtitle" id="li-leads-count">Loading...</span>
+                        </div>
+                        <div class="leads-actions">
+                            <input type="text" id="li-leads-search" class="leads-search-input" placeholder="Search by name, company, headline...">
+                            <select id="li-leads-filter-engagement" class="leads-filter-select">
+                                <option value="">All Engagement</option>
+                                <option value="high">High (5+ interactions)</option>
+                                <option value="medium">Medium (2-4)</option>
+                                <option value="low">Low (1)</option>
+                            </select>
+                            <button id="li-leads-apollo-btn" class="btn btn-primary btn-small" disabled>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                                Enrich &amp; Add to Apollo (<span id="li-leads-selected-count">0</span>)
+                            </button>
+                            <button id="li-leads-scrape-btn" class="btn btn-secondary btn-small">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                </svg>
+                                Run Scraper
+                            </button>
+                            <button id="li-leads-refresh-btn" class="btn btn-secondary btn-small">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                </svg>
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- LinkedIn Stats Cards -->
+                    <div class="li-leads-stats">
+                        <div class="stat-card">
+                            <div class="stat-value" id="li-total-profiles">0</div>
+                            <div class="stat-label">Total Profiles</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="li-total-interactions">0</div>
+                            <div class="stat-label">Total Interactions</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="li-potential-leads">0</div>
+                            <div class="stat-label">Marked as Leads</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="li-avg-score">0</div>
+                            <div class="stat-label">Avg Lead Score</div>
+                        </div>
+                    </div>
+
+                    <!-- LinkedIn Leads Table -->
+                    <div class="card leads-table-card">
+                        <div class="leads-table-wrapper">
+                            <table class="leads-table" id="li-leads-table">
+                                <thead>
+                                    <tr>
+                                        <th class="leads-checkbox-col"><input type="checkbox" id="li-leads-select-all"></th>
+                                        <th>Name</th>
+                                        <th>Headline</th>
+                                        <th>Company</th>
+                                        <th>Interactions</th>
+                                        <th>Lead Score</th>
+                                        <th>Last Active</th>
+                                        <th>Tags</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="li-leads-table-body">
+                                    <tr><td colspan="9" class="leads-loading">Loading LinkedIn leads...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Pagination -->
+                        <div class="leads-pagination" id="li-leads-pagination">
+                            <button id="li-leads-prev-page" class="btn btn-secondary btn-small" disabled>&laquo; Previous</button>
+                            <span id="li-leads-page-info">Page 1</span>
+                            <button id="li-leads-next-page" class="btn btn-secondary btn-small">Next &raquo;</button>
+                        </div>
+                    </div>
+                </div><!-- END leads-panel-linkedin -->
             </div>
 
             <!-- Email Compose Modal -->

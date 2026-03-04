@@ -35,7 +35,9 @@ window.APP_CONFIG = {
         educativeWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-educative-carousel', // Del workflow "MSI Educative Carousel Gen Flow"
         voiceSwapWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-voice-swap', // Del workflow "MSI Voice Swap - ElevenLabs"
         schedulerWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-scheduler-run', // Del workflow "MSI Content Scheduler"
-        emailOutreachWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-email-outreach' // Del workflow "MSI Email Outreach"
+        emailOutreachWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-email-outreach', // Del workflow "MSI Email Outreach"
+        profileScraperWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-profile-scraper', // Del workflow "MSI Profile Scraper"
+        linkedinToApolloWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-linkedin-to-apollo' // Del workflow "LinkedIn to Apollo Outreach"
     },
     
     // Apollo.io Configuration

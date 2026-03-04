@@ -3511,3 +3511,216 @@ input[type="checkbox"].post-checkbox {
         min-width: 100%;
     }
 }
+
+/* ===== LEADS SUB-TABS ===== */
+.leads-subtabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--border-color, #e5e7eb);
+    margin-bottom: 24px;
+    padding: 0 4px;
+}
+
+.leads-subtab {
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary, #6b7280);
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: -2px;
+}
+
+.leads-subtab:hover {
+    color: var(--text-primary, #1f2937);
+    background: rgba(99,102,241,0.04);
+}
+
+.leads-subtab.active {
+    color: var(--primary, #6366f1);
+    border-bottom-color: var(--primary, #6366f1);
+}
+
+.leads-subtab svg {
+    width: 16px;
+    height: 16px;
+}
+
+.leads-subtab .subtab-count {
+    background: var(--bg-tertiary, #f3f4f6);
+    color: var(--text-secondary, #6b7280);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    min-width: 20px;
+    text-align: center;
+}
+
+.leads-subtab.active .subtab-count {
+    background: rgba(99,102,241,0.1);
+    color: var(--primary, #6366f1);
+}
+
+/* ===== LINKEDIN LEADS STATS ===== */
+.li-leads-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.li-leads-stats .stat-card {
+    background: var(--bg-secondary, #f9fafb);
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+}
+
+.li-leads-stats .stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-primary, #1f2937);
+    line-height: 1.2;
+}
+
+.li-leads-stats .stat-label {
+    font-size: 12px;
+    color: var(--text-secondary, #6b7280);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* LinkedIn engagement badge */
+.engagement-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.engagement-badge.high {
+    background: rgba(16,185,129,0.1);
+    color: #059669;
+}
+
+.engagement-badge.medium {
+    background: rgba(245,158,11,0.1);
+    color: #d97706;
+}
+
+.engagement-badge.low {
+    background: rgba(107,114,128,0.1);
+    color: #6b7280;
+}
+
+/* Lead score badge */
+.score-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.score-badge.score-high {
+    background: rgba(16,185,129,0.12);
+    color: #059669;
+    border: 2px solid rgba(16,185,129,0.3);
+}
+
+.score-badge.score-medium {
+    background: rgba(245,158,11,0.12);
+    color: #d97706;
+    border: 2px solid rgba(245,158,11,0.3);
+}
+
+.score-badge.score-low {
+    background: rgba(107,114,128,0.12);
+    color: #6b7280;
+    border: 2px solid rgba(107,114,128,0.3);
+}
+
+/* LinkedIn tag pills */
+.li-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.li-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    background: rgba(99,102,241,0.08);
+    color: var(--primary, #6366f1);
+}
+
+.li-tag.tag-lead {
+    background: rgba(16,185,129,0.1);
+    color: #059669;
+}
+
+/* LinkedIn leads name link */
+.li-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.li-name-cell .li-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border-color, #e5e7eb);
+}
+
+.li-name-cell .li-avatar-placeholder {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.li-name-cell a {
+    color: var(--text-primary, #1f2937);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.li-name-cell a:hover {
+    color: #0077b5;
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .leads-subtabs {
+        overflow-x: auto;
+    }
+    .li-leads-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

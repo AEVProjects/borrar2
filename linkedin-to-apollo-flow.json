@@ -1,0 +1,417 @@
+{
+  "name": "MSI LinkedIn to Apollo Outreach",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "msi-linkedin-to-apollo",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*",
+          "rawBody": false
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "id": "webhook-linkedin-apollo",
+      "name": "Webhook - LinkedIn to Apollo",
+      "webhookId": "msi-linkedin-to-apollo"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse incoming LinkedIn profiles for Apollo enrichment + sequence\nconst input = $input.item.json;\nlet data = input.body || input;\nif (typeof data === 'string') data = JSON.parse(data);\n\nconst profiles = data.profiles || [];\nconst apolloApiKey = data.apollo_api_key || '';\nconst emailAccountId = data.email_account_id || '';\nconst sequenceMap = data.sequence_map || {};\n\nconsole.log(`Processing ${profiles.length} LinkedIn profiles for Apollo enrichment`);\n\nconst items = profiles.map(profile => ({\n  json: {\n    // Profile data from scraped_profiles\n    profile_id: profile.id,\n    full_name: profile.full_name,\n    first_name: profile.first_name || (profile.full_name || '').split(' ')[0] || '',\n    last_name: profile.last_name || (profile.full_name || '').split(' ').slice(1).join(' ') || '',\n    headline: profile.headline || '',\n    company: profile.company || '',\n    linkedin_url: profile.linkedin_url || '',\n    location: profile.location || '',\n    lead_score: profile.lead_score || 0,\n    total_interactions: profile.total_interactions || 0,\n    // Apollo config\n    apollo_api_key: apolloApiKey,\n    email_account_id: emailAccountId,\n    sequence_map: sequenceMap\n  }\n}));\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300],
+      "id": "parse-profiles",
+      "name": "Parse LinkedIn Profiles"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/people/match",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"api_key\": \"{{ $json.apollo_api_key }}\",\n  \"linkedin_url\": \"{{ $json.linkedin_url }}\",\n  \"first_name\": \"{{ $json.first_name }}\",\n  \"last_name\": \"{{ $json.last_name }}\",\n  \"organization_name\": \"{{ $json.company }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 300],
+      "id": "enrich-via-apollo",
+      "name": "Enrich via Apollo",
+      "onError": "continueRegularOutput",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge enriched Apollo data with original profile\nconst response = $json;\nconst profile = $('Parse LinkedIn Profiles').item.json;\n\nlet enrichedData = {};\nlet enrichmentSuccess = false;\n\ntry {\n  const body = response.body || response;\n  const person = body.person || body;\n  \n  if (person && person.email) {\n    enrichmentSuccess = true;\n    enrichedData = {\n      email: person.email || '',\n      title: person.title || profile.headline || '',\n      company_name: person.organization?.name || person.organization_name || profile.company || '',\n      industry: person.organization?.industry || '',\n      num_employees: person.organization?.estimated_num_employees || '',\n      city: person.city || '',\n      state: person.state || '',\n      country: person.country || '',\n      website: person.organization?.website_url || '',\n      technologies: (person.organization?.current_technologies || []).map(t => t.name || t).join(', '),\n      keywords: (person.organization?.keywords || []).join(', '),\n      seniority: person.seniority || '',\n      departments: (person.departments || []).join(', '),\n      apollo_person_id: person.id || ''\n    };\n    console.log(`Enriched ${profile.full_name}: ${enrichedData.email} at ${enrichedData.company_name}`);\n  } else {\n    console.log(`No email found for ${profile.full_name} via Apollo enrichment`);\n    enrichedData = {\n      email: '',\n      title: profile.headline || '',\n      company_name: profile.company || '',\n      industry: '',\n      num_employees: '',\n      city: '',\n      state: '',\n      country: '',\n      website: '',\n      technologies: '',\n      keywords: '',\n      seniority: '',\n      departments: '',\n      apollo_person_id: ''\n    };\n  }\n} catch (e) {\n  console.error('Enrichment error:', e.message);\n  enrichedData = {\n    email: '',\n    title: profile.headline || '',\n    company_name: profile.company || '',\n    industry: '',\n    num_employees: '',\n    city: '',\n    state: '',\n    country: '',\n    website: '',\n    technologies: '',\n    keywords: '',\n    seniority: '',\n    departments: '',\n    apollo_person_id: ''\n  };\n}\n\nreturn [{\n  json: {\n    ...profile,\n    ...enrichedData,\n    enrichment_success: enrichmentSuccess\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 300],
+      "id": "merge-enriched-data",
+      "name": "Merge Enriched Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-email",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1200, 300],
+      "id": "check-has-email",
+      "name": "Has Email?"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze this lead and determine the best MSI service:\n\n- Name: {{ $json.first_name }} {{ $json.last_name }}\n- Title: {{ $json.title }}\n- Company: {{ $json.company_name }}\n- Industry: {{ $json.industry }}\n- Headline: {{ $json.headline }}\n- Company Size: {{ $json.num_employees }} employees\n- Technologies: {{ ($json.technologies || '').substring(0, 500) }}\n- Keywords: {{ ($json.keywords || '').substring(0, 300) }}\n- LinkedIn Engagement: {{ $json.total_interactions }} interactions with MSI content",
+        "options": {
+          "systemMessage": "# ROLE: B2B Lead Analyst for MSI Technologies\n\nYou analyze lead data and determine which MSI service is most relevant.\n\n## AVAILABLE MSI SERVICES:\n1. **Cybersecurity** — CISO roles, security keywords, defense/gov industry, security tech\n2. **Cloud Migration** — Cloud tech (AWS, Azure, GCP), cloud/migration keywords, DevOps roles\n3. **AI Integration** — AI/ML tools, data science tech, AI/automation keywords\n4. **IT Infrastructure Modernization** — IT director roles, legacy tech, infrastructure keywords\n5. **Managed IT Services** — Industries without strong IT, SMBs <50 employees\n6. **Data Analytics** — Analytics tools (Tableau, Power BI), BI platforms, data keywords\n7. **Network Security** — Network equipment (Cisco, Juniper), firewalls, VPN tech\n8. **Digital Transformation** — Digital transformation keywords, C-level executives\n\n## OUTPUT FORMAT (JSON ONLY):\n```json\n{\n  \"matched_service\": \"Service Name\",\n  \"reason\": \"Brief explanation\"\n}\n```\n\n- matched_service must be EXACTLY one of the 8 names above\n- Return ONLY valid JSON"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [1440, 200],
+      "id": "agent-service-matcher",
+      "name": "Agent: Service Matcher"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "chatgpt-4o-latest"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [1520, 420],
+      "id": "openai-linkedin",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "13Oqly3WdRAzZVXL",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI result and map to Apollo sequence\nconst output = $json.output;\nconst lead = $('Merge Enriched Data').item.json;\n\nlet aiResult;\ntry {\n  const jsonMatch = output.match(/\\{[\\s\\S]*\\}/);\n  aiResult = JSON.parse(jsonMatch ? jsonMatch[0] : output);\n} catch (e) {\n  aiResult = { matched_service: 'Managed IT Services', reason: 'Default fallback' };\n}\n\nconst serviceName = aiResult.matched_service || 'Managed IT Services';\nconst sequenceMap = lead.sequence_map || {};\nconst sequenceId = sequenceMap[serviceName] || sequenceMap['Managed IT Services'] || 'CONFIGURE_SEQUENCE_ID';\n\nreturn [{\n  json: {\n    ...lead,\n    matched_service: serviceName,\n    match_reason: aiResult.reason || '',\n    sequence_id: sequenceId\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1680, 200],
+      "id": "map-to-sequence",
+      "name": "Map Service to Sequence"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/contacts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"api_key\": \"{{ $json.apollo_api_key }}\",\n  \"first_name\": \"{{ $json.first_name }}\",\n  \"last_name\": \"{{ $json.last_name }}\",\n  \"email\": \"{{ $json.email }}\",\n  \"title\": \"{{ $json.title }}\",\n  \"organization_name\": \"{{ $json.company_name }}\",\n  \"linkedin_url\": \"{{ $json.linkedin_url }}\",\n  \"present_raw_address\": \"{{ $json.city }}{{ $json.state ? ', ' + $json.state : '' }}\",\n  \"website_url\": \"{{ $json.website }}\",\n  \"label_names\": [\"MSI-LinkedIn-Lead\", \"{{ $json.matched_service }}\"],\n  \"run_dedupe\": true\n}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1920, 200],
+      "id": "create-apollo-contact",
+      "name": "Create Apollo Contact"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract Apollo contact ID\nconst response = $json;\nconst prevData = $('Map Service to Sequence').item.json;\n\nlet contactId = '';\ntry {\n  const body = response.body || response;\n  const contact = body.contact || body;\n  contactId = contact.id || '';\n} catch (e) {\n  console.error('Error extracting contact ID:', e.message);\n}\n\nreturn [{\n  json: {\n    ...prevData,\n    apollo_contact_id: contactId\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2160, 200],
+      "id": "extract-contact-id",
+      "name": "Extract Contact ID"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apollo.io/api/v1/emailer_campaigns/{{ $json.sequence_id }}/add_contact_ids",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "emailer_campaign_id",
+              "value": "={{ $json.sequence_id }}"
+            },
+            {
+              "name": "contact_ids[]",
+              "value": "={{ $json.apollo_contact_id }}"
+            },
+            {
+              "name": "send_email_from_email_account_id",
+              "value": "={{ $json.email_account_id }}"
+            },
+            {
+              "name": "sequence_active_in_other_campaigns",
+              "value": "true"
+            },
+            {
+              "name": "sequence_finished_in_other_campaigns",
+              "value": "true"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"api_key\": \"{{ $json.apollo_api_key }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2400, 200],
+      "id": "add-to-sequence",
+      "name": "Add to Apollo Sequence"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse response and build log entry\nconst response = $json;\nconst prevData = $('Extract Contact ID').item.json;\n\nlet addedToSequence = false;\nlet skippedReason = '';\n\ntry {\n  const body = response.body || response;\n  if (body.contacts && body.contacts.length > 0) addedToSequence = true;\n  if (body.skipped_contact_ids && body.skipped_contact_ids[prevData.apollo_contact_id]) {\n    skippedReason = body.skipped_contact_ids[prevData.apollo_contact_id];\n  }\n} catch (e) { /* continue */ }\n\nconst status = addedToSequence ? 'added_to_sequence' : (skippedReason ? `skipped:${skippedReason}` : 'error');\n\nreturn [{\n  json: {\n    profile_id: prevData.profile_id,\n    full_name: prevData.full_name,\n    email: prevData.email,\n    company_name: prevData.company_name,\n    matched_service: prevData.matched_service,\n    match_reason: prevData.match_reason,\n    apollo_contact_id: prevData.apollo_contact_id,\n    sequence_id: prevData.sequence_id,\n    status: status,\n    skipped_reason: skippedReason,\n    source: 'linkedin_scraper',\n    enrichment_success: prevData.enrichment_success\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2640, 200],
+      "id": "parse-sequence-result",
+      "name": "Parse Sequence Result"
+    },
+    {
+      "parameters": {
+        "jsCode": "// No email found - log as skipped\nconst lead = $('Merge Enriched Data').item.json;\n\nconsole.log(`No email for ${lead.full_name} - cannot add to Apollo sequence`);\n\nreturn [{\n  json: {\n    profile_id: lead.profile_id,\n    full_name: lead.full_name,\n    email: '',\n    company_name: lead.company_name || lead.company,\n    matched_service: 'N/A',\n    match_reason: 'No email found during enrichment',\n    apollo_contact_id: '',\n    sequence_id: '',\n    status: 'skipped:no_email',\n    skipped_reason: 'no_email',\n    source: 'linkedin_scraper',\n    enrichment_success: false\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1440, 440],
+      "id": "no-email-path",
+      "name": "No Email Found"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO email_outreach_log (lead_id, to_email, to_name, company, service, subject, body, status, sent_at)\nVALUES (\n  NULL,\n  '{{ ($json.email || 'no-email').replace(/'/g, \"''\") }}',\n  '{{ $json.full_name.replace(/'/g, \"''\") }}',\n  '{{ ($json.company_name || '').replace(/'/g, \"''\") }}',\n  '{{ ($json.matched_service || '').replace(/'/g, \"''\") }}',\n  'Apollo Seq: {{ $json.sequence_id || \"N/A\" }} (LinkedIn)',\n  '{{ ($json.match_reason || $json.skipped_reason || \"\").replace(/'/g, \"''\") }}',\n  '{{ $json.status }}',\n  NOW()\n)\nRETURNING *",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [2880, 300],
+      "id": "log-to-db",
+      "name": "Log to DB",
+      "credentials": {
+        "postgres": {
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE scraped_profiles SET\n  is_potential_lead = true,\n  tags = array_append(COALESCE(tags, '{}'), '{{ $json.matched_service }}'),\n  notes = COALESCE(notes, '') || E'\\nApollo: {{ $json.status }} ({{ $json.matched_service }}) - ' || NOW()::text,\n  updated_at = NOW()\nWHERE id = '{{ $json.profile_id }}'\nRETURNING id, full_name",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [3120, 300],
+      "id": "update-scraped-profile",
+      "name": "Update Scraped Profile",
+      "credentials": {
+        "postgres": {
+          "id": "WnTYs2zvPoE7hDJE",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"LinkedIn leads processed via Apollo\", \"count\": $items().length } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [3360, 300],
+      "id": "respond-webhook",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "Webhook - LinkedIn to Apollo": {
+      "main": [
+        [{ "node": "Parse LinkedIn Profiles", "type": "main", "index": 0 }]
+      ]
+    },
+    "Parse LinkedIn Profiles": {
+      "main": [
+        [{ "node": "Enrich via Apollo", "type": "main", "index": 0 }]
+      ]
+    },
+    "Enrich via Apollo": {
+      "main": [
+        [{ "node": "Merge Enriched Data", "type": "main", "index": 0 }]
+      ]
+    },
+    "Merge Enriched Data": {
+      "main": [
+        [{ "node": "Has Email?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Has Email?": {
+      "main": [
+        [{ "node": "Agent: Service Matcher", "type": "main", "index": 0 }],
+        [{ "node": "No Email Found", "type": "main", "index": 0 }]
+      ]
+    },
+    "Agent: Service Matcher": {
+      "main": [
+        [{ "node": "Map Service to Sequence", "type": "main", "index": 0 }]
+      ]
+    },
+    "Map Service to Sequence": {
+      "main": [
+        [{ "node": "Create Apollo Contact", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Apollo Contact": {
+      "main": [
+        [{ "node": "Extract Contact ID", "type": "main", "index": 0 }]
+      ]
+    },
+    "Extract Contact ID": {
+      "main": [
+        [{ "node": "Add to Apollo Sequence", "type": "main", "index": 0 }]
+      ]
+    },
+    "Add to Apollo Sequence": {
+      "main": [
+        [{ "node": "Parse Sequence Result", "type": "main", "index": 0 }]
+      ]
+    },
+    "Parse Sequence Result": {
+      "main": [
+        [{ "node": "Log to DB", "type": "main", "index": 0 }]
+      ]
+    },
+    "No Email Found": {
+      "main": [
+        [{ "node": "Log to DB", "type": "main", "index": 0 }]
+      ]
+    },
+    "Log to DB": {
+      "main": [
+        [{ "node": "Update Scraped Profile", "type": "main", "index": 0 }]
+      ]
+    },
+    "Update Scraped Profile": {
+      "main": [
+        [{ "node": "Respond to Webhook", "type": "main", "index": 0 }]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [{ "node": "Agent: Service Matcher", "type": "ai_languageModel", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "b5116c87255060ddf18db8a2b1b90e34b38f50f44815cf784a0b8a92b6bb4e6e"
+  }
+}

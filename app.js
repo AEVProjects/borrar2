@@ -6350,6 +6350,376 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
             sendBtn.innerHTML = originalText;
         }
     }
+    // ========== SUB-TAB SWITCHING ==========
+    document.querySelectorAll('.leads-subtab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Update active tab
+            document.querySelectorAll('.leads-subtab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Show/hide panels
+            const target = btn.dataset.subtab;
+            document.querySelectorAll('.leads-panel').forEach(p => p.style.display = 'none');
+            const panel = document.getElementById('leads-panel-' + target);
+            if (panel) panel.style.display = '';
+
+            // Init LinkedIn panel on first switch
+            if (target === 'linkedin' && !liLeadsInitialized) {
+                initLinkedInLeads();
+            }
+        });
+    });
+
+    // ========== LINKEDIN LEADS MODULE ==========
+    let liLeadsData = [];
+    let liFilteredLeads = [];
+    let liSelectedIds = new Set();
+    let liCurrentPage = 1;
+    const LI_PAGE_SIZE = 25;
+    let liLeadsInitialized = false;
+
+    async function initLinkedInLeads() {
+        if (liLeadsInitialized && liLeadsData.length > 0) return;
+        liLeadsInitialized = true;
+        setupLiLeadsListeners();
+        await loadLinkedInLeads();
+    }
+
+    function setupLiLeadsListeners() {
+        // Search
+        const searchInput = document.getElementById('li-leads-search');
+        let searchTimer;
+        searchInput?.addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => { filterLinkedInLeads(); }, 300);
+        });
+
+        // Engagement filter
+        document.getElementById('li-leads-filter-engagement')?.addEventListener('change', filterLinkedInLeads);
+
+        // Select all
+        document.getElementById('li-leads-select-all')?.addEventListener('change', (e) => {
+            const visible = getLiCurrentPageLeads();
+            if (e.target.checked) {
+                visible.forEach(l => liSelectedIds.add(l.id));
+            } else {
+                visible.forEach(l => liSelectedIds.delete(l.id));
+            }
+            renderLiLeadsTable();
+            updateLiSelectedCount();
+        });
+
+        // Pagination
+        document.getElementById('li-leads-prev-page')?.addEventListener('click', () => {
+            if (liCurrentPage > 1) { liCurrentPage--; renderLiLeadsTable(); }
+        });
+        document.getElementById('li-leads-next-page')?.addEventListener('click', () => {
+            const totalPages = Math.ceil(liFilteredLeads.length / LI_PAGE_SIZE);
+            if (liCurrentPage < totalPages) { liCurrentPage++; renderLiLeadsTable(); }
+        });
+
+        // Refresh
+        document.getElementById('li-leads-refresh-btn')?.addEventListener('click', async () => {
+            liLeadsData = [];
+            liLeadsInitialized = false;
+            await loadLinkedInLeads();
+            liLeadsInitialized = true;
+        });
+
+        // Run scraper
+        document.getElementById('li-leads-scrape-btn')?.addEventListener('click', triggerLinkedInScraper);
+
+        // Add to Apollo
+        document.getElementById('li-leads-apollo-btn')?.addEventListener('click', sendLinkedInToApollo);
+    }
+
+    async function loadLinkedInLeads() {
+        if (!supabaseClient) {
+            document.getElementById('li-leads-table-body').innerHTML = '<tr><td colspan="9" class="leads-loading">Supabase not connected</td></tr>';
+            return;
+        }
+
+        document.getElementById('li-leads-table-body').innerHTML = '<tr><td colspan="9" class="leads-loading">Loading LinkedIn leads...</td></tr>';
+
+        try {
+            const { data, error } = await supabaseClient
+                .from('scraped_profiles')
+                .select('*')
+                .order('total_interactions', { ascending: false });
+
+            if (error) throw error;
+
+            liLeadsData = data || [];
+            filterLinkedInLeads();
+            updateLiStats();
+            
+            document.getElementById('li-leads-count').textContent = `${liLeadsData.length} profiles loaded`;
+
+            // Update subtab count badge
+            const badge = document.querySelector('.leads-subtab[data-subtab="linkedin"] .subtab-count');
+            if (badge) badge.textContent = liLeadsData.length;
+        } catch (err) {
+            console.error('Error loading LinkedIn leads:', err);
+            document.getElementById('li-leads-table-body').innerHTML = `<tr><td colspan="9" class="leads-loading">Error: ${err.message}</td></tr>`;
+        }
+    }
+
+    function updateLiStats() {
+        const total = liLeadsData.length;
+        const totalInteractions = liLeadsData.reduce((sum, p) => sum + (p.total_interactions || 0), 0);
+        const potentialLeads = liLeadsData.filter(p => p.is_potential_lead).length;
+        const avgScore = total > 0 ? Math.round(liLeadsData.reduce((sum, p) => sum + (p.lead_score || 0), 0) / total) : 0;
+
+        document.getElementById('li-total-profiles').textContent = total;
+        document.getElementById('li-total-interactions').textContent = totalInteractions;
+        document.getElementById('li-potential-leads').textContent = potentialLeads;
+        document.getElementById('li-avg-score').textContent = avgScore;
+    }
+
+    function filterLinkedInLeads() {
+        const search = (document.getElementById('li-leads-search')?.value || '').toLowerCase();
+        const engagementFilter = document.getElementById('li-leads-filter-engagement')?.value || '';
+
+        liFilteredLeads = liLeadsData.filter(profile => {
+            // Search
+            if (search) {
+                const searchStr = `${profile.full_name || ''} ${profile.headline || ''} ${profile.company || ''} ${profile.location || ''} ${(profile.tags || []).join(' ')}`.toLowerCase();
+                if (!searchStr.includes(search)) return false;
+            }
+            // Engagement filter
+            if (engagementFilter) {
+                const interactions = profile.total_interactions || 0;
+                if (engagementFilter === 'high' && interactions < 5) return false;
+                if (engagementFilter === 'medium' && (interactions < 2 || interactions > 4)) return false;
+                if (engagementFilter === 'low' && interactions !== 1) return false;
+            }
+            return true;
+        });
+
+        liCurrentPage = 1;
+        renderLiLeadsTable();
+        document.getElementById('li-leads-count').textContent = `${liFilteredLeads.length} of ${liLeadsData.length} profiles`;
+    }
+
+    function getLiCurrentPageLeads() {
+        const start = (liCurrentPage - 1) * LI_PAGE_SIZE;
+        return liFilteredLeads.slice(start, start + LI_PAGE_SIZE);
+    }
+
+    function renderLiLeadsTable() {
+        const tbody = document.getElementById('li-leads-table-body');
+        const pageLeads = getLiCurrentPageLeads();
+        const totalPages = Math.ceil(liFilteredLeads.length / LI_PAGE_SIZE);
+
+        if (pageLeads.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="leads-loading">No LinkedIn profiles found</td></tr>';
+        } else {
+            tbody.innerHTML = pageLeads.map(profile => {
+                const checked = liSelectedIds.has(profile.id) ? 'checked' : '';
+                const interactions = profile.total_interactions || 0;
+                const engLevel = interactions >= 5 ? 'high' : (interactions >= 2 ? 'medium' : 'low');
+                const engLabel = interactions >= 5 ? 'High' : (interactions >= 2 ? 'Medium' : 'Low');
+                const score = profile.lead_score || 0;
+                const scoreLevel = score >= 70 ? 'score-high' : (score >= 40 ? 'score-medium' : 'score-low');
+                const initials = (profile.full_name || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                const lastActive = profile.last_interaction_at ? new Date(profile.last_interaction_at).toLocaleDateString() : '-';
+                const tags = (profile.tags || []);
+                
+                return `<tr class="${checked ? 'leads-row-selected' : ''}">
+                    <td><input type="checkbox" class="li-lead-checkbox" data-id="${profile.id}" ${checked}></td>
+                    <td>
+                        <div class="li-name-cell">
+                            ${profile.avatar_url 
+                                ? `<img src="${profile.avatar_url}" class="li-avatar" alt="">`
+                                : `<div class="li-avatar-placeholder">${initials}</div>`}
+                            <div>
+                                ${profile.linkedin_url 
+                                    ? `<a href="${profile.linkedin_url}" target="_blank" title="View LinkedIn">${profile.full_name || 'Unknown'}</a>`
+                                    : `<span>${profile.full_name || 'Unknown'}</span>`}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="leads-title-cell" title="${profile.headline || ''}">${truncate(profile.headline, 40)}</td>
+                    <td><strong>${profile.company || '-'}</strong></td>
+                    <td><span class="engagement-badge ${engLevel}">${interactions} (${engLabel})</span></td>
+                    <td><span class="score-badge ${scoreLevel}">${score}</span></td>
+                    <td>${lastActive}</td>
+                    <td>
+                        <div class="li-tags">
+                            ${profile.is_potential_lead ? '<span class="li-tag tag-lead">Lead</span>' : ''}
+                            ${tags.slice(0, 3).map(t => `<span class="li-tag">${t}</span>`).join('')}
+                        </div>
+                    </td>
+                    <td>
+                        ${profile.linkedin_url ? `<a href="${profile.linkedin_url}" target="_blank" class="btn btn-secondary btn-small" title="View on LinkedIn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="#0077b5"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                        </a>` : ''}
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        // Pagination
+        document.getElementById('li-leads-page-info').textContent = `Page ${liCurrentPage} of ${totalPages || 1} (${liFilteredLeads.length} profiles)`;
+        document.getElementById('li-leads-prev-page').disabled = liCurrentPage <= 1;
+        document.getElementById('li-leads-next-page').disabled = liCurrentPage >= totalPages;
+
+        // Select-all state
+        const allOnPage = pageLeads.every(l => liSelectedIds.has(l.id));
+        const selectAllCb = document.getElementById('li-leads-select-all');
+        if (selectAllCb) selectAllCb.checked = pageLeads.length > 0 && allOnPage;
+
+        // Bind checkboxes
+        document.querySelectorAll('.li-lead-checkbox').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const id = parseInt(e.target.dataset.id);
+                if (e.target.checked) {
+                    liSelectedIds.add(id);
+                } else {
+                    liSelectedIds.delete(id);
+                }
+                updateLiSelectedCount();
+                e.target.closest('tr').classList.toggle('leads-row-selected', e.target.checked);
+            });
+        });
+    }
+
+    function updateLiSelectedCount() {
+        const count = liSelectedIds.size;
+        document.getElementById('li-leads-selected-count').textContent = count;
+        document.getElementById('li-leads-apollo-btn').disabled = count === 0;
+    }
+
+    async function triggerLinkedInScraper() {
+        const webhookUrl = CONFIG?.n8n?.profileScraperWebhook;
+        if (!webhookUrl) {
+            showToast('Profile scraper webhook not configured in config.js', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('li-leads-scrape-btn');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner"></div> Scraping...';
+
+        try {
+            const response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ trigger: 'manual', source: 'dashboard' })
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Scraper error ${response.status}: ${text.substring(0, 200)}`);
+            }
+
+            const result = await response.json().catch(() => ({}));
+            showToast(`Scraper complete! ${result.profiles_found || 0} profiles found, ${result.new_profiles || 0} new.`, 'success');
+
+            // Reload data
+            liLeadsData = [];
+            liLeadsInitialized = false;
+            await loadLinkedInLeads();
+            liLeadsInitialized = true;
+
+        } catch (err) {
+            console.error('Error triggering scraper:', err);
+            showToast(`Scraper error: ${err.message}`, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+
+    async function sendLinkedInToApollo() {
+        const selected = liLeadsData.filter(l => liSelectedIds.has(l.id));
+        if (selected.length === 0) {
+            showToast('Select at least one profile first', 'warning');
+            return;
+        }
+
+        const webhookUrl = CONFIG?.n8n?.linkedinToApolloWebhook;
+        if (!webhookUrl) {
+            showToast('LinkedIn-to-Apollo webhook not configured in config.js', 'error');
+            return;
+        }
+
+        const apolloApiKey = CONFIG?.apollo?.apiKey || '';
+        const emailAccountId = CONFIG?.apollo?.emailAccountId || '';
+        const sequenceMap = CONFIG?.apollo?.sequenceMap || {};
+
+        if (!apolloApiKey) {
+            showToast('Apollo API key not configured (config.js → apollo.apiKey)', 'error');
+            return;
+        }
+        if (!emailAccountId) {
+            showToast('Apollo email account ID not configured (config.js → apollo.emailAccountId)', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('li-leads-apollo-btn');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner"></div> Enriching & adding to sequences...';
+
+        try {
+            const payload = {
+                profiles: selected.map(p => ({
+                    id: p.id,
+                    full_name: p.full_name,
+                    first_name: p.first_name,
+                    last_name: p.last_name,
+                    linkedin_url: p.linkedin_url,
+                    linkedin_id: p.linkedin_id,
+                    headline: p.headline,
+                    company: p.company,
+                    location: p.location,
+                    total_interactions: p.total_interactions,
+                    lead_score: p.lead_score,
+                    tags: p.tags
+                })),
+                apollo_api_key: apolloApiKey,
+                email_account_id: emailAccountId,
+                sequence_map: sequenceMap
+            };
+
+            const response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Webhook error ${response.status}: ${text.substring(0, 200)}`);
+            }
+
+            const result = await response.json().catch(() => ({}));
+
+            liSelectedIds.clear();
+            updateLiSelectedCount();
+            
+            // Reload to get updated tags/status
+            liLeadsData = [];
+            liLeadsInitialized = false;
+            await loadLinkedInLeads();
+            liLeadsInitialized = true;
+
+            const enriched = result.enriched || 0;
+            const added = result.added_to_sequence || 0;
+            const noEmail = result.no_email || 0;
+            showToast(`Done! ${enriched} enriched, ${added} added to sequences, ${noEmail} without email.`, 'success');
+
+        } catch (err) {
+            console.error('Error sending to Apollo:', err);
+            showToast(`Error: ${err.message}`, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+
 })();
 // ========== END LEADS MODE ==========
 
