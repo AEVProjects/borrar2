@@ -37,7 +37,8 @@ window.APP_CONFIG = {
         schedulerWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-scheduler-run', // Del workflow "MSI Content Scheduler"
         emailOutreachWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-email-outreach', // Del workflow "MSI Email Outreach"
         profileScraperWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-profile-scraper', // Del workflow "MSI Profile Scraper"
-        linkedinToApolloWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-linkedin-to-apollo' // Del workflow "LinkedIn to Apollo Outreach"
+        linkedinToApolloWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-linkedin-to-apollo', // Del workflow "LinkedIn to Apollo Outreach"
+        linkedinSearchWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-linkedin-search' // Del workflow "MSI LinkedIn Lead Search" (Google CSE - GRATIS)
     },
     
     // Apollo.io Configuration

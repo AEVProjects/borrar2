@@ -6431,6 +6431,21 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
 
         // Add to Apollo
         document.getElementById('li-leads-apollo-btn')?.addEventListener('click', sendLinkedInToApollo);
+
+        // LinkedIn Search
+        document.getElementById('li-search-btn')?.addEventListener('click', searchLinkedInLeads);
+        document.getElementById('li-search-query')?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); searchLinkedInLeads(); }
+        });
+
+        // Quick search buttons
+        document.querySelectorAll('.li-quick-search').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const textarea = document.getElementById('li-search-query');
+                if (textarea) { textarea.value = btn.dataset.query; }
+                searchLinkedInLeads();
+            });
+        });
     }
 
     async function loadLinkedInLeads() {
@@ -6588,6 +6603,83 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         const count = liSelectedIds.size;
         document.getElementById('li-leads-selected-count').textContent = count;
         document.getElementById('li-leads-apollo-btn').disabled = count === 0;
+    }
+
+    // ========== LINKEDIN SEARCH (Google CSE - FREE) ==========
+    async function searchLinkedInLeads() {
+        const query = document.getElementById('li-search-query')?.value?.trim();
+        if (!query) {
+            showToast('Enter a search description first', 'warning');
+            return;
+        }
+
+        const webhookUrl = CONFIG?.n8n?.linkedinSearchWebhook;
+        if (!webhookUrl) {
+            showToast('LinkedIn search webhook not configured in config.js (n8n.linkedinSearchWebhook)', 'error');
+            return;
+        }
+
+        const statusDiv = document.getElementById('li-search-status');
+        const searchBtn = document.getElementById('li-search-btn');
+        const originalBtnText = searchBtn.innerHTML;
+
+        // Show loading state
+        statusDiv.style.display = 'flex';
+        statusDiv.className = 'li-search-status loading';
+        statusDiv.innerHTML = '<div class="spinner"></div> AI is parsing your request and searching Google for LinkedIn profiles...';
+        searchBtn.disabled = true;
+        searchBtn.innerHTML = '<div class="spinner"></div> Searching...';
+
+        try {
+            const response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: query })
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Webhook error ${response.status}: ${text.substring(0, 200)}`);
+            }
+
+            const result = await response.json().catch(() => ({}));
+
+            if (result.error) {
+                statusDiv.className = 'li-search-status error';
+                statusDiv.innerHTML = '⚠️ ' + (result.message || result.error);
+                showToast(result.message || 'Search error', 'error');
+                return;
+            }
+
+            const found = result.leads_found || 0;
+            if (found > 0) {
+                statusDiv.className = 'li-search-status success';
+                statusDiv.innerHTML = '✅ Found ' + found + ' LinkedIn profiles and saved to database. Refreshing table...';
+                showToast('Found ' + found + ' new LinkedIn profiles!', 'success');
+
+                // Reload the LinkedIn leads table to show new results
+                liLeadsData = [];
+                liLeadsInitialized = false;
+                await loadLinkedInLeads();
+                liLeadsInitialized = true;
+            } else {
+                statusDiv.className = 'li-search-status error';
+                statusDiv.innerHTML = '📭 ' + (result.message || 'No profiles found. Try broader search terms.');
+                showToast('No profiles found for this search', 'warning');
+            }
+
+            // Fade out status after 8 seconds
+            setTimeout(() => { statusDiv.style.display = 'none'; }, 8000);
+
+        } catch (err) {
+            console.error('LinkedIn search error:', err);
+            statusDiv.className = 'li-search-status error';
+            statusDiv.innerHTML = '❌ Error: ' + err.message;
+            showToast('Search error: ' + err.message, 'error');
+        } finally {
+            searchBtn.disabled = false;
+            searchBtn.innerHTML = originalBtnText;
+        }
     }
 
     async function triggerLinkedInScraper() {
