@@ -34,7 +34,8 @@ window.APP_CONFIG = {
         voiceVideoWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-video-extend', // Del workflow "Voice Video Extend" - Image-to-Video + Video Extension
         educativeWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-educative-carousel', // Del workflow "MSI Educative Carousel Gen Flow"
         voiceSwapWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-voice-swap', // Del workflow "MSI Voice Swap - ElevenLabs"
-        schedulerWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-scheduler-run' // Del workflow "MSI Content Scheduler"
+        schedulerWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-scheduler-run', // Del workflow "MSI Content Scheduler"
+        emailOutreachWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-email-outreach' // Del workflow "MSI Email Outreach"
     },
     
     // Security token - Este valor NO se puede cambiar desde el frontend
