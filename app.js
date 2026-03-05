@@ -2254,6 +2254,48 @@ if (videoStartImageInput) {
     });
 }
 
+// Manual Script Button — skip AI generation, go directly to Step 2
+const manualScriptBtn = document.getElementById('manual-script-btn');
+if (manualScriptBtn) {
+    manualScriptBtn.addEventListener('click', () => {
+        const prompt = document.getElementById('video_prompt')?.value || '';
+        const startImageUrl = document.getElementById('video_start_image_url')?.value || '';
+        const service = document.getElementById('video_service')?.value || 'company_intro';
+        const duration = document.getElementById('video_duration')?.value || '8';
+
+        if (!startImageUrl) {
+            showToast('Please enter a Start Image URL before proceeding', 'error');
+            return;
+        }
+
+        // Build preview data with empty prompts for manual writing
+        const manualData = {
+            post_id: null,
+            original_prompt: prompt,
+            service: service,
+            duration: duration,
+            aspect_ratio: '9:16',
+            start_image_url: startImageUrl,
+            prompt_part1: '',
+            prompt_part2: '',
+            prompt_part3: ''
+        };
+
+        loadVideoApprovalData(manualData);
+
+        // Make prompt fields editable (they might be readonly from a previous AI fill)
+        ['approval_prompt_part1', 'approval_prompt_part2', 'approval_prompt_part3'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.readOnly = false; el.style.background = ''; el.focus(); }
+        });
+
+        const step2El = document.getElementById('video-step2');
+        if (step2El) step2El.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        showToast('Write your 3-part script manually below, then approve to generate.', 'info');
+    });
+}
+
 // Video Form Submit
 let _videoGenerating = false; // Guard against double submission
 if (videoForm) {

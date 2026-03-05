@@ -1,0 +1,286 @@
+import { workflow, node, links } from '@n8n-as-code/transformer';
+
+// <workflow-map>
+// Workflow : Trends Content Generator
+// Nodes   : 14  |  Connections: 12
+//
+// NODE INDEX
+// ──────────────────────────────────────────────────────────────────
+// Property name                    Node type (short)         Flags
+// ManualTrigger                      manualTrigger
+// WebhookTrigger                     webhook
+// WorkflowConfiguration              code
+// UseTopicQuery                      code
+// SearchGoogleNews                   httpRequest                [onError→regular] [creds]
+// FilterTopNews                      code
+// FetchArticleContent                httpRequest                [onError→regular]
+// ExtractArticleContent              code
+// AggregateNewsContent               code
+// AiRankTop3News                     agent                      [AI]
+// GeminiRankModel                    lmChatGoogleGemini         [creds]
+// ApplyAiRanking                     code
+// SaveNewsToDb                       postgres                   [onError→regular] [creds]
+// ReturnTop3News                     code
+//
+// ROUTING MAP
+// ──────────────────────────────────────────────────────────────────
+// ManualTrigger
+//    → WorkflowConfiguration
+//      → UseTopicQuery
+//        → SearchGoogleNews
+//          → FilterTopNews
+//            → FetchArticleContent
+//              → ExtractArticleContent
+//                → AggregateNewsContent
+//                  → AiRankTop3News
+//                    → ApplyAiRanking
+//                      → SaveNewsToDb
+//                        → ReturnTop3News
+// WebhookTrigger
+//    → WorkflowConfiguration (↩ loop)
+//
+// AI CONNECTIONS
+// GeminiRankModel.uses({ ai_languageModel: AiRankTop3News })
+// </workflow-map>
+
+// =====================================================================
+// METADATA DU WORKFLOW
+// =====================================================================
+
+@workflow({
+    id: '5F5EX4FyWVxtG6P0',
+    name: 'Trends Content Generator',
+    active: true,
+    settings: { executionOrder: 'v1' },
+})
+export class TrendsContentGeneratorWorkflow {
+    // =====================================================================
+    // CONFIGURATION DES NOEUDS
+    // =====================================================================
+
+    @node({
+        name: 'Manual Trigger',
+        type: 'n8n-nodes-base.manualTrigger',
+        version: 1,
+        position: [-240, 144],
+    })
+    ManualTrigger = {};
+
+    @node({
+        name: 'Webhook Trigger',
+        type: 'n8n-nodes-base.webhook',
+        version: 2,
+        position: [-240, 336],
+    })
+    WebhookTrigger = {
+        httpMethod: 'POST',
+        path: 'msi-trends-content',
+        responseMode: 'lastNode',
+        options: {},
+    };
+
+    @node({
+        name: 'Workflow Configuration',
+        type: 'n8n-nodes-base.code',
+        version: 2,
+        position: [-16, 240],
+    })
+    WorkflowConfiguration = {
+        jsCode: '// ========================================\n// WORKFLOW CONFIGURATION - MSI TECHNOLOGIES\n// ========================================\n// Accepts topic from webhook or manual trigger\n// Use $input to safely get data regardless of which trigger fired\nconst inputData = $input.first().json;\nconst webhookBody = inputData.body || inputData;\nconst inputTopic = webhookBody.topic || \'\';\nconst inputContext = webhookBody.context || \'\';\n\nreturn [{\n  json: {\n    brandName: "MSI Technologies",\n    brandDescription: "MSI Technologies is a multinational company with 20+ years of experience specializing in two major areas:\\n\\n1. TELECOM SERVICES: Network Planning & RF Optimization (indoor/outdoor), Workforce Agility (specialized engineering & design), IoT Solutions (connected devices), Engineering & Consulting.\\n\\n2. DIGITAL SERVICES: Data Security & Cloud Computing, IT Management & Cybersecurity, AI & Smart Business Solutions, Business Process Outsourcing (BPO), IT Outsourcing, Executive Consulting.\\n\\nExpertise: Staff Augmentation, Information Systems, Software, Cybersecurity, and Telecommunications. Target: CTOs, IT Directors, tech decision-makers.",\n    \n    // Topic provided by user via webhook\n    userTopic: inputTopic,\n    userContext: inputContext,\n    \n    googleTrendsRegion: "US",\n    newsLanguage: "en",\n    newsCountry: "us",\n    maxTrends: 5,\n    maxNews: 12,\n    \n    visualStyles: ["Glassmorphism", "Modern 3D", "Isometric", "Data Hero", "Infographic", "Realistic Photography"],\n    postTypes: ["Educational", "Industry News", "Tips & Tricks", "Thought Leadership"],\n    \n    // Webhook URL for content generation\n    contentWebhookUrl: "https://n8nmsi.app.n8n.cloud/webhook/msi-carousel-v12"\n  }\n}];',
+    };
+
+    @node({
+        name: 'Use Topic Query',
+        type: 'n8n-nodes-base.code',
+        version: 2,
+        position: [208, 240],
+    })
+    UseTopicQuery = {
+        jsCode: "const config = $input.first().json;\n\n// Use the topic provided by the user DIRECTLY - no trend selection\nconst searchQuery = config.userTopic || 'AI Business Solutions';\n\nreturn [{\n  json: {\n    ...config,\n    searchQuery: searchQuery,\n    // Fields that Search Google News and downstream nodes expect\n    selectedTrend: searchQuery,\n    originalSelectedTrend: searchQuery,\n    newsLanguage: config.newsLanguage,\n    newsCountry: config.newsCountry,\n    maxNews: config.maxNews,\n    brandName: config.brandName,\n    brandDescription: config.brandDescription,\n    visualStyles: config.visualStyles,\n    postTypes: config.postTypes,\n    originalQuery: searchQuery,\n    contentWebhookUrl: config.contentWebhookUrl\n  }\n}];",
+    };
+
+    @node({
+        name: 'Search Google News',
+        type: 'n8n-nodes-base.httpRequest',
+        version: 4.3,
+        position: [432, 240],
+        credentials: { serpApi: { id: 'RfnKNuS1eruwujfz', name: 'SerpAPI account' } },
+        onError: 'continueRegularOutput',
+    })
+    SearchGoogleNews = {
+        url: 'https://serpapi.com/search.json',
+        authentication: 'predefinedCredentialType',
+        nodeCredentialType: 'serpApi',
+        sendQuery: true,
+        queryParameters: {
+            parameters: [
+                {
+                    name: 'engine',
+                    value: 'google_news',
+                },
+                {
+                    name: 'q',
+                    value: '={{ $json.searchQuery }}',
+                },
+                {
+                    name: 'gl',
+                    value: '={{ $json.newsCountry }}',
+                },
+                {
+                    name: 'hl',
+                    value: '={{ $json.newsLanguage }}',
+                },
+                {
+                    name: 'tbm',
+                    value: 'nws',
+                },
+                {
+                    name: 'nfpr',
+                    value: '1',
+                },
+                {
+                    name: 'tbs',
+                    value: 'qdr:m',
+                },
+            ],
+        },
+        options: {
+            timeout: 30000,
+        },
+    };
+
+    @node({
+        name: 'Filter Top News',
+        type: 'n8n-nodes-base.code',
+        version: 2,
+        position: [656, 240],
+    })
+    FilterTopNews = {
+        jsCode: "const input = $input.first().json;\nconst prevData = $('Use Topic Query').first().json;\nconst maxNews = prevData.maxNews || 5;\n\n// Company names to filter out from results (avoid company-specific news)\nconst companyPatterns = [\n  /\\bMicrosoft\\b/i, /\\bGoogle\\b/i, /\\bApple\\b/i, /\\bAmazon\\b/i, /\\bMeta\\b/i,\n  /\\bFacebook\\b/i, /\\bNetflix\\b/i, /\\bTesla\\b/i, /\\bNvidia\\b/i, /\\bIntel\\b/i,\n  /\\bAMD\\b/i, /\\bIBM\\b/i, /\\bOracle\\b/i, /\\bSalesforce\\b/i, /\\bSAP\\b/i,\n  /\\bCisco\\b/i, /\\bDell\\b/i, /\\bVMware\\b/i, /\\bAdobe\\b/i, /\\bQualcomm\\b/i,\n  /\\bSamsung\\b/i, /\\bSony\\b/i, /\\bOpenAI\\b/i, /\\bAnthopic\\b/i,\n  /\\bPalantir\\b/i, /\\bSnowflake\\b/i, /\\bCrowdStrike\\b/i,\n  /\\bPalo Alto Networks\\b/i, /\\bFortinet\\b/i, /\\bDatadog\\b/i,\n  /earnings/i, /\\bIPO\\b/i, /\\bstock\\b/i, /share price/i, /quarterly results/i,\n  /revenue report/i, /\\bCEO\\b/i, /\\bCFO\\b/i, /acqui(re|sition)/i, /merger/i\n];\n\nfunction isCompanySpecific(title, snippet) {\n  const text = (title + ' ' + snippet).toLowerCase();\n  let matchCount = 0;\n  for (const pattern of companyPatterns) {\n    if (pattern.test(title) || pattern.test(snippet)) matchCount++;\n  }\n  // If 2+ company/financial indicators match, it's too company-specific\n  return matchCount >= 2;\n}\n\nlet newsResults = [];\n\nif (input.news_results && Array.isArray(input.news_results)) {\n  // First pass: filter out company-specific articles\n  const filtered = input.news_results.filter(news => {\n    const title = news.title || '';\n    const snippet = news.snippet || '';\n    return !isCompanySpecific(title, snippet);\n  });\n  \n  // Use filtered results, fall back to original if too few remain\n  const sourceResults = filtered.length >= 3 ? filtered : input.news_results;\n  \n  newsResults = sourceResults.slice(0, maxNews).map((news, index) => ({\n    index: index + 1,\n    title: news.title || 'No title',\n    link: news.link || '',\n    source: news.source?.name || news.source || 'Unknown',\n    date: news.date || 'Recent',\n    snippet: news.snippet || ''\n  }));\n}\n\nif (newsResults.length === 0) {\n  newsResults = [{\n    index: 1,\n    title: prevData.selectedTrend,\n    link: '',\n    source: 'Trend topic',\n    date: 'Current',\n    snippet: 'Content based on trending topic.'\n  }];\n}\n\nconsole.log('Filtered news count:', newsResults.length, 'from', (input.news_results || []).length, 'total');\n\n// Return each news item separately for parallel fetching\nreturn newsResults.map(news => ({\n  json: {\n    ...news,\n    selectedTrend: prevData.selectedTrend,\n    originalQuery: prevData.originalQuery,\n    brandName: prevData.brandName,\n    brandDescription: prevData.brandDescription,\n    visualStyles: prevData.visualStyles,\n    postTypes: prevData.postTypes,\n    contentWebhookUrl: prevData.contentWebhookUrl,\n    totalNews: newsResults.length\n  }\n}));",
+    };
+
+    @node({
+        name: 'Fetch Article Content',
+        type: 'n8n-nodes-base.httpRequest',
+        version: 4.3,
+        position: [880, 240],
+        onError: 'continueRegularOutput',
+    })
+    FetchArticleContent = {
+        url: '={{ $json.link }}',
+        options: {
+            response: {
+                response: {
+                    responseFormat: 'text',
+                },
+            },
+            timeout: 15000,
+        },
+    };
+
+    @node({
+        name: 'Extract Article Content',
+        type: 'n8n-nodes-base.code',
+        version: 2,
+        position: [1104, 240],
+    })
+    ExtractArticleContent = {
+        jsCode: "// Extract main content from HTML - PRESERVE original news data\nconst items = $input.all();\nconst filterNewsItems = $('Filter Top News').all();\nconst results = [];\n\nconsole.log('Processing', items.length, 'items');\nconsole.log('Filter News items:', filterNewsItems.length);\n\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n  // Match by index position, not by link\n  const newsData = filterNewsItems[i]?.json || {};\n  let articleContent = '';\n  \n  console.log(`Item ${i}: title='${newsData.title}', link='${newsData.link}'`);\n  \n  try {\n    const html = item.json.data || item.json.body || item.json.response || '';\n    \n    if (html && typeof html === 'string' && html.length > 100) {\n      // Remove scripts, styles, and HTML tags\n      let text = html\n        .replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, '')\n        .replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, '')\n        .replace(/<nav[^>]*>[\\s\\S]*?<\\/nav>/gi, '')\n        .replace(/<header[^>]*>[\\s\\S]*?<\\/header>/gi, '')\n        .replace(/<footer[^>]*>[\\s\\S]*?<\\/footer>/gi, '')\n        .replace(/<aside[^>]*>[\\s\\S]*?<\\/aside>/gi, '');\n      \n      // Try to find article content\n      const articleMatch = text.match(/<article[^>]*>([\\s\\S]*?)<\\/article>/i);\n      if (articleMatch) {\n        text = articleMatch[1];\n      }\n      \n      // Find paragraphs - NO character limit for full content\n      const paragraphs = text.match(/<p[^>]*>[^<]*<\\/p>/gi) || [];\n      const cleanParagraphs = paragraphs\n        .map(p => p.replace(/<[^>]+>/g, '').trim())\n        .filter(p => p.length > 30)\n        .slice(0, 30);\n      \n      articleContent = cleanParagraphs.join('\\n\\n');\n      \n      // Fallback: just clean all HTML - NO truncation\n      if (!articleContent || articleContent.length < 50) {\n        articleContent = text\n          .replace(/<[^>]+>/g, ' ')\n          .replace(/\\s+/g, ' ')\n          .trim();\n      }\n      \n      console.log(`Extracted ${articleContent.length} chars of content`);\n    } else {\n      console.log('No valid HTML response, using snippet');\n      articleContent = newsData.snippet || '';\n    }\n  } catch (e) {\n    console.error('Error extracting content:', e.message);\n    articleContent = newsData.snippet || '';\n  }\n  \n  // NO character limit - preserve full article content\n  \n  // IMPORTANT: Always use data from Filter Top News, not from HTTP response\n  results.push({\n    json: {\n      index: newsData.index || (i + 1),\n      title: newsData.title || 'No title',\n      link: newsData.link || '',\n      source: newsData.source || 'Unknown',\n      date: newsData.date || 'Recent',\n      snippet: newsData.snippet || '',\n      content: articleContent || newsData.snippet || 'No content available',\n      selectedTrend: newsData.selectedTrend || '',\n      originalQuery: newsData.originalQuery || '',\n      brandName: newsData.brandName || 'MSI Technologies',\n      brandDescription: newsData.brandDescription || '',\n      visualStyles: newsData.visualStyles || [],\n      postTypes: newsData.postTypes || [],\n      contentWebhookUrl: newsData.contentWebhookUrl || '',\n      totalNews: newsData.totalNews || items.length\n    }\n  });\n}\n\nconsole.log('Returning', results.length, 'results');\nreturn results;",
+    };
+
+    @node({
+        name: 'Aggregate News Content',
+        type: 'n8n-nodes-base.code',
+        version: 2,
+        position: [1328, 240],
+    })
+    AggregateNewsContent = {
+        jsCode: "// Aggregate all news with content into single object\nconst items = $input.all();\nconst firstItem = items[0]?.json || {};\n\nconsole.log('Aggregating', items.length, 'news items');\n\n// Noticias ya filtradas por último día desde la API de Google News (qdr:m)\nconst newsWithContent = items.map((item, idx) => {\n  const news = item.json;\n  console.log(`News ${idx + 1}: title='${news.title}', source='${news.source}'`);\n  return {\n    index: news.index || (idx + 1),\n    title: news.title || 'No title',\n    link: news.link || '',\n    source: news.source || 'Unknown',\n    date: news.date || 'Recent',\n    snippet: news.snippet || '',\n    content: news.content || news.snippet || 'No content'\n  };\n});\n\nconsole.log('Aggregated news:', newsWithContent.map(n => n.title));\n\nreturn [{\n  json: {\n    selectedTrend: firstItem.selectedTrend || 'Technology',\n    originalQuery: firstItem.originalQuery || '',\n    brandName: firstItem.brandName || 'MSI Technologies',\n    brandDescription: firstItem.brandDescription || '',\n    newsCount: newsWithContent.length,\n    news: newsWithContent,\n    newsJson: JSON.stringify(newsWithContent, null, 2),\n    visualStyles: firstItem.visualStyles || ['Glassmorphism'],\n    postTypes: firstItem.postTypes || ['Educational'],\n    contentWebhookUrl: firstItem.contentWebhookUrl || ''\n  }\n}];",
+    };
+
+    @node({
+        name: 'AI: Rank Top 3 News',
+        type: '@n8n/n8n-nodes-langchain.agent',
+        version: 1.7,
+        position: [1552, 240],
+    })
+    AiRankTop3News = {
+        promptType: 'define',
+        text: "=# NEWS ARTICLES TO RANK\n\nTopic: {{ $json.selectedTrend }}\n\nHere are {{ $json.newsCount }} news articles. Select the TOP 3 most interesting for B2B technology content:\n\n{{ $json.news.map(n => `## Article ${n.index}: ${n.title}\\nSource: ${n.source} | Date: ${n.date}\\nSummary: ${n.snippet}\\nContent: ${(n.content || '').substring(0, 500)}\\n---`).join('\\n\\n') }}\n\n## RANKING CRITERIA (in order of importance):\n1. **Industry-wide relevance**: Broad industry trends > single-company news\n2. **Data richness**: Articles with specific stats, percentages, market data, research findings\n3. **Actionable insights**: Valuable for CTOs, IT Directors, and tech decision-makers\n4. **Relevance to MSI services**: Telecom (Network Planning, RF, IoT) or Digital (Cloud, Cybersecurity, AI, BPO, IT Outsourcing)\n5. **Freshness & impact**: Emerging trends or significant industry developments\n\n## DISQUALIFY these types:\n- Stock prices, earnings reports, CEO/CFO changes, M&A deals\n- Single-company press releases or product launches\n- Clickbait or thin/low-substance articles\n- Near-duplicate articles (pick the best version only)\n\nRespond with ONLY a JSON array of the 3 best article indices, e.g.: [1, 4, 7]",
+        options: {
+            systemMessage:
+                'You are a senior B2B content curator specializing in enterprise technology news. Your job is to select the 3 most compelling, insightful, and industry-relevant news articles from a batch.\n\nYou prioritize articles that:\n- Cover broad industry trends affecting multiple companies and sectors\n- Contain hard data, research findings, or market statistics\n- Are relevant to enterprise IT decision-makers (CTOs, VPs of Engineering, IT Directors)\n- Discuss emerging technologies, security threats, cloud adoption, AI implementation, telecom infrastructure, or digital transformation\n\nYou AVOID selecting:\n- Company-specific PR, press releases, or product announcements\n- Financial news (stocks, earnings, IPOs, M&A)\n- Consumer tech reviews or gadget news\n- Clickbait headlines without substantive content\n\nRespond with ONLY a valid JSON array of exactly 3 article index numbers. Nothing else.',
+        },
+    };
+
+    @node({
+        name: 'Gemini Rank Model',
+        type: '@n8n/n8n-nodes-langchain.lmChatGoogleGemini',
+        version: 1,
+        position: [1624, 464],
+        credentials: { googlePalmApi: { id: 'oF4jKBK0jRbwEPWt', name: 'Google Gemini(PaLM) Api account' } },
+    })
+    GeminiRankModel = {
+        options: {
+            temperature: 0,
+        },
+    };
+
+    @node({
+        name: 'Apply AI Ranking',
+        type: 'n8n-nodes-base.code',
+        version: 2,
+        position: [1904, 240],
+    })
+    ApplyAiRanking = {
+        jsCode: "const aiOutput = $input.first().json.output;\nconst newsData = $('Aggregate News Content').first().json;\n\nconsole.log('AI Ranking raw output:', aiOutput);\n\nlet selectedIndices = [];\ntry {\n  // Clean markdown code blocks if present\n  const cleanOutput = aiOutput.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  const match = cleanOutput.match(/\\[\\s*\\d+[\\s,\\d]*\\]/);\n  if (match) {\n    selectedIndices = JSON.parse(match[0]);\n  }\n} catch (e) {\n  console.error('Error parsing AI ranking:', e.message);\n}\n\n// Fallback: if AI didn't return valid indices, take first 3\nif (!selectedIndices.length || selectedIndices.length < 3) {\n  console.log('AI ranking fallback: using first 3 articles');\n  selectedIndices = newsData.news.slice(0, 3).map(n => n.index);\n}\n\n// Filter news to only the AI-selected articles\nconst selectedNews = selectedIndices\n  .map(idx => newsData.news.find(n => n.index === idx))\n  .filter(n => n)\n  .slice(0, 3);\n\n// Re-index from 1\nconst reindexedNews = selectedNews.map((n, i) => ({ ...n, index: i + 1 }));\n\nconsole.log('AI selected top 3 news:', reindexedNews.map(n => `${n.index}. ${n.title}`));\n\nreturn [{\n  json: {\n    selectedTrend: newsData.selectedTrend,\n    originalQuery: newsData.originalQuery,\n    brandName: newsData.brandName,\n    brandDescription: newsData.brandDescription,\n    newsCount: reindexedNews.length,\n    news: reindexedNews,\n    newsJson: JSON.stringify(reindexedNews, null, 2),\n    visualStyles: newsData.visualStyles,\n    postTypes: newsData.postTypes,\n    contentWebhookUrl: newsData.contentWebhookUrl\n  }\n}];",
+    };
+
+    @node({
+        name: 'Save News to DB',
+        type: 'n8n-nodes-base.postgres',
+        version: 2.5,
+        position: [2128, 240],
+        credentials: { postgres: { id: 'WnTYs2zvPoE7hDJE', name: 'Postgres account' } },
+        onError: 'continueRegularOutput',
+    })
+    SaveNewsToDb = {
+        operation: 'executeQuery',
+        query: "=WITH news_data AS (\n  SELECT * FROM (\n    VALUES \n    {{ $json.news.map((n, i) => `(${i + 1}, '${n.title.replace(/'/g, \"''\")}', '${(n.link || '').replace(/'/g, \"''\")}', '${n.source.replace(/'/g, \"''\")}', '${n.date.replace(/'/g, \"''\")}', '${n.snippet.replace(/'/g, \"''\")}', '${(n.content || '').replace(/'/g, \"''\")}')`).join(',\\n    ') }}\n  ) AS t(idx, title, link, source, news_date, snippet, content)\n)\nINSERT INTO trend_news (trend_query, search_query, title, link, source, news_date, snippet, content, scraped_at)\nSELECT \n  '{{ $json.selectedTrend.replace(/'/g, \"''\") }}',\n  '{{ $json.originalQuery.replace(/'/g, \"''\") }}',\n  title, link, source, news_date, snippet, content, NOW()\nFROM news_data\nRETURNING id, title",
+        options: {},
+    };
+
+    @node({
+        name: 'Return Top 3 News',
+        type: 'n8n-nodes-base.code',
+        version: 2,
+        position: [2352, 240],
+    })
+    ReturnTop3News = {
+        jsCode: "// Return the AI-ranked top 3 news as webhook response\nconst newsDbResult = $input.all();\nconst newsData = $('Apply AI Ranking').first().json;\n\n// Get DB IDs\nconst savedNewsIds = newsDbResult.map(item => item.json.id).filter(id => id);\n\n// Build response with news data for the frontend\nconst newsForFrontend = newsData.news.map((n, i) => ({\n  id: savedNewsIds[i] || null,\n  index: n.index,\n  title: n.title,\n  link: n.link || '',\n  source: n.source || 'Unknown',\n  date: n.date || 'Recent',\n  snippet: n.snippet || '',\n  content_preview: (n.content || '').substring(0, 300),\n  trend_query: newsData.selectedTrend\n}));\n\nreturn [{\n  json: {\n    success: true,\n    message: 'Top 3 noticias encontradas y guardadas',\n    topic: newsData.selectedTrend,\n    newsCount: newsForFrontend.length,\n    news: newsForFrontend,\n    savedNewsIds: savedNewsIds,\n    timestamp: new Date().toISOString()\n  }\n}];",
+    };
+
+    // =====================================================================
+    // ROUTAGE ET CONNEXIONS
+    // =====================================================================
+
+    @links()
+    defineRouting() {
+        this.ManualTrigger.out(0).to(this.WorkflowConfiguration.in(0));
+        this.WebhookTrigger.out(0).to(this.WorkflowConfiguration.in(0));
+        this.WorkflowConfiguration.out(0).to(this.UseTopicQuery.in(0));
+        this.UseTopicQuery.out(0).to(this.SearchGoogleNews.in(0));
+        this.SearchGoogleNews.out(0).to(this.FilterTopNews.in(0));
+        this.FilterTopNews.out(0).to(this.FetchArticleContent.in(0));
+        this.FetchArticleContent.out(0).to(this.ExtractArticleContent.in(0));
+        this.ExtractArticleContent.out(0).to(this.AggregateNewsContent.in(0));
+        this.AggregateNewsContent.out(0).to(this.AiRankTop3News.in(0));
+        this.SaveNewsToDb.out(0).to(this.ReturnTop3News.in(0));
+        this.AiRankTop3News.out(0).to(this.ApplyAiRanking.in(0));
+        this.ApplyAiRanking.out(0).to(this.SaveNewsToDb.in(0));
+
+        this.AiRankTop3News.uses({
+            ai_languageModel: this.GeminiRankModel.output,
+        });
+    }
+}

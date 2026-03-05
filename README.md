@@ -2,7 +2,7 @@
 
 Aplicación web para gestionar publicaciones en redes sociales con integración a n8n y Supabase.
 
-> 📖 **Para configuración detallada paso a paso, lee [SETUP_GUIDE.md](SETUP_GUIDE.md)**
+> 📖 **Para configuración detallada paso a paso, lee [SETUP_GUIDE.md](docs/SETUP_GUIDE.md)**
 
 ## Características
 
@@ -48,7 +48,7 @@ window.APP_CONFIG = {
 };
 ```
 
-> **⚠️ Importante**: Esta app es frontend puro. **NO uses `.env`** (eso es para backend/Node.js). Usa `config.js` que se carga en el navegador. Lee [IMPORTANT.md](IMPORTANT.md) para entender por qué.
+> **⚠️ Importante**: Esta app es frontend puro. **NO uses `.env`** (eso es para backend/Node.js). Usa `config.js` que se carga en el navegador. Lee [IMPORTANT.md](docs/IMPORTANT.md) para entender por qué.
 
 ### 📖 Guía Completa
 
@@ -60,7 +60,7 @@ Para instrucciones paso a paso detalladas sobre:
 - Despliegue en Vercel
 - Solución de problemas
 
-**Lee [SETUP_GUIDE.md](SETUP_GUIDE.md)**
+**Lee [SETUP_GUIDE.md](docs/SETUP_GUIDE.md)**
 
 ### 3. Despliegue en Vercel
 
@@ -87,14 +87,74 @@ vercel
 ## Estructura de Archivos
 
 ```
-api test/
-├── index.html          # Página principal
-├── styles.css          # Estilos
-├── app.js             # Lógica de la aplicación
-├── vercel.json        # Configuración de Vercel
-├── README.md          # Este archivo
-├── supabase-schema.sql # Schema de la base de datos
-└── current-flow.json  # Configuración de n8n
+msi-workflow/
+├── index.html              # Página principal
+├── styles.css              # Estilos
+├── app.js                  # Lógica de la aplicación
+├── config.js               # Configuración local (no en Git)
+├── config.example.js       # Template de configuración
+├── vercel.json             # Configuración de Vercel
+├── package.json            # Dependencias Node.js
+├── README.md               # Este archivo
+│
+├── workflows/              # 🔄 Flujos n8n (para n8n-as-code sync)
+│   ├── auto-post.json
+│   ├── content-generation-flow.json
+│   ├── carousel-gen-flow.json
+│   ├── video-gen-approved-flow.json
+│   ├── linkedin-search-flow.json
+│   └── ... (29 flujos)
+│
+├── api/                    # Funciones serverless (Vercel)
+│   └── health.js
+│
+├── migrations/             # SQL: esquema y migraciones Supabase
+│   ├── supabase-schema.sql
+│   └── migration-*.sql
+│
+├── scripts/                # Scripts utilitarios JS/Python
+│   ├── upload-apollo-leads.js
+│   ├── seed-followers.js
+│   └── ...
+│
+├── docs/                   # Documentación del proyecto
+│   ├── SETUP_GUIDE.md
+│   ├── FLOW_ARCHITECTURE.md
+│   ├── SECURITY_SETUP.md
+│   └── ...
+│
+└── data/                   # Archivos de datos (CSV, imágenes)
+    ├── seguidores_formateados.json
+    └── ...
+```
+
+## Sincronización con n8n Cloud (n8n-as-code)
+
+La carpeta `workflows/` está preparada para sincronizar con tu instancia de n8n en la nube.
+
+### Instalación
+
+```bash
+npm install -g n8n-as-code
+```
+
+### Configuración
+
+```bash
+n8n-as-code init
+# Te pedirá:
+#   n8n URL: https://tu-subdominio.app.n8n.cloud
+#   API Key: (genera en n8n > Settings > Personal API Keys)
+```
+
+### Uso
+
+```bash
+# Descargar flujos de la nube
+n8n-as-code pull
+
+# Modo watch: sincroniza cambios en tiempo real al guardar en VS Code
+n8n-as-code watch
 ```
 
 ## Uso

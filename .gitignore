@@ -1,29 +1,41 @@
-# Vercel
+# =============================================
+# Proyecto MSI Workflow - .gitignore
+# =============================================
+
+# --- Vercel ---
 .vercel
 
-# Node modules (si los usas)
+# --- Node ---
 node_modules/
+package-lock.json
 
-# Configuración con valores reales (NO subir a Git)
+# --- Configuración con valores reales (NO subir a Git) ---
 config.js
 
-# Workflows con credenciales embebidas (NO subir a Git)
-video-gen.json
+# --- n8n-as-code ---
+# Archivo de configuración local de n8n-as-code (contiene API key)
+.n8n-as-code.json
+n8nac-config.json
+workflows/**/.n8n-state.json
 
-# Nota: .env NO se usa en esta app porque es frontend puro
-# Si alguien crea un .env por error, también ignorarlo:
+# --- Workflows con credenciales embebidas (NO subir a Git) ---
+workflows/video-gen.json
+
+# --- Variables de entorno ---
 .env
 .env.local
 .env*.local
 
-# OS
+# --- Datos sensibles/privados ---
+data/*.csv
+
+# --- OS ---
 .DS_Store
 Thumbs.db
 
-# Editor
+# --- Editor ---
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-Apollo List_29012026 (1).csv
