@@ -35,7 +35,7 @@ window.APP_CONFIG = {
         educativeWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-educative-carousel', // Del workflow "MSI Educative Carousel Gen Flow"
         voiceSwapWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-voice-swap', // Del workflow "MSI Voice Swap - ElevenLabs"
         schedulerWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-scheduler-run', // Del workflow "MSI Content Scheduler"
-        emailOutreachWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-email-outreach', // Del workflow "MSI Email Outreach"
+        emailOutreachWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-outbound-email', // Del workflow "Outbound Email Qualifier - Supabase"
         profileScraperWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-profile-scraper', // Del workflow "MSI Profile Scraper"
         linkedinToApolloWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-linkedin-to-apollo', // Del workflow "LinkedIn to Apollo Outreach"
         linkedinSearchWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-linkedin-search' // Del workflow "MSI LinkedIn Lead Search" (Google CSE - GRATIS)
@@ -49,19 +49,39 @@ window.APP_CONFIG = {
         apiKey: 'YOUR_APOLLO_MASTER_API_KEY',
         // Email account ID: run GET https://api.apollo.io/api/v1/email_accounts to find it
         emailAccountId: 'YOUR_APOLLO_EMAIL_ACCOUNT_ID',
-        // Map each MSI service to an Apollo Sequence ID
-        // Create sequences in Apollo UI first, then find IDs via API:
-        // POST https://api.apollo.io/api/v1/emailer_campaigns/search
+        // Map each industry to an Apollo Sequence ID
+        // Create sequences in Apollo UI (use templates from docs/EMAIL_OUTREACH_GUIDE.md)
+        // Then find IDs via API: POST https://api.apollo.io/api/v1/emailer_campaigns/search
         sequenceMap: {
-            'Cybersecurity': 'SEQUENCE_ID_HERE',
-            'Cloud Migration': 'SEQUENCE_ID_HERE',
-            'AI Integration': 'SEQUENCE_ID_HERE',
-            'IT Infrastructure Modernization': 'SEQUENCE_ID_HERE',
-            'Managed IT Services': 'SEQUENCE_ID_HERE',
-            'Data Analytics': 'SEQUENCE_ID_HERE',
-            'Network Security': 'SEQUENCE_ID_HERE',
-            'Digital Transformation': 'SEQUENCE_ID_HERE'
+            'Financial Services': 'SEQ_ID_FINANCIAL',
+            'Healthcare': 'SEQ_ID_HEALTHCARE',
+            'Retail': 'SEQ_ID_RETAIL',
+            'Manufacturing': 'SEQ_ID_MANUFACTURING',
+            'Technology': 'SEQ_ID_TECHNOLOGY',
+            'Energy': 'SEQ_ID_ENERGY',
+            'Education': 'SEQ_ID_EDUCATION',
+            'Legal': 'SEQ_ID_LEGAL',
+            'Real Estate': 'SEQ_ID_REAL_ESTATE',
+            'Logistics': 'SEQ_ID_LOGISTICS',
+            'Telecommunications': 'SEQ_ID_TELECOM',
+            'General': 'SEQ_ID_GENERAL'
         }
+    },
+    
+    // Google Cloud / Gemini Configuration
+    // Used for image generation (Gemini) and video generation (Vertex AI - Veo)
+    // Steps to create a new API key:
+    //   1. Go to https://console.cloud.google.com/apis/credentials
+    //   2. Select your project (or create a new one)
+    //   3. Click "+ CREATE CREDENTIALS" → "API key"
+    //   4. Enable "Generative Language API" in APIs & Services → Library
+    //   5. Copy the key here AND update it in n8n credentials
+    // In n8n: Credentials → "Google Gemini(PaLM) Api account" → paste new key
+    // This SAME key is used by 10+ workflows for image generation
+    google: {
+        geminiApiKey: 'YOUR_GOOGLE_GEMINI_API_KEY',
+        // Google Cloud Project ID (for Vertex AI / Veo video generation)
+        projectId: 'gen-lang-client-0521438560'
     },
     
     // Security token - Este valor NO se puede cambiar desde el frontend

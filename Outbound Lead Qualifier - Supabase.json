@@ -1,0 +1,684 @@
+{
+  "name": "MSI Outbound Lead Qualifier - Supabase",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "msi-outbound-call",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-160, 0],
+      "id": "webhook-trigger-001",
+      "name": "Webhook Trigger",
+      "webhookId": "msi-outbound-call"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM apollo_leads WHERE id = {{ $json.body.lead_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [40, 0],
+      "id": "read-lead-001",
+      "name": "Read Lead from Supabase",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all input items\nconst items = $input.all();\n\n// Process each item\nreturn items.map(item => {\n  // Try multiple phone fields from apollo_leads\n  const phoneNumber = item.json.work_direct_phone || item.json.mobile_phone || item.json.home_phone || item.json.corporate_phone || item.json.other_phone || item.json.company_phone || '';\n  \n  // Convert to string and remove all non-digit characters\n  let cleanNumber = String(phoneNumber).replace(/\\D/g, '');\n  \n  // Handle different cases\n  let standardizedNumber;\n  \n  if (cleanNumber.length === 10) {\n    // Perfect - just 10 digits (US)\n    standardizedNumber = cleanNumber;\n  } else if (cleanNumber.length === 11 && cleanNumber.startsWith('1')) {\n    // US number with country code +1\n    standardizedNumber = cleanNumber.slice(1);\n  } else if (cleanNumber.length >= 10 && cleanNumber.length <= 15) {\n    // International number - keep as is\n    standardizedNumber = cleanNumber;\n  } else if (cleanNumber.length === 0) {\n    standardizedNumber = 'no_phone';\n  } else {\n    // Wrong format\n    standardizedNumber = 'incorrect format';\n  }\n  \n  // Build lead context for VAPI\n  const leadContext = {\n    lead_id: item.json.id,\n    first_name: item.json.first_name || '',\n    last_name: item.json.last_name || '',\n    full_name: `${item.json.first_name || ''} ${item.json.last_name || ''}`.trim(),\n    title: item.json.title || '',\n    company_name: item.json.company_name || '',\n    email: item.json.email || '',\n    industry: item.json.industry || '',\n    num_employees: item.json.num_employees || '',\n    seniority: item.json.seniority || '',\n    departments: item.json.departments || '',\n    city: item.json.city || '',\n    state: item.json.state || '',\n    country: item.json.country || '',\n    person_linkedin_url: item.json.person_linkedin_url || '',\n    website: item.json.website || '',\n    annual_revenue: item.json.annual_revenue || '',\n    technologies: item.json.technologies || '',\n    keywords: item.json.keywords || '',\n    primary_intent_topic: item.json.primary_intent_topic || '',\n    primary_intent_score: item.json.primary_intent_score || '',\n    phone_number: standardizedNumber,\n    phone_source: item.json.work_direct_phone ? 'work_direct' : (item.json.mobile_phone ? 'mobile' : (item.json.home_phone ? 'home' : (item.json.corporate_phone ? 'corporate' : 'other'))),\n    call_attempts: (item.json.call_attempts || 0) + 1\n  };\n  \n  return {\n    json: leadContext\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0],
+      "id": "standardize-data-001",
+      "name": "Standardize & Enrich Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "phone-check-001",
+              "leftValue": "={{ $json.phone_number }}",
+              "rightValue": "incorrect format",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [440, 0],
+      "id": "check-phone-001",
+      "name": "Phone Valid?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "no-phone-check-001",
+              "leftValue": "={{ $json.phone_number }}",
+              "rightValue": "no_phone",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [440, -200],
+      "id": "check-no-phone-001",
+      "name": "Has Phone?"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE apollo_leads SET call_status = 'incorrect_phone', call_attempts = {{ $json.call_attempts }}, updated_at = NOW() WHERE id = {{ $json.lead_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [660, -100],
+      "id": "log-incorrect-phone-001",
+      "name": "Log Incorrect Phone",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE apollo_leads SET call_status = 'failed', call_summary = 'No phone number available in any field', updated_at = NOW() WHERE id = {{ $json.lead_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [660, -300],
+      "id": "log-no-phone-001",
+      "name": "Log No Phone",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE apollo_leads SET call_status = 'calling', call_attempts = {{ $json.call_attempts }}, call_date = NOW(), updated_at = NOW() WHERE id = {{ $json.lead_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [660, 100],
+      "id": "update-calling-001",
+      "name": "Set Status: Calling",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.vapi.ai/call",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"assistantId\": \"YOUR_VAPI_ASSISTANT_ID\",\n  \"phoneNumberId\": \"YOUR_VAPI_PHONE_NUMBER_ID\",\n  \"customers\": [\n    {\n      \"number\": \"+1{{ $('Standardize & Enrich Data').item.json.phone_number }}\"\n    }\n  ],\n  \"assistantOverrides\": {\n    \"variableValues\": {\n      \"lead_id\": \"{{ $('Standardize & Enrich Data').item.json.lead_id }}\",\n      \"lead_name\": \"{{ $('Standardize & Enrich Data').item.json.full_name }}\",\n      \"lead_first_name\": \"{{ $('Standardize & Enrich Data').item.json.first_name }}\",\n      \"lead_last_name\": \"{{ $('Standardize & Enrich Data').item.json.last_name }}\",\n      \"lead_title\": \"{{ $('Standardize & Enrich Data').item.json.title }}\",\n      \"lead_company_name\": \"{{ $('Standardize & Enrich Data').item.json.company_name }}\",\n      \"lead_email\": \"{{ $('Standardize & Enrich Data').item.json.email }}\",\n      \"lead_industry\": \"{{ $('Standardize & Enrich Data').item.json.industry }}\",\n      \"lead_num_employees\": \"{{ $('Standardize & Enrich Data').item.json.num_employees }}\",\n      \"lead_seniority\": \"{{ $('Standardize & Enrich Data').item.json.seniority }}\",\n      \"lead_city\": \"{{ $('Standardize & Enrich Data').item.json.city }}\",\n      \"lead_state\": \"{{ $('Standardize & Enrich Data').item.json.state }}\",\n      \"lead_country\": \"{{ $('Standardize & Enrich Data').item.json.country }}\",\n      \"lead_website\": \"{{ $('Standardize & Enrich Data').item.json.website }}\",\n      \"lead_annual_revenue\": \"{{ $('Standardize & Enrich Data').item.json.annual_revenue }}\",\n      \"lead_technologies\": \"{{ $('Standardize & Enrich Data').item.json.technologies }}\",\n      \"lead_intent_topic\": \"{{ $('Standardize & Enrich Data').item.json.primary_intent_topic }}\",\n      \"lead_intent_score\": \"{{ $('Standardize & Enrich Data').item.json.primary_intent_score }}\"\n    }\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [860, 100],
+      "id": "call-lead-001",
+      "name": "Call Lead via VAPI",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "YOUR_VAPI_BEARER_CREDENTIAL_ID",
+          "name": "Vapi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 60
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1060, 100],
+      "id": "wait-001",
+      "name": "Wait 60s",
+      "webhookId": "outbound-wait-001"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.vapi.ai/call/{{ $('Call Lead via VAPI').item.json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1260, 100],
+      "id": "get-call-details-001",
+      "name": "Get Call Details",
+      "executeOnce": true,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "YOUR_VAPI_BEARER_CREDENTIAL_ID",
+          "name": "Vapi"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [1460, 100],
+      "id": "limit-001",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ended-check-001",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "ended",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1660, 100],
+      "id": "ended-check-001",
+      "name": "Call Ended?"
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1860, 200],
+      "id": "polling-001",
+      "name": "Polling (10s)",
+      "webhookId": "outbound-polling-001"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "voicemail-check-001",
+              "leftValue": "={{ $json.endedReason }}",
+              "rightValue": "voicemail",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1860, 0],
+      "id": "voicemail-check-001",
+      "name": "Voicemail?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "no-answer-check-001",
+              "leftValue": "={{ $json.endedReason }}",
+              "rightValue": "customer-did-not-answer",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2060, -200],
+      "id": "no-answer-check-001",
+      "name": "No Answer?"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE apollo_leads SET \n  call_status = 'voicemail',\n  call_ended_reason = '{{ $json.endedReason }}',\n  vapi_call_id = '{{ $json.id }}',\n  call_duration_seconds = {{ $json.costBreakdown?.duration || 0 }},\n  updated_at = NOW()\nWHERE id = {{ $('Standardize & Enrich Data').item.json.lead_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [2260, -100],
+      "id": "log-voicemail-001",
+      "name": "Log Voicemail to Supabase",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE apollo_leads SET \n  call_status = 'no_answer',\n  call_ended_reason = '{{ $json.endedReason }}',\n  vapi_call_id = '{{ $json.id }}',\n  updated_at = NOW()\nWHERE id = {{ $('Standardize & Enrich Data').item.json.lead_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [2260, -300],
+      "id": "log-no-answer-001",
+      "name": "Log No Answer to Supabase",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract structured outputs from VAPI call\nconst item = $input.first();\nconst json = item.json;\n\n// Get structured outputs from VAPI artifact\nconst structuredOutputs = json.artifact?.structuredOutputs || {};\n\n// Map the VAPI structured output IDs to our fields\n// IMPORTANT: Replace these UUIDs with YOUR actual VAPI structured output IDs\nconst outputs = Object.values(structuredOutputs);\n\n// Try to find outputs by their names/types or use the values directly\nlet intention = '';\nlet budget = '';\nlet urgency = '';\nlet motivation = '';\nlet serviceInterest = '';\nlet rightPerson = false;\nlet pastExperience = '';\nlet callSummary = '';\n\n// If using named structured outputs, map them\nfor (const [key, value] of Object.entries(structuredOutputs)) {\n  const result = value.result || value;\n  const name = (value.name || key).toLowerCase();\n  \n  if (name.includes('intent') || name.includes('intencion') || name.includes('intención')) {\n    intention = result;\n  } else if (name.includes('budget') || name.includes('presupuesto')) {\n    budget = result;\n  } else if (name.includes('urgency') || name.includes('urgencia')) {\n    urgency = result;\n  } else if (name.includes('motivation') || name.includes('motivacion') || name.includes('motivación')) {\n    motivation = result;\n  } else if (name.includes('service') || name.includes('servicio') || name.includes('interest') || name.includes('interés')) {\n    serviceInterest = result;\n  } else if (name.includes('right_person') || name.includes('persona') || name.includes('decision')) {\n    rightPerson = result === 'true' || result === 'yes' || result === 'sí' || result === true;\n  } else if (name.includes('experience') || name.includes('experiencia')) {\n    pastExperience = result;\n  } else if (name.includes('summary') || name.includes('resumen')) {\n    callSummary = result;\n  }\n}\n\n// Get transcript\nconst transcript = json.artifact?.transcript || json.transcript || '';\nconst transcriptText = typeof transcript === 'string' ? transcript : \n  (Array.isArray(transcript) ? transcript.map(t => `${t.role}: ${t.message}`).join('\\n') : JSON.stringify(transcript));\n\n// If no summary from structured outputs, try to get from analysis\nif (!callSummary && json.analysis?.summary) {\n  callSummary = json.analysis.summary;\n}\n\nreturn [{\n  json: {\n    lead_id: $('Standardize & Enrich Data').item.json.lead_id,\n    call_intention: intention,\n    call_budget: budget,\n    call_urgency: urgency,\n    call_motivation: motivation,\n    call_service_interest: serviceInterest,\n    call_right_person: rightPerson,\n    call_past_experience: pastExperience,\n    call_summary: callSummary,\n    call_transcript: transcriptText,\n    vapi_call_id: json.id,\n    call_ended_reason: json.endedReason,\n    call_duration_seconds: json.costBreakdown?.duration || 0,\n    // Keep original VAPI data for reference\n    raw_structured_outputs: JSON.stringify(structuredOutputs),\n    raw_analysis: JSON.stringify(json.analysis || {})\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2060, 100],
+      "id": "extract-data-001",
+      "name": "Extract Call Qualification Data"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE apollo_leads SET \n  call_status = 'completed',\n  call_intention = '{{ $json.call_intention.replace(/'/g, \"''\") }}',\n  call_budget = '{{ $json.call_budget.replace(/'/g, \"''\") }}',\n  call_urgency = '{{ $json.call_urgency.replace(/'/g, \"''\") }}',\n  call_motivation = '{{ $json.call_motivation.replace(/'/g, \"''\") }}',\n  call_service_interest = '{{ $json.call_service_interest.replace(/'/g, \"''\") }}',\n  call_right_person = {{ $json.call_right_person }},\n  call_past_experience = '{{ $json.call_past_experience.replace(/'/g, \"''\") }}',\n  call_summary = '{{ $json.call_summary.replace(/'/g, \"''\") }}',\n  call_transcript = '{{ $json.call_transcript.replace(/'/g, \"''\") }}',\n  vapi_call_id = '{{ $json.vapi_call_id }}',\n  call_ended_reason = '{{ $json.call_ended_reason }}',\n  call_duration_seconds = {{ $json.call_duration_seconds }},\n  updated_at = NOW()\nWHERE id = {{ $json.lead_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [2260, 100],
+      "id": "log-complete-001",
+      "name": "Save Qualification to Supabase",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"lead_id\": {{ $('Standardize & Enrich Data').item.json.lead_id }},\n  \"status\": \"{{ $json.call_status || 'processing' }}\",\n  \"message\": \"Call qualification completed\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2460, 100],
+      "id": "respond-success-001",
+      "name": "Respond Success"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"lead_id\": {{ $('Standardize & Enrich Data').item.json.lead_id }},\n  \"status\": \"incorrect_phone\",\n  \"message\": \"Phone number format is incorrect or missing\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [860, -100],
+      "id": "respond-error-phone-001",
+      "name": "Respond Phone Error"
+    },
+    {
+      "parameters": {
+        "content": "# 🛠️ MSI Outbound Lead Qualifier - Setup Guide\n**Adapted for Supabase + Apollo Leads**\n\n---\n\n### ✅ Step 1: Run the Migration\n- Go to Supabase SQL Editor\n- Run `migrations/migration-outbound-qualifier.sql`\n- This adds all qualification columns to `apollo_leads`\n\n---\n\n### ✅ Step 2: Configure Supabase PostgreSQL Credential\n- In n8n, create a **PostgreSQL** credential\n- Host: `db.vahqhxfdropstvklvzej.supabase.co`\n- Port: `5432`\n- Database: `postgres`\n- User: `postgres`\n- Password: Your Supabase DB password\n- SSL: Enabled\n\n---\n\n### ✅ Step 3: Add Your VAPI API Key\n- Create a **Generic Credential** using **Bearer Auth**\n- Paste your VAPI API key\n- Update credential in **Call Lead via VAPI** and **Get Call Details**\n\n---\n\n### ✅ Step 4: Configure VAPI Assistant\n- Set your **Assistant ID** in the Call Lead node\n- Set your **Phone Number ID** in the Call Lead node\n- Configure structured outputs (see VAPI_OUTBOUND_CONFIG.md)\n\n---\n\n### ✅ Step 5: Trigger a Call\nPOST to webhook with:\n```json\n{ \"lead_id\": 123 }\n```\nOr for batch:\n```json\n{ \"lead_ids\": [1, 2, 3] }\n```\n\n---\n\n### 📊 Qualification Fields Stored:\n- **call_intention**: Purchase intent level\n- **call_budget**: Budget range mentioned\n- **call_urgency**: Timeline urgency\n- **call_motivation**: Main motivation\n- **call_service_interest**: Specific MSI service\n- **call_right_person**: Decision maker confirmed\n- **call_past_experience**: Previous vendor experience\n- **call_summary**: AI-generated summary\n- **call_transcript**: Full conversation\n",
+        "height": 1200,
+        "width": 784
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-1100, -400],
+      "id": "sticky-setup-001",
+      "name": "Setup Guide"
+    },
+    {
+      "parameters": {
+        "content": "# 📞 Call Flow\n\n1. **Webhook** receives lead_id\n2. **Read** lead data from Supabase\n3. **Standardize** phone number\n4. **Check** phone validity\n5. **Call** via VAPI with full lead context\n6. **Wait** → **Poll** until call ends\n7. **Extract** qualification data from structured outputs\n8. **Save** everything back to Supabase\n\n### VAPI Variables Available:\n- lead_name, lead_first_name, lead_last_name\n- lead_title, lead_company_name\n- lead_email, lead_industry\n- lead_num_employees, lead_seniority\n- lead_city, lead_state, lead_country\n- lead_website, lead_annual_revenue\n- lead_technologies\n- lead_intent_topic, lead_intent_score",
+        "height": 600,
+        "width": 400
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-280, -400],
+      "id": "sticky-flow-001",
+      "name": "Call Flow Diagram"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Lead from Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Lead from Supabase": {
+      "main": [
+        [
+          {
+            "node": "Standardize & Enrich Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Standardize & Enrich Data": {
+      "main": [
+        [
+          {
+            "node": "Has Phone?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Phone?": {
+      "main": [
+        [
+          {
+            "node": "Log No Phone",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Phone Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Phone Valid?": {
+      "main": [
+        [
+          {
+            "node": "Log Incorrect Phone",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Status: Calling",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Incorrect Phone": {
+      "main": [
+        [
+          {
+            "node": "Respond Phone Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log No Phone": {
+      "main": [
+        [
+          {
+            "node": "Respond Phone Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Status: Calling": {
+      "main": [
+        [
+          {
+            "node": "Call Lead via VAPI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Lead via VAPI": {
+      "main": [
+        [
+          {
+            "node": "Wait 60s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 60s": {
+      "main": [
+        [
+          {
+            "node": "Get Call Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Call Details": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Call Ended?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Ended?": {
+      "main": [
+        [
+          {
+            "node": "Voicemail?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Polling (10s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Polling (10s)": {
+      "main": [
+        [
+          {
+            "node": "Get Call Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voicemail?": {
+      "main": [
+        [
+          {
+            "node": "No Answer?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract Call Qualification Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Answer?": {
+      "main": [
+        [
+          {
+            "node": "Log No Answer to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Voicemail to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Call Qualification Data": {
+      "main": [
+        [
+          {
+            "node": "Save Qualification to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Qualification to Supabase": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "msi-outbound-v1-supabase",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "95e5a8c2e51c83e33b232ea792bbe3f063c094c33d9806a5565cb31759e1ad39"
+  },
+  "id": "MSI-Outbound-Qualifier-Supabase",
+  "tags": []
+}

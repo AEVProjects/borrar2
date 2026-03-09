@@ -1,0 +1,428 @@
+{
+  "name": "MSI Outbound Email Qualifier - Apollo Direct",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "msi-outbound-email",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-360, 0],
+      "id": "webhook-email-001",
+      "name": "Webhook Trigger",
+      "webhookId": "msi-outbound-email"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM apollo_leads WHERE id = {{ $json.body.lead_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [-160, 0],
+      "id": "read-lead-001",
+      "name": "Read Lead from Supabase",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Enrich lead and determine the best Apollo sequence by industry\nconst items = $input.all();\n\n// ===== REPLACE THESE WITH YOUR ACTUAL APOLLO SEQUENCE IDS =====\n// Create one sequence per industry group in Apollo.io\n// Each sequence has industry-specific email templates with MSI intro\nconst INDUSTRY_SEQUENCE_MAP = {\n  'financial':      'SEQ_ID_FINANCIAL',\n  'banking':        'SEQ_ID_FINANCIAL',\n  'insurance':      'SEQ_ID_FINANCIAL',\n  'fintech':        'SEQ_ID_FINANCIAL',\n  'healthcare':     'SEQ_ID_HEALTHCARE',\n  'medical':        'SEQ_ID_HEALTHCARE',\n  'pharma':         'SEQ_ID_HEALTHCARE',\n  'biotech':        'SEQ_ID_HEALTHCARE',\n  'hospital':       'SEQ_ID_HEALTHCARE',\n  'retail':         'SEQ_ID_RETAIL',\n  'ecommerce':      'SEQ_ID_RETAIL',\n  'e-commerce':     'SEQ_ID_RETAIL',\n  'consumer':       'SEQ_ID_RETAIL',\n  'manufacturing':  'SEQ_ID_MANUFACTURING',\n  'industrial':     'SEQ_ID_MANUFACTURING',\n  'automotive':     'SEQ_ID_MANUFACTURING',\n  'technology':     'SEQ_ID_TECH',\n  'software':       'SEQ_ID_TECH',\n  'saas':           'SEQ_ID_TECH',\n  'information technology': 'SEQ_ID_TECH',\n  'energy':         'SEQ_ID_ENERGY',\n  'oil':            'SEQ_ID_ENERGY',\n  'utilities':      'SEQ_ID_ENERGY',\n  'renewable':      'SEQ_ID_ENERGY',\n  'education':      'SEQ_ID_EDUCATION',\n  'university':     'SEQ_ID_EDUCATION',\n  'school':         'SEQ_ID_EDUCATION',\n  'legal':          'SEQ_ID_LEGAL',\n  'law':            'SEQ_ID_LEGAL',\n  'real estate':    'SEQ_ID_REALESTATE',\n  'property':       'SEQ_ID_REALESTATE',\n  'construction':   'SEQ_ID_REALESTATE',\n  'logistics':      'SEQ_ID_LOGISTICS',\n  'transportation': 'SEQ_ID_LOGISTICS',\n  'shipping':       'SEQ_ID_LOGISTICS',\n  'supply chain':   'SEQ_ID_LOGISTICS',\n  'telecom':        'SEQ_ID_TELECOM',\n  'telecommunications': 'SEQ_ID_TELECOM'\n};\n\n// Default sequence for industries that don't match\nconst DEFAULT_SEQUENCE = 'SEQ_ID_GENERAL';\n\nreturn items.map(item => {\n  const d = item.json;\n  const industry = (d.industry || '').toLowerCase();\n  \n  // Find the best matching sequence\n  let sequenceId = DEFAULT_SEQUENCE;\n  let matchedIndustry = 'General';\n  for (const [keyword, seqId] of Object.entries(INDUSTRY_SEQUENCE_MAP)) {\n    if (industry.includes(keyword)) {\n      sequenceId = seqId;\n      matchedIndustry = keyword;\n      break;\n    }\n  }\n  \n  // Determine company size label\n  const employees = parseInt(d.num_employees) || 0;\n  let companySize = '';\n  if (employees > 1000) companySize = 'enterprise';\n  else if (employees > 200) companySize = 'mid-market';\n  else if (employees > 50) companySize = 'growing';\n  else companySize = 'emerging';\n  \n  return {\n    json: {\n      lead_id: d.id,\n      first_name: d.first_name || '',\n      last_name: d.last_name || '',\n      full_name: `${d.first_name || ''} ${d.last_name || ''}`.trim(),\n      title: d.title || '',\n      company_name: d.company_name || '',\n      email: d.email || '',\n      email_status: d.email_status || '',\n      industry: d.industry || '',\n      matched_industry: matchedIndustry,\n      num_employees: d.num_employees || '',\n      seniority: d.seniority || '',\n      city: d.city || '',\n      state: d.state || '',\n      country: d.country || '',\n      person_linkedin_url: d.person_linkedin_url || '',\n      website: d.website || '',\n      annual_revenue: d.annual_revenue || '',\n      technologies: d.technologies || '',\n      keywords: d.keywords || '',\n      primary_intent_topic: d.primary_intent_topic || '',\n      primary_intent_score: d.primary_intent_score || '',\n      company_size_category: companySize,\n      apollo_contact_id: d.apollo_contact_id || '',\n      sequence_id: sequenceId,\n      email_attempts: (d.email_attempts || 0) + 1\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [40, 0],
+      "id": "enrich-lead-001",
+      "name": "Enrich & Map Industry Sequence"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "email-check-001",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [240, 0],
+      "id": "check-email-001",
+      "name": "Has Email?"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE apollo_leads SET email_outreach_status = 'no_email', updated_at = NOW() WHERE id = {{ $json.lead_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [460, -200],
+      "id": "log-no-email-001",
+      "name": "Log No Email",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"lead_id\": {{ $json.lead_id }},\n  \"status\": \"no_email\",\n  \"message\": \"Lead has no email address\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [660, -200],
+      "id": "respond-no-email-001",
+      "name": "Respond No Email"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/contacts/search",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"api_key\": \"{{ $('Webhook Trigger').item.json.body.apollo_api_key || 'YOUR_APOLLO_MASTER_API_KEY' }}\",\n  \"q_keywords\": \"{{ $json.email }}\",\n  \"page\": 1,\n  \"per_page\": 1\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [460, 100],
+      "id": "search-apollo-001",
+      "name": "Search Contact in Apollo"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if contact already exists in Apollo\nconst searchResult = $input.first().json;\nconst leadData = $('Enrich & Map Industry Sequence').item.json;\n\nlet apolloContactId = leadData.apollo_contact_id;\nlet contactExists = false;\n\nif (searchResult.contacts && searchResult.contacts.length > 0) {\n  apolloContactId = searchResult.contacts[0].id;\n  contactExists = true;\n}\n\nreturn [{\n  json: {\n    ...leadData,\n    apollo_contact_id: apolloContactId,\n    contact_exists: contactExists\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 100],
+      "id": "check-contact-001",
+      "name": "Check Apollo Contact"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "exists-check-001",
+              "leftValue": "={{ $json.contact_exists }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [860, 100],
+      "id": "contact-exists-001",
+      "name": "Contact in Apollo?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/contacts",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"api_key\": \"{{ $('Webhook Trigger').item.json.body.apollo_api_key || 'YOUR_APOLLO_MASTER_API_KEY' }}\",\n  \"first_name\": \"{{ $json.first_name }}\",\n  \"last_name\": \"{{ $json.last_name }}\",\n  \"email\": \"{{ $json.email }}\",\n  \"organization_name\": \"{{ $json.company_name }}\",\n  \"title\": \"{{ $json.title }}\",\n  \"website_url\": \"{{ $json.website }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1060, 0],
+      "id": "create-contact-001",
+      "name": "Create Contact in Apollo"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract the new contact ID\nconst created = $input.first().json;\nconst prevData = $('Check Apollo Contact').item.json;\n\nreturn [{\n  json: {\n    ...prevData,\n    apollo_contact_id: created.contact?.id || created.id || prevData.apollo_contact_id\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1260, 0],
+      "id": "get-contact-id-001",
+      "name": "Get New Contact ID"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apollo.io/api/v1/emailer_campaigns/{{ $json.sequence_id }}/add_contact_ids",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"api_key\": \"{{ $('Webhook Trigger').item.json.body.apollo_api_key || 'YOUR_APOLLO_MASTER_API_KEY' }}\",\n  \"contact_ids\": [\"{{ $json.apollo_contact_id }}\"],\n  \"emailer_campaign_id\": \"{{ $json.sequence_id }}\",\n  \"send_email_from_email_account_id\": \"{{ $('Webhook Trigger').item.json.body.email_account_id || 'YOUR_APOLLO_EMAIL_ACCOUNT_ID' }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1460, 100],
+      "id": "add-to-sequence-001",
+      "name": "Add to Apollo Sequence"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE apollo_leads SET \n  email_outreach_status = 'sequence_active',\n  apollo_sequence_status = 'active',\n  apollo_sequence_id = '{{ $json.sequence_id }}',\n  apollo_sequence_added_at = NOW(),\n  apollo_contact_id = '{{ $json.apollo_contact_id }}',\n  email_suggested_service = '{{ $json.matched_industry }}',\n  email_attempts = {{ $json.email_attempts }},\n  email_outreach_date = NOW(),\n  updated_at = NOW()\nWHERE id = {{ $json.lead_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1660, 100],
+      "id": "log-sequence-001",
+      "name": "Log to Supabase",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO email_outreach_log (lead_id, to_email, to_name, company, service, subject, body, status)\nVALUES (\n  {{ $json.lead_id }},\n  '{{ $json.email }}',\n  '{{ $json.full_name }}',\n  '{{ $json.company_name }}',\n  '{{ $json.matched_industry }}',\n  'Apollo Sequence: {{ $json.matched_industry }}',\n  'Added to Apollo industry sequence',\n  'sequence_active'\n)",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1660, 300],
+      "id": "insert-log-001",
+      "name": "Insert Outreach Log",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"lead_id\": {{ $json.lead_id }},\n  \"status\": \"sequence_active\",\n  \"sequence\": \"{{ $json.matched_industry }}\",\n  \"apollo_contact_id\": \"{{ $json.apollo_contact_id }}\",\n  \"message\": \"Lead added to Apollo sequence for {{ $json.matched_industry }} industry\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1860, 100],
+      "id": "respond-success-001",
+      "name": "Respond Success"
+    },
+    {
+      "parameters": {
+        "content": "# 📧 MSI Outbound via Apollo Sequences\n\n**Todo va por Apollo — no SMTP externo**\n\n### Flujo:\n1. Webhook recibe lead_id\n2. Lee datos del lead de Supabase\n3. Enriquece y determina industria\n4. Busca/crea contacto en Apollo\n5. Lo añade a la secuencia correcta por industria\n6. Guarda estado en Supabase\n\n### Secuencias por industria en Apollo:\n- Financial/Banking\n- Healthcare/Pharma\n- Retail/E-commerce\n- Manufacturing\n- Technology/SaaS\n- Energy/Utilities\n- Education\n- Legal\n- Real Estate/Construction\n- Logistics/Transport\n- Telecom\n- General (default)\n\nCada secuencia tiene 3-4 emails personalizados\ncon intro de MSI + investigación de la industria.\n\nVer docs/EMAIL_OUTREACH_GUIDE.md para templates.",
+        "height": 700,
+        "width": 500
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-900, -400],
+      "id": "sticky-guide-001",
+      "name": "Guide"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Lead from Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Lead from Supabase": {
+      "main": [
+        [
+          {
+            "node": "Enrich & Map Industry Sequence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich & Map Industry Sequence": {
+      "main": [
+        [
+          {
+            "node": "Has Email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Email?": {
+      "main": [
+        [
+          {
+            "node": "Log No Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Search Contact in Apollo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log No Email": {
+      "main": [
+        [
+          {
+            "node": "Respond No Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Contact in Apollo": {
+      "main": [
+        [
+          {
+            "node": "Check Apollo Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Apollo Contact": {
+      "main": [
+        [
+          {
+            "node": "Contact in Apollo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contact in Apollo?": {
+      "main": [
+        [
+          {
+            "node": "Create Contact in Apollo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add to Apollo Sequence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Contact in Apollo": {
+      "main": [
+        [
+          {
+            "node": "Get New Contact ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get New Contact ID": {
+      "main": [
+        [
+          {
+            "node": "Add to Apollo Sequence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add to Apollo Sequence": {
+      "main": [
+        [
+          {
+            "node": "Log to Supabase",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Insert Outreach Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Supabase": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "msi-outbound-email-v2-apollo-direct",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "95e5a8c2e51c83e33b232ea792bbe3f063c094c33d9806a5565cb31759e1ad39"
+  },
+  "id": "MSI-Outbound-Email-Apollo-Direct",
+  "tags": []
+}
