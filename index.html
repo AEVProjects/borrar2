@@ -1241,28 +1241,66 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="educative_topic">Topic / Question *</label>
-                        <input type="text" id="educative_topic" name="topic" required 
-                               placeholder="e.g., How AI reduces operational costs by 40%, Why automation is key for scaling businesses">
-                        <small class="form-hint">Describe the educational topic or question you want to address in the carousel</small>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="educative_format">Content Format *</label>
+                            <select id="educative_format" name="content_format" required>
+                                <option value="tips">Quick Tips</option>
+                                <option value="smart_moves">Smart Moves</option>
+                                <option value="did_you_know">Did You Know?</option>
+                                <option value="mistakes">Common Mistakes</option>
+                                <option value="myths_vs_facts">Myths vs Facts</option>
+                                <option value="how_it_works">How It Works</option>
+                                <option value="before_after">Before & After</option>
+                                <option value="checklist">Quick Checklist</option>
+                                <option value="comparison">Side by Side Comparison</option>
+                                <option value="step_by_step">Step by Step Guide</option>
+                            </select>
+                            <small class="form-hint">Choose the style of content for the carousel</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="educative_tone">Tone *</label>
+                            <select id="educative_tone" name="tone" required>
+                                <option value="casual" selected>Casual & Friendly</option>
+                                <option value="bold">Bold & Direct</option>
+                                <option value="curious">Curious & Questioning</option>
+                                <option value="storytelling">Storytelling</option>
+                                <option value="data_driven">Data-Driven</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="educative_context">Additional Context (optional)</label>
-                        <textarea id="educative_context" name="context" rows="3" 
-                                  placeholder="Any specific points to cover, statistics to mention, or audience considerations..."></textarea>
+                        <label for="educative_topic">Topic / Idea *</label>
+                        <textarea id="educative_topic" name="topic" required rows="2"
+                               placeholder="Write freely — a topic, a question, a rough idea, bullet points, anything you want to turn into a carousel..."></textarea>
+                        <small class="form-hint">Be as specific or as broad as you want. The more detail you give, the better the result.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="educative_context">Additional Notes (optional)</label>
+                        <textarea id="educative_context" name="context" rows="4" 
+                                  placeholder="Anything else: specific points to cover, stats, audience notes, angle you want, examples to include, key message to highlight..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="educative_hook">Custom Hook / Title (optional)</label>
+                        <input type="text" id="educative_hook" name="custom_hook" 
+                               placeholder="Leave empty for AI-generated, or write your own catchy cover title">
+                        <small class="form-hint">Override the AI hook with your own if you have one in mind</small>
                     </div>
 
                     <!-- Example Topics -->
                     <div class="example-topics">
                         <label>Quick Topics:</label>
                         <div class="topic-chips">
-                            <button type="button" class="topic-chip" data-topic="How AI is transforming business operations">AI in Business</button>
-                            <button type="button" class="topic-chip" data-topic="5 ways automation reduces human error">Automation Benefits</button>
-                            <button type="button" class="topic-chip" data-topic="Why cloud migration saves money">Cloud Savings</button>
-                            <button type="button" class="topic-chip" data-topic="The future of work with AI assistants">Future of Work</button>
-                            <button type="button" class="topic-chip" data-topic="How data analytics drives better decisions">Data-Driven Decisions</button>
+                            <button type="button" class="topic-chip" data-topic="How AI is transforming business operations" data-format="tips">AI in Business</button>
+                            <button type="button" class="topic-chip" data-topic="5 ways automation reduces human error" data-format="smart_moves">Automation Benefits</button>
+                            <button type="button" class="topic-chip" data-topic="Why cloud migration saves money" data-format="myths_vs_facts">Cloud Savings</button>
+                            <button type="button" class="topic-chip" data-topic="The future of work with AI assistants" data-format="did_you_know">Future of Work</button>
+                            <button type="button" class="topic-chip" data-topic="How data analytics drives better decisions" data-format="step_by_step">Data-Driven Decisions</button>
+                            <button type="button" class="topic-chip" data-topic="3 things businesses still do manually that AI can handle" data-format="mistakes">Manual vs AI</button>
+                            <button type="button" class="topic-chip" data-topic="What your business looks like before and after automation" data-format="before_after">Before & After</button>
                         </div>
                     </div>
 
@@ -1579,7 +1617,7 @@
                                     <th>Industry</th>
                                     <th>Seniority</th>
                                     <th>City</th>
-                                    <th>Stage</th>
+                                    <th>Sequence</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -1746,21 +1784,12 @@
                                 <path d="M12 8h.01"></path>
                             </svg>
                             <div>
-                                <strong>Apollo Sequence — Auto-matched service</strong>
-                                <p>AI will analyze each lead's data to auto-select the best MSI service, then add the contact to the corresponding Apollo sequence. All email stats (opens, clicks, replies) will be tracked in Apollo.</p>
+                                <strong>Apollo Sequence — Industry-Personalized Emails</strong>
+                                <p>Each lead will be added to an Apollo sequence matched to their <strong>industry</strong>. Each sequence has 4 personalized emails with MSI Technologies intro, industry-specific research, relevant case studies, and tailored CTAs. All stats (opens, clicks, replies) are tracked in Apollo.</p>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label for="leads-email-tone">Tone</label>
-                            <select id="leads-email-tone">
-                                <option value="professional">Professional</option>
-                                <option value="friendly">Friendly</option>
-                                <option value="consultative">Consultative</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="leads-email-context">Additional Context (optional)</label>
-                            <textarea id="leads-email-context" rows="3" placeholder="E.g., Focus on cybersecurity for this batch, mention upcoming industry event..."></textarea>
+                        <div id="leads-sequence-preview" class="leads-sequence-preview" style="display:none;">
+                            <!-- Industry → Sequence mapping preview -->
                         </div>
                     </div>
                     <div class="schedule-modal-footer">

@@ -4548,10 +4548,15 @@ document.querySelector('.tab-btn[data-mode="trends"]')?.addEventListener('click'
 document.querySelectorAll('.topic-chip').forEach(chip => {
     chip.addEventListener('click', () => {
         const topic = chip.dataset.topic;
+        const format = chip.dataset.format;
         const topicInput = document.getElementById('educative_topic');
+        const formatSelect = document.getElementById('educative_format');
         if (topicInput) {
             topicInput.value = topic;
             topicInput.focus();
+        }
+        if (formatSelect && format) {
+            formatSelect.value = format;
         }
     });
 });
@@ -4566,7 +4571,10 @@ educativeForm?.addEventListener('submit', async (e) => {
         topic: formData.get('topic'),
         pillar: formData.get('pillar'),
         theme: formData.get('theme'),
-        context: formData.get('context') || ''
+        context: formData.get('context') || '',
+        content_format: formData.get('content_format') || 'tips',
+        tone: formData.get('tone') || 'casual',
+        custom_hook: formData.get('custom_hook') || ''
     };
     
     if (!data.topic) {
@@ -6201,7 +6209,6 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         } else {
             tbody.innerHTML = pageLeads.map(lead => {
                 const checked = selectedLeadIds.has(lead.id) ? 'checked' : '';
-                const stageBadge = lead.stage ? `<span class="leads-stage leads-stage-${(lead.stage || '').toLowerCase().replace(/\s+/g, '-')}">${lead.stage}</span>` : '-';
                 return `<tr class="${checked ? 'leads-row-selected' : ''}">
                     <td><input type="checkbox" class="lead-checkbox" data-id="${lead.id}" ${checked}></td>
                     <td class="leads-name-cell">
@@ -6216,9 +6223,17 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
                     <td>${lead.industry || '-'}</td>
                     <td>${lead.seniority || '-'}</td>
                     <td>${lead.city || '-'}${lead.state ? ', ' + lead.state : ''}</td>
-                    <td>${stageBadge}</td>
+                    <td>${(() => {
+                        const seqStatus = lead.apollo_sequence_status || lead.email_outreach_status || '';
+                        if (seqStatus === 'active' || seqStatus === 'sequence_active') return '<span class="leads-stage" style="background:#10b981;color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;">In Sequence</span>';
+                        if (seqStatus === 'sent') return '<span class="leads-stage" style="background:#3b82f6;color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;">Email Sent</span>';
+                        if (seqStatus === 'no_email') return '<span class="leads-stage" style="background:#ef4444;color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;">No Email</span>';
+                        if (seqStatus === 'replied') return '<span class="leads-stage" style="background:#8b5cf6;color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;">Replied!</span>';
+                        if (seqStatus === 'sequence_completed') return '<span class="leads-stage" style="background:#6b7280;color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;">Seq Done</span>';
+                        return '<span style="color:#9ca3af;font-size:11px;">—</span>';
+                    })()}</td>
                     <td>
-                        <button class="btn btn-secondary btn-small leads-email-single" data-id="${lead.id}" title="Send email to this lead">
+                        <button class="btn btn-secondary btn-small leads-email-single" data-id="${lead.id}" title="Add to Apollo sequence"${lead.apollo_sequence_status === 'active' ? ' disabled style="opacity:0.4;"' : ''}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                                 <polyline points="22,6 12,13 2,6"></polyline>
@@ -6285,18 +6300,46 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
 
         const modal = document.getElementById('leads-email-modal');
         const recipientsDiv = document.getElementById('leads-email-recipients');
+        const previewDiv = document.getElementById('leads-sequence-preview');
 
         const selected = leadsData.filter(l => selectedLeadIds.has(l.id));
+        
+        // Group by industry to show sequence mapping preview
+        const industryGroups = {};
+        selected.forEach(l => {
+            const ind = l.industry || 'General';
+            if (!industryGroups[ind]) industryGroups[ind] = [];
+            industryGroups[ind].push(l);
+        });
+
         recipientsDiv.innerHTML = `
-            <div class="leads-recipients-header">Sending to ${selected.length} recipient(s):</div>
+            <div class="leads-recipients-header">Adding ${selected.length} lead(s) to industry-matched Apollo sequences:</div>
             <div class="leads-recipients-list">
-                ${selected.map(l => `
-                    <div class="leads-recipient-chip">
+                ${selected.map(l => {
+                    const statusBadge = l.apollo_sequence_status === 'active' 
+                        ? '<span class="leads-stage leads-stage-active" style="background:#10b981;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;margin-left:6px;">Already in sequence</span>' 
+                        : '';
+                    return `<div class="leads-recipient-chip">
                         <strong>${l.first_name} ${l.last_name}</strong> - ${l.company_name}
-                        <small>&lt;${l.email}&gt;</small>
-                    </div>
-                `).join('')}
+                        <small>&lt;${l.email || 'no email'}&gt;</small>
+                        <small style="color:#6b7280;">${l.industry || 'General'}</small>
+                        ${statusBadge}
+                    </div>`;
+                }).join('')}
             </div>`;
+
+        // Show industry → sequence preview
+        if (previewDiv) {
+            previewDiv.style.display = 'block';
+            previewDiv.innerHTML = `
+                <div style="font-size:13px;color:#6b7280;margin-bottom:8px;"><strong>Sequence mapping:</strong></div>
+                ${Object.entries(industryGroups).map(([ind, leads]) => `
+                    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f3f4f6;font-size:13px;">
+                        <span>${ind}</span>
+                        <span style="color:#6b7280;">${leads.length} lead(s) → Industry sequence</span>
+                    </div>
+                `).join('')}`;
+        }
 
         modal.style.display = 'flex';
     }
@@ -6306,9 +6349,6 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
     }
 
     async function sendPersonalizedEmails() {
-        const tone = document.getElementById('leads-email-tone')?.value || 'professional';
-        const context = document.getElementById('leads-email-context')?.value || '';
-
         const selected = leadsData.filter(l => selectedLeadIds.has(l.id));
         if (selected.length === 0) {
             showToast('No leads selected', 'warning');
@@ -6317,14 +6357,12 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
 
         const webhookUrl = CONFIG?.n8n?.emailOutreachWebhook;
         if (!webhookUrl) {
-            showToast('Email outreach webhook not configured in config.js', 'error');
+            showToast('Email outreach webhook not configured in config.js (n8n.emailOutreachWebhook)', 'error');
             return;
         }
 
-        // Apollo config
         const apolloApiKey = CONFIG?.apollo?.apiKey || '';
         const emailAccountId = CONFIG?.apollo?.emailAccountId || '';
-        const sequenceMap = CONFIG?.apollo?.sequenceMap || {};
 
         if (!apolloApiKey) {
             showToast('Apollo API key not configured in config.js (apollo.apiKey)', 'error');
@@ -6335,57 +6373,73 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
             return;
         }
 
-        // Show progress
+        // Filter out leads already in a sequence
+        const leadsToAdd = selected.filter(l => l.apollo_sequence_status !== 'active');
+        const alreadyInSequence = selected.length - leadsToAdd.length;
+        if (alreadyInSequence > 0) {
+            showToast(`${alreadyInSequence} lead(s) already in a sequence — skipping those.`, 'info');
+        }
+        if (leadsToAdd.length === 0) {
+            showToast('All selected leads are already in Apollo sequences.', 'warning');
+            return;
+        }
+
         const sendBtn = document.getElementById('leads-email-send');
         const originalText = sendBtn.innerHTML;
         sendBtn.disabled = true;
-        sendBtn.innerHTML = '<div class="spinner"></div> Adding to Apollo sequences...';
+        sendBtn.innerHTML = `<div class="spinner"></div> Adding ${leadsToAdd.length} lead(s) to Apollo... (0/${leadsToAdd.length})`;
+
+        let successCount = 0;
+        let errorCount = 0;
 
         try {
-            const payload = {
-                leads: selected.map(l => ({
-                    id: l.id,
-                    first_name: l.first_name,
-                    last_name: l.last_name,
-                    email: l.email,
-                    title: l.title,
-                    company_name: l.company_name,
-                    industry: l.industry,
-                    num_employees: l.num_employees,
-                    keywords: l.keywords,
-                    technologies: l.technologies,
-                    city: l.city,
-                    state: l.state,
-                    website: l.website
-                })),
-                tone: tone,
-                additional_context: context,
-                apollo_api_key: apolloApiKey,
-                email_account_id: emailAccountId,
-                sequence_map: sequenceMap
-            };
+            for (let i = 0; i < leadsToAdd.length; i++) {
+                const lead = leadsToAdd[i];
+                sendBtn.innerHTML = `<div class="spinner"></div> Adding to Apollo... (${i + 1}/${leadsToAdd.length})`;
 
-            const response = await fetch(webhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+                try {
+                    const response = await fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            body: {
+                                lead_id: lead.id,
+                                apollo_api_key: apolloApiKey,
+                                email_account_id: emailAccountId
+                            }
+                        })
+                    });
 
-            if (!response.ok) {
-                const text = await response.text();
-                throw new Error(`Webhook error ${response.status}: ${text.substring(0, 200)}`);
+                    if (!response.ok) {
+                        errorCount++;
+                        console.error(`Failed for lead ${lead.id}:`, await response.text().catch(() => ''));
+                    } else {
+                        successCount++;
+                    }
+                } catch (err) {
+                    errorCount++;
+                    console.error(`Error for lead ${lead.id}:`, err);
+                }
+
+                // Small delay between requests to avoid rate limits
+                if (i < leadsToAdd.length - 1) {
+                    await new Promise(r => setTimeout(r, 1500));
+                }
             }
 
-            const result = await response.json().catch(() => ({}));
-            
             closeEmailModal();
             selectedLeadIds.clear();
             updateSelectedCount();
-            renderLeadsTable();
             
-            showToast(`${selected.length} lead(s) added to Apollo sequences! Track stats in Apollo dashboard.`, 'success');
+            // Reload leads to get updated sequence status
+            await loadLeads();
+            
+            const msg = successCount > 0
+                ? `${successCount} lead(s) added to industry-matched Apollo sequences!${errorCount > 0 ? ` (${errorCount} failed)` : ''} Track stats in Apollo.`
+                : `Failed to add leads to sequences. Check n8n logs.`;
+            showToast(msg, successCount > 0 ? 'success' : 'error');
         } catch (err) {
-            console.error('Error adding to Apollo sequences:', err);
+            console.error('Error in Apollo sequence flow:', err);
             showToast(`Error: ${err.message}`, 'error');
         } finally {
             sendBtn.disabled = false;
