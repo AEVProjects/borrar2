@@ -21,11 +21,11 @@
 
 ### Los 3 Flujos de n8n
 
-| #   | Nombre del Flujo                                 | ID en n8n          | Webhook                        | Función                                                                                                                               |
-| --- | ------------------------------------------------ | ------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 | **MSI Outbound Email Qualifier - Apollo Direct** | `5kPbxlaaLV517SDJ` | `/webhook/msi-outbound-email` | Lee lead → `people/match` en Apollo → crea contacto si no existe → añade a secuencia por industria → `organizations/enrich` para datos reales → construye company_description → guarda en Supabase |
-| 2   | **MSI Outbound Lead Qualifier - Supabase**       | `49V4vqufnswbbBwW` | `/webhook/msi-outbound-call`   | Lee lead → llama por teléfono vía VAPI → espera resultado de la llamada → guarda calificación en Supabase                             |
-| 3   | **MSI VAPI Server URL - Save Call Results**      | `nPyviJu4qpx1GYNu` | `/webhook/msi-vapi-server-url` | Recibe el end-of-call report de VAPI → extrae intención, budget, urgencia, motivación → actualiza Supabase                            |
+| #   | Nombre del Flujo                                 | ID en n8n          | Webhook                        | Función                                                                                                                                                                                            |
+| --- | ------------------------------------------------ | ------------------ | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **MSI Outbound Email Qualifier - Apollo Direct** | `5kPbxlaaLV517SDJ` | `/webhook/msi-outbound-email`  | Lee lead → `people/match` en Apollo → crea contacto si no existe → añade a secuencia por industria → `organizations/enrich` para datos reales → construye company_description → guarda en Supabase |
+| 2   | **MSI Outbound Lead Qualifier - Supabase**       | `49V4vqufnswbbBwW` | `/webhook/msi-outbound-call`   | Lee lead → llama por teléfono vía VAPI → espera resultado de la llamada → guarda calificación en Supabase                                                                                          |
+| 3   | **MSI VAPI Server URL - Save Call Results**      | `nPyviJu4qpx1GYNu` | `/webhook/msi-vapi-server-url` | Recibe el end-of-call report de VAPI → extrae intención, budget, urgencia, motivación → actualiza Supabase                                                                                         |
 
 ### Cómo Interactúan
 
@@ -257,24 +257,24 @@ Solo necesario si vas a usar el Flujo 2 (llamadas telefónicas):
 
 ### Apollo API Endpoints Disponibles
 
-| Endpoint | Método | Uso en el Pipeline |
-|---|---|---|
-| `api/v1/people/match` | POST | **✅ Buscar persona** por email+nombre+empresa (más preciso que contacts/search) |
-| `api/v1/contacts/search` | POST | Buscar contactos (fallback) |
-| `api/v1/contacts/create` | POST | **✅ Crear contacto nuevo** cuando people/match no encuentra |
-| `api/v1/contacts/update` | POST | Actualizar datos de contacto existente |
-| `api/v1/contacts/bulk_create` | POST | Crear contactos en lote (para batch grande) |
-| `api/v1/contacts/bulk_update` | POST | Actualizar contactos en lote |
-| `api/v1/accounts/search` | POST | Buscar cuentas/empresas |
-| `api/v1/accounts/bulk_create` | POST | Crear cuentas en lote |
-| `api/v1/organizations/enrich` | POST | **✅ Enriquecer empresa** → datos reales para company_description |
-| `api/v1/organizations/bulk_enrich` | POST | Enriquecer empresas en lote (para batch) |
-| `api/v1/organizations/show` | GET | Ver detalles de organización |
-| `api/v1/people/show` | GET | Ver detalles de persona |
-| `api/v1/people/bulk_match` | POST | Match personas en lote (para batch) |
-| `api/v1/fields/create` | POST | Crear campos custom en Apollo |
-| `api/v1/emailer_campaigns/search` | POST | **✅ Listar secuencias** |
-| `api/v1/emailer_campaigns/{id}/add_contact_ids` | POST | **✅ Añadir contacto a secuencia** |
+| Endpoint                                        | Método | Uso en el Pipeline                                                               |
+| ----------------------------------------------- | ------ | -------------------------------------------------------------------------------- |
+| `api/v1/people/match`                           | POST   | **✅ Buscar persona** por email+nombre+empresa (más preciso que contacts/search) |
+| `api/v1/contacts/search`                        | POST   | Buscar contactos (fallback)                                                      |
+| `api/v1/contacts/create`                        | POST   | **✅ Crear contacto nuevo** cuando people/match no encuentra                     |
+| `api/v1/contacts/update`                        | POST   | Actualizar datos de contacto existente                                           |
+| `api/v1/contacts/bulk_create`                   | POST   | Crear contactos en lote (para batch grande)                                      |
+| `api/v1/contacts/bulk_update`                   | POST   | Actualizar contactos en lote                                                     |
+| `api/v1/accounts/search`                        | POST   | Buscar cuentas/empresas                                                          |
+| `api/v1/accounts/bulk_create`                   | POST   | Crear cuentas en lote                                                            |
+| `api/v1/organizations/enrich`                   | POST   | **✅ Enriquecer empresa** → datos reales para company_description                |
+| `api/v1/organizations/bulk_enrich`              | POST   | Enriquecer empresas en lote (para batch)                                         |
+| `api/v1/organizations/show`                     | GET    | Ver detalles de organización                                                     |
+| `api/v1/people/show`                            | GET    | Ver detalles de persona                                                          |
+| `api/v1/people/bulk_match`                      | POST   | Match personas en lote (para batch)                                              |
+| `api/v1/fields/create`                          | POST   | Crear campos custom en Apollo                                                    |
+| `api/v1/emailer_campaigns/search`               | POST   | **✅ Listar secuencias**                                                         |
+| `api/v1/emailer_campaigns/{id}/add_contact_ids` | POST   | **✅ Añadir contacto a secuencia**                                               |
 
 ### Flujo actual del workflow usa:
 
