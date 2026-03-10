@@ -60,11 +60,11 @@ export class MsiQuickImageEditFlowWorkflow {
             string: [
                 {
                     name: 'image_url',
-                    value: 'https://i.ibb.co/hJvsf2Qz/slide-2.jpg',
+                    value: 'https://i.ibb.co/Kc9MCDNk/generated-image.jpg',
                 },
                 {
                     name: 'edit_prompt',
-                    value: 'delete the quotation marks in the heading ',
+                    value: 'Cambia el color verde por el color #207CE5',
                 },
             ],
         },
@@ -103,7 +103,7 @@ export class MsiQuickImageEditFlowWorkflow {
         type: 'n8n-nodes-base.httpRequest',
         version: 4.2,
         position: [12800, 256],
-        credentials: { googlePalmApi: { id: 'oF4jKBK0jRbwEPWt', name: 'Google Gemini(PaLM) Api account' } },
+        credentials: { googlePalmApi: { id: 'Y6AAwVtzmfJHpXGy', name: 'Google Gemini(PaLM) Api account 2' } },
     })
     GeminiImageEdit = {
         method: 'POST',

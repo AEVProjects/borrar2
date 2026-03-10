@@ -23,7 +23,7 @@
 
 | #   | Nombre del Flujo                                 | ID en n8n          | Webhook                        | Función                                                                                                                                                                                            |
 | --- | ------------------------------------------------ | ------------------ | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **MSI Outbound Email Qualifier - Apollo Direct** | `5kPbxlaaLV517SDJ` | `/webhook/msi-outbound-email`  | Lee lead → `people/match` en Apollo → crea contacto si no existe → añade a secuencia por industria → `organizations/enrich` para datos reales → construye company_description → guarda en Supabase |
+| 1   | **MSI Outbound Email Qualifier - Apollo Direct** | `5kPbxlaaLV517SDJ` | `/webhook/msi-outbound-email`  | Lee lead → `people/match` en Apollo → crea contacto si no existe → añade a secuencia por industria → guarda en Supabase (company_description viene del frontend, 0 créditos extra) |
 | 2   | **MSI Outbound Lead Qualifier - Supabase**       | `49V4vqufnswbbBwW` | `/webhook/msi-outbound-call`   | Lee lead → llama por teléfono vía VAPI → espera resultado de la llamada → guarda calificación en Supabase                                                                                          |
 | 3   | **MSI VAPI Server URL - Save Call Results**      | `nPyviJu4qpx1GYNu` | `/webhook/msi-vapi-server-url` | Recibe el end-of-call report de VAPI → extrae intención, budget, urgencia, motivación → actualiza Supabase                                                                                         |
 
@@ -84,18 +84,19 @@ Esto añade la columna `company_description` a `apollo_leads`.
 
 ### PASO 2: Configurar Apollo.io
 
-#### 2.1 Obtener tu API Key
+#### 2.1 Obtener tu API Key ✅ COMPLETADO
 
-1. Ve a **Apollo.io** → **Settings** → **Integrations** → **API**
-2. Copia tu **Master API Key**
-3. Pégala en `config.js`:
+Ya tienes tu Apollo Master API Key. Está configurada en `config.js`.
 
-```javascript
-apollo: {
-    apiKey: 'TU_APOLLO_MASTER_API_KEY',        // ← pega aquí
-    emailAccountId: 'TU_APOLLO_EMAIL_ACCOUNT_ID' // ← paso 2.2
-}
-```
+**Endpoints activos que usa el workflow (1-2 créditos por lead):**
+
+| # | Endpoint | Créditos | Función |
+|---|---|---|---|
+| 1 | `api/v1/people/match` | 1 | Buscar si el contacto ya existe |
+| 2 | `api/v1/contacts` (create) | 1 | Crear contacto nuevo (solo si no existe) |
+| 3 | `api/v1/emailer_campaigns/{id}/add_contact_ids` | 0 | Añadir a secuencia de emails |
+
+> **Nota:** `company_description` se genera en el frontend con datos locales (CSV/Supabase). No se usa `organizations/enrich` para ahorrar créditos.
 
 #### 2.2 Obtener tu Email Account ID
 
@@ -201,9 +202,9 @@ Reemplaza `YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID` con tu credential ID real. Pued
 
 En **"MSI Outbound Email Qualifier - Apollo Direct"**, estos nodos usan la API key:
 
-- **"Search Contact in Apollo"** → `api_key` en el body JSON
+- **"Match Person in Apollo"** → `api_key` en el body JSON (people/match)
 - **"Create Contact in Apollo"** → `api_key` en el body
-- **"Add to Sequence"** → `api_key` en el body
+- **"Add to Apollo Sequence"** → `api_key` + `email_account_id` en el body
 
 La API key se puede pasar de 2 formas:
 
@@ -255,31 +256,38 @@ Solo necesario si vas a usar el Flujo 2 (llamadas telefónicas):
 
 ## Referencia Rápida de APIs
 
-### Apollo API Endpoints Disponibles
+### Apollo API Endpoints
 
-| Endpoint                                        | Método | Uso en el Pipeline                                                               |
-| ----------------------------------------------- | ------ | -------------------------------------------------------------------------------- |
-| `api/v1/people/match`                           | POST   | **✅ Buscar persona** por email+nombre+empresa (más preciso que contacts/search) |
-| `api/v1/contacts/search`                        | POST   | Buscar contactos (fallback)                                                      |
-| `api/v1/contacts/create`                        | POST   | **✅ Crear contacto nuevo** cuando people/match no encuentra                     |
-| `api/v1/contacts/update`                        | POST   | Actualizar datos de contacto existente                                           |
-| `api/v1/contacts/bulk_create`                   | POST   | Crear contactos en lote (para batch grande)                                      |
-| `api/v1/contacts/bulk_update`                   | POST   | Actualizar contactos en lote                                                     |
-| `api/v1/accounts/search`                        | POST   | Buscar cuentas/empresas                                                          |
-| `api/v1/accounts/bulk_create`                   | POST   | Crear cuentas en lote                                                            |
-| `api/v1/organizations/enrich`                   | POST   | **✅ Enriquecer empresa** → datos reales para company_description                |
-| `api/v1/organizations/bulk_enrich`              | POST   | Enriquecer empresas en lote (para batch)                                         |
-| `api/v1/organizations/show`                     | GET    | Ver detalles de organización                                                     |
-| `api/v1/people/show`                            | GET    | Ver detalles de persona                                                          |
-| `api/v1/people/bulk_match`                      | POST   | Match personas en lote (para batch)                                              |
-| `api/v1/fields/create`                          | POST   | Crear campos custom en Apollo                                                    |
-| `api/v1/emailer_campaigns/search`               | POST   | **✅ Listar secuencias**                                                         |
-| `api/v1/emailer_campaigns/{id}/add_contact_ids` | POST   | **✅ Añadir contacto a secuencia**                                               |
+**✅ Activos en el workflow (3 endpoints, 1-2 créditos por lead):**
 
-### Flujo actual del workflow usa:
+| Endpoint | Método | Créditos | Función |
+|---|---|---|---|
+| `api/v1/people/match` | POST | 1 | Buscar persona por email+nombre+empresa |
+| `api/v1/contacts` (create) | POST | 1 | Crear contacto nuevo si no existe |
+| `api/v1/emailer_campaigns/{id}/add_contact_ids` | POST | 0 | Añadir contacto a secuencia |
+
+**📋 Disponibles en tu API (no usados actualmente):**
+
+| Endpoint | Método | Función | Créditos |
+|---|---|---|---|
+| `api/v1/contacts/search` | POST | Buscar contactos (fallback) | 1 |
+| `api/v1/contacts/update` | POST | Actualizar contacto | 1 |
+| `api/v1/contacts/bulk_create` | POST | Crear en lote | 1/contacto |
+| `api/v1/contacts/bulk_update` | POST | Actualizar en lote | 1/contacto |
+| `api/v1/accounts/search` | POST | Buscar empresas | 1 |
+| `api/v1/accounts/bulk_create` | POST | Crear empresas en lote | 1/cuenta |
+| `api/v1/people/show` | GET | Ver detalles de persona | 1 |
+| `api/v1/people/bulk_match` | POST | Match personas en lote | 1/persona |
+| `api/v1/organizations/show` | GET | Ver organización | 1 |
+| `api/v1/organizations/enrich` | POST | Enriquecer empresa (NO USADO - ahorra créditos) | 1 |
+| `api/v1/organizations/bulk_enrich` | POST | Enriquecer en lote (NO USADO) | 1/org |
+| `api/v1/emailer_campaigns/search` | POST | Listar secuencias | 0 |
+| `api/v1/fields/create` | POST | Crear campos custom | 0 |
+
+### Flujo actual del workflow:
 
 ```
-people/match → contacts/create → emailer_campaigns/{id}/add_contact_ids → organizations/enrich
+people/match → contacts/create (si no existe) → emailer_campaigns/{id}/add_contact_ids
 ```
 
 ### Enviar lead a secuencia de Apollo (desde código)
@@ -321,7 +329,7 @@ curl -X POST "https://api.apollo.io/api/v1/contacts/search" \
 
 - [ ] Tabla `apollo_leads_test` creada en Supabase SQL Editor
 - [ ] Columna `company_description` añadida a `apollo_leads` (migration-outbound-qualifier.sql)
-- [ ] Apollo API Key obtenida y puesta en `config.js`
+- [x] Apollo API Key obtenida y puesta en `config.js`
 - [ ] Apollo Email Account ID obtenido y puesto en `config.js`
 - [ ] 12 secuencias creadas en Apollo (una por industria + general)
 - [ ] Sequence IDs reemplazados en nodo "Enrich & Map Industry Sequence" del flujo n8n

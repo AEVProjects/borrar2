@@ -77,7 +77,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Webhook - Educative Carousel',
         type: 'n8n-nodes-base.webhook',
         version: 2,
-        position: [3456, 928],
+        position: [6544, 704],
     })
     WebhookEducativeCarousel = {
         httpMethod: 'POST',
@@ -91,7 +91,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Format Input',
         type: 'n8n-nodes-base.code',
         version: 2,
-        position: [3680, 928],
+        position: [6768, 704],
     })
     FormatInput = {
         jsCode: "// Format Input for Educational Content\nconst input = $('Webhook - Educative Carousel').item.json;\nlet data = input.body || input;\nif (typeof data === 'string') {\n  try { data = JSON.parse(data); } catch(e) { data = input; }\n}\n\n// Educational content structure\nconst topic = data.topic || 'Business Process Automation';\nconst pillar = data.pillar || 'Educational Content & Technology Learning';\nconst theme = data.theme || 'Professional Development & Skills';\nconst context = data.context || '';\nconst content_format = data.content_format || 'tips';\nconst tone = data.tone || 'casual';\nconst custom_hook = data.custom_hook || '';\n\n// Map content_format to labels\nconst FORMAT_MAP = {\n  tips: { label: 'Quick Tips', slide_prefix: 'Tip' },\n  smart_moves: { label: 'Smart Moves', slide_prefix: 'Move' },\n  did_you_know: { label: 'Did You Know?', slide_prefix: 'Fact' },\n  mistakes: { label: 'Common Mistakes', slide_prefix: 'Mistake' },\n  myths_vs_facts: { label: 'Myths vs Facts', slide_prefix: 'Myth' },\n  how_it_works: { label: 'How It Works', slide_prefix: 'Step' },\n  before_after: { label: 'Before & After', slide_prefix: 'Change' },\n  checklist: { label: 'Quick Checklist', slide_prefix: 'Check' },\n  comparison: { label: 'Side by Side', slide_prefix: 'Option' },\n  step_by_step: { label: 'Step by Step', slide_prefix: 'Step' }\n};\nconst formatInfo = FORMAT_MAP[content_format] || FORMAT_MAP.tips;\n\n// Map tone\nconst TONE_MAP = {\n  casual: 'Casual and friendly, like a smart friend explaining something',\n  bold: 'Bold and direct, confident statements, punchy language',\n  curious: 'Curious and questioning, sparks wonder, uses questions to engage',\n  storytelling: 'Storytelling style, uses mini narratives and relatable scenarios',\n  data_driven: 'Data-driven, leads with numbers and stats, backs up claims'\n};\nconst toneDescription = TONE_MAP[tone] || TONE_MAP.casual;\n\nreturn [{\n  json: {\n    topic: topic,\n    pillar: pillar,\n    theme: theme,\n    context: context,\n    content_format: content_format,\n    format_label: formatInfo.label,\n    slide_prefix: formatInfo.slide_prefix,\n    tone: tone,\n    tone_description: toneDescription,\n    custom_hook: custom_hook,\n    visual_style: 'Realistic Photography',\n    content_type: 'Educational Carousel',\n    color_primary: data.color_primary || '#207CE5',\n    color_secondary: data.color_secondary || '#004AAD'\n  }\n}];",
@@ -101,7 +101,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Agent 1: Strategy Analyst',
         type: '@n8n/n8n-nodes-langchain.agent',
         version: 1.7,
-        position: [3904, 928],
+        position: [6992, 704],
     })
     Agent1StrategyAnalyst = {
         promptType: 'define',
@@ -116,7 +116,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Agent 2: Copywriter',
         type: '@n8n/n8n-nodes-langchain.agent',
         version: 1.7,
-        position: [4256, 928],
+        position: [7344, 704],
     })
     Agent2Copywriter = {
         promptType: 'define',
@@ -131,7 +131,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Agent 3: Visual Director',
         type: '@n8n/n8n-nodes-langchain.agent',
         version: 1.7,
-        position: [4608, 928],
+        position: [7696, 704],
     })
     Agent3VisualDirector = {
         promptType: 'define',
@@ -146,7 +146,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Parse Output',
         type: 'n8n-nodes-base.code',
         version: 2,
-        position: [4960, 928],
+        position: [8048, 704],
     })
     ParseOutput = {
         jsCode: "// Parse Final JSON Output\nconst rawOutput = $('Agent 3: Visual Director').item.json.output;\nconst cleanedOutput = rawOutput.replace(/```json/g, '').replace(/```/g, '').trim();\nconst generated = JSON.parse(cleanedOutput);\nconst originalInput = $('Format Input').item.json;\n\n// Add metadata and ENFORCE empty body on slides 1 and 5\nconst slides = generated.map(slide => {\n  const s = { ...slide, visual_style: originalInput.visual_style, carousel_id: null };\n  if (s.slide_number === 1 || s.slide_number === 5) {\n    s.body = '';\n  }\n  return s;\n});\n\nreturn [{\n    json: {\n        slides: slides,\n        parent_post: {\n            topic: originalInput.topic,\n            pillar: originalInput.pillar,\n            theme: originalInput.theme,\n            headline: slides[0].headline,\n            visual_style: originalInput.visual_style,\n            post_type: 'Educative Carousel',\n            status: 'generating_images'\n        }\n    }\n}];",
@@ -156,12 +156,12 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Create Post Record',
         type: 'n8n-nodes-base.postgres',
         version: 2.5,
-        position: [5184, 928],
+        position: [8272, 704],
         credentials: { postgres: { id: 'WnTYs2zvPoE7hDJE', name: 'Postgres account' } },
     })
     CreatePostRecord = {
         operation: 'executeQuery',
-        query: "=INSERT INTO social_posts (topic, post_type, visual_style, orientation, headline, status, created_at)\nVALUES ('{{ $json.parent_post.topic.replace(/'/g, \"''\") }}', 'Educational', '{{ $json.parent_post.visual_style }}', '4:5', '{{ $json.parent_post.headline.replace(/'/g, \"''\") }}', 'generating', NOW())\nRETURNING id",
+        query: "INSERT INTO social_posts (topic, post_type, visual_style, orientation, headline, status, created_at)\nVALUES ('{{ $json.parent_post.topic.replace(/'/g, \"''\") }}', 'Educational', '{{ $json.parent_post.visual_style }}', '4:5', '{{ $json.parent_post.headline.replace(/'/g, \"''\") }}', 'generating', NOW())\nRETURNING id",
         options: {},
     };
 
@@ -169,7 +169,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Prepare Slides',
         type: 'n8n-nodes-base.code',
         version: 2,
-        position: [5408, 928],
+        position: [8496, 704],
     })
     PrepareSlides = {
         jsCode: "// Prepare All Slides Data\nconst postId = $('Create Post Record').item.json.id;\nconst slides = $('Parse Output').item.json.slides;\nconst topic = $('Format Input').item.json.topic || 'Technology';\n\n// Return all slides as individual items for batch insert\n// Embed topic inside visual_style JSON since carousel_slides table doesn't have topic column\nconst slideItems = slides.map(slide => ({\n    json: {\n        carousel_id: postId,\n        slide_number: slide.slide_number,\n        headline: slide.headline,\n        subtext: slide.subtext || '',\n        body_text: slide.body || slide.body_text || '',\n        image_prompt: slide.image_prompt,\n        visual_style: JSON.stringify({ style: slide.visual_style, topic: topic })\n    }\n}));\n\nreturn slideItems;",
@@ -179,7 +179,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Insert Slides',
         type: 'n8n-nodes-base.postgres',
         version: 2.5,
-        position: [5632, 928],
+        position: [8720, 704],
         credentials: { postgres: { id: 'WnTYs2zvPoE7hDJE', name: 'Postgres account' } },
     })
     InsertSlides = {
@@ -269,7 +269,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Get Slide 1',
         type: 'n8n-nodes-base.code',
         version: 2,
-        position: [5856, 928],
+        position: [8944, 704],
     })
     GetSlide1 = {
         jsCode: "// Get all inserted slides and prepare for sequential processing\nconst allInserted = $input.all().map(item => item.json);\n\n// Extract topic from visual_style JSON\nlet topic = 'Technology';\ntry {\n  const vsData = JSON.parse(allInserted[0].visual_style || '{}');\n  topic = vsData.topic || 'Technology';\n} catch(e) {}\n\n// Store all slides data for the chain\nconst s1 = allInserted[0];\nconst s2 = allInserted[1];\nconst s3 = allInserted[2];\nconst s4 = allInserted[3];\nconst s5 = allInserted[4];\n\nreturn [{\n  json: {\n    // Current slide to process\n    id: s1.id,\n    carousel_id: s1.carousel_id,\n    slide_number: s1.slide_number,\n    headline: s1.headline || '',\n    subtext: s1.subtext || '',\n    body_text: s1.body_text || '',\n    image_prompt: s1.image_prompt || '',\n    visual_style: s1.visual_style || '',\n    topic: topic,\n    // All slides for the chain\n    s2_id: s2.id, s2_headline: s2.headline || '', s2_subtext: s2.subtext || '', s2_body: s2.body_text || '', s2_prompt: s2.image_prompt || '', s2_style: s2.visual_style || '',\n    s3_id: s3.id, s3_headline: s3.headline || '', s3_subtext: s3.subtext || '', s3_body: s3.body_text || '', s3_prompt: s3.image_prompt || '', s3_style: s3.visual_style || '',\n    s4_id: s4.id, s4_headline: s4.headline || '', s4_subtext: s4.subtext || '', s4_body: s4.body_text || '', s4_prompt: s4.image_prompt || '', s4_style: s4.visual_style || '',\n    s5_id: s5.id, s5_headline: s5.headline || '', s5_subtext: s5.subtext || '', s5_body: s5.body_text || '', s5_prompt: s5.image_prompt || '', s5_style: s5.visual_style || '',\n    carousel_id_shared: s1.carousel_id\n  }\n}];",
@@ -279,7 +279,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Gen Slide 1',
         type: 'n8n-nodes-base.code',
         version: 2,
-        position: [6080, 928],
+        position: [9168, 704],
     })
     GenSlide1 = {
         jsCode: "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-educative-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\n// Pass all slide data to next node\nreturn [{ json: { ...response, ...input } }];",
@@ -289,7 +289,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Get Slide 2',
         type: 'n8n-nodes-base.code',
         version: 2,
-        position: [6304, 928],
+        position: [9392, 704],
     })
     GetSlide2 = {
         jsCode: 'const prev = $input.first().json;\n\nreturn [{\n  json: {\n    id: prev.s2_id,\n    carousel_id: prev.carousel_id_shared,\n    slide_number: 2,\n    headline: prev.s2_headline,\n    subtext: prev.s2_subtext,\n    body_text: prev.s2_body,\n    image_prompt: prev.s2_prompt,\n    visual_style: prev.s2_style,\n    topic: prev.topic,\n    // Pass remaining slides\n    s3_id: prev.s3_id, s3_headline: prev.s3_headline, s3_subtext: prev.s3_subtext, s3_body: prev.s3_body, s3_prompt: prev.s3_prompt, s3_style: prev.s3_style,\n    s4_id: prev.s4_id, s4_headline: prev.s4_headline, s4_subtext: prev.s4_subtext, s4_body: prev.s4_body, s4_prompt: prev.s4_prompt, s4_style: prev.s4_style,\n    s5_id: prev.s5_id, s5_headline: prev.s5_headline, s5_subtext: prev.s5_subtext, s5_body: prev.s5_body, s5_prompt: prev.s5_prompt, s5_style: prev.s5_style,\n    carousel_id_shared: prev.carousel_id_shared\n  }\n}];',
@@ -299,7 +299,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Gen Slide 2',
         type: 'n8n-nodes-base.code',
         version: 2,
-        position: [6528, 928],
+        position: [9616, 704],
     })
     GenSlide2 = {
         jsCode: "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-educative-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\n// Pass all slide data to next node\nreturn [{ json: { ...response, ...input } }];",
@@ -309,7 +309,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Get Slide 3',
         type: 'n8n-nodes-base.code',
         version: 2,
-        position: [6752, 928],
+        position: [9840, 704],
     })
     GetSlide3 = {
         jsCode: 'const prev = $input.first().json;\n\nreturn [{\n  json: {\n    id: prev.s3_id,\n    carousel_id: prev.carousel_id_shared,\n    slide_number: 3,\n    headline: prev.s3_headline,\n    subtext: prev.s3_subtext,\n    body_text: prev.s3_body,\n    image_prompt: prev.s3_prompt,\n    visual_style: prev.s3_style,\n    topic: prev.topic,\n    // Pass remaining slides\n    s4_id: prev.s4_id, s4_headline: prev.s4_headline, s4_subtext: prev.s4_subtext, s4_body: prev.s4_body, s4_prompt: prev.s4_prompt, s4_style: prev.s4_style,\n    s5_id: prev.s5_id, s5_headline: prev.s5_headline, s5_subtext: prev.s5_subtext, s5_body: prev.s5_body, s5_prompt: prev.s5_prompt, s5_style: prev.s5_style,\n    carousel_id_shared: prev.carousel_id_shared\n  }\n}];',
@@ -319,7 +319,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Gen Slide 3',
         type: 'n8n-nodes-base.code',
         version: 2,
-        position: [6976, 928],
+        position: [10064, 704],
     })
     GenSlide3 = {
         jsCode: "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-educative-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\n// Pass all slide data to next node\nreturn [{ json: { ...response, ...input } }];",
@@ -329,7 +329,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Get Slide 4',
         type: 'n8n-nodes-base.code',
         version: 2,
-        position: [7200, 928],
+        position: [10288, 704],
     })
     GetSlide4 = {
         jsCode: 'const prev = $input.first().json;\n\nreturn [{\n  json: {\n    id: prev.s4_id,\n    carousel_id: prev.carousel_id_shared,\n    slide_number: 4,\n    headline: prev.s4_headline,\n    subtext: prev.s4_subtext,\n    body_text: prev.s4_body,\n    image_prompt: prev.s4_prompt,\n    visual_style: prev.s4_style,\n    topic: prev.topic,\n    // Pass remaining slide\n    s5_id: prev.s5_id, s5_headline: prev.s5_headline, s5_subtext: prev.s5_subtext, s5_body: prev.s5_body, s5_prompt: prev.s5_prompt, s5_style: prev.s5_style,\n    carousel_id_shared: prev.carousel_id_shared\n  }\n}];',
@@ -339,7 +339,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Gen Slide 4',
         type: 'n8n-nodes-base.code',
         version: 2,
-        position: [7424, 928],
+        position: [10512, 704],
     })
     GenSlide4 = {
         jsCode: "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-educative-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\n// Pass all slide data to next node\nreturn [{ json: { ...response, ...input } }];",
@@ -349,7 +349,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Get Slide 5',
         type: 'n8n-nodes-base.code',
         version: 2,
-        position: [7648, 928],
+        position: [10736, 704],
     })
     GetSlide5 = {
         jsCode: 'const prev = $input.first().json;\n\nreturn [{\n  json: {\n    id: prev.s5_id,\n    carousel_id: prev.carousel_id_shared,\n    slide_number: 5,\n    headline: prev.s5_headline,\n    subtext: prev.s5_subtext,\n    body_text: prev.s5_body,\n    image_prompt: prev.s5_prompt,\n    visual_style: prev.s5_style,\n    topic: prev.topic,\n    carousel_id_shared: prev.carousel_id_shared\n  }\n}];',
@@ -359,7 +359,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Gen Slide 5',
         type: 'n8n-nodes-base.code',
         version: 2,
-        position: [7872, 928],
+        position: [10960, 704],
     })
     GenSlide5 = {
         jsCode: "const input = $input.first().json;\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://n8nmsi.app.n8n.cloud/webhook/msi-educative-slide-gen',\n  body: {\n    slide_id: input.id,\n    image_prompt: input.image_prompt,\n    carousel_id: input.carousel_id,\n    slide_number: input.slide_number,\n    headline: input.headline,\n    subtext: input.subtext,\n    body_text: input.body_text,\n    visual_style: input.visual_style,\n    topic: input.topic\n  },\n  json: true\n});\n\nreturn [{ json: response }];",
@@ -369,7 +369,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Google Gemini Chat Model',
         type: '@n8n/n8n-nodes-langchain.lmChatGoogleGemini',
         version: 1,
-        position: [3976, 1152],
+        position: [7072, 928],
         credentials: { googlePalmApi: { id: 'oF4jKBK0jRbwEPWt', name: 'Google Gemini(PaLM) Api account' } },
     })
     GoogleGeminiChatModel = {
@@ -380,7 +380,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Google Gemini Chat Model1',
         type: '@n8n/n8n-nodes-langchain.lmChatGoogleGemini',
         version: 1,
-        position: [4328, 1152],
+        position: [7424, 928],
         credentials: { googlePalmApi: { id: 'oF4jKBK0jRbwEPWt', name: 'Google Gemini(PaLM) Api account' } },
     })
     GoogleGeminiChatModel1 = {
@@ -391,7 +391,7 @@ export class MsiEducativeCarouselGenFlowWorkflow {
         name: 'Google Gemini Chat Model2',
         type: '@n8n/n8n-nodes-langchain.lmChatGoogleGemini',
         version: 1,
-        position: [4680, 1152],
+        position: [7776, 928],
         credentials: { googlePalmApi: { id: 'oF4jKBK0jRbwEPWt', name: 'Google Gemini(PaLM) Api account' } },
     })
     GoogleGeminiChatModel2 = {

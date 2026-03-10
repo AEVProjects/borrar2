@@ -31,8 +31,8 @@ import { workflow, node, links } from '@n8n-as-code/transformer';
 // FormatSuccessResponse              set
 // RespondToWebhookGenerate           respondToWebhook
 // GoogleGeminiChatModel              lmChatGoogleGemini         [creds]
-// GoogleGeminiChatModel1             lmChatGoogleGemini         [creds]
 // GoogleGeminiChatModel2             lmChatGoogleGemini         [creds]
+// GoogleGeminiChatModel1             lmChatGoogleGemini         [creds]
 //
 // ROUTING MAP
 // ──────────────────────────────────────────────────────────────────
@@ -409,7 +409,7 @@ export class SingleImgGenWorkflow {
         type: 'n8n-nodes-base.httpRequest',
         version: 4.2,
         position: [448, 1248],
-        credentials: { googlePalmApi: { id: 'oF4jKBK0jRbwEPWt', name: 'Google Gemini(PaLM) Api account' } },
+        credentials: { googlePalmApi: { id: 'Y6AAwVtzmfJHpXGy', name: 'Google Gemini(PaLM) Api account 2' } },
     })
     GenerateImage = {
         method: 'POST',
@@ -557,21 +557,10 @@ export class SingleImgGenWorkflow {
         name: 'Google Gemini Chat Model',
         type: '@n8n/n8n-nodes-langchain.lmChatGoogleGemini',
         version: 1,
-        position: [-2104, 1472],
-        credentials: { googlePalmApi: { id: 'oF4jKBK0jRbwEPWt', name: 'Google Gemini(PaLM) Api account' } },
+        position: [-2112, 1472],
+        credentials: { googlePalmApi: { id: 'Y6AAwVtzmfJHpXGy', name: 'Google Gemini(PaLM) Api account 2' } },
     })
     GoogleGeminiChatModel = {
-        options: {},
-    };
-
-    @node({
-        name: 'Google Gemini Chat Model1',
-        type: '@n8n/n8n-nodes-langchain.lmChatGoogleGemini',
-        version: 1,
-        position: [-1752, 1472],
-        credentials: { googlePalmApi: { id: 'oF4jKBK0jRbwEPWt', name: 'Google Gemini(PaLM) Api account' } },
-    })
-    GoogleGeminiChatModel1 = {
         options: {},
     };
 
@@ -579,10 +568,21 @@ export class SingleImgGenWorkflow {
         name: 'Google Gemini Chat Model2',
         type: '@n8n/n8n-nodes-langchain.lmChatGoogleGemini',
         version: 1,
-        position: [-728, 1472],
-        credentials: { googlePalmApi: { id: 'oF4jKBK0jRbwEPWt', name: 'Google Gemini(PaLM) Api account' } },
+        position: [-736, 1472],
+        credentials: { googlePalmApi: { id: 'Y6AAwVtzmfJHpXGy', name: 'Google Gemini(PaLM) Api account 2' } },
     })
     GoogleGeminiChatModel2 = {
+        options: {},
+    };
+
+    @node({
+        name: 'Google Gemini Chat Model1',
+        type: '@n8n/n8n-nodes-langchain.lmChatGoogleGemini',
+        version: 1,
+        position: [-1968, 1456],
+        credentials: { googlePalmApi: { id: 'Y6AAwVtzmfJHpXGy', name: 'Google Gemini(PaLM) Api account 2' } },
+    })
+    GoogleGeminiChatModel1 = {
         options: {},
     };
 

@@ -50,7 +50,7 @@ import { workflow, node, links } from '@n8n-as-code/transformer';
 @workflow({
     id: 'SWfcloyRrke5KqjH',
     name: 'MSI Content Scheduler - Auto Generate',
-    active: true,
+    active: false,
     settings: { executionOrder: 'v1' },
 })
 export class MsiContentSchedulerAutoGenerateWorkflow {

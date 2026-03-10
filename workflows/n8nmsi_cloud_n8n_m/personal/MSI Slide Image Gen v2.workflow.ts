@@ -85,7 +85,7 @@ export class MsiSlideImageGenV2Workflow {
         type: 'n8n-nodes-base.httpRequest',
         version: 4.2,
         position: [52960, 2752],
-        credentials: { googlePalmApi: { id: 'oF4jKBK0jRbwEPWt', name: 'Google Gemini(PaLM) Api account' } },
+        credentials: { googlePalmApi: { id: 'Y6AAwVtzmfJHpXGy', name: 'Google Gemini(PaLM) Api account 2' } },
     })
     GenerateImage = {
         method: 'POST',
