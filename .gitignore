@@ -21,6 +21,9 @@ workflows/**/.n8n-state.json
 # --- Workflows con credenciales embebidas (NO subir a Git) ---
 workflows/video-gen.json
 
+# --- n8n workflow files (as-code) - managed by n8n, not Vercel ---
+workflows/n8nmsi_cloud_n8n_m/
+
 # --- Variables de entorno ---
 .env
 .env.local
