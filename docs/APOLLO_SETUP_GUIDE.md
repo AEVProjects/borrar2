@@ -21,11 +21,11 @@
 
 ### Los 3 Flujos de n8n
 
-| # | Nombre del Flujo | ID en n8n | Webhook | Función |
-|---|---|---|---|---|
-| 1 | **MSI Outbound Email Qualifier - Apollo Direct** | `5kPbxlaaLV517SDJ` | `/webhook/msi-outbound-email` | Lee lead → clasifica industria → busca/crea contacto en Apollo → lo añade a la secuencia por industria → guarda resultado en Supabase |
-| 2 | **MSI Outbound Lead Qualifier - Supabase** | `49V4vqufnswbbBwW` | `/webhook/msi-outbound-call` | Lee lead → llama por teléfono vía VAPI → espera resultado de la llamada → guarda calificación en Supabase |
-| 3 | **MSI VAPI Server URL - Save Call Results** | `nPyviJu4qpx1GYNu` | `/webhook/msi-vapi-server-url` | Recibe el end-of-call report de VAPI → extrae intención, budget, urgencia, motivación → actualiza Supabase |
+| #   | Nombre del Flujo                                 | ID en n8n          | Webhook                        | Función                                                                                                                               |
+| --- | ------------------------------------------------ | ------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 | **MSI Outbound Email Qualifier - Apollo Direct** | `5kPbxlaaLV517SDJ` | `/webhook/msi-outbound-email` | Lee lead → `people/match` en Apollo → crea contacto si no existe → añade a secuencia por industria → `organizations/enrich` para datos reales → construye company_description → guarda en Supabase |
+| 2   | **MSI Outbound Lead Qualifier - Supabase**       | `49V4vqufnswbbBwW` | `/webhook/msi-outbound-call`   | Lee lead → llama por teléfono vía VAPI → espera resultado de la llamada → guarda calificación en Supabase                             |
+| 3   | **MSI VAPI Server URL - Save Call Results**      | `nPyviJu4qpx1GYNu` | `/webhook/msi-vapi-server-url` | Recibe el end-of-call report de VAPI → extrae intención, budget, urgencia, motivación → actualiza Supabase                            |
 
 ### Cómo Interactúan
 
@@ -111,22 +111,23 @@ De la respuesta, copia el `id` de la cuenta de email que quieras usar para envia
 
 En **Apollo.io → Engage → Sequences**, crea una secuencia por cada sector:
 
-| Sector | Nombre sugerido de secuencia | Keyword de clasificación |
-|---|---|---|
-| Financial Services | `MSI - Financial Services Outreach` | financial, banking, insurance, fintech |
-| Healthcare | `MSI - Healthcare Outreach` | healthcare, medical, pharma, biotech, hospital |
-| Retail | `MSI - Retail & E-commerce Outreach` | retail, ecommerce, e-commerce, consumer |
-| Manufacturing | `MSI - Manufacturing Outreach` | manufacturing, industrial, automotive |
-| Technology | `MSI - Technology Outreach` | technology, software, saas, information technology |
-| Energy | `MSI - Energy & Utilities Outreach` | energy, oil, utilities, renewable |
-| Education | `MSI - Education Outreach` | education, university, school |
-| Legal | `MSI - Legal Services Outreach` | legal, law |
-| Real Estate | `MSI - Real Estate & Construction Outreach` | real estate, property, construction |
-| Logistics | `MSI - Logistics & Transport Outreach` | logistics, transportation, shipping, supply chain |
-| Telecom | `MSI - Telecom Outreach` | telecom, telecommunications |
-| **General** | `MSI - General Outreach` | *cualquier industria no clasificada* |
+| Sector             | Nombre sugerido de secuencia                | Keyword de clasificación                           |
+| ------------------ | ------------------------------------------- | -------------------------------------------------- |
+| Financial Services | `MSI - Financial Services Outreach`         | financial, banking, insurance, fintech             |
+| Healthcare         | `MSI - Healthcare Outreach`                 | healthcare, medical, pharma, biotech, hospital     |
+| Retail             | `MSI - Retail & E-commerce Outreach`        | retail, ecommerce, e-commerce, consumer            |
+| Manufacturing      | `MSI - Manufacturing Outreach`              | manufacturing, industrial, automotive              |
+| Technology         | `MSI - Technology Outreach`                 | technology, software, saas, information technology |
+| Energy             | `MSI - Energy & Utilities Outreach`         | energy, oil, utilities, renewable                  |
+| Education          | `MSI - Education Outreach`                  | education, university, school                      |
+| Legal              | `MSI - Legal Services Outreach`             | legal, law                                         |
+| Real Estate        | `MSI - Real Estate & Construction Outreach` | real estate, property, construction                |
+| Logistics          | `MSI - Logistics & Transport Outreach`      | logistics, transportation, shipping, supply chain  |
+| Telecom            | `MSI - Telecom Outreach`                    | telecom, telecommunications                        |
+| **General**        | `MSI - General Outreach`                    | _cualquier industria no clasificada_               |
 
 Cada secuencia debe tener **4 pasos de email** (templates en `docs/EMAIL_OUTREACH_GUIDE.md`):
+
 - **Día 1:** Intro + Research de industria
 - **Día 4:** Caso de éxito relevante
 - **Día 8:** Valor + caso de uso
@@ -152,14 +153,14 @@ Reemplaza cada `SEQ_ID_*` con el ID real:
 
 ```javascript
 const INDUSTRY_SEQUENCE_MAP = {
-  'financial':      'abc123def456',   // ← tu ID real de Financial
-  'banking':        'abc123def456',   // ← mismo ID (mismo sector)
-  'insurance':      'abc123def456',
-  'healthcare':     'ghi789jkl012',   // ← tu ID real de Healthcare
+  financial: "abc123def456", // ← tu ID real de Financial
+  banking: "abc123def456", // ← mismo ID (mismo sector)
+  insurance: "abc123def456",
+  healthcare: "ghi789jkl012", // ← tu ID real de Healthcare
   // ... etc para cada keyword
 };
 
-const DEFAULT_SEQUENCE = 'xyz_general_id';  // ← tu ID de General
+const DEFAULT_SEQUENCE = "xyz_general_id"; // ← tu ID de General
 ```
 
 ---
@@ -170,14 +171,14 @@ const DEFAULT_SEQUENCE = 'xyz_general_id';  // ← tu ID de General
 
 En **n8n → Credentials → New → PostgreSQL**:
 
-| Campo | Valor |
-|---|---|
-| Host | `db.vahqhxfdropstvklvzej.supabase.co` |
-| Database | `postgres` |
-| User | `postgres` |
+| Campo    | Valor                                                                  |
+| -------- | ---------------------------------------------------------------------- |
+| Host     | `db.vahqhxfdropstvklvzej.supabase.co`                                  |
+| Database | `postgres`                                                             |
+| User     | `postgres`                                                             |
 | Password | Tu contraseña de Supabase DB (Settings → Database → Connection String) |
-| Port | `5432` |
-| SSL | `Allow` |
+| Port     | `5432`                                                                 |
+| SSL      | `Allow`                                                                |
 
 **Importante:** Copia el **Credential ID** que n8n genera.
 
@@ -201,10 +202,11 @@ Reemplaza `YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID` con tu credential ID real. Pued
 En **"MSI Outbound Email Qualifier - Apollo Direct"**, estos nodos usan la API key:
 
 - **"Search Contact in Apollo"** → `api_key` en el body JSON
-- **"Create Contact in Apollo"** → `api_key` en el body  
+- **"Create Contact in Apollo"** → `api_key` en el body
 - **"Add to Sequence"** → `api_key` en el body
 
 La API key se puede pasar de 2 formas:
+
 1. **Desde la web** (recomendado): Se envía `apollo_api_key` en el body del webhook
 2. **Hardcoded en n8n**: Reemplazar `YOUR_APOLLO_MASTER_API_KEY` directamente en cada nodo
 
@@ -253,20 +255,47 @@ Solo necesario si vas a usar el Flujo 2 (llamadas telefónicas):
 
 ## Referencia Rápida de APIs
 
+### Apollo API Endpoints Disponibles
+
+| Endpoint | Método | Uso en el Pipeline |
+|---|---|---|
+| `api/v1/people/match` | POST | **✅ Buscar persona** por email+nombre+empresa (más preciso que contacts/search) |
+| `api/v1/contacts/search` | POST | Buscar contactos (fallback) |
+| `api/v1/contacts/create` | POST | **✅ Crear contacto nuevo** cuando people/match no encuentra |
+| `api/v1/contacts/update` | POST | Actualizar datos de contacto existente |
+| `api/v1/contacts/bulk_create` | POST | Crear contactos en lote (para batch grande) |
+| `api/v1/contacts/bulk_update` | POST | Actualizar contactos en lote |
+| `api/v1/accounts/search` | POST | Buscar cuentas/empresas |
+| `api/v1/accounts/bulk_create` | POST | Crear cuentas en lote |
+| `api/v1/organizations/enrich` | POST | **✅ Enriquecer empresa** → datos reales para company_description |
+| `api/v1/organizations/bulk_enrich` | POST | Enriquecer empresas en lote (para batch) |
+| `api/v1/organizations/show` | GET | Ver detalles de organización |
+| `api/v1/people/show` | GET | Ver detalles de persona |
+| `api/v1/people/bulk_match` | POST | Match personas en lote (para batch) |
+| `api/v1/fields/create` | POST | Crear campos custom en Apollo |
+| `api/v1/emailer_campaigns/search` | POST | **✅ Listar secuencias** |
+| `api/v1/emailer_campaigns/{id}/add_contact_ids` | POST | **✅ Añadir contacto a secuencia** |
+
+### Flujo actual del workflow usa:
+
+```
+people/match → contacts/create → emailer_campaigns/{id}/add_contact_ids → organizations/enrich
+```
+
 ### Enviar lead a secuencia de Apollo (desde código)
 
 ```javascript
-fetch('https://n8nmsi.app.n8n.cloud/webhook/msi-outbound-email', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+fetch("https://n8nmsi.app.n8n.cloud/webhook/msi-outbound-email", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
     lead_id: 42,
-    source_table: 'apollo_leads_test',  // o 'apollo_leads'
-    apollo_api_key: 'TU_KEY',
-    apollo_email_account_id: 'TU_EMAIL_ACCOUNT_ID',
-    sector: 'Technology',
-    company_description: 'Northrop Grumman - Enterprise defense contractor...'
-  })
+    source_table: "apollo_leads_test", // o 'apollo_leads'
+    apollo_api_key: "TU_KEY",
+    apollo_email_account_id: "TU_EMAIL_ACCOUNT_ID",
+    sector: "Technology",
+    company_description: "Northrop Grumman - Enterprise defense contractor...",
+  }),
 });
 ```
 

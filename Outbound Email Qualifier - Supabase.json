@@ -106,21 +106,21 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.apollo.io/api/v1/contacts/search",
+        "url": "https://api.apollo.io/api/v1/people/match",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"api_key\": \"{{ $('Webhook Trigger').item.json.body.apollo_api_key || 'YOUR_APOLLO_MASTER_API_KEY' }}\",\n  \"q_keywords\": \"{{ $json.email }}\",\n  \"page\": 1,\n  \"per_page\": 1\n}",
+        "jsonBody": "={\n  \"api_key\": \"{{ $('Webhook Trigger').item.json.body.apollo_api_key || 'YOUR_APOLLO_MASTER_API_KEY' }}\",\n  \"email\": \"{{ $json.email }}\",\n  \"first_name\": \"{{ $json.first_name }}\",\n  \"last_name\": \"{{ $json.last_name }}\",\n  \"organization_name\": \"{{ $json.company_name }}\"\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [460, 100],
       "id": "search-apollo-001",
-      "name": "Search Contact in Apollo"
+      "name": "Match Person in Apollo"
     },
     {
       "parameters": {
-        "jsCode": "// Check if contact already exists in Apollo\nconst searchResult = $input.first().json;\nconst leadData = $('Enrich & Map Industry Sequence').item.json;\n\nlet apolloContactId = leadData.apollo_contact_id;\nlet contactExists = false;\n\nif (searchResult.contacts && searchResult.contacts.length > 0) {\n  apolloContactId = searchResult.contacts[0].id;\n  contactExists = true;\n}\n\nreturn [{\n  json: {\n    ...leadData,\n    apollo_contact_id: apolloContactId,\n    contact_exists: contactExists\n  }\n}];"
+        "jsCode": "// Check if contact already exists in Apollo (people/match returns person directly)\nconst matchResult = $input.first().json;\nconst leadData = $('Enrich & Map Industry Sequence').item.json;\n\nlet apolloContactId = leadData.apollo_contact_id;\nlet contactExists = false;\n\n// people/match returns { person: {...} } or { person: null }\nif (matchResult.person && matchResult.person.id) {\n  apolloContactId = matchResult.person.id;\n  contactExists = true;\n} else if (matchResult.contacts && matchResult.contacts.length > 0) {\n  // Fallback for contacts/search response format\n  apolloContactId = matchResult.contacts[0].id;\n  contactExists = true;\n}\n\nreturn [{\n  json: {\n    ...leadData,\n    apollo_contact_id: apolloContactId,\n    contact_exists: contactExists\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -200,6 +200,37 @@
     },
     {
       "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/organizations/enrich",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"api_key\": \"{{ $('Webhook Trigger').item.json.body.apollo_api_key || 'YOUR_APOLLO_MASTER_API_KEY' }}\",\n  \"domain\": \"{{ $json.website ? $json.website.replace('https://','').replace('http://','').replace('www.','').split('/')[0] : '' }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1660, -100],
+      "id": "enrich-org-001",
+      "name": "Enrich Organization"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build rich company description from Apollo org enrichment + local data\nconst orgData = $input.first().json;\nconst leadData = $('Check Apollo Contact').item.json;\nconst org = orgData.organization || orgData || {};\n\nconst parts = [];\n\n// Company name + short description from Apollo\nconst name = org.name || leadData.company_name || '';\nconst shortDesc = org.short_description || org.seo_description || '';\nif (name) parts.push(name);\nif (shortDesc) parts.push(shortDesc);\n\n// Industry + sector\nconst industry = org.industry || leadData.industry || '';\nif (industry && !shortDesc.toLowerCase().includes(industry.toLowerCase())) {\n  parts.push('Industry: ' + industry);\n}\n\n// Location\nconst hqCity = org.city || leadData.city || '';\nconst hqState = org.state || leadData.state || '';\nconst hqCountry = org.country || leadData.country || '';\nconst loc = [hqCity, hqState, hqCountry].filter(Boolean).join(', ');\nif (loc) parts.push('HQ: ' + loc);\n\n// Size + Revenue\nconst employees = org.estimated_num_employees || leadData.num_employees || '';\nif (employees) parts.push(employees + ' employees');\nconst revenue = org.annual_revenue_printed || leadData.annual_revenue || '';\nif (revenue) parts.push('Revenue: ' + revenue);\n\n// Founded\nif (org.founded_year) parts.push('Founded: ' + org.founded_year);\n\n// Technologies (from Apollo or local)\nconst techs = (org.current_technologies || []).slice(0, 6);\nconst localTechs = (leadData.technologies || '').split(',').map(t => t.trim()).filter(Boolean).slice(0, 6);\nconst allTechs = techs.length > 0 ? techs.map(t => t.name || t) : localTechs;\nif (allTechs.length > 0) parts.push('Tech: ' + allTechs.join(', '));\n\n// Keywords from local data\nconst keywords = (leadData.keywords || '').split(',').map(k => k.trim()).filter(Boolean).slice(0, 5);\nif (keywords.length > 0) parts.push('Focus: ' + keywords.join(', '));\n\nconst companyDescription = parts.join('. ').replace(/\\.\\.+/g, '.').trim();\n\nreturn [{\n  json: {\n    ...leadData,\n    company_description: companyDescription || leadData.company_description || '',\n    apollo_org_id: org.id || '',\n    apollo_org_name: org.name || ''\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1860, -100],
+      "id": "build-desc-001",
+      "name": "Build Company Description"
+    },
+    {
+      "parameters": {
         "operation": "executeQuery",
         "query": "=UPDATE {{ $json.source_table || 'apollo_leads' }} SET \n  email_outreach_status = 'sequence_active',\n  apollo_sequence_status = 'active',\n  apollo_sequence_id = '{{ $json.sequence_id }}',\n  apollo_sequence_added_at = NOW(),\n  apollo_contact_id = '{{ $json.apollo_contact_id }}',\n  email_suggested_service = '{{ $json.sector || $json.matched_industry }}',\n  company_description = '{{ ($json.company_description || '').replace(/'/g, \"''\") }}',\n  email_attempts = {{ $json.email_attempts }},\n  email_outreach_date = NOW(),\n  updated_at = NOW()\nWHERE id = {{ $json.lead_id }}",
         "options": {}
@@ -248,7 +279,7 @@
     },
     {
       "parameters": {
-        "content": "# 📧 MSI Outbound via Apollo Sequences\n\n**Todo va por Apollo — no SMTP externo**\n\n### Flujo:\n1. Webhook recibe lead_id\n2. Lee datos del lead de Supabase\n3. Enriquece y determina industria\n4. Busca/crea contacto en Apollo\n5. Lo añade a la secuencia correcta por industria\n6. Guarda estado en Supabase\n\n### Secuencias por industria en Apollo:\n- Financial/Banking\n- Healthcare/Pharma\n- Retail/E-commerce\n- Manufacturing\n- Technology/SaaS\n- Energy/Utilities\n- Education\n- Legal\n- Real Estate/Construction\n- Logistics/Transport\n- Telecom\n- General (default)\n\nCada secuencia tiene 3-4 emails personalizados\ncon intro de MSI + investigación de la industria.\n\nVer docs/EMAIL_OUTREACH_GUIDE.md para templates.",
+        "content": "# 📧 MSI Outbound via Apollo Sequences\n\n**Todo va por Apollo — no SMTP externo**\n\n### Flujo:\n1. Webhook recibe lead_id + source_table\n2. Lee datos del lead de Supabase (tabla dinámica)\n3. Enriquece y determina industria + sector\n4. **people/match** busca persona en Apollo\n5. Si no existe → **contacts/create**\n6. Lo añade a la secuencia correcta por industria\n7. **organizations/enrich** obtiene datos reales de la empresa\n8. Construye company_description con datos de Apollo\n9. Guarda estado + description en Supabase\n\n### APIs de Apollo usadas:\n- `api/v1/people/match` → Match persona\n- `api/v1/contacts` → Crear contacto\n- `api/v1/emailer_campaigns/{id}/add_contact_ids` → Secuencia\n- `api/v1/organizations/enrich` → Enriquecer empresa\n\n### Secuencias por industria en Apollo:\n- Financial/Banking\n- Healthcare/Pharma\n- Retail/E-commerce\n- Manufacturing\n- Technology/SaaS\n- Energy/Utilities\n- Education\n- Legal\n- Real Estate/Construction\n- Logistics/Transport\n- Telecom\n- General (default)",
         "height": 700,
         "width": 500
       },
@@ -305,7 +336,7 @@
         ],
         [
           {
-            "node": "Search Contact in Apollo",
+            "node": "Match Person in Apollo",
             "type": "main",
             "index": 0
           }
@@ -323,7 +354,7 @@
         ]
       ]
     },
-    "Search Contact in Apollo": {
+    "Match Person in Apollo": {
       "main": [
         [
           {
@@ -386,6 +417,28 @@
       ]
     },
     "Add to Apollo Sequence": {
+      "main": [
+        [
+          {
+            "node": "Enrich Organization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich Organization": {
+      "main": [
+        [
+          {
+            "node": "Build Company Description",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Company Description": {
       "main": [
         [
           {
