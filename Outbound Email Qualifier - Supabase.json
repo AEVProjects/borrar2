@@ -35,13 +35,13 @@
     },
     {
       "parameters": {
-        "jsCode": "// Enrich lead and determine the best Apollo sequence by industry\nconst items = $input.all();\nconst webhookBody = $('Webhook Trigger').item.json.body || {};\n\n// ===== REPLACE THESE WITH YOUR ACTUAL APOLLO SEQUENCE IDS =====\nconst INDUSTRY_SEQUENCE_MAP = {\n  'financial':      'SEQ_ID_FINANCIAL',\n  'banking':        'SEQ_ID_FINANCIAL',\n  'insurance':      'SEQ_ID_FINANCIAL',\n  'fintech':        'SEQ_ID_FINANCIAL',\n  'healthcare':     'SEQ_ID_HEALTHCARE',\n  'medical':        'SEQ_ID_HEALTHCARE',\n  'pharma':         'SEQ_ID_HEALTHCARE',\n  'biotech':        'SEQ_ID_HEALTHCARE',\n  'hospital':       'SEQ_ID_HEALTHCARE',\n  'retail':         'SEQ_ID_RETAIL',\n  'ecommerce':      'SEQ_ID_RETAIL',\n  'e-commerce':     'SEQ_ID_RETAIL',\n  'consumer':       'SEQ_ID_RETAIL',\n  'manufacturing':  'SEQ_ID_MANUFACTURING',\n  'industrial':     'SEQ_ID_MANUFACTURING',\n  'automotive':     'SEQ_ID_MANUFACTURING',\n  'technology':     'SEQ_ID_TECH',\n  'software':       'SEQ_ID_TECH',\n  'saas':           'SEQ_ID_TECH',\n  'information technology': 'SEQ_ID_TECH',\n  'energy':         'SEQ_ID_ENERGY',\n  'oil':            'SEQ_ID_ENERGY',\n  'utilities':      'SEQ_ID_ENERGY',\n  'renewable':      'SEQ_ID_ENERGY',\n  'education':      'SEQ_ID_EDUCATION',\n  'university':     'SEQ_ID_EDUCATION',\n  'school':         'SEQ_ID_EDUCATION',\n  'legal':          'SEQ_ID_LEGAL',\n  'law':            'SEQ_ID_LEGAL',\n  'real estate':    'SEQ_ID_REALESTATE',\n  'property':       'SEQ_ID_REALESTATE',\n  'construction':   'SEQ_ID_REALESTATE',\n  'logistics':      'SEQ_ID_LOGISTICS',\n  'transportation': 'SEQ_ID_LOGISTICS',\n  'shipping':       'SEQ_ID_LOGISTICS',\n  'supply chain':   'SEQ_ID_LOGISTICS',\n  'telecom':        'SEQ_ID_TELECOM',\n  'telecommunications': 'SEQ_ID_TELECOM'\n};\n\nconst DEFAULT_SEQUENCE = 'SEQ_ID_GENERAL';\n\nreturn items.map(item => {\n  const d = item.json;\n  const industry = (d.industry || '').toLowerCase();\n  \n  let sequenceId = DEFAULT_SEQUENCE;\n  let matchedIndustry = 'General';\n  for (const [keyword, seqId] of Object.entries(INDUSTRY_SEQUENCE_MAP)) {\n    if (industry.includes(keyword)) {\n      sequenceId = seqId;\n      matchedIndustry = keyword;\n      break;\n    }\n  }\n  \n  const employees = parseInt(d.num_employees) || 0;\n  let companySize = '';\n  if (employees > 1000) companySize = 'enterprise';\n  else if (employees > 200) companySize = 'mid-market';\n  else if (employees > 50) companySize = 'growing';\n  else companySize = 'emerging';\n  \n  // Use company_description from DB or from webhook body (pre-built by frontend)\n  const companyDescription = d.company_description || webhookBody.company_description || '';\n  // Use sector from webhook body or compute it\n  const sector = webhookBody.sector || matchedIndustry;\n  \n  return {\n    json: {\n      lead_id: d.id,\n      first_name: d.first_name || '',\n      last_name: d.last_name || '',\n      full_name: `${d.first_name || ''} ${d.last_name || ''}`.trim(),\n      title: d.title || '',\n      company_name: d.company_name || '',\n      email: d.email || '',\n      email_status: d.email_status || '',\n      industry: d.industry || '',\n      matched_industry: matchedIndustry,\n      sector: sector,\n      company_description: companyDescription,\n      num_employees: d.num_employees || '',\n      seniority: d.seniority || '',\n      city: d.city || '',\n      state: d.state || '',\n      country: d.country || '',\n      person_linkedin_url: d.person_linkedin_url || '',\n      website: d.website || '',\n      annual_revenue: d.annual_revenue || '',\n      technologies: d.technologies || '',\n      keywords: d.keywords || '',\n      primary_intent_topic: d.primary_intent_topic || '',\n      primary_intent_score: d.primary_intent_score || '',\n      company_size_category: companySize,\n      apollo_contact_id: d.apollo_contact_id || '',\n      sequence_id: sequenceId,\n      email_attempts: (d.email_attempts || 0) + 1,\n      source_table: webhookBody.source_table || 'apollo_leads'\n    }\n  };\n});"
+        "jsCode": "// Map lead data and read pre-generated personalized message from DB\nconst items = $input.all();\nconst webhookBody = $('Webhook Trigger').item.json.body || {};\n\n// Single sequence — message comes pre-generated in DB column 'personalized_message'\nconst SEQUENCE_ID = webhookBody.sequence_id || '69ab30527082df0019ff9a64';\n\nreturn items.map(item => {\n  const d = item.json;\n  \n  const employees = parseInt(d.num_employees) || 0;\n  let companySize = '';\n  if (employees > 1000) companySize = 'enterprise';\n  else if (employees > 200) companySize = 'mid-market';\n  else if (employees > 50) companySize = 'growing';\n  else companySize = 'emerging';\n  \n  return {\n    json: {\n      lead_id: d.id,\n      first_name: d.first_name || '',\n      last_name: d.last_name || '',\n      full_name: `${d.first_name || ''} ${d.last_name || ''}`.trim(),\n      title: d.title || '',\n      company_name: d.company_name || '',\n      email: d.email || '',\n      email_status: d.email_status || '',\n      industry: d.industry || '',\n      sector: webhookBody.sector || d.sector || '',\n      company_description: d.company_description || webhookBody.company_description || '',\n      personalized_message: d.personalized_message || webhookBody.personalized_message || '',\n      num_employees: d.num_employees || '',\n      seniority: d.seniority || '',\n      city: d.city || '',\n      state: d.state || '',\n      country: d.country || '',\n      person_linkedin_url: d.person_linkedin_url || '',\n      website: d.website || '',\n      company_size_category: companySize,\n      apollo_contact_id: d.apollo_contact_id || '',\n      sequence_id: SEQUENCE_ID,\n      email_attempts: (d.email_attempts || 0) + 1,\n      source_table: webhookBody.source_table || 'apollo_leads'\n    }\n  };\n});"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [40, 0],
       "id": "enrich-lead-001",
-      "name": "Enrich & Map Industry Sequence"
+      "name": "Map Lead Data"
     },
     {
       "parameters": {
@@ -120,7 +120,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Check if contact already exists in Apollo (people/match returns person directly)\nconst matchResult = $input.first().json;\nconst leadData = $('Enrich & Map Industry Sequence').item.json;\n\nlet apolloContactId = leadData.apollo_contact_id;\nlet contactExists = false;\n\n// people/match returns { person: {...} } or { person: null }\nif (matchResult.person && matchResult.person.id) {\n  apolloContactId = matchResult.person.id;\n  contactExists = true;\n} else if (matchResult.contacts && matchResult.contacts.length > 0) {\n  // Fallback for contacts/search response format\n  apolloContactId = matchResult.contacts[0].id;\n  contactExists = true;\n}\n\nreturn [{\n  json: {\n    ...leadData,\n    apollo_contact_id: apolloContactId,\n    contact_exists: contactExists\n  }\n}];"
+        "jsCode": "// Check if contact already exists in Apollo (people/match returns person directly)\nconst matchResult = $input.first().json;\nconst leadData = $('Map Lead Data').item.json;\n\nlet apolloContactId = leadData.apollo_contact_id;\nlet contactExists = false;\n\n// people/match returns { person: {...} } or { person: null }\nif (matchResult.person && matchResult.person.id) {\n  apolloContactId = matchResult.person.id;\n  contactExists = true;\n} else if (matchResult.contacts && matchResult.contacts.length > 0) {\n  // Fallback for contacts/search response format\n  apolloContactId = matchResult.contacts[0].id;\n  contactExists = true;\n}\n\nreturn [{\n  json: {\n    ...leadData,\n    apollo_contact_id: apolloContactId,\n    contact_exists: contactExists\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -189,7 +189,7 @@
         "url": "=https://api.apollo.io/api/v1/emailer_campaigns/{{ $json.sequence_id }}/add_contact_ids",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"api_key\": \"{{ $('Webhook Trigger').item.json.body.apollo_api_key || 'YOUR_APOLLO_MASTER_API_KEY' }}\",\n  \"contact_ids\": [\"{{ $json.apollo_contact_id }}\"],\n  \"emailer_campaign_id\": \"{{ $json.sequence_id }}\",\n  \"send_email_from_email_account_id\": \"{{ $('Webhook Trigger').item.json.body.email_account_id || 'YOUR_APOLLO_EMAIL_ACCOUNT_ID' }}\"\n}",
+        "jsonBody": "={\n  \"api_key\": \"{{ $('Webhook Trigger').item.json.body.apollo_api_key || 'YOUR_APOLLO_MASTER_API_KEY' }}\",\n  \"contact_ids\": [\"{{ $json.apollo_contact_id }}\"],\n  \"emailer_campaign_id\": \"{{ $json.sequence_id }}\",\n  \"send_email_from_email_account_id\": \"{{ $('Webhook Trigger').item.json.body.email_account_id || '69811149b1906a001958f14e' }}\",\n  \"sequence_no_email\": false,\n  \"sequence_active_in_other_campaigns\": false\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -201,7 +201,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=UPDATE {{ $json.source_table || 'apollo_leads' }} SET \n  email_outreach_status = 'sequence_active',\n  apollo_sequence_status = 'active',\n  apollo_sequence_id = '{{ $json.sequence_id }}',\n  apollo_sequence_added_at = NOW(),\n  apollo_contact_id = '{{ $json.apollo_contact_id }}',\n  email_suggested_service = '{{ $json.sector || $json.matched_industry }}',\n  company_description = '{{ ($json.company_description || '').replace(/'/g, \"''\") }}',\n  email_attempts = {{ $json.email_attempts }},\n  email_outreach_date = NOW(),\n  updated_at = NOW()\nWHERE id = {{ $json.lead_id }}",
+        "query": "=UPDATE {{ $json.source_table || 'apollo_leads' }} SET \n  email_outreach_status = 'sequence_active',\n  apollo_sequence_status = 'active',\n  apollo_sequence_id = '{{ $json.sequence_id }}',\n  apollo_sequence_added_at = NOW(),\n  apollo_contact_id = '{{ $json.apollo_contact_id }}',\n  email_suggested_service = '{{ $json.sector }}',\n  company_description = '{{ ($json.company_description || '').replace(/'/g, \"''\") }}',\n  personalized_message = '{{ ($json.personalized_message || '').replace(/'/g, \"''\") }}',\n  email_attempts = {{ $json.email_attempts }},\n  email_outreach_date = NOW(),\n  updated_at = NOW()\nWHERE id = {{ $json.lead_id }}",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -219,7 +219,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=INSERT INTO email_outreach_log (lead_id, to_email, to_name, company, service, subject, body, status, source_table)\nVALUES (\n  {{ $json.lead_id }},\n  '{{ $json.email }}',\n  '{{ $json.full_name }}',\n  '{{ $json.company_name }}',\n  '{{ $json.sector || $json.matched_industry }}',\n  'Apollo Sequence: {{ $json.sector || $json.matched_industry }}',\n  '{{ ($json.company_description || \"Added to Apollo industry sequence\").replace(/'/g, \"''\") }}',\n  'sequence_active',\n  '{{ $json.source_table || 'apollo_leads' }}'\n)",
+        "query": "=INSERT INTO email_outreach_log (lead_id, to_email, to_name, company, service, subject, body, status, source_table)\nVALUES (\n  {{ $json.lead_id }},\n  '{{ $json.email }}',\n  '{{ $json.full_name }}',\n  '{{ $json.company_name }}',\n  '{{ $json.sector }}',\n  'Apollo Sequence',\n  '{{ ($json.personalized_message || $json.company_description || 'Added to Apollo sequence').replace(/'/g, \"''\") }}',\n  'sequence_active',\n  '{{ $json.source_table || 'apollo_leads' }}'\n)",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -237,7 +237,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"lead_id\": {{ $json.lead_id }},\n  \"status\": \"sequence_active\",\n  \"sequence\": \"{{ $json.matched_industry }}\",\n  \"apollo_contact_id\": \"{{ $json.apollo_contact_id }}\",\n  \"message\": \"Lead added to Apollo sequence for {{ $json.matched_industry }} industry\"\n}",
+        "responseBody": "={\n  \"success\": true,\n  \"lead_id\": {{ $json.lead_id }},\n  \"status\": \"sequence_active\",\n  \"apollo_contact_id\": \"{{ $json.apollo_contact_id }}\",\n  \"message\": \"Lead added to Apollo sequence\"\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
@@ -248,8 +248,8 @@
     },
     {
       "parameters": {
-        "content": "# 📧 MSI Outbound via Apollo Sequences\n\n**Todo va por Apollo — no SMTP externo**\n**company_description se genera en el frontend (0 créditos)**\n\n### Flujo:\n1. Webhook recibe lead_id + source_table + company_description\n2. Lee datos del lead de Supabase (tabla dinámica)\n3. Enriquece y determina industria + sector\n4. **people/match** busca persona en Apollo (1 crédito)\n5. Si no existe → **contacts/create** (1 crédito)\n6. Lo añade a la secuencia correcta por industria (0 créditos)\n7. Guarda estado + company_description en Supabase\n\n### Créditos Apollo: 1-2 por lead\n\n### APIs de Apollo usadas:\n- `api/v1/people/match` → Match persona\n- `api/v1/contacts` → Crear contacto\n- `api/v1/emailer_campaigns/{id}/add_contact_ids` → Secuencia\n\n### Secuencias por industria en Apollo:\n- Financial/Banking\n- Healthcare/Pharma\n- Retail/E-commerce\n- Manufacturing\n- Technology/SaaS\n- Energy/Utilities\n- Education\n- Legal\n- Real Estate/Construction\n- Logistics/Transport\n- Telecom\n- General (default)",
-        "height": 700,
+        "content": "# 📧 MSI Outbound — 1 Sequence\n\n**Mensaje pre-generado en DB (personalized_message)**\n\n### Flujo:\n1. Webhook recibe lead_id + source_table\n2. Lee lead + personalized_message de Supabase\n3. people/match busca en Apollo (1 crédito)\n4. Si no existe → contacts/create (1 crédito)\n5. Añade a la sequence única\n6. Guarda estado en Supabase\n\n### Sequence: Nataly's Outbound AI Sequence 1\n### Envía desde: nataly.riano@msitechnologiesinc.com",
+        "height": 500,
         "width": 500
       },
       "type": "n8n-nodes-base.stickyNote",
@@ -276,14 +276,14 @@
       "main": [
         [
           {
-            "node": "Enrich & Map Industry Sequence",
+            "node": "Map Lead Data",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Enrich & Map Industry Sequence": {
+    "Map Lead Data": {
       "main": [
         [
           {

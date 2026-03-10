@@ -21,11 +21,11 @@
 
 ### Los 3 Flujos de n8n
 
-| #   | Nombre del Flujo                                 | ID en n8n          | Webhook                        | Función                                                                                                                                                                                            |
-| --- | ------------------------------------------------ | ------------------ | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| #   | Nombre del Flujo                                 | ID en n8n          | Webhook                        | Función                                                                                                                                                                            |
+| --- | ------------------------------------------------ | ------------------ | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | **MSI Outbound Email Qualifier - Apollo Direct** | `5kPbxlaaLV517SDJ` | `/webhook/msi-outbound-email`  | Lee lead → `people/match` en Apollo → crea contacto si no existe → añade a secuencia por industria → guarda en Supabase (company_description viene del frontend, 0 créditos extra) |
-| 2   | **MSI Outbound Lead Qualifier - Supabase**       | `49V4vqufnswbbBwW` | `/webhook/msi-outbound-call`   | Lee lead → llama por teléfono vía VAPI → espera resultado de la llamada → guarda calificación en Supabase                                                                                          |
-| 3   | **MSI VAPI Server URL - Save Call Results**      | `nPyviJu4qpx1GYNu` | `/webhook/msi-vapi-server-url` | Recibe el end-of-call report de VAPI → extrae intención, budget, urgencia, motivación → actualiza Supabase                                                                                         |
+| 2   | **MSI Outbound Lead Qualifier - Supabase**       | `49V4vqufnswbbBwW` | `/webhook/msi-outbound-call`   | Lee lead → llama por teléfono vía VAPI → espera resultado de la llamada → guarda calificación en Supabase                                                                          |
+| 3   | **MSI VAPI Server URL - Save Call Results**      | `nPyviJu4qpx1GYNu` | `/webhook/msi-vapi-server-url` | Recibe el end-of-call report de VAPI → extrae intención, budget, urgencia, motivación → actualiza Supabase                                                                         |
 
 ### Cómo Interactúan
 
@@ -90,11 +90,11 @@ Ya tienes tu Apollo Master API Key. Está configurada en `config.js`.
 
 **Endpoints activos que usa el workflow (1-2 créditos por lead):**
 
-| # | Endpoint | Créditos | Función |
-|---|---|---|---|
-| 1 | `api/v1/people/match` | 1 | Buscar si el contacto ya existe |
-| 2 | `api/v1/contacts` (create) | 1 | Crear contacto nuevo (solo si no existe) |
-| 3 | `api/v1/emailer_campaigns/{id}/add_contact_ids` | 0 | Añadir a secuencia de emails |
+| #   | Endpoint                                        | Créditos | Función                                  |
+| --- | ----------------------------------------------- | -------- | ---------------------------------------- |
+| 1   | `api/v1/people/match`                           | 1        | Buscar si el contacto ya existe          |
+| 2   | `api/v1/contacts` (create)                      | 1        | Crear contacto nuevo (solo si no existe) |
+| 3   | `api/v1/emailer_campaigns/{id}/add_contact_ids` | 0        | Añadir a secuencia de emails             |
 
 > **Nota:** `company_description` se genera en el frontend con datos locales (CSV/Supabase). No se usa `organizations/enrich` para ahorrar créditos.
 
@@ -260,29 +260,29 @@ Solo necesario si vas a usar el Flujo 2 (llamadas telefónicas):
 
 **✅ Activos en el workflow (3 endpoints, 1-2 créditos por lead):**
 
-| Endpoint | Método | Créditos | Función |
-|---|---|---|---|
-| `api/v1/people/match` | POST | 1 | Buscar persona por email+nombre+empresa |
-| `api/v1/contacts` (create) | POST | 1 | Crear contacto nuevo si no existe |
-| `api/v1/emailer_campaigns/{id}/add_contact_ids` | POST | 0 | Añadir contacto a secuencia |
+| Endpoint                                        | Método | Créditos | Función                                 |
+| ----------------------------------------------- | ------ | -------- | --------------------------------------- |
+| `api/v1/people/match`                           | POST   | 1        | Buscar persona por email+nombre+empresa |
+| `api/v1/contacts` (create)                      | POST   | 1        | Crear contacto nuevo si no existe       |
+| `api/v1/emailer_campaigns/{id}/add_contact_ids` | POST   | 0        | Añadir contacto a secuencia             |
 
 **📋 Disponibles en tu API (no usados actualmente):**
 
-| Endpoint | Método | Función | Créditos |
-|---|---|---|---|
-| `api/v1/contacts/search` | POST | Buscar contactos (fallback) | 1 |
-| `api/v1/contacts/update` | POST | Actualizar contacto | 1 |
-| `api/v1/contacts/bulk_create` | POST | Crear en lote | 1/contacto |
-| `api/v1/contacts/bulk_update` | POST | Actualizar en lote | 1/contacto |
-| `api/v1/accounts/search` | POST | Buscar empresas | 1 |
-| `api/v1/accounts/bulk_create` | POST | Crear empresas en lote | 1/cuenta |
-| `api/v1/people/show` | GET | Ver detalles de persona | 1 |
-| `api/v1/people/bulk_match` | POST | Match personas en lote | 1/persona |
-| `api/v1/organizations/show` | GET | Ver organización | 1 |
-| `api/v1/organizations/enrich` | POST | Enriquecer empresa (NO USADO - ahorra créditos) | 1 |
-| `api/v1/organizations/bulk_enrich` | POST | Enriquecer en lote (NO USADO) | 1/org |
-| `api/v1/emailer_campaigns/search` | POST | Listar secuencias | 0 |
-| `api/v1/fields/create` | POST | Crear campos custom | 0 |
+| Endpoint                           | Método | Función                                         | Créditos   |
+| ---------------------------------- | ------ | ----------------------------------------------- | ---------- |
+| `api/v1/contacts/search`           | POST   | Buscar contactos (fallback)                     | 1          |
+| `api/v1/contacts/update`           | POST   | Actualizar contacto                             | 1          |
+| `api/v1/contacts/bulk_create`      | POST   | Crear en lote                                   | 1/contacto |
+| `api/v1/contacts/bulk_update`      | POST   | Actualizar en lote                              | 1/contacto |
+| `api/v1/accounts/search`           | POST   | Buscar empresas                                 | 1          |
+| `api/v1/accounts/bulk_create`      | POST   | Crear empresas en lote                          | 1/cuenta   |
+| `api/v1/people/show`               | GET    | Ver detalles de persona                         | 1          |
+| `api/v1/people/bulk_match`         | POST   | Match personas en lote                          | 1/persona  |
+| `api/v1/organizations/show`        | GET    | Ver organización                                | 1          |
+| `api/v1/organizations/enrich`      | POST   | Enriquecer empresa (NO USADO - ahorra créditos) | 1          |
+| `api/v1/organizations/bulk_enrich` | POST   | Enriquecer en lote (NO USADO)                   | 1/org      |
+| `api/v1/emailer_campaigns/search`  | POST   | Listar secuencias                               | 0          |
+| `api/v1/fields/create`             | POST   | Crear campos custom                             | 0          |
 
 ### Flujo actual del workflow:
 
