@@ -6155,16 +6155,11 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
             await loadLeads();
         });
 
-        // Send email button
-        document.getElementById('leads-send-email-btn')?.addEventListener('click', openEmailModal);
+        // Send email button -> now Download CSV
+        document.getElementById('leads-send-email-btn')?.addEventListener('click', downloadApolloCSV);
 
         // Classify + Enrich button
         document.getElementById('leads-classify-btn')?.addEventListener('click', classifyAndEnrichLeads);
-
-        // Email modal close/cancel
-        document.getElementById('leads-email-modal-close')?.addEventListener('click', closeEmailModal);
-        document.getElementById('leads-email-cancel')?.addEventListener('click', closeEmailModal);
-        document.getElementById('leads-email-send')?.addEventListener('click', sendPersonalizedEmails);
     }
 
     async function loadLeads() {
@@ -6284,10 +6279,11 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
                         return '<span style="color:#9ca3af;font-size:11px;">—</span>';
                     })()}</td>
                     <td>
-                        <button class="btn btn-secondary btn-small leads-email-single" data-id="${lead.id}" title="Add to Apollo sequence"${lead.apollo_sequence_status === 'active' ? ' disabled style="opacity:0.4;"' : ''}>
+                        <button class="btn btn-secondary btn-small leads-email-single" data-id="${lead.id}" title="Download CSV for this lead"${lead.apollo_sequence_status === 'active' ? ' disabled style="opacity:0.4;"' : ''}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                                <polyline points="22,6 12,13 2,6"></polyline>
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
                             </svg>
                         </button>
                     </td>
@@ -6326,7 +6322,7 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
                 selectedLeadIds.clear();
                 selectedLeadIds.add(id);
                 updateSelectedCount();
-                openEmailModal();
+                downloadApolloCSV();
             });
         });
     }
@@ -6532,167 +6528,51 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         return desc;
     }
 
-    // Email Modal
-    function openEmailModal() {
-        if (selectedLeadIds.size === 0) {
+    // Download CSV for Apollo import
+    function downloadApolloCSV() {
+        const selected = leadsData.filter(l => selectedLeadIds.has(l.id));
+        if (selected.length === 0) {
             showToast('Select at least one lead first', 'warning');
             return;
         }
 
-        const modal = document.getElementById('leads-email-modal');
-        const recipientsDiv = document.getElementById('leads-email-recipients');
-        const previewDiv = document.getElementById('leads-sequence-preview');
+        // Apollo CSV columns
+        const headers = ['First Name','Last Name','Email','Title','Company','Website','LinkedIn URL','Industry','City','State','Country','# Employees','Seniority','Sector','Company Description','Personalized Message'];
 
-        const selected = leadsData.filter(l => selectedLeadIds.has(l.id));
-        
-        // Group by industry to show sequence mapping preview
-        const industryGroups = {};
-        selected.forEach(l => {
-            const ind = l.industry || 'General';
-            if (!industryGroups[ind]) industryGroups[ind] = [];
-            industryGroups[ind].push(l);
-        });
+        const escapeCSV = (val) => {
+            const str = String(val || '').replace(/"/g, '""');
+            return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str}"` : str;
+        };
 
-        recipientsDiv.innerHTML = `
-            <div class="leads-recipients-header">Adding ${selected.length} lead(s) to industry-matched Apollo sequences:</div>
-            <div class="leads-recipients-list">
-                ${selected.map(l => {
-                    const statusBadge = l.apollo_sequence_status === 'active' 
-                        ? '<span class="leads-stage leads-stage-active" style="background:#10b981;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;margin-left:6px;">Already in sequence</span>' 
-                        : '';
-                    const sectorBadge = `<span class="leads-sector-badge" style="background:${getSectorBadgeColor(classifySector(l.industry))};color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;">${classifySector(l.industry)}</span>`;
-                    const descSnippet = l.company_description 
-                        ? `<div style="font-size:11px;color:#6b7280;margin-top:4px;line-height:1.4;max-width:500px;">${truncate(l.company_description, 150)}</div>` 
-                        : '<div style="font-size:11px;color:#d97706;margin-top:2px;">⚠ No description — run Classify + Enrich first</div>';
-                    return `<div class="leads-recipient-chip">
-                        <strong>${l.first_name} ${l.last_name}</strong> - ${l.company_name} ${sectorBadge}
-                        <small>&lt;${l.email || 'no email'}&gt;</small>
-                        ${descSnippet}
-                        ${statusBadge}
-                    </div>`;
-                }).join('')}
-            </div>`;
+        const rows = selected.map(l => [
+            l.first_name || '',
+            l.last_name || '',
+            l.email || '',
+            l.title || '',
+            l.company_name || '',
+            l.website || '',
+            l.person_linkedin_url || '',
+            l.industry || '',
+            l.city || '',
+            l.state || '',
+            l.country || '',
+            l.num_employees || '',
+            l.seniority || '',
+            classifySector(l.industry),
+            l.company_description || '',
+            l.personalized_message || ''
+        ].map(escapeCSV).join(','));
 
-        // Show industry → sequence preview
-        if (previewDiv) {
-            previewDiv.style.display = 'block';
-            previewDiv.innerHTML = `
-                <div style="font-size:13px;color:#6b7280;margin-bottom:8px;"><strong>Sequence mapping:</strong></div>
-                ${Object.entries(industryGroups).map(([ind, leads]) => `
-                    <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f3f4f6;font-size:13px;">
-                        <span>${ind}</span>
-                        <span style="color:#6b7280;">${leads.length} lead(s) → Industry sequence</span>
-                    </div>
-                `).join('')}`;
-        }
+        const csv = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `apollo-leads-${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
 
-        modal.style.display = 'flex';
-    }
-
-    function closeEmailModal() {
-        document.getElementById('leads-email-modal').style.display = 'none';
-    }
-
-    async function sendPersonalizedEmails() {
-        const selected = leadsData.filter(l => selectedLeadIds.has(l.id));
-        if (selected.length === 0) {
-            showToast('No leads selected', 'warning');
-            return;
-        }
-
-        const webhookUrl = CONFIG?.n8n?.emailOutreachWebhook;
-        if (!webhookUrl) {
-            showToast('Email outreach webhook not configured in config.js (n8n.emailOutreachWebhook)', 'error');
-            return;
-        }
-
-        const apolloApiKey = CONFIG?.apollo?.apiKey || '';
-        const emailAccountId = CONFIG?.apollo?.emailAccountId || '';
-
-        if (!apolloApiKey) {
-            showToast('Apollo API key not configured in config.js (apollo.apiKey)', 'error');
-            return;
-        }
-        if (!emailAccountId) {
-            showToast('Apollo email account ID not configured in config.js (apollo.emailAccountId)', 'error');
-            return;
-        }
-
-        // Filter out leads already in a sequence
-        const leadsToAdd = selected.filter(l => l.apollo_sequence_status !== 'active');
-        const alreadyInSequence = selected.length - leadsToAdd.length;
-        if (alreadyInSequence > 0) {
-            showToast(`${alreadyInSequence} lead(s) already in a sequence — skipping those.`, 'info');
-        }
-        if (leadsToAdd.length === 0) {
-            showToast('All selected leads are already in Apollo sequences.', 'warning');
-            return;
-        }
-
-        const sendBtn = document.getElementById('leads-email-send');
-        const originalText = sendBtn.innerHTML;
-        sendBtn.disabled = true;
-        sendBtn.innerHTML = `<div class="spinner"></div> Adding ${leadsToAdd.length} lead(s) to Apollo... (0/${leadsToAdd.length})`;
-
-        let successCount = 0;
-        let errorCount = 0;
-
-        try {
-            for (let i = 0; i < leadsToAdd.length; i++) {
-                const lead = leadsToAdd[i];
-                sendBtn.innerHTML = `<div class="spinner"></div> Adding to Apollo... (${i + 1}/${leadsToAdd.length})`;
-
-                try {
-                    const response = await fetch(webhookUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            body: {
-                                lead_id: lead.id,
-                                apollo_api_key: apolloApiKey,
-                                email_account_id: emailAccountId,
-                                source_table: currentLeadsTable,
-                                sector: classifySector(lead.industry),
-                                company_description: lead.company_description || ''
-                            }
-                        })
-                    });
-
-                    if (!response.ok) {
-                        errorCount++;
-                        console.error(`Failed for lead ${lead.id}:`, await response.text().catch(() => ''));
-                    } else {
-                        successCount++;
-                    }
-                } catch (err) {
-                    errorCount++;
-                    console.error(`Error for lead ${lead.id}:`, err);
-                }
-
-                // Small delay between requests to avoid rate limits
-                if (i < leadsToAdd.length - 1) {
-                    await new Promise(r => setTimeout(r, 1500));
-                }
-            }
-
-            closeEmailModal();
-            selectedLeadIds.clear();
-            updateSelectedCount();
-            
-            // Reload leads to get updated sequence status
-            await loadLeads();
-            
-            const msg = successCount > 0
-                ? `${successCount} lead(s) added to industry-matched Apollo sequences!${errorCount > 0 ? ` (${errorCount} failed)` : ''} Track stats in Apollo.`
-                : `Failed to add leads to sequences. Check n8n logs.`;
-            showToast(msg, successCount > 0 ? 'success' : 'error');
-        } catch (err) {
-            console.error('Error in Apollo sequence flow:', err);
-            showToast(`Error: ${err.message}`, 'error');
-        } finally {
-            sendBtn.disabled = false;
-            sendBtn.innerHTML = originalText;
-        }
+        showToast(`Downloaded ${selected.length} leads as CSV. Import into Apollo → add to sequence.`, 'success');
     }
     // ========== SUB-TAB SWITCHING ==========
     document.querySelectorAll('.leads-subtab').forEach(btn => {
