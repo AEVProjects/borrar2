@@ -1603,6 +1603,9 @@
                     </div>
                     <div class="leads-actions">
                         <input type="text" id="leads-search" class="leads-search-input" placeholder="Search by name, company, email, industry...">
+                        <select id="leads-filter-batch" class="leads-filter-select">
+                            <option value="">All Batches</option>
+                        </select>
                         <select id="leads-filter-industry" class="leads-filter-select">
                             <option value="">All Industries</option>
                         </select>
@@ -1615,6 +1618,13 @@
                                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                             </svg>
                             Classify + Enrich (<span id="leads-classify-count">0</span>)
+                        </button>
+                        <button id="leads-generate-ai-btn" class="btn btn-primary btn-small" disabled style="background:#10b981;margin-left:8px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <path d="M9 9h6v6H9z"></path>
+                            </svg>
+                            Generate AI Messages (<span id="leads-classify-count">0</span>)
                         </button>
                         <button id="leads-send-email-btn" class="btn btn-primary btn-small" disabled>
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

@@ -6069,6 +6069,8 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
     let industries = [];
     let seniorities = [];
     let currentLeadsTable = 'apollo_leads'; // 'apollo_leads' or 'apollo_leads_test'
+    let currentBatchId = null; // null = all, number = specific batch
+    let batches = [];
 
     // Industry → Sector classification (same logic as n8n workflow)
     const INDUSTRY_SECTOR_MAP = {

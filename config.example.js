@@ -38,7 +38,8 @@ window.APP_CONFIG = {
         emailOutreachWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-outbound-email', // Del workflow "Outbound Email Qualifier - Supabase"
         profileScraperWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-profile-scraper', // Del workflow "MSI Profile Scraper"
         linkedinToApolloWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-linkedin-to-apollo', // Del workflow "LinkedIn to Apollo Outreach"
-        linkedinSearchWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-linkedin-search' // Del workflow "MSI LinkedIn Lead Search" (Google CSE - GRATIS)
+        linkedinSearchWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-linkedin-search', // Del workflow "MSI LinkedIn Lead Search" (Google CSE - GRATIS)
+        aiMessagesWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-ai-messages' // Del workflow "MSI AI Message Generator" - Genera mensajes personalizados con Gemini
     },
     
     // Apollo.io Configuration

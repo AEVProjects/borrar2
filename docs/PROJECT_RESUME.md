@@ -1,6 +1,6 @@
 # MSI Automation — Project Resume Document
 
-**Fecha:** 9 marzo 2026  
+**Fecha:** 10 marzo 2026  
 **Propósito:** Documento para retomar el proyecto en una nueva sesión de IA. Contiene TODO lo necesario para continuar sin perder contexto.
 
 ---
@@ -10,7 +10,7 @@
 Plataforma de automatización de marketing y ventas para **MSI Technologies Inc.** que incluye:
 
 - **Plataforma Web** (HTML/JS/CSS vanilla): Gestión de contenido, generación IA, visor de leads, email outreach
-- **n8n Cloud** (n8nmsi.app.n8n.cloud): ~10 workflows de automatización  
+- **n8n Cloud** (n8nmsi.app.n8n.cloud): ~10 workflows de automatización
 - **Supabase** (PostgreSQL): Base de datos central
 - **Apollo.io**: Plataforma de email outreach con secuencias automatizadas
 - **VAPI**: Llamadas outbound con IA
@@ -20,10 +20,12 @@ Plataforma de automatización de marketing y ventas para **MSI Technologies Inc.
 ## 2. Credenciales y IDs Críticos
 
 ### Supabase
+
 - **URL:** `https://vahqhxfdropstvklvzej.supabase.co`
 - **Anon Key:** `sb_publishable_xt7qY64rVMowaSris2Zs0Q_2DEbzjpy`
 
 ### Apollo.io
+
 - **Master API Key:** `WBreK4EvRiZzu94EZREXEg` (Organization plan — acceso completo)
 - **Email Account Principal (nataly):** `69811149b1906a001958f14e` — nataly.riano@msitechnologiesinc.com
 - **Otras cuentas email:**
@@ -34,6 +36,7 @@ Plataforma de automatización de marketing y ventas para **MSI Technologies Inc.
 - **Sequence en config.js:** `69ab30527082df0019ff9a64` (Nataly's Outbound AI Sequence 1)
 
 ### n8n Cloud
+
 - **URL:** `https://n8nmsi.app.n8n.cloud`
 - **Credenciales JWT:** `C:/Users/artki/AppData/Roaming/n8nac-nodejs/Config/credentials.json`
   - Key es `hosts["https://n8nmsi.app.n8n.cloud"]`
@@ -41,6 +44,7 @@ Plataforma de automatización de marketing y ventas para **MSI Technologies Inc.
 - **Workflow Email Outreach ID:** `5kPbxlaaLV517SDJ`
 
 ### GitHub
+
 - **Repo:** `AEVProjects/borrar2`, branch `main`
 - **Último commit:** `bc3ce1f`
 
@@ -57,7 +61,7 @@ Se abandonó la idea de enviar emails vía API directamente. El flujo actual es:
    ↓
 2. Web UI muestra leads con clasificación de sector + descripción de empresa
    ↓
-3. Usuario selecciona leads → click "Download CSV" 
+3. Usuario selecciona leads → click "Download CSV"
    ↓
 4. CSV con 17 columnas se descarga (incluye Personalized Message + Personalized Followup)
    ↓
@@ -68,24 +72,27 @@ Se abandonó la idea de enviar emails vía API directamente. El flujo actual es:
 
 ### Secuencia "n8n" — 3 Pasos (Expert Sales Framework)
 
-| Step | Tipo | Timing | Asunto | Framework |
-|------|------|--------|--------|-----------|
-| 1 | new_thread | Inmediato | "quick question, {{first_name}}" | Pain→Insight: usa `{{personalized_message}}` |
-| 2 | reply_to_thread | +3 días | (reply) | Proof→Value: usa `{{personalized_followup}}` |
-| 3 | reply_to_thread | +3 días | (reply) | Breakup: ultra-corto, zero pressure |
+| Step | Tipo            | Timing    | Asunto                           | Framework                                    |
+| ---- | --------------- | --------- | -------------------------------- | -------------------------------------------- |
+| 1    | new_thread      | Inmediato | "quick question, {{first_name}}" | Pain→Insight: usa `{{personalized_message}}` |
+| 2    | reply_to_thread | +3 días   | (reply)                          | Proof→Value: usa `{{personalized_followup}}` |
+| 3    | reply_to_thread | +3 días   | (reply)                          | Breakup: ultra-corto, zero pressure          |
 
 **Touch IDs:**
+
 - Step 1: `69b079b6b9abc50011ba97e6` (template: `69b079b6b9abc50011ba97e5`)
 - Step 2: `69b079b6b9abc50011ba97e9` (template: `69b079b6b9abc50011ba97e8`)
 - Step 3: `69b079b6b9abc50011ba97ec` (template: `69b079b6b9abc50011ba97eb`)
 
 **Custom Variables en Apollo:**
+
 - `{{personalized_message}}` — Mensaje personalizado generado por IA (primer email)
 - `{{personalized_followup}}` — Followup personalizado (segundo email)
 
 ### Templates Actuales (resumido)
 
 **Step 1 — Pain→Insight:**
+
 > Hi {{first_name}},
 > {{personalized_message}}
 > We've been helping {{industry}} companies solve exactly this—typically cutting implementation time by 40% and reducing security incidents significantly.
@@ -93,12 +100,14 @@ Se abandonó la idea de enviar emails vía API directamente. El flujo actual es:
 > Best, Nataly
 
 **Step 2 — Proof→Value:**
+
 > {{first_name}},
 > {{personalized_followup}}
 > Happy to share the details if it's relevant to what you're working on at {{company}}.
 > — Nataly
 
 **Step 3 — Breakup:**
+
 > {{first_name}} — totally understand if the timing isn't right.
 > If tech infrastructure or security ever moves up the priority list at {{company}}, feel free to reply to this thread. I'll be here.
 > All the best, Nataly
@@ -108,11 +117,13 @@ Se abandonó la idea de enviar emails vía API directamente. El flujo actual es:
 ## 4. Archivos Clave y Su Estado
 
 ### config.js
+
 - Configuración central del frontend (window.APP_CONFIG)
 - Contiene: Supabase URL/key, todos los webhooks n8n, Apollo API key + sequence ID + email account ID, Google project ID
 - **Estado:** ✅ Actualizado con master key y IDs correctos
 
 ### app.js (Módulo de Leads: ~líneas 6060-6730)
+
 - Funciones principales:
   - `downloadApolloCSV()` — Exporta leads seleccionados a CSV con 17 columnas
   - `classifyAndEnrichLeads()` — Clasifica sector y genera descripción via webhook n8n
@@ -122,11 +133,13 @@ Se abandonó la idea de enviar emails vía API directamente. El flujo actual es:
 - **Estado:** ✅ Actualizado, CSV download funcional
 
 ### index.html
+
 - Botón "Download CSV" (ícono download) reemplazó botón "Apollo Sequence"
 - El modal de email sigue en el HTML pero ya no está conectado a JS
 - **Estado:** ✅ Funcional, pendiente limpieza del modal HTML sobrante
 
 ### Outbound Email Qualifier - Supabase.json
+
 - Workflow n8n para agregar leads a secuencia Apollo via API (alternativa al CSV)
 - **16 nodos:** Webhook → Read Lead → Map Lead Data → Has Email? → Match Person → Check Contact → Contact in Apollo? → Create Contact → Get Contact ID → Add to Sequence → Log to Supabase + Insert Outreach Log → Respond Success/Error
 - **Pendiente:** Tiene `YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID` en 4 nodos Postgres
@@ -138,19 +151,23 @@ Se abandonó la idea de enviar emails vía API directamente. El flujo actual es:
 ## 5. Tablas de Base de Datos Relevantes
 
 ### apollo_leads (principal)
+
 - Tabla principal de leads importados desde CSV de Apollo
 - ~4798 leads actuales
 - Columnas clave: first_name, last_name, email, title, company_name, industry, sector, company_description, personalized_message, personalized_followup, email_outreach_status, apollo_contact_id, etc.
 
 ### apollo_leads_test (testing)
+
 - 3 filas de prueba creadas para testing
 - Misma estructura que apollo_leads
 
 ### email_outreach_log
+
 - Log de todos los outreach enviados
 - Columnas: lead_id, to_email, to_name, company, service, subject, body, status, source_table
 
 ### Migraciones pendientes (posiblemente necesarias):
+
 ```sql
 -- Si las columnas no existen aún en la tabla:
 ALTER TABLE apollo_leads ADD COLUMN IF NOT EXISTS personalized_message TEXT;
@@ -163,26 +180,50 @@ ALTER TABLE apollo_leads_test ADD COLUMN IF NOT EXISTS personalized_followup TEX
 
 ## 6. Webhooks n8n (del config.js)
 
-| Webhook | URL Path | Propósito |
-|---------|----------|-----------|
-| emailOutreachWebhook | /webhook/msi-outbound-email | Email outreach via n8n (alternativa a CSV) |
-| linkedinToApolloWebhook | /webhook/msi-linkedin-to-apollo | LinkedIn → Apollo pipeline |
-| linkedinSearchWebhook | /webhook/msi-linkedin-search | Búsqueda LinkedIn (Google CSE gratis) |
-| profileScraperWebhook | /webhook/msi-profile-scraper | Scraping de perfiles |
-| generateWebhook | /webhook/70738d02... | Generación de contenido |
-| carouselWebhook | /webhook/msi-carousel-v12 | Carouseles |
-| videoWebhook | /webhook/msi-video-gen | Videos |
-| publishWebhook | /webhook/025d6de3... | Publicación multi-plataforma |
-| dailyWebhook | /webhook/msi-auto-daily | Auto Daily Generator |
+| Webhook                 | URL Path                        | Propósito                                  | Estado       |
+| ----------------------- | ------------------------------- | ------------------------------------------ | ------------ |
+| emailOutreachWebhook    | /webhook/msi-outbound-email     | Email outreach via n8n (alternativa a CSV) | ✅ Activo    |
+| linkedinToApolloWebhook | /webhook/msi-linkedin-to-apollo | ~~LinkedIn → Apollo pipeline~~             | ❌ DEPRECADO |
+| linkedinSearchWebhook   | /webhook/msi-linkedin-search    | ~~Búsqueda LinkedIn (Google CSE)~~         | ❌ DEPRECADO |
+| profileScraperWebhook   | /webhook/msi-profile-scraper    | ~~Scraping de perfiles~~                   | ❌ DEPRECADO |
+| generateWebhook         | /webhook/70738d02...            | Generación de contenido                    |
+| carouselWebhook         | /webhook/msi-carousel-v12       | Carouseles                                 |
+| videoWebhook            | /webhook/msi-video-gen          | Videos                                     |
+| publishWebhook          | /webhook/025d6de3...            | Publicación multi-plataforma               |
+| dailyWebhook            | /webhook/msi-auto-daily         | Auto Daily Generator                       |
 
 ---
 
-## 7. Qué Está COMPLETADO ✅
+## 7. DECISIÓN ESTRATÉGICA (10 marzo 2026)
+
+### ❌ Lo que NO vamos a hacer (y por qué)
+
+- **NO scraping de LinkedIn** — Riesgo alto de ban de cuentas. No vale la pena.
+- **NO Apify ni herramientas de scraping** — Costo elevado y resultados inciertos.
+- **NO enriquecimiento via LinkedIn** — Los webhooks `linkedinToApolloWebhook`, `profileScraperWebhook` y `linkedinSearchWebhook` quedan **DESACTIVADOS/DEPRECADOS**.
+- **NO gastar créditos de Apollo en scraping de emails de LinkedIn** — Los créditos se reservan exclusivamente para el envío de secuencias.
+
+### ✅ Lo que SÍ vamos a hacer
+
+- **Usar la data que ya tenemos** — 4798 leads en Supabase con campos ricos:
+  - `first_name`, `last_name`, `email`, `title`, `company_name`
+  - `industry`, `website`, `technologies`, `keywords`
+  - `num_employees`, `seniority`, `city`, `state`, `country`
+  - `person_linkedin_url` (solo como referencia, NO para scraping)
+- **IA genera mensajes personalizados de calidad** — Un workflow n8n con GPT-4o/Gemini que use TODOS los campos disponibles para generar `personalized_message` y `personalized_followup` que sean:
+  - Coherentes con la persona (título, seniority)
+  - Relevantes para la empresa (industry, technologies, tamaño)
+  - Naturales y humanos (no spam genérico)
+- **Apollo solo para envío** — CSV import → secuencia "n8n" → Apollo envía los 3 emails
+
+---
+
+## 8. Qué Está COMPLETADO ✅
 
 1. ✅ Apollo Master API Key configurada y validada (Organization plan, acceso completo)
 2. ✅ Simplificación a una sola secuencia (no por industria)
 3. ✅ Templates de email de la secuencia "n8n" actualizados (3 pasos, framework de ventas experto)
-4. ✅ Custom variables: `{{personalized_message}}` y `{{personalized_followup}}` 
+4. ✅ Custom variables: `{{personalized_message}}` y `{{personalized_followup}}`
 5. ✅ Función `downloadApolloCSV()` con 17 columnas incluyendo personalized_message y personalized_followup
 6. ✅ Eliminación del modal de email y función sendPersonalizedEmails
 7. ✅ Workflow n8n actualizado (16 nodos, secuencia única, "Map Lead Data")
@@ -190,27 +231,41 @@ ALTER TABLE apollo_leads_test ADD COLUMN IF NOT EXISTS personalized_followup TEX
 9. ✅ 4 cuentas de email activas verificadas en Apollo
 10. ✅ Toda la plataforma de contenido (posts, carouseles, videos, scheduling) funcional
 11. ✅ VAPI outbound caller configurado
-12. ✅ LinkedIn lead search via Google CSE (gratis)
+12. ✅ Decisión: LinkedIn scraping ELIMINADO del flujo (10 marzo 2026)
 
 ---
 
-## 8. Qué Está PENDIENTE ⏳
+## 9. Qué Está PENDIENTE ⏳
 
-### Prioridad Alta
-1. **Supabase Postgres Credential en n8n:** 4 nodos del workflow "Outbound Email Qualifier" tienen `YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID`. Hay que crear el credential en n8n Cloud y actualizar los IDs.
-2. **Columnas DB:** Verificar/crear columnas `personalized_message` y `personalized_followup` en tablas `apollo_leads` y `apollo_leads_test`.
-3. **Generación de mensajes personalizados:** Falta implementar la lógica que genera `personalized_message` y `personalized_followup` para cada lead (probablemente un workflow n8n con GPT-4o que analice el lead y genere el mensaje).
+### 🔴 Prioridad Alta — Generación de Mensajes IA
 
-### Prioridad Media
-4. **Test end-to-end:** Probar con los 3 leads de `apollo_leads_test` el flujo completo (CSV download → import a Apollo → verificar que los custom variables llegan).
-5. **Limpiar modal HTML:** Eliminar el HTML del modal de email sobrante en index.html.
-6. **Actualizar docs:** EMAIL_OUTREACH_GUIDE.md está DESACTUALIZADO (aún tiene las 12 secuencias por industria). Actualizar para reflejar la arquitectura actual de secuencia única + CSV.
-7. **Apollo API Key en workflow:** Los nodos HTTP del workflow tienen `YOUR_APOLLO_MASTER_API_KEY` — actualmente se pasa por webhook body pero podría hardcodearse.
+1. **Workflow n8n: "AI Message Generator"** — PIEZA CENTRAL del sistema. Workflow que:
+   - Recibe un batch de lead_ids (o todos los que no tengan mensaje)
+   - Lee los datos completos del lead de Supabase
+   - Genera con GPT-4o/Gemini un `personalized_message` y `personalized_followup` usando:
+     - Contexto de la persona: nombre, título, seniority, ciudad
+     - Contexto de la empresa: nombre, industry, technologies, website, num_employees
+     - Servicios MSI relevantes para ese perfil
+   - Guarda los mensajes generados de vuelta en Supabase
+   - **Criterio de calidad:** Mensajes que suenen humanos, específicos, NO spam genérico
 
-### Prioridad Baja
-8. **Rotación de sender:** Actualmente solo envía desde nataly. Configurar rotación entre las 4 cuentas de email.
-9. **Métricas de outreach:** Dashboard para ver tasas de apertura/respuesta de las secuencias.
-10. **Automatización completa:** Workflow que tome leads → genere mensajes IA → exporte CSV → (opcionalmente) agregue a secuencia via API sin intervención manual.
+2. **Supabase Postgres Credential en n8n:** 4 nodos del workflow "Outbound Email Qualifier" tienen `YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID`. Crear credential y actualizar.
+
+3. **Columnas DB:** Verificar/crear columnas `personalized_message` y `personalized_followup` en tablas `apollo_leads` y `apollo_leads_test`.
+
+### 🟡 Prioridad Media
+
+4. **Test end-to-end:** Probar con los 3 leads de `apollo_leads_test` el flujo completo:
+   - IA genera mensajes → se guardan en Supabase → CSV download → import a Apollo → verificar custom variables
+5. **Limpiar código LinkedIn:** Eliminar o desactivar las llamadas a `linkedinToApolloWebhook` en `classifyAndEnrichLeads()` (app.js ~línea 6390). Que use solo los datos locales.
+6. **Limpiar modal HTML sobrante** en index.html.
+7. **Actualizar EMAIL_OUTREACH_GUIDE.md** — Está DESACTUALIZADO.
+
+### 🟢 Prioridad Baja
+
+8. **Rotación de sender:** Configurar rotación entre las 4 cuentas de email.
+9. **Métricas de outreach:** Dashboard para tasas de apertura/respuesta.
+10. **Automatización completa:** Leads → IA genera mensajes → CSV → Apollo, sin intervención manual.
 
 ---
 
@@ -247,29 +302,40 @@ borrar2/
 ## 10. Comandos Útiles
 
 ### Verificar API key de Apollo
+
 ```bash
 node -e "fetch('https://api.apollo.io/api/v1/email_accounts',{headers:{'X-Api-Key':'WBreK4EvRiZzu94EZREXEg'}}).then(r=>r.json()).then(d=>console.log(d.email_accounts?.map(a=>a.email)))"
 ```
 
 ### Ver secuencia "n8n" en Apollo
+
 ```bash
 node -e "fetch('https://api.apollo.io/api/v1/emailer_campaigns/69b079b6b9abc50011ba97e3',{headers:{'X-Api-Key':'WBreK4EvRiZzu94EZREXEg'}}).then(r=>r.json()).then(d=>console.log(JSON.stringify(d.emailer_campaign,null,2)))"
 ```
 
 ### Push workflow a n8n Cloud
+
 ```javascript
 // Leer JWT de credentials
-const creds = JSON.parse(fs.readFileSync('C:/Users/artki/AppData/Roaming/n8nac-nodejs/Config/credentials.json'));
-const jwt = creds.hosts['https://n8nmsi.app.n8n.cloud'];
+const creds = JSON.parse(
+  fs.readFileSync(
+    "C:/Users/artki/AppData/Roaming/n8nac-nodejs/Config/credentials.json",
+  ),
+);
+const jwt = creds.hosts["https://n8nmsi.app.n8n.cloud"];
 // PUT (no PATCH)
-fetch('https://n8nmsi.app.n8n.cloud/api/v1/workflows/5kPbxlaaLV517SDJ', {
-  method: 'PUT',
-  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwt}` },
-  body: JSON.stringify(workflowData)
+fetch("https://n8nmsi.app.n8n.cloud/api/v1/workflows/5kPbxlaaLV517SDJ", {
+  method: "PUT",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${jwt}`,
+  },
+  body: JSON.stringify(workflowData),
 });
 ```
 
 ### Push a GitHub
+
 ```bash
 cd C:\Users\artki\borrar2
 git add -A; git commit -m "mensaje"; git push origin main
@@ -289,4 +355,4 @@ git add -A; git commit -m "mensaje"; git push origin main
 
 ---
 
-*Documento generado el 9 de marzo de 2026 para continuidad del proyecto MSI Automation.*
+_Documento generado el 9 de marzo de 2026 para continuidad del proyecto MSI Automation._
