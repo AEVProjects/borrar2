@@ -71,6 +71,10 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='apollo_leads' AND column_name='updated_at') THEN
         ALTER TABLE public.apollo_leads ADD COLUMN updated_at timestamp with time zone DEFAULT now();
     END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='apollo_leads' AND column_name='company_description') THEN
+        ALTER TABLE public.apollo_leads ADD COLUMN company_description text;
+    END IF;
 END $$;
 
 -- Indexes for call qualification queries

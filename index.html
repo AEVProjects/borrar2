@@ -1595,6 +1595,11 @@
                             Apollo Leads
                         </h2>
                         <span class="leads-subtitle" id="leads-count">Loading...</span>
+                        <!-- Datasource toggle: Production / Test -->
+                        <div class="leads-datasource-toggle" id="leads-datasource-toggle">
+                            <button class="leads-ds-btn active" data-table="apollo_leads">Production</button>
+                            <button class="leads-ds-btn" data-table="apollo_leads_test">Test (3 leads)</button>
+                        </div>
                     </div>
                     <div class="leads-actions">
                         <input type="text" id="leads-search" class="leads-search-input" placeholder="Search by name, company, email, industry...">
@@ -1604,6 +1609,13 @@
                         <select id="leads-filter-seniority" class="leads-filter-select">
                             <option value="">All Seniority</option>
                         </select>
+                        <button id="leads-classify-btn" class="btn btn-primary btn-small" disabled style="background:#8b5cf6;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            Classify + Enrich (<span id="leads-classify-count">0</span>)
+                        </button>
                         <button id="leads-send-email-btn" class="btn btn-primary btn-small" disabled>
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
@@ -1633,6 +1645,7 @@
                                     <th>Company</th>
                                     <th>Email</th>
                                     <th>Industry</th>
+                                    <th>Sector</th>
                                     <th>Seniority</th>
                                     <th>City</th>
                                     <th>Sequence</th>
@@ -1640,7 +1653,7 @@
                                 </tr>
                             </thead>
                             <tbody id="leads-table-body">
-                                <tr><td colspan="10" class="leads-loading">Loading leads...</td></tr>
+                                <tr><td colspan="11" class="leads-loading">Loading leads...</td></tr>
                             </tbody>
                         </table>
                     </div>

@@ -6068,11 +6068,50 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
     let leadsInitialized = false;
     let industries = [];
     let seniorities = [];
+    let currentLeadsTable = 'apollo_leads'; // 'apollo_leads' or 'apollo_leads_test'
+
+    // Industry → Sector classification (same logic as n8n workflow)
+    const INDUSTRY_SECTOR_MAP = {
+        'financial': 'Financial Services', 'banking': 'Financial Services', 'insurance': 'Financial Services', 'fintech': 'Financial Services',
+        'healthcare': 'Healthcare', 'medical': 'Healthcare', 'pharma': 'Healthcare', 'biotech': 'Healthcare', 'hospital': 'Healthcare',
+        'retail': 'Retail', 'ecommerce': 'Retail', 'e-commerce': 'Retail', 'consumer': 'Retail',
+        'manufacturing': 'Manufacturing', 'industrial': 'Manufacturing', 'automotive': 'Manufacturing',
+        'technology': 'Technology', 'software': 'Technology', 'saas': 'Technology', 'information technology': 'Technology',
+        'energy': 'Energy', 'oil': 'Energy', 'utilities': 'Energy', 'renewable': 'Energy',
+        'education': 'Education', 'university': 'Education', 'school': 'Education',
+        'legal': 'Legal', 'law': 'Legal',
+        'real estate': 'Real Estate', 'property': 'Real Estate', 'construction': 'Real Estate',
+        'logistics': 'Logistics', 'transportation': 'Logistics', 'shipping': 'Logistics', 'supply chain': 'Logistics',
+        'telecom': 'Telecom', 'telecommunications': 'Telecom',
+        'defense': 'Defense & Space', 'military': 'Defense & Space', 'defense & space': 'Defense & Space',
+        'government': 'Government', 'government administration': 'Government'
+    };
+
+    function classifySector(industry) {
+        if (!industry) return 'General';
+        const lower = industry.toLowerCase();
+        for (const [keyword, sector] of Object.entries(INDUSTRY_SECTOR_MAP)) {
+            if (lower.includes(keyword)) return sector;
+        }
+        return 'General';
+    }
+
+    function getSectorBadgeColor(sector) {
+        const colors = {
+            'Financial Services': '#f59e0b', 'Healthcare': '#ef4444', 'Retail': '#ec4899',
+            'Manufacturing': '#f97316', 'Technology': '#3b82f6', 'Energy': '#84cc16',
+            'Education': '#6366f1', 'Legal': '#78716c', 'Real Estate': '#14b8a6',
+            'Logistics': '#a855f7', 'Telecom': '#06b6d4', 'Defense & Space': '#64748b',
+            'Government': '#059669', 'General': '#9ca3af'
+        };
+        return colors[sector] || '#9ca3af';
+    }
 
     window.initLeadsMode = async function() {
         if (leadsInitialized && leadsData.length > 0) return;
         leadsInitialized = true;
         setupLeadsEventListeners();
+        setupDatasourceToggle();
         await loadLeads();
     };
 
@@ -6119,6 +6158,9 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         // Send email button
         document.getElementById('leads-send-email-btn')?.addEventListener('click', openEmailModal);
 
+        // Classify + Enrich button
+        document.getElementById('leads-classify-btn')?.addEventListener('click', classifyAndEnrichLeads);
+
         // Email modal close/cancel
         document.getElementById('leads-email-modal-close')?.addEventListener('click', closeEmailModal);
         document.getElementById('leads-email-cancel')?.addEventListener('click', closeEmailModal);
@@ -6127,15 +6169,15 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
 
     async function loadLeads() {
         if (!supabaseClient) {
-            document.getElementById('leads-table-body').innerHTML = '<tr><td colspan="10" class="leads-loading">Supabase not connected</td></tr>';
+            document.getElementById('leads-table-body').innerHTML = '<tr><td colspan="11" class="leads-loading">Supabase not connected</td></tr>';
             return;
         }
 
-        document.getElementById('leads-table-body').innerHTML = '<tr><td colspan="10" class="leads-loading">Loading leads...</td></tr>';
+        document.getElementById('leads-table-body').innerHTML = '<tr><td colspan=\"11\" class=\"leads-loading\">Loading leads...</td></tr>';
 
         try {
             const { data, error } = await supabaseClient
-                .from('apollo_leads')
+                .from(currentLeadsTable)
                 .select('*')
                 .order('id', { ascending: true });
 
@@ -6150,10 +6192,10 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
             populateFilters();
             filterLeads();
             
-            document.getElementById('leads-count').textContent = `${leadsData.length} leads loaded`;
+            document.getElementById('leads-count').textContent = `${leadsData.length} leads loaded (${currentLeadsTable})`;
         } catch (err) {
             console.error('Error loading leads:', err);
-            document.getElementById('leads-table-body').innerHTML = `<tr><td colspan="10" class="leads-loading">Error: ${err.message}</td></tr>`;
+            document.getElementById('leads-table-body').innerHTML = `<tr><td colspan=\"11\" class=\"leads-loading\">Error: ${err.message}</td></tr>`;
         }
     }
 
@@ -6205,10 +6247,12 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         const totalPages = Math.ceil(filteredLeads.length / PAGE_SIZE);
 
         if (pageLeads.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" class="leads-loading">No leads found</td></tr>';
+            tbody.innerHTML = '<tr><td colspan=\"11\" class=\"leads-loading\">No leads found</td></tr>';
         } else {
             tbody.innerHTML = pageLeads.map(lead => {
                 const checked = selectedLeadIds.has(lead.id) ? 'checked' : '';
+                const sector = classifySector(lead.industry);
+                const sectorColor = getSectorBadgeColor(sector);
                 return `<tr class="${checked ? 'leads-row-selected' : ''}">
                     <td><input type="checkbox" class="lead-checkbox" data-id="${lead.id}" ${checked}></td>
                     <td class="leads-name-cell">
@@ -6218,9 +6262,16 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
                         </a>` : ''}
                     </td>
                     <td class="leads-title-cell" title="${lead.title || ''}">${truncate(lead.title, 40)}</td>
-                    <td><strong>${lead.company_name || '-'}</strong></td>
+                    <td class="leads-company-cell">
+                        <strong>${lead.company_name || '-'}</strong>
+                        ${lead.company_description ? `<button class="leads-desc-toggle" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'" title="Show company description">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                        </button>
+                        <div class="leads-company-desc" style="display:none;">${lead.company_description}</div>` : ''}
+                    </td>
                     <td class="leads-email-cell"><a href="mailto:${lead.email}">${lead.email || '-'}</a></td>
                     <td>${lead.industry || '-'}</td>
+                    <td><span class="leads-sector-badge" style="background:${sectorColor};color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;white-space:nowrap;">${sector}</span></td>
                     <td>${lead.seniority || '-'}</td>
                     <td>${lead.city || '-'}${lead.state ? ', ' + lead.state : ''}</td>
                     <td>${(() => {
@@ -6284,11 +6335,201 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         const count = selectedLeadIds.size;
         document.getElementById('leads-selected-count').textContent = count;
         document.getElementById('leads-send-email-btn').disabled = count === 0;
+        const classifyCount = document.getElementById('leads-classify-count');
+        const classifyBtn = document.getElementById('leads-classify-btn');
+        if (classifyCount) classifyCount.textContent = count;
+        if (classifyBtn) classifyBtn.disabled = count === 0;
     }
 
     function truncate(str, max) {
         if (!str) return '-';
         return str.length > max ? str.substring(0, max) + '...' : str;
+    }
+
+    // Datasource toggle: apollo_leads vs apollo_leads_test
+    function setupDatasourceToggle() {
+        document.querySelectorAll('.leads-ds-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const table = btn.dataset.table;
+                if (table === currentLeadsTable) return;
+                
+                // Update toggle UI
+                document.querySelectorAll('.leads-ds-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                currentLeadsTable = table;
+                leadsData = [];
+                selectedLeadIds.clear();
+                updateSelectedCount();
+                await loadLeads();
+            });
+        });
+    }
+
+    // Classify & Enrich: classifies sector, builds company description, and optionally enriches via LinkedIn
+    async function classifyAndEnrichLeads() {
+        const selected = leadsData.filter(l => selectedLeadIds.has(l.id));
+        if (selected.length === 0) {
+            showToast('Select at least one lead to classify', 'warning');
+            return;
+        }
+
+        const classifyBtn = document.getElementById('leads-classify-btn');
+        const originalHTML = classifyBtn.innerHTML;
+        classifyBtn.disabled = true;
+        classifyBtn.innerHTML = '<div class="spinner"></div> Classifying...';
+
+        let successCount = 0;
+        let errorCount = 0;
+
+        try {
+            for (let i = 0; i < selected.length; i++) {
+                const lead = selected[i];
+                classifyBtn.innerHTML = `<div class="spinner"></div> Enriching ${i + 1}/${selected.length}...`;
+
+                // 1. Classify sector locally
+                const sector = classifySector(lead.industry);
+
+                // 2. Build company description from available fields
+                let companyDesc = buildCompanyDescription(lead);
+
+                // 3. Call LinkedIn/enrichment webhook (n8n agent) for deeper research
+                const webhookUrl = CONFIG?.n8n?.linkedinToApolloWebhook;
+                let enrichedData = null;
+
+                if (webhookUrl) {
+                    try {
+                        const resp = await fetch(webhookUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                body: {
+                                    lead_id: lead.id,
+                                    linkedin_url: lead.person_linkedin_url || '',
+                                    email: lead.email,
+                                    company_name: lead.company_name,
+                                    company_website: lead.website || '',
+                                    industry: lead.industry || '',
+                                    keywords: lead.keywords || '',
+                                    technologies: lead.technologies || '',
+                                    num_employees: lead.num_employees || '',
+                                    annual_revenue: lead.annual_revenue || '',
+                                    title: lead.title || '',
+                                    mode: 'enrich_and_describe',
+                                    source_table: currentLeadsTable
+                                }
+                            })
+                        });
+                        if (resp.ok) {
+                            enrichedData = await resp.json().catch(() => null);
+                        }
+                    } catch (e) {
+                        console.warn('Enrich webhook failed for', lead.company_name, e);
+                    }
+                }
+
+                // If n8n returned a better description from the AI agent, use it
+                if (enrichedData?.company_description) {
+                    companyDesc = enrichedData.company_description;
+                }
+
+                // 4. Update the lead in Supabase with sector + description + enrichment
+                const updateFields = {
+                    email_suggested_service: sector,
+                    company_description: companyDesc,
+                    updated_at: new Date().toISOString()
+                };
+                if (enrichedData?.industry) updateFields.industry = enrichedData.industry;
+                if (enrichedData?.keywords) updateFields.keywords = enrichedData.keywords;
+                if (enrichedData?.title) updateFields.title = enrichedData.title;
+
+                const { error } = await supabaseClient
+                    .from(currentLeadsTable)
+                    .update(updateFields)
+                    .eq('id', lead.id);
+
+                if (error) {
+                    errorCount++;
+                    console.error('Update failed for lead', lead.id, error);
+                } else {
+                    successCount++;
+                }
+
+                // Rate limiting
+                if (i < selected.length - 1) {
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+            }
+
+            // Reload data
+            selectedLeadIds.clear();
+            updateSelectedCount();
+            await loadLeads();
+
+            const msg = `${successCount} lead(s) classified & described${errorCount > 0 ? ` (${errorCount} failed)` : ''}. Sectors + company descriptions assigned.`;
+            showToast(msg, successCount > 0 ? 'success' : 'error');
+        } catch (err) {
+            console.error('Classify error:', err);
+            showToast('Error: ' + err.message, 'error');
+        } finally {
+            classifyBtn.disabled = false;
+            classifyBtn.innerHTML = originalHTML;
+        }
+    }
+
+    // Build a company description from existing lead fields
+    function buildCompanyDescription(lead) {
+        const parts = [];
+        const name = lead.company_name || 'Unknown';
+        const industry = lead.industry || '';
+        const employees = lead.num_employees || '';
+        const keywords = lead.keywords || '';
+        const technologies = lead.technologies || '';
+        const revenue = lead.annual_revenue || '';
+        const website = lead.website || '';
+        const city = lead.company_city || lead.city || '';
+        const state = lead.company_state || lead.state || '';
+        const country = lead.company_country || lead.country || '';
+
+        // Company name + industry
+        if (industry) {
+            parts.push(`${name} is a company in the ${industry} industry`);
+        } else {
+            parts.push(name);
+        }
+
+        // Location
+        const location = [city, state, country].filter(Boolean).join(', ');
+        if (location) parts.push(`based in ${location}`);
+
+        // Size
+        if (employees) {
+            const emp = parseInt(employees);
+            if (emp > 0) parts.push(`with approximately ${emp.toLocaleString()} employees`);
+        }
+
+        // Revenue
+        if (revenue && revenue !== '0') {
+            parts.push(`generating ${revenue} in annual revenue`);
+        }
+
+        let desc = parts.join(', ') + '.';
+
+        // Key focus areas from keywords (first 5-6 most relevant)
+        if (keywords) {
+            const kwList = keywords.split(',').map(k => k.trim()).filter(Boolean);
+            const topKw = kwList.slice(0, 6).join(', ');
+            if (topKw) desc += ` Key focus areas: ${topKw}.`;
+        }
+
+        // Technologies
+        if (technologies) {
+            const techList = technologies.split(',').map(t => t.trim()).filter(Boolean);
+            const topTech = techList.slice(0, 5).join(', ');
+            if (topTech) desc += ` Tech stack includes: ${topTech}.`;
+        }
+
+        return desc;
     }
 
     // Email Modal
@@ -6319,10 +6560,14 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
                     const statusBadge = l.apollo_sequence_status === 'active' 
                         ? '<span class="leads-stage leads-stage-active" style="background:#10b981;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;margin-left:6px;">Already in sequence</span>' 
                         : '';
+                    const sectorBadge = `<span class="leads-sector-badge" style="background:${getSectorBadgeColor(classifySector(l.industry))};color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;">${classifySector(l.industry)}</span>`;
+                    const descSnippet = l.company_description 
+                        ? `<div style="font-size:11px;color:#6b7280;margin-top:4px;line-height:1.4;max-width:500px;">${truncate(l.company_description, 150)}</div>` 
+                        : '<div style="font-size:11px;color:#d97706;margin-top:2px;">⚠ No description — run Classify + Enrich first</div>';
                     return `<div class="leads-recipient-chip">
-                        <strong>${l.first_name} ${l.last_name}</strong> - ${l.company_name}
+                        <strong>${l.first_name} ${l.last_name}</strong> - ${l.company_name} ${sectorBadge}
                         <small>&lt;${l.email || 'no email'}&gt;</small>
-                        <small style="color:#6b7280;">${l.industry || 'General'}</small>
+                        ${descSnippet}
                         ${statusBadge}
                     </div>`;
                 }).join('')}
@@ -6405,7 +6650,10 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
                             body: {
                                 lead_id: lead.id,
                                 apollo_api_key: apolloApiKey,
-                                email_account_id: emailAccountId
+                                email_account_id: emailAccountId,
+                                source_table: currentLeadsTable,
+                                sector: classifySector(lead.industry),
+                                company_description: lead.company_description || ''
                             }
                         })
                     });
