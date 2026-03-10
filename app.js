@@ -6537,7 +6537,7 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         }
 
         // Apollo CSV columns
-        const headers = ['First Name','Last Name','Email','Title','Company','Website','LinkedIn URL','Industry','City','State','Country','# Employees','Seniority','Sector','Company Description','Personalized Message'];
+        const headers = ['First Name','Last Name','Email','Title','Company','Website','LinkedIn URL','Industry','City','State','Country','# Employees','Seniority','Sector','Company Description','Personalized Message','Personalized Followup'];
 
         const escapeCSV = (val) => {
             const str = String(val || '').replace(/"/g, '""');
@@ -6560,7 +6560,8 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
             l.seniority || '',
             classifySector(l.industry),
             l.company_description || '',
-            l.personalized_message || ''
+            l.personalized_message || '',
+            l.personalized_followup || ''
         ].map(escapeCSV).join(','));
 
         const csv = [headers.join(','), ...rows].join('\n');
