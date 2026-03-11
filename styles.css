@@ -69,12 +69,50 @@ body {
     color: var(--primary-color);
 }
 
+.nav-tabs-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+    justify-content: flex-end;
+}
+
+.nav-scroll-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    border-radius: 50%;
+    cursor: pointer;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    font-size: 14px;
+}
+
+.nav-scroll-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background: rgba(32, 124, 229, 0.05);
+}
+
 .nav-tabs {
     display: flex;
-    flex-wrap: wrap;
     gap: 6px;
-    justify-content: flex-end;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     max-width: 100%;
+    padding: 4px 0;
+}
+
+.nav-tabs::-webkit-scrollbar {
+    display: none;
 }
 
 .tab-btn {
@@ -3298,6 +3336,115 @@ input[type="checkbox"].post-checkbox {
     overflow-x: auto;
     max-height: 65vh;
     overflow-y: auto;
+    position: relative;
+}
+
+/* Sticky horizontal scrollbar - always visible */
+.leads-table-scroll-hint {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.leads-table-scroll-hint button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+
+.leads-table-scroll-hint button:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+/* AI Email Modal */
+.ai-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.ai-modal {
+    background: var(--card-bg, #1e1e2e);
+    border-radius: 12px;
+    max-width: 720px;
+    width: 100%;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.ai-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.ai-modal-header h3 {
+    margin: 0;
+    font-size: 15px;
+    color: var(--text-color, #e0e0e0);
+}
+.ai-modal-close {
+    background: none;
+    border: none;
+    color: var(--text-color, #aaa);
+    font-size: 22px;
+    cursor: pointer;
+    padding: 0 4px;
+}
+.ai-modal-close:hover { color: #fff; }
+.ai-modal-body {
+    padding: 16px 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.ai-email-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.ai-email-card-header {
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: 13px;
+    background: rgba(99,102,241,0.15);
+    color: var(--primary-color, #6366f1);
+}
+.ai-email-subject {
+    padding: 8px 14px;
+    font-size: 12px;
+    color: var(--text-muted, #aaa);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-style: italic;
+}
+.ai-email-body {
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-color, #ddd);
+    white-space: pre-wrap;
+    word-wrap: break-word;
 }
 
 .leads-table {

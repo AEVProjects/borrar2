@@ -17,7 +17,9 @@
                 <img src="https://i.ibb.co/S7mKXdxr/MSI-Technologies-Icon.png" alt="MSI Technologies" class="nav-logo">
                 <h1>MSI Social Media Manager</h1>
             </div>
-            <div class="nav-tabs">
+            <div class="nav-tabs-wrapper">
+                <button class="nav-scroll-btn" id="nav-scroll-left" title="Scroll left">&#8249;</button>
+                <div class="nav-tabs" id="nav-tabs">
                 <button class="tab-btn active" data-mode="publish">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
@@ -119,6 +121,8 @@
                     </svg>
                     Leads
                 </button>
+                </div>
+                <button class="nav-scroll-btn" id="nav-scroll-right" title="Scroll right">&#8250;</button>
             </div>
         </nav>
 
@@ -1624,7 +1628,7 @@
                                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                                 <path d="M9 9h6v6H9z"></path>
                             </svg>
-                            Generate AI Messages (<span id="leads-classify-count">0</span>)
+                            Generate AI Messages (<span id="leads-ai-count">0</span>)
                         </button>
                         <button id="leads-send-email-btn" class="btn btn-primary btn-small" disabled>
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1646,7 +1650,12 @@
 
                 <!-- Leads Table -->
                 <div class="card leads-table-card">
-                    <div class="leads-table-wrapper">
+                    <div class="leads-table-scroll-hint" id="leads-table-scroll-hint">
+                        <button id="leads-scroll-left" title="Scroll left">&#8592;</button>
+                        <span>Scroll to see all columns</span>
+                        <button id="leads-scroll-right" title="Scroll right">&#8594;</button>
+                    </div>
+                    <div class="leads-table-wrapper" id="leads-table-wrapper">
                         <table class="leads-table" id="leads-table">
                             <thead>
                                 <tr>
@@ -1659,6 +1668,7 @@
                                     <th>Sector</th>
                                     <th>Seniority</th>
                                     <th>City</th>
+                                    <th>AI Message</th>
                                     <th>Sequence</th>
                                     <th>Actions</th>
                                 </tr>

@@ -232,6 +232,17 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
 });
 
+// Nav tab scroll buttons
+(function() {
+    const navTabs = document.getElementById('nav-tabs');
+    document.getElementById('nav-scroll-left')?.addEventListener('click', () => {
+        navTabs?.scrollBy({ left: -200, behavior: 'smooth' });
+    });
+    document.getElementById('nav-scroll-right')?.addEventListener('click', () => {
+        navTabs?.scrollBy({ left: 200, behavior: 'smooth' });
+    });
+})();
+
 // Image Preview - Multiple Images
 imageInput.addEventListener('change', (e) => {
     const files = Array.from(e.target.files);
@@ -6129,6 +6140,7 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         // Filters
         document.getElementById('leads-filter-industry')?.addEventListener('change', filterLeads);
         document.getElementById('leads-filter-seniority')?.addEventListener('change', filterLeads);
+        document.getElementById('leads-filter-batch')?.addEventListener('change', filterLeads);
 
         // Select all
         document.getElementById('leads-select-all')?.addEventListener('change', (e) => {
@@ -6162,15 +6174,27 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
 
         // Classify + Enrich button
         document.getElementById('leads-classify-btn')?.addEventListener('click', classifyAndEnrichLeads);
+
+        // Generate AI Messages button
+        document.getElementById('leads-generate-ai-btn')?.addEventListener('click', generateAIMessages);
+
+        // Leads table scroll buttons
+        const tableWrapper = document.getElementById('leads-table-wrapper');
+        document.getElementById('leads-scroll-left')?.addEventListener('click', () => {
+            tableWrapper?.scrollBy({ left: -300, behavior: 'smooth' });
+        });
+        document.getElementById('leads-scroll-right')?.addEventListener('click', () => {
+            tableWrapper?.scrollBy({ left: 300, behavior: 'smooth' });
+        });
     }
 
     async function loadLeads() {
         if (!supabaseClient) {
-            document.getElementById('leads-table-body').innerHTML = '<tr><td colspan="11" class="leads-loading">Supabase not connected</td></tr>';
+            document.getElementById('leads-table-body').innerHTML = '<tr><td colspan="12" class="leads-loading">Supabase not connected</td></tr>';
             return;
         }
 
-        document.getElementById('leads-table-body').innerHTML = '<tr><td colspan=\"11\" class=\"leads-loading\">Loading leads...</td></tr>';
+        document.getElementById('leads-table-body').innerHTML = '<tr><td colspan="12" class="leads-loading">Loading leads...</td></tr>';
 
         try {
             const { data, error } = await supabaseClient
@@ -6192,13 +6216,14 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
             document.getElementById('leads-count').textContent = `${leadsData.length} leads loaded (${currentLeadsTable})`;
         } catch (err) {
             console.error('Error loading leads:', err);
-            document.getElementById('leads-table-body').innerHTML = `<tr><td colspan=\"11\" class=\"leads-loading\">Error: ${err.message}</td></tr>`;
+            document.getElementById('leads-table-body').innerHTML = `<tr><td colspan="12" class="leads-loading">Error: ${err.message}</td></tr>`;
         }
     }
 
     function populateFilters() {
         const indSelect = document.getElementById('leads-filter-industry');
         const senSelect = document.getElementById('leads-filter-seniority');
+        const batchSelect = document.getElementById('leads-filter-batch');
         
         if (indSelect) {
             indSelect.innerHTML = '<option value="">All Industries</option>' +
@@ -6208,12 +6233,18 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
             senSelect.innerHTML = '<option value="">All Seniority</option>' +
                 seniorities.map(s => `<option value="${s}">${s}</option>`).join('');
         }
+        if (batchSelect) {
+            const batches = [...new Set(leadsData.map(l => l.batch_name).filter(Boolean))].sort();
+            batchSelect.innerHTML = '<option value="">All Batches</option>' +
+                batches.map(b => `<option value="${b}">${b}</option>`).join('');
+        }
     }
 
     function filterLeads() {
         const search = (document.getElementById('leads-search')?.value || '').toLowerCase();
         const filterIndustry = document.getElementById('leads-filter-industry')?.value || '';
         const filterSeniority = document.getElementById('leads-filter-seniority')?.value || '';
+        const filterBatch = document.getElementById('leads-filter-batch')?.value || '';
 
         filteredLeads = leadsData.filter(lead => {
             // Search match
@@ -6225,6 +6256,8 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
             if (filterIndustry && lead.industry !== filterIndustry) return false;
             // Seniority filter
             if (filterSeniority && lead.seniority !== filterSeniority) return false;
+            // Batch filter
+            if (filterBatch && String(lead.batch_name || '') !== filterBatch) return false;
             return true;
         });
 
@@ -6244,12 +6277,23 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         const totalPages = Math.ceil(filteredLeads.length / PAGE_SIZE);
 
         if (pageLeads.length === 0) {
-            tbody.innerHTML = '<tr><td colspan=\"11\" class=\"leads-loading\">No leads found</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="12" class="leads-loading">No leads found</td></tr>';
         } else {
             tbody.innerHTML = pageLeads.map(lead => {
                 const checked = selectedLeadIds.has(lead.id) ? 'checked' : '';
                 const sector = classifySector(lead.industry);
                 const sectorColor = getSectorBadgeColor(sector);
+                // AI message status badge
+                const aiStatus = lead.ai_message_status || 'pending';
+                let aiBadge = '<span style="color:#9ca3af;font-size:11px;">—</span>';
+                if (aiStatus === 'generated' && lead.personalized_message) {
+                    const emailCount = [lead.personalized_message, lead.personalized_followup, lead.personalized_email3].filter(Boolean).length;
+                    aiBadge = `<button class="leads-desc-toggle leads-ai-msg-toggle" data-id="${lead.id}" title="View AI emails" style="background:#10b981;color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;border:none;cursor:pointer;">✓ ${emailCount}/3</button>`;
+                } else if (aiStatus === 'generating') {
+                    aiBadge = '<span style="background:#f59e0b;color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;">⏳ Generating</span>';
+                } else if (aiStatus === 'error') {
+                    aiBadge = '<span style="background:#ef4444;color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;">✗ Error</span>';
+                }
                 return `<tr class="${checked ? 'leads-row-selected' : ''}">
                     <td><input type="checkbox" class="lead-checkbox" data-id="${lead.id}" ${checked}></td>
                     <td class="leads-name-cell">
@@ -6271,6 +6315,7 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
                     <td><span class="leads-sector-badge" style="background:${sectorColor};color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;white-space:nowrap;">${sector}</span></td>
                     <td>${lead.seniority || '-'}</td>
                     <td>${lead.city || '-'}${lead.state ? ', ' + lead.state : ''}</td>
+                    <td>${aiBadge}</td>
                     <td>${(() => {
                         const seqStatus = lead.apollo_sequence_status || lead.email_outreach_status || '';
                         if (seqStatus === 'active' || seqStatus === 'sequence_active') return '<span class="leads-stage" style="background:#10b981;color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;">In Sequence</span>';
@@ -6327,16 +6372,63 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
                 downloadApolloCSV();
             });
         });
+
+        // Bind AI message view buttons
+        document.querySelectorAll('.leads-ai-msg-toggle').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(e.currentTarget.dataset.id);
+                const lead = leadsData.find(l => l.id === id);
+                if (lead && lead.personalized_message) {
+                    showAiEmailModal(lead);
+                }
+            });
+        });
+    }
+
+    function showAiEmailModal(lead) {
+        const name = `${lead.first_name || ''} ${lead.last_name || ''}`.trim();
+        const company = lead.company_name || '';
+        const emails = [
+            { num: 1, day: 1, label: 'Introduction', subject: lead.personalized_subject1, body: lead.personalized_message },
+            { num: 2, day: 4, label: 'Case Study', subject: lead.personalized_subject2, body: lead.personalized_followup },
+            { num: 3, day: 8, label: 'Soft Close + Value Add', subject: lead.personalized_subject3, body: lead.personalized_email3 }
+        ];
+
+        const escHtml = s => s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>') : '';
+
+        let html = `<div class="ai-modal-overlay" onclick="if(event.target===this)this.remove()">
+            <div class="ai-modal">
+                <div class="ai-modal-header">
+                    <h3>📧 AI Email Sequence — ${escHtml(name)} (${escHtml(company)})</h3>
+                    <button class="ai-modal-close" onclick="this.closest('.ai-modal-overlay').remove()">&times;</button>
+                </div>
+                <div class="ai-modal-body">`;
+
+        emails.forEach(em => {
+            if (!em.body) return;
+            html += `<div class="ai-email-card">
+                <div class="ai-email-card-header">📩 Email ${em.num} — Day ${em.day}: ${em.label}</div>`;
+            if (em.subject) html += `<div class="ai-email-subject">Subject: ${escHtml(em.subject)}</div>`;
+            html += `<div class="ai-email-body">${escHtml(em.body)}</div></div>`;
+        });
+
+        html += `</div></div></div>`;
+        document.body.insertAdjacentHTML('beforeend', html);
     }
 
     function updateSelectedCount() {
         const count = selectedLeadIds.size;
         document.getElementById('leads-selected-count').textContent = count;
         document.getElementById('leads-send-email-btn').disabled = count === 0;
-        const classifyCount = document.getElementById('leads-classify-count');
         const classifyBtn = document.getElementById('leads-classify-btn');
-        if (classifyCount) classifyCount.textContent = count;
         if (classifyBtn) classifyBtn.disabled = count === 0;
+        const aiBtn = document.getElementById('leads-generate-ai-btn');
+        if (aiBtn) aiBtn.disabled = count === 0;
+        // Update all count badges
+        const classifyCount = document.getElementById('leads-classify-count');
+        if (classifyCount) classifyCount.textContent = count;
+        const aiCount = document.getElementById('leads-ai-count');
+        if (aiCount) aiCount.textContent = count;
     }
 
     function truncate(str, max) {
@@ -6472,6 +6564,91 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         } finally {
             classifyBtn.disabled = false;
             classifyBtn.innerHTML = originalHTML;
+        }
+    }
+
+    // Generate AI Messages for selected leads using n8n webhook
+    async function generateAIMessages() {
+        const selected = leadsData.filter(l => selectedLeadIds.has(l.id));
+        if (selected.length === 0) {
+            showToast('Select at least one lead to generate AI messages', 'warning');
+            return;
+        }
+
+        const aiBtn = document.getElementById('leads-generate-ai-btn');
+        const originalHTML = aiBtn.innerHTML;
+        aiBtn.disabled = true;
+        aiBtn.innerHTML = '<div class="spinner"></div> Generating...';
+
+        const webhookUrl = CONFIG?.n8n?.aiMessagesWebhook;
+        if (!webhookUrl) {
+            showToast('AI Messages webhook not configured in config.js', 'error');
+            aiBtn.disabled = false;
+            aiBtn.innerHTML = originalHTML;
+            return;
+        }
+
+        try {
+            // Mark selected leads as 'generating' in Supabase
+            const leadIds = selected.map(l => l.id);
+            await supabaseClient
+                .from(currentLeadsTable)
+                .update({ ai_message_status: 'generating' })
+                .in('id', leadIds);
+
+            // Send to n8n webhook
+            const payload = {
+                lead_ids: leadIds,
+                source_table: currentLeadsTable,
+                leads: selected.map(l => ({
+                    id: l.id,
+                    first_name: l.first_name,
+                    last_name: l.last_name,
+                    email: l.email,
+                    title: l.title,
+                    company_name: l.company_name,
+                    industry: l.industry,
+                    company_description: l.company_description || '',
+                    keywords: l.keywords || '',
+                    technologies: l.technologies || '',
+                    city: l.city || '',
+                    state: l.state || '',
+                    seniority: l.seniority || ''
+                }))
+            };
+
+            const resp = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!resp.ok) {
+                throw new Error(`Webhook returned ${resp.status}`);
+            }
+
+            const result = await resp.json().catch(() => ({}));
+            
+            // Reload leads to show updated status
+            selectedLeadIds.clear();
+            updateSelectedCount();
+            await loadLeads();
+
+            const generated = result.generated || selected.length;
+            showToast(`AI message generation started for ${generated} lead(s). Messages will appear when ready.`, 'success');
+        } catch (err) {
+            console.error('Generate AI messages error:', err);
+            showToast('Error generating AI messages: ' + err.message, 'error');
+            // Revert status on error
+            const leadIds = selected.map(l => l.id);
+            await supabaseClient
+                .from(currentLeadsTable)
+                .update({ ai_message_status: 'pending' })
+                .in('id', leadIds);
+            await loadLeads();
+        } finally {
+            aiBtn.disabled = false;
+            aiBtn.innerHTML = originalHTML;
         }
     }
 
