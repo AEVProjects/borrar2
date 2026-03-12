@@ -322,14 +322,14 @@ MSI Platform              n8n (Gemini AI)           Supabase              Apollo
 └──────────┘             └──────────────┘          └──────────┘         └────────┘
 ```
 
-| Stage                | What Happens                                                                                                                  |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| **1. MSI Platform**  | Select leads → click "Generate AI Messages"                                                                                   |
-| **2. n8n Workflow**  | Gemini generates 3 emails + 1 subject per lead (all focused on AI Discovery Workshop)                                          |
-| **3. Supabase**      | Stores `personalized_message`, `personalized_followup`, `personalized_email3`, `personalized_subject1`                        |
-| **4. CSV Export**    | Export leads with AI fields from MSI platform                                                                                 |
-| **5. Apollo Import** | Import CSV → map custom fields → add to sequence                                                                             |
-| **6. Apollo Sends**  | Email 1 (Workshop intro) → Step 2 +3 days (Workshop proof) → Step 3 +3 more days (Workshop summary + door open)              |
+| Stage                | What Happens                                                                                                    |
+| -------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **1. MSI Platform**  | Select leads → click "Generate AI Messages"                                                                     |
+| **2. n8n Workflow**  | Gemini generates 3 emails + 1 subject per lead (all focused on AI Discovery Workshop)                           |
+| **3. Supabase**      | Stores `personalized_message`, `personalized_followup`, `personalized_email3`, `personalized_subject1`          |
+| **4. CSV Export**    | Export leads with AI fields from MSI platform                                                                   |
+| **5. Apollo Import** | Import CSV → map custom fields → add to sequence                                                                |
+| **6. Apollo Sends**  | Email 1 (Workshop intro) → Step 2 +3 days (Workshop proof) → Step 3 +3 more days (Workshop summary + door open) |
 
 ---
 
@@ -387,6 +387,7 @@ When a lead receives these emails, they will:
 3. **Email 3**: See a quick summary of the 5 phases + recognizable MSI clients who've completed the process, with zero pressure to reply
 
 **Replies triggered by this sequence typically fall into 2 categories:**
+
 - "Yes, let's explore AI" → Schedule a Discovery Workshop kickoff call
 - "We're not ready for AI yet, but let's talk in [timeframe]" → Add to follow-up sequence or nurture campaign
 
