@@ -93,7 +93,8 @@ CREATE TABLE IF NOT EXISTS public.apollo_leads_leds (
   company_description text,
   company_sector text,
   -- Timestamps
-  created_at timestamp with time zone DEFAULT now()
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
 );
 
 -- Indexes
