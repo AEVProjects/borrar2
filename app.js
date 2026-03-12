@@ -6079,7 +6079,7 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
     let leadsInitialized = false;
     let industries = [];
     let seniorities = [];
-    let currentLeadsTable = 'apollo_leads'; // 'apollo_leads' or 'apollo_leads_test'
+    let currentLeadsTable = 'apollo_leads'; // 'apollo_leads', 'apollo_leads_test', or 'apollo_leads_leds'
     let currentBatchId = null; // null = all, number = specific batch
     let batches = [];
 
