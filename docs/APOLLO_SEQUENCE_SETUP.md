@@ -23,7 +23,7 @@ Your current Apollo sequence has these issues that need fixing:
 
 | What                 | Current (Wrong)                                    | Should Be                                       |
 | -------------------- | -------------------------------------------------- | ----------------------------------------------- |
-| **Sender**           | Nataly Riaño                                       | Alex Rodriguez                                  |
+| **Sender**           | Nataly Riaño                                       | Nataly Riaño                                    |
 | **Apollo Signature** | ON (appends "Nataly Riano, MSI Technologies Inc.") | **OFF** — AI includes signature in body         |
 | **Step 1 Subject**   | `Tech Solutions for {{FIRST_NAME}}`                | `{{personalized_subject1}}`                     |
 | **Step 1 Body**      | Generic template                                   | `{{personalized_message}}`                      |
@@ -32,7 +32,7 @@ Your current Apollo sequence has these issues that need fixing:
 | **Step 3 Subject**   | `Re: [previous email subject line]`                | _(leave empty — Apollo adds Re: automatically)_ |
 | **Step 3 Body**      | Generic template                                   | `{{personalized_email3}}`                       |
 
-> **CRITICAL:** Disable Apollo's email signature in **Settings > Email Accounts**. The AI already generates the correct signature inside each email body (full sig for Email 1, just "Alex" for Email 2, "Alex Rodriguez" for Email 3). If you leave Apollo's signature ON, there will be a DOUBLE signature.
+> **CRITICAL:** Disable Apollo's email signature in **Settings > Email Accounts**. The AI already generates the correct signature inside each email body (full sig for Email 1, just "Nataly" for Email 2, "Nataly Riaño" for Email 3). If you leave Apollo's signature ON, there will be a DOUBLE signature.
 
 ---
 
@@ -106,18 +106,18 @@ That's it — the entire Subject and Body are just the custom variable. The AI a
 
 ### Email Account Settings
 
-| Setting        | Value                                          |
-| -------------- | ---------------------------------------------- |
-| **From name**  | Alex Rodriguez                                 |
-| **From email** | alex@msitechnologies.com (or configured alias) |
-| **Reply-to**   | Same as from                                   |
-| **Signature**  | **DISABLED** — AI includes it in the body      |
+| Setting        | Value                                            |
+| -------------- | ------------------------------------------------ |
+| **From name**  | Nataly Riaño                                     |
+| **From email** | nataly@msitechnologies.com (or configured alias) |
+| **Reply-to**   | Same as from                                     |
+| **Signature**  | **DISABLED** — AI includes it in the body        |
 
 > **WHY disable signature?** The AI generates these signatures:
 >
-> - **Email 1:** "Alex Rodriguez\nBusiness Development\nMSI Technologies Inc."
-> - **Email 2:** "Alex" (brief — it's a reply)
-> - **Email 3:** "Alex Rodriguez" (breakup — semi-formal)
+> - **Email 1:** "Nataly Riaño\nBusiness Development\nMSI Technologies Inc."
+> - **Email 2:** "Nataly" (brief — it's a reply)
+> - **Email 3:** "Nataly Riaño" (breakup — semi-formal)
 >
 > If Apollo's signature is ON, recipients will see a duplicate signature block at the bottom.
 
@@ -185,6 +185,7 @@ When exporting leads from the MSI platform, the CSV contains these columns:
 ### Step 1 (Current → Fixed)
 
 **BEFORE (wrong):**
+
 ```
 Subject: Tech Solutions for {{FIRST_NAME}}
 Type:    New thread
@@ -193,6 +194,7 @@ Body:    Hey {{FIRST_NAME}}, At {{COMPANY_NAME}}, tackling digital...
 ```
 
 **AFTER (correct):**
+
 ```
 Subject: {{personalized_subject1}}
 Type:    New thread
@@ -202,6 +204,7 @@ Body:    {{personalized_message}}
 ### Step 2 (Current → Fixed)
 
 **BEFORE (wrong):**
+
 ```
 Subject: Re: [previous email subject line]
 Type:    Reply
@@ -209,6 +212,7 @@ Body:    MSI Technologies inc. specializes in tailored tech solutions...
 ```
 
 **AFTER (correct):**
+
 ```
 Subject: (leave empty)
 Type:    Reply
@@ -218,6 +222,7 @@ Body:    {{personalized_followup}}
 ### Step 3 (Current → Fixed)
 
 **BEFORE (wrong):**
+
 ```
 Subject: Re: [previous email subject line]
 Type:    Reply
@@ -225,6 +230,7 @@ Body:    {{first_name}}, This is the final outreach regarding...
 ```
 
 **AFTER (correct):**
+
 ```
 Subject: (leave empty)
 Type:    Reply
@@ -236,6 +242,7 @@ Body:    {{personalized_email3}}
 ## Email Strategy Summary (What the AI Generates)
 
 ### Email 1 — Warm Introduction + Value Hook
+
 - **Opens new thread** with a personalized subject (<50 chars)
 - First paragraph hooks with something specific about THEIR company
 - Introduces MSI broadly: 20+ years, 700+ consultants, 40+ countries
@@ -243,9 +250,10 @@ Body:    {{personalized_email3}}
 - Soft CTA: "Would it make sense to explore this?"
 - **Length:** 100-150 words
 - **Greeting:** "Hi [Name],"
-- **Signature:** Full — Alex Rodriguez, Business Development, MSI Technologies Inc.
+- **Signature:** Full — Nataly Riaño, Business Development, MSI Technologies Inc.
 
 ### Email 2 — Proof + Specific Value (Reply, +3 days)
+
 - **Reply in same thread** — threaded under Email 1 with auto "Re:"
 - NO re-introduction — they have context from Email 1
 - Leads with concrete proof: numbers, percentages, timeframes
@@ -253,9 +261,10 @@ Body:    {{personalized_email3}}
 - Direct question to invite dialogue
 - **Length:** 60-90 words
 - **Greeting:** "[Name]," (no Hi — it's a reply)
-- **Signature:** Just "Alex"
+- **Signature:** Just "Nataly"
 
 ### Email 3 — Breakup + Door Open (Reply, +3 more days)
+
 - **Reply in same thread** — final touch with auto "Re:"
 - Signals you won't keep emailing (triggers psychological reply response)
 - 2-3 bullet points of relevant MSI services
@@ -263,7 +272,7 @@ Body:    {{personalized_email3}}
 - Warm close, zero pressure
 - **Length:** 50-70 words
 - **Greeting:** "[Name]," (same thread)
-- **Signature:** Just "Alex Rodriguez"
+- **Signature:** Just "Nataly Riaño"
 
 ---
 
@@ -279,14 +288,14 @@ MSI Platform              n8n (Gemini AI)           Supabase              Apollo
 └──────────┘             └──────────────┘          └──────────┘         └────────┘
 ```
 
-| Stage | What Happens |
-|-------|-------------|
-| **1. MSI Platform** | Select leads → click "Generate AI Messages" |
-| **2. n8n Workflow** | Gemini generates 3 emails + 1 subject per lead |
-| **3. Supabase** | Stores `personalized_message`, `personalized_followup`, `personalized_email3`, `personalized_subject1` |
-| **4. CSV Export** | Export leads with AI fields from MSI platform |
-| **5. Apollo Import** | Import CSV → map custom fields → add to sequence |
-| **6. Apollo Sends** | Step 1 immediately, Step 2 +3 days, Step 3 +3 more days |
+| Stage                | What Happens                                                                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------------ |
+| **1. MSI Platform**  | Select leads → click "Generate AI Messages"                                                            |
+| **2. n8n Workflow**  | Gemini generates 3 emails + 1 subject per lead                                                         |
+| **3. Supabase**      | Stores `personalized_message`, `personalized_followup`, `personalized_email3`, `personalized_subject1` |
+| **4. CSV Export**    | Export leads with AI fields from MSI platform                                                          |
+| **5. Apollo Import** | Import CSV → map custom fields → add to sequence                                                       |
+| **6. Apollo Sends**  | Step 1 immediately, Step 2 +3 days, Step 3 +3 more days                                                |
 
 ---
 
@@ -304,14 +313,14 @@ If you ever manually edit emails in Apollo, avoid these:
 
 ## Database → Apollo Field Mapping
 
-| Supabase Column | Purpose | Apollo Custom Field | Apollo Step |
-|-----------------|---------|--------------------:|-------------|
-| `personalized_subject1` | Email 1 subject | `personalized_subject1` | Step 1 Subject |
-| `personalized_message` | Email 1 body | `personalized_message` | Step 1 Body |
-| `personalized_followup` | Email 2 body | `personalized_followup` | Step 2 Body |
-| `personalized_email3` | Email 3 body | `personalized_email3` | Step 3 Body |
-| `personalized_subject2` | Always empty (`""`) | Not needed | Apollo auto "Re:" |
-| `personalized_subject3` | Always empty (`""`) | Not needed | Apollo auto "Re:" |
+| Supabase Column         | Purpose             |     Apollo Custom Field | Apollo Step       |
+| ----------------------- | ------------------- | ----------------------: | ----------------- |
+| `personalized_subject1` | Email 1 subject     | `personalized_subject1` | Step 1 Subject    |
+| `personalized_message`  | Email 1 body        |  `personalized_message` | Step 1 Body       |
+| `personalized_followup` | Email 2 body        | `personalized_followup` | Step 2 Body       |
+| `personalized_email3`   | Email 3 body        |   `personalized_email3` | Step 3 Body       |
+| `personalized_subject2` | Always empty (`""`) |              Not needed | Apollo auto "Re:" |
+| `personalized_subject3` | Always empty (`""`) |              Not needed | Apollo auto "Re:" |
 
 ---
 
@@ -321,7 +330,7 @@ If you ever manually edit emails in Apollo, avoid these:
 - [ ] **n8n:** Verify workflow is active (MSI AI Message Generator)
 - [ ] **MSI Platform:** Generate AI messages for a test batch
 - [ ] **MSI Platform:** Review emails in modal (check all 3 tabs look good)
-- [ ] **Apollo — Account:** Change sender from Nataly to Alex Rodriguez
+- [ ] **Apollo — Account:** Keep sender as Nataly Riaño
 - [ ] **Apollo — Account:** DISABLE Apollo email signature
 - [ ] **Apollo — Custom Fields:** Create 4 custom fields (see Custom Fields section)
 - [ ] **Apollo — Sequence:** Create 3-step sequence (New Thread → Reply → Reply)
@@ -337,12 +346,12 @@ If you ever manually edit emails in Apollo, avoid these:
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| Emails 2-3 show as separate threads | Step 2/3 Type must be "Reply", not "New Thread" |
+| Issue                                               | Solution                                                                  |
+| --------------------------------------------------- | ------------------------------------------------------------------------- |
+| Emails 2-3 show as separate threads                 | Step 2/3 Type must be "Reply", not "New Thread"                           |
 | Subject shows `{{personalized_subject1}}` literally | Custom field not created or not mapped in Apollo Settings > Custom Fields |
-| Body shows `{{personalized_message}}` literally | Same — custom field not mapped during CSV import |
-| Double signature on emails | Disable Apollo signature — AI already includes one |
-| "Re:" not showing on Steps 2-3 preview | Normal — Apollo adds "Re:" at actual send time |
-| AI messages not generating | Check n8n workflow is active + Gemini API key valid |
-| Emails look generic / not personalized | Verify leads have data (industry, title, company) in Supabase |
+| Body shows `{{personalized_message}}` literally     | Same — custom field not mapped during CSV import                          |
+| Double signature on emails                          | Disable Apollo signature — AI already includes one                        |
+| "Re:" not showing on Steps 2-3 preview              | Normal — Apollo adds "Re:" at actual send time                            |
+| AI messages not generating                          | Check n8n workflow is active + Gemini API key valid                       |
+| Emails look generic / not personalized              | Verify leads have data (industry, title, company) in Supabase             |
