@@ -6389,9 +6389,9 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         const name = `${lead.first_name || ''} ${lead.last_name || ''}`.trim();
         const company = lead.company_name || '';
         const emails = [
-            { num: 1, day: 1, label: 'Introduction', subject: lead.personalized_subject1, body: lead.personalized_message },
-            { num: 2, day: 4, label: 'Case Study', subject: lead.personalized_subject2, body: lead.personalized_followup },
-            { num: 3, day: 8, label: 'Soft Close + Value Add', subject: lead.personalized_subject3, body: lead.personalized_email3 }
+            { num: 1, day: 'Immediately', label: 'Introduction + Value Hook', subject: lead.personalized_subject1, body: lead.personalized_message },
+            { num: 2, day: '+3 days', label: 'Proof + Value (Reply)', subject: lead.personalized_subject2 || `Re: ${lead.personalized_subject1 || ''}`, body: lead.personalized_followup },
+            { num: 3, day: '+3 days', label: 'Breakup + Door Open (Reply)', subject: lead.personalized_subject3 || `Re: ${lead.personalized_subject1 || ''}`, body: lead.personalized_email3 }
         ];
 
         const escHtml = s => s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>') : '';
@@ -6407,7 +6407,7 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         emails.forEach(em => {
             if (!em.body) return;
             html += `<div class="ai-email-card">
-                <div class="ai-email-card-header">📩 Email ${em.num} — Day ${em.day}: ${em.label}</div>`;
+                <div class="ai-email-card-header">📩 Email ${em.num} — ${em.day}: ${em.label}</div>`;
             if (em.subject) html += `<div class="ai-email-subject">Subject: ${escHtml(em.subject)}</div>`;
             html += `<div class="ai-email-body">${escHtml(em.body)}</div></div>`;
         });
