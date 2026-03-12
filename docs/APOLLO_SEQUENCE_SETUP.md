@@ -6,14 +6,45 @@ Complete guide to configure the 3-step email sequence in Apollo that matches the
 
 ## Sequence Overview
 
-| Step       | Type                             | Timing           | Purpose                        | AI Field                      |
-| ---------- | -------------------------------- | ---------------- | ------------------------------ | ----------------------------- |
-| **Step 1** | **Automatic Email** (New Thread) | Immediately      | Warm Introduction + Value Hook | `email1` / `subject1`         |
-| **Step 2** | **Automatic Email** (Reply)      | +3 business days | Proof + Specific Value         | `email2` (subject auto = Re:) |
-| **Step 3** | **Automatic Email** (Reply)      | +3 business days | Breakup + Door Open            | `email3` (subject auto = Re:) |
+**Service Focus:** All 3 emails promote MSI's **AI Discovery Workshop** — a 4-week engagement that delivers AI clarity and ROI projections without long-term contracts.
+
+| Step       | Type                             | Timing           | Purpose                          | AI Field                      |
+| ---------- | -------------------------------- | ---------------- | -------------------------------- | ----------------------------- |
+| **Step 1** | **Automatic Email** (New Thread) | Immediately      | Intro + Discovery Workshop Value | `email1` / `subject1`         |
+| **Step 2** | **Automatic Email** (Reply)      | +3 business days | Workshop ROI Proof               | `email2` (subject auto = Re:) |
+| **Step 3** | **Automatic Email** (Reply)      | +3 business days | Workshop Summary + Door Open     | `email3` (subject auto = Re:) |
 
 **Total sequence duration:** ~6 business days
 **Auto-stop:** If the lead replies at any step, the sequence stops automatically.
+
+---
+
+## The AI Discovery Workshop (What You're Selling)
+
+MSI's **AI Discovery Workshop** is a structured 4-week engagement that gives leaders like your leads the **clarity they need to act on AI** — without massive budget or long-term contract commitment.
+
+### The 5 Phases
+
+1. **Translate** (Week 1): Convert their business pain points into AI opportunities
+2. **Validate** (Week 2): Assess if their data and systems are AI-ready
+3. **Quantify** (Week 2): Build ROI estimates with real dollar projections
+4. **Define** (Week 3): Set scope, timeline, and success metrics for the next PoC phase
+5. **Align** (Week 4): Connect AI strategy to their core business objectives
+
+### The Deliverables (What They Get)
+
+- **AI Opportunity Map**: 3–5 prioritized use cases tailored to their business
+- **Data Feasibility Report**: Definitive answer on data readiness
+- **ROI Projections**: Dollar-based impact estimates for each use case
+- **Technical Readiness Assessment**: Systems, compliance, and integration review
+- **PoC Action Plan**: Budget, timeline, and success metrics for Phase 2
+
+### The Value Prop (Why They Should Care)
+
+- **Clear path to AI ROI** in just 4 weeks (vs. months of confusion)
+- **No massive upfront investment**: It's a scoped engagement with measurable deliverables
+- **De-risks the decision**: Data assessment + ROI projections give confidence before committing to PoC
+- **Aligns AI with business**: Outcomes connect to their actual strategic objectives
 
 ---
 
@@ -241,35 +272,37 @@ Body:    {{personalized_email3}}
 
 ## Email Strategy Summary (What the AI Generates)
 
-### Email 1 — Warm Introduction + Value Hook
+All three emails focus exclusively on MSI's **AI Discovery Workshop** — the entry point to AI clarity.
 
-- **Opens new thread** with a personalized subject (<50 chars)
-- First paragraph hooks with something specific about THEIR company
-- Introduces MSI broadly: 20+ years, 700+ consultants, 40+ countries
-- Mentions 1-2 relevant services without deep-diving
-- Soft CTA: "Would it make sense to explore this?"
+### Email 1 — Workshop Intro + Value Hook
+
+- **Opens new thread** with a discovery-focused subject (<50 chars)
+- Hooks with their specific business pain (e.g., "You're probably grappling with [their industry challenge]...")
+- Introduces MSI + the Discovery Workshop as the solution path (4 weeks, clear ROI)
+- References 2–3 of their industry pain points to show relevance
+- Soft CTA: "Would it make sense to explore this?" or "Let's see if there's a quick AI opportunity for you"
 - **Length:** 100-150 words
 - **Greeting:** "Hi [Name],"
 - **Signature:** Full — Nataly Riaño, Business Development, MSI Technologies Inc.
 
-### Email 2 — Proof + Specific Value (Reply, +3 days)
+### Email 2 — Workshop ROI Proof (Reply, +3 days)
 
 - **Reply in same thread** — threaded under Email 1 with auto "Re:"
-- NO re-introduction — they have context from Email 1
-- Leads with concrete proof: numbers, percentages, timeframes
-- Different MSI service angle than Email 1
-- Direct question to invite dialogue
+- NO re-introduction — they know who you are
+- Leads immediately with a **specific ROI proof point**: "We helped [similar company in their industry] achieve [X% efficiency gain / $Y cost savings] through AI"
+- Mention the exact phases/deliverables of the Workshop that made that win possible
+- End with a direct question about their specific pain area (from Email 1)
 - **Length:** 60-90 words
 - **Greeting:** "[Name]," (no Hi — it's a reply)
 - **Signature:** Just "Nataly"
 
-### Email 3 — Breakup + Door Open (Reply, +3 more days)
+### Email 3 — Workshop Summary + Door Open (Reply, +3 more days)
 
 - **Reply in same thread** — final touch with auto "Re:"
-- Signals you won't keep emailing (triggers psychological reply response)
-- 2-3 bullet points of relevant MSI services
-- Name-drops recognizable MSI clients
-- Warm close, zero pressure
+- Acknowledge they're busy; signal you won't keep emailing
+- Bullet-point the **core phases of the Discovery Workshop** (Translate → Validate → Quantify → Define → Align)
+- Mention 1–2 recognizable MSI clients who also completed a Discovery Workshop
+- Close warmly with zero pressure: "Whenever you're ready to explore AI opportunities, you know where to find me"
 - **Length:** 50-70 words
 - **Greeting:** "[Name]," (same thread)
 - **Signature:** Just "Nataly Riaño"
@@ -282,20 +315,21 @@ Body:    {{personalized_email3}}
 MSI Platform              n8n (Gemini AI)           Supabase              Apollo
 ┌──────────┐             ┌──────────────┐          ┌──────────┐         ┌────────┐
 │ Select    │  webhook   │ Generate 3   │  save    │ Store    │  CSV    │ Import │
-│ leads +   │──────────→ │ personalized │────────→ │ emails + │───────→ │ leads  │
-│ Generate  │            │ emails per   │          │ subjects │         │ + add  │
-│ button    │            │ lead         │          │ per lead │         │ to seq │
+│ leads +   │──────────→ │ Discovery    │────────→ │ emails + │───────→ │ leads  │
+│ Generate  │            │ Workshop-    │          │ subjects │         │ + add  │
+│ button    │            │ focused      │          │ per lead │         │ to seq │
+│           │            │ emails       │          │          │         │        │
 └──────────┘             └──────────────┘          └──────────┘         └────────┘
 ```
 
-| Stage                | What Happens                                                                                           |
-| -------------------- | ------------------------------------------------------------------------------------------------------ |
-| **1. MSI Platform**  | Select leads → click "Generate AI Messages"                                                            |
-| **2. n8n Workflow**  | Gemini generates 3 emails + 1 subject per lead                                                         |
-| **3. Supabase**      | Stores `personalized_message`, `personalized_followup`, `personalized_email3`, `personalized_subject1` |
-| **4. CSV Export**    | Export leads with AI fields from MSI platform                                                          |
-| **5. Apollo Import** | Import CSV → map custom fields → add to sequence                                                       |
-| **6. Apollo Sends**  | Step 1 immediately, Step 2 +3 days, Step 3 +3 more days                                                |
+| Stage                | What Happens                                                                                                                  |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **1. MSI Platform**  | Select leads → click "Generate AI Messages"                                                                                   |
+| **2. n8n Workflow**  | Gemini generates 3 emails + 1 subject per lead (all focused on AI Discovery Workshop)                                          |
+| **3. Supabase**      | Stores `personalized_message`, `personalized_followup`, `personalized_email3`, `personalized_subject1`                        |
+| **4. CSV Export**    | Export leads with AI fields from MSI platform                                                                                 |
+| **5. Apollo Import** | Import CSV → map custom fields → add to sequence                                                                             |
+| **6. Apollo Sends**  | Email 1 (Workshop intro) → Step 2 +3 days (Workshop proof) → Step 3 +3 more days (Workshop summary + door open)              |
 
 ---
 
@@ -327,20 +361,34 @@ If you ever manually edit emails in Apollo, avoid these:
 ## Pre-Launch Checklist
 
 - [ ] **Supabase:** Run SQL migration (`FIX-add-all-ai-columns.sql`)
-- [ ] **n8n:** Verify workflow is active (MSI AI Message Generator)
-- [ ] **MSI Platform:** Generate AI messages for a test batch
-- [ ] **MSI Platform:** Review emails in modal (check all 3 tabs look good)
+- [ ] **n8n:** Verify workflow is active (MSI AI Message Generator) — focused on Discovery Workshop
+- [ ] **MSI Platform:** Generate AI messages for a test batch (all emails will promote the Discovery Workshop)
+- [ ] **MSI Platform:** Review emails in modal (check all 3 tabs) — Email 1 = Workshop intro, Email 2 = Workshop ROI proof, Email 3 = Workshop summary
 - [ ] **Apollo — Account:** Keep sender as Nataly Riaño
-- [ ] **Apollo — Account:** DISABLE Apollo email signature
+- [ ] **Apollo — Account:** DISABLE Apollo email signature (AI includes it in body)
 - [ ] **Apollo — Custom Fields:** Create 4 custom fields (see Custom Fields section)
-- [ ] **Apollo — Sequence:** Create 3-step sequence (New Thread → Reply → Reply)
+- [ ] **Apollo — Sequence Name:** `Nataly - AI Discovery Workshop Outreach` (optional, but clear)
 - [ ] **Apollo — Step 1:** Subject = `{{personalized_subject1}}`, Body = `{{personalized_message}}`, Type = New thread
 - [ ] **Apollo — Step 2:** Subject = empty, Body = `{{personalized_followup}}`, Type = Reply, Wait = 3 days
 - [ ] **Apollo — Step 3:** Subject = empty, Body = `{{personalized_email3}}`, Type = Reply, Wait = 3 days
 - [ ] **Apollo — Schedule:** Mon-Fri, 8AM-6PM local time
 - [ ] **Apollo — Import:** Upload CSV, map custom fields
-- [ ] **Apollo — Test:** Add 5-10 contacts, verify preview looks correct
+- [ ] **Apollo — Test:** Add 5-10 contacts, verify preview shows Discovery Workshop messaging
 - [ ] **Apollo — Launch:** Activate sequence
+
+---
+
+## What to Expect
+
+When a lead receives these emails, they will:
+
+1. **Email 1**: Learn that Nataly understands their business, and see the Discovery Workshop as a low-risk way to get AI clarity in 4 weeks
+2. **Email 2**: Get concrete proof that MSI has delivered ROI through the Workshop process (with specific metrics)
+3. **Email 3**: See a quick summary of the 5 phases + recognizable MSI clients who've completed the process, with zero pressure to reply
+
+**Replies triggered by this sequence typically fall into 2 categories:**
+- "Yes, let's explore AI" → Schedule a Discovery Workshop kickoff call
+- "We're not ready for AI yet, but let's talk in [timeframe]" → Add to follow-up sequence or nurture campaign
 
 ---
 
