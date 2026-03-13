@@ -54,7 +54,7 @@ Your current Apollo sequence has these issues that need fixing:
 
 | What                 | Current (Wrong)                                    | Should Be                                       |
 | -------------------- | -------------------------------------------------- | ----------------------------------------------- |
-| **Sender**           | Nataly Riaño                                       | Nataly Riaño                                    |
+| **Sender**           | Nataly Riano                                       | Nataly Riano                                    |
 | **Apollo Signature** | ON (appends "Nataly Riano, MSI Technologies Inc.") | **OFF** — AI includes signature in body         |
 | **Step 1 Subject**   | `Tech Solutions for {{FIRST_NAME}}`                | `{{personalized_subject1}}`                     |
 | **Step 1 Body**      | Generic template                                   | `{{personalized_message}}`                      |
@@ -63,7 +63,7 @@ Your current Apollo sequence has these issues that need fixing:
 | **Step 3 Subject**   | `Re: [previous email subject line]`                | _(leave empty — Apollo adds Re: automatically)_ |
 | **Step 3 Body**      | Generic template                                   | `{{personalized_email3}}`                       |
 
-> **CRITICAL:** Disable Apollo's email signature in **Settings > Email Accounts**. The AI already generates the correct signature inside each email body (full sig for Email 1, just "Nataly" for Email 2, "Nataly Riaño" for Email 3). If you leave Apollo's signature ON, there will be a DOUBLE signature.
+> **CRITICAL:** Disable Apollo's email signature in **Settings > Email Accounts**. The AI already generates the correct signature inside each email body (full sig for Email 1, just "Nataly" for Email 2, "Nataly Riano" for Email 3). If you leave Apollo's signature ON, there will be a DOUBLE signature.
 
 ---
 
@@ -139,16 +139,16 @@ That's it — the entire Subject and Body are just the custom variable. The AI a
 
 | Setting        | Value                                            |
 | -------------- | ------------------------------------------------ |
-| **From name**  | Nataly Riaño                                     |
+| **From name**  | Nataly Riano                                     |
 | **From email** | nataly@msitechnologies.com (or configured alias) |
 | **Reply-to**   | Same as from                                     |
 | **Signature**  | **DISABLED** — AI includes it in the body        |
 
 > **WHY disable signature?** The AI generates these signatures:
 >
-> - **Email 1:** "Nataly Riaño\nBusiness Development\nMSI Technologies Inc."
+> - **Email 1:** "Nataly Riano\nBusiness Development\nMSI Technologies Inc."
 > - **Email 2:** "Nataly" (brief — it's a reply)
-> - **Email 3:** "Nataly Riaño" (breakup — semi-formal)
+> - **Email 3:** "Nataly Riano" (breakup — semi-formal)
 >
 > If Apollo's signature is ON, recipients will see a duplicate signature block at the bottom.
 
@@ -274,38 +274,37 @@ Body:    {{personalized_email3}}
 
 All three emails focus exclusively on MSI's **AI Discovery Workshop** — the entry point to AI clarity.
 
-### Email 1 — Workshop Intro + Value Hook
+### Email 1 — Timeline Hook & Discovery (New Thread)
 
-- **Opens new thread** with a discovery-focused subject (<50 chars)
-- Hooks with their specific business pain (e.g., "You're probably grappling with [their industry challenge]...")
-- Introduces MSI + the Discovery Workshop as the solution path (4 weeks, clear ROI)
-- References 2–3 of their industry pain points to show relevance
-- Soft CTA: "Would it make sense to explore this?" or "Let's see if there's a quick AI opportunity for you"
-- **Length:** 100-150 words
-- **Greeting:** "Hi [Name],"
-- **Signature:** Full — Nataly Riaño, Business Development, MSI Technologies Inc.
+- **Opens new thread** with a quantified, discovery-focused subject (<50 chars)
+- **Timeline Hook:** Replaces generic problem statements with a specific compressed timeline (e.g., "AI Roadmap: Weeks 1-4") which provides a 2.24x reply lift for CFOs.
+- **Assumptive Language:** Abandons "passive" words ("Would it make sense to connect") in favor of confident progression ("It makes sense to explore...").
+- **Core Value:** Introduces the 4-week AI Discovery Workshop as a risk-mitigation and value-acceleration investment.
+- **Frictionless CTA:** A binary interest ask (e.g., "Worth a quick look?"). NEVER asks for a specific day of the week to avoid generating "robotic" responses.
+- **Length:** STRICTLY < 80 words. (The 2026 standard for elite executive outreach).
+- **Greeting:** "[Name]," (Direct, peer-to-peer).
+- **Signature:** Full — Nataly Riano, Business Development, MSI Technologies Inc.
 
-### Email 2 — Workshop ROI Proof (Reply, +3 days)
+### Email 2 — The ROI Anchor (Reply, +3 days)
 
 - **Reply in same thread** — threaded under Email 1 with auto "Re:"
-- NO re-introduction — they know who you are
-- Leads immediately with a **specific ROI proof point**: "We helped [similar company in their industry] achieve [X% efficiency gain / $Y cost savings] through AI"
-- Mention the exact phases/deliverables of the Workshop that made that win possible
-- End with a direct question about their specific pain area (from Email 1)
-- **Length:** 60-90 words
+- **NO re-introduction** — Gets straight to the point.
+- **Numbers Hook:** Anchors interest with a specific ROI metric from a peer in their industry.
+- **Focus:** Demonstrates quantifiable outcomes achieved before long-term commitment.
+- **CTA:** Soft engagement, entirely avoiding specific dates/days (e.g. "Open to a brief chat about this model?").
+- **Length:** < 70 words.
 - **Greeting:** "[Name]," (no Hi — it's a reply)
 - **Signature:** Just "Nataly"
 
-### Email 3 — Workshop Summary + Door Open (Reply, +3 more days)
+### Email 3 — "Close the File" Breakup (Reply, +3 more days)
 
 - **Reply in same thread** — final touch with auto "Re:"
-- Acknowledge they're busy; signal you won't keep emailing
-- Bullet-point the **core phases of the Discovery Workshop** (Translate → Validate → Quantify → Define → Align)
-- Mention 1–2 recognizable MSI clients who also completed a Discovery Workshop
-- Close warmly with zero pressure: "Whenever you're ready to explore AI opportunities, you know where to find me"
-- **Length:** 50-70 words
+- **Psychology:** Uses "Loss Aversion". Acknowledges the silence and formally "withdraws" the offer (i.e. "I'll go ahead and close your file").
+- **Summary:** Mentions the workshop as a resource if they prioritize clear ROI in the future.
+- **Close:** Wishes them a strong quarter with absolute zero pressure.
+- **Length:** < 60 words.
 - **Greeting:** "[Name]," (same thread)
-- **Signature:** Just "Nataly Riaño"
+- **Signature:** Just "Nataly Riano"
 
 ---
 
@@ -333,15 +332,16 @@ MSI Platform              n8n (Gemini AI)           Supabase              Apollo
 
 ---
 
-## Banned Phrases (AI enforces automatically)
+## Banned Phrases & Practices (AI enforces automatically)
 
 If you ever manually edit emails in Apollo, avoid these:
 
-- "I noticed" / "I came across"
-- "I hope this finds you well"
-- "reaching out" / "just following up" / "circling back"
-- "touch base" / "synergy" / "leverage"
-- "game-changer" / "innovative solutions" / "cutting-edge" / "best-in-class"
+- **Specific days of the week:** "Tuesday", "Thursday" (creates an overly automated pattern)
+- **Passive asks:** "I was hoping to connect...", "If you have 15 minutes...", "Would it make sense to explore?"
+- **Generic openers:** "I noticed" / "I came across"
+- **Corporate pleasantries:** "I hope this finds you well"
+- **Cliché follow-ups:** "reaching out" / "just following up" / "circling back" / "touch base"
+- **Jargon:** "synergy" / "leverage" / "game-changer" / "innovative solutions" / "cutting-edge" / "best-in-class"
 
 ---
 
@@ -364,7 +364,7 @@ If you ever manually edit emails in Apollo, avoid these:
 - [ ] **n8n:** Verify workflow is active (MSI AI Message Generator) — focused on Discovery Workshop
 - [ ] **MSI Platform:** Generate AI messages for a test batch (all emails will promote the Discovery Workshop)
 - [ ] **MSI Platform:** Review emails in modal (check all 3 tabs) — Email 1 = Workshop intro, Email 2 = Workshop ROI proof, Email 3 = Workshop summary
-- [ ] **Apollo — Account:** Keep sender as Nataly Riaño
+- [ ] **Apollo — Account:** Keep sender as Nataly Riano
 - [ ] **Apollo — Account:** DISABLE Apollo email signature (AI includes it in body)
 - [ ] **Apollo — Custom Fields:** Create 4 custom fields (see Custom Fields section)
 - [ ] **Apollo — Sequence Name:** `Nataly - AI Discovery Workshop Outreach` (optional, but clear)
@@ -382,13 +382,13 @@ If you ever manually edit emails in Apollo, avoid these:
 
 When a lead receives these emails, they will:
 
-1. **Email 1**: Learn that Nataly understands their business, and see the Discovery Workshop as a low-risk way to get AI clarity in 4 weeks
-2. **Email 2**: Get concrete proof that MSI has delivered ROI through the Workshop process (with specific metrics)
-3. **Email 3**: See a quick summary of the 5 phases + recognizable MSI clients who've completed the process, with zero pressure to reply
+1. **Email 1**: See a timeline-based hook (e.g. "We do this in 4 weeks") and view the Discovery Workshop as a structured, low-risk way to get ROI clarity.
+2. **Email 2**: Read concrete, quantified proof of ROI achieved for an industry peer, combined with a frictionless, soft engagement question.
+3. **Email 3**: Receive a "loss aversion" breakup email. By professionally "closing their file," we remove all pressure, which frequently triggers a positive response from busy executives who intended to reply but forgot.
 
 **Replies triggered by this sequence typically fall into 2 categories:**
 
-- "Yes, let's explore AI" → Schedule a Discovery Workshop kickoff call
+- "Yes, let's explore AI" → Wait for them to confirm, then schedule a brief exploratory call.
 - "We're not ready for AI yet, but let's talk in [timeframe]" → Add to follow-up sequence or nurture campaign
 
 ---
