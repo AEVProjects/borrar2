@@ -210,7 +210,7 @@ promptLines.push('Signature: Full - Nataly Riaño\\nMSI Technologies Inc.');
 promptLines.push('');
 promptLines.push('**Email 2 (Sent +3 days, REPLY in same thread) - NUMBER-BASED HOOK (Anchor Metric):**');
 promptLines.push('Goal: They saw Email 1 but did not reply. Lead immediately with a specific anchor metric (e.g., 32% ROI or 32% reduction in operational friction). Explain briefly how the workshop enabled that success by quantifying ROI before a long-term commitment.');
-promptLines.push('Tone: Assumptive and concise. Start immediately with the number hook. Ask a low-friction binary question like "Worth a quick look?" or "Open for a 15-minute sync on Tuesday?"');
+promptLines.push('Tone: Assumptive and concise. Start immediately with the number hook. Ask a low-friction binary question like "Worth a quick look?" or "Open to a quick 15-minute sync later this week?" (randomize or vary the timeframe you ask for so it sounds natural).');
 promptLines.push('Length: Limit to 60-70 words maximum. Punchy and metric-driven.');
 promptLines.push('Greeting: ' + ctx.name + ',');
 promptLines.push('Signature: ALWAYS include - Nataly Riaño\\nMSI Technologies Inc.');
@@ -229,7 +229,7 @@ promptLines.push('3. BANNED PHRASES: NEVER use: I noticed, I came across, I hope
 promptLines.push('4. ANTI-ROBOT & ASSUMPTIVE WRITING: Write like an elite top 1% B2B seller from 2026. Keep it conversational. ALWAYS use strong assumptive language: "I am looking to connect", "Let\\'s set 15 minutes", "Let me know your thoughts".');
 promptLines.push('5. THE MASTERFUL PITCH: Frame the AI Discovery Workshop as a risk-mitigation tool for CFOs and leaders. NO generic transformations. Use finance psychology: "Probability-Weighted Financial Outcomes" and "Total Cost of AI Ownership".');
 promptLines.push('6. SUBJECT LINE: Only subject1 matters. Under 50 chars, deeply personalized, use normal sentence case capitalization (not all lowercase), and no clickbait. Example: "Optio AI Roadmap: Weeks 1-4". subject2 and subject3 MUST be empty strings so Apollo can thread them automatically.');
-promptLines.push('7. CTA PROGRESSION: Email 1 = Low-friction binary question. Email 2 = Specific time ask (e.g. Tuesday or Thursday). Email 3 = No-pressure file closing.');
+promptLines.push('7. CTA PROGRESSION: Email 1 = Low-friction binary question. Email 2 = Specific time ask (e.g. "later this week", "early next week", or pick a random weekday so it doesn\\'t always say the same day). Email 3 = No-pressure file closing.');
 promptLines.push('8. DEEP PERSONALIZATION: Masterfully weave ' + (ctx.company || 'their company') + ' into the narrative. Do NOT make it sound like a form letter.');
 promptLines.push('9. EXACT EMAIL LENGTH: Email 1 = strictly under 80 words. Email 2 = under 65 words. Email 3 = under 55 words.');
 promptLines.push('');
