@@ -6178,6 +6178,9 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         // Generate AI Messages button
         document.getElementById('leads-generate-ai-btn')?.addEventListener('click', generateAIMessages);
 
+        // Clear AI Messages button
+        document.getElementById('leads-clear-ai-btn')?.addEventListener('click', clearAIMessages);
+
         // Leads table scroll buttons
         const tableWrapper = document.getElementById('leads-table-wrapper');
         document.getElementById('leads-scroll-left')?.addEventListener('click', () => {
@@ -6424,11 +6427,19 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         if (classifyBtn) classifyBtn.disabled = count === 0;
         const aiBtn = document.getElementById('leads-generate-ai-btn');
         if (aiBtn) aiBtn.disabled = count === 0;
+
+        const clearBtn = document.getElementById('leads-clear-ai-btn');
+        if (clearBtn) clearBtn.disabled = count === 0;
+
         // Update all count badges
         const classifyCount = document.getElementById('leads-classify-count');
         if (classifyCount) classifyCount.textContent = count;
+        
         const aiCount = document.getElementById('leads-ai-count');
         if (aiCount) aiCount.textContent = count;
+
+        const clearCount = document.getElementById('leads-clear-count');
+        if (clearCount) clearCount.textContent = count;
     }
 
     function truncate(str, max) {
@@ -6649,6 +6660,51 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         } finally {
             aiBtn.disabled = false;
             aiBtn.innerHTML = originalHTML;
+        }
+    }
+
+    // Clear AI Messages for selected leads
+    async function clearAIMessages() {
+        const selected = leadsData.filter(l => selectedLeadIds.has(l.id));
+        if (selected.length === 0) {
+            showToast('Select at least one lead to clear AI messages', 'warning');
+            return;
+        }
+
+        const clearBtn = document.getElementById('leads-clear-ai-btn');
+        const originalHTML = clearBtn.innerHTML;
+        clearBtn.disabled = true;
+        clearBtn.innerHTML = '<div class="spinner"></div> Clearing...';
+
+        try {
+            const leadIds = selected.map(l => l.id);
+            const { error } = await supabaseClient
+                .from(currentLeadsTable)
+                .update({ 
+                    ai_message_status: 'pending',
+                    ai_message_generated_at: null,
+                    personalized_message: null,
+                    personalized_followup: null,
+                    personalized_email3: null,
+                    personalized_subject1: null,
+                    personalized_subject2: null,
+                    personalized_subject3: null
+                })
+                .in('id', leadIds);
+
+            if (error) throw error;
+
+            selectedLeadIds.clear();
+            updateSelectedCount();
+            await loadLeads();
+
+            showToast(`Cleared AI messages for ${selected.length} lead(s). Ready to regenerate.`, 'success');
+        } catch (err) {
+            console.error('Clear AI messages error:', err);
+            showToast('Error clearing AI messages: ' + err.message, 'error');
+        } finally {
+            clearBtn.disabled = false;
+            clearBtn.innerHTML = originalHTML;
         }
     }
 
