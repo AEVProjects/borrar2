@@ -20,7 +20,7 @@ let companySize = 'a company';
 let sizeCategory = 'mid';
 if (employees > 5000) { companySize = 'a large enterprise (' + employees + '+ employees)'; sizeCategory = 'enterprise'; }
 else if (employees > 1000) { companySize = 'a mid-to-large company (' + employees + ' employees)'; sizeCategory = 'enterprise'; }
-else if (employees > 200) { companySize = 'a mid-market company (' + employees + ' employees)'; sizeCategory = 'mid'; }
+else if (employees > 200) { companySize = 'a growing company (' + employees + ' employees)'; sizeCategory = 'mid'; }
 else if (employees > 50) { companySize = 'a growing company (' + employees + ' employees)'; sizeCategory = 'growth'; }
 else if (employees > 10) { companySize = 'a small company (' + employees + ' employees)'; sizeCategory = 'small'; }
 else if (employees > 0) { companySize = 'a startup (' + employees + ' employees)'; sizeCategory = 'small'; }
@@ -112,7 +112,7 @@ const INDUSTRY_ANGLES = {
   },
   General: {
     painPoints: 'digital transformation pressure, cybersecurity threats, talent gaps, cloud migration uncertainty',
-    proofPoint: 'helped a mid-market company gain AI clarity in 4 weeks by prioritizing use cases, validating feasibility, and quantifying ROI'
+    proofPoint: 'helped a growing company gain AI clarity in 4 weeks by prioritizing use cases, validating feasibility, and quantifying ROI'
   }
 };
 const angle = INDUSTRY_ANGLES[industryType] || INDUSTRY_ANGLES.General;
@@ -125,7 +125,7 @@ else if (/china|india|singapore|australia|japan|asia/.test(leadCountry)) regiona
 
 let sizeValue = '';
 if (sizeCategory === 'enterprise') sizeValue = 'For enterprise organizations like ' + ctx.company + ', MSI helps leadership teams de-risk AI initiatives with a structured discovery process and clear decision criteria.';
-else if (sizeCategory === 'mid') sizeValue = 'For mid-market companies like ' + ctx.company + ', MSI provides a practical path to AI ROI without the cost and ambiguity of a large-scale transformation program.';
+else if (sizeCategory === 'mid') sizeValue = 'For growing companies like ' + ctx.company + ', MSI provides a practical path to AI ROI without the cost and ambiguity of a large-scale transformation program.';
 else if (sizeCategory === 'growth') sizeValue = 'For growing companies like ' + ctx.company + ', MSI gives teams a fast way to validate where AI can help before committing to a full implementation.';
 else sizeValue = 'For companies like ' + ctx.company + ', MSI offers a low-risk entry point to evaluate AI opportunities and define the right next step.';
 
@@ -141,7 +141,7 @@ let techContext = '';
 if (ctx.technologies) techContext = 'Their tech stack includes: ' + ctx.technologies + '. Reference it when it helps make the workshop feel relevant and realistic.';
 
 const promptLines = [];
-promptLines.push('You are Nataly Riaño, Business Development at MSI Technologies. Generate a COMPLETE 3-email cold outreach sequence for this lead.');
+promptLines.push('You are Nataly Riano from MSI Technologies Inc. Generate a COMPLETE 3-email cold outreach sequence for this lead.');
 promptLines.push('');
 promptLines.push('=== LEAD PROFILE ===');
 promptLines.push('- Name: ' + [ctx.name, ctx.lastName].filter(Boolean).join(' '));
@@ -193,7 +193,7 @@ promptLines.push('- Use the workshop\\'s 4-week structure, 5 phases, deliverable
 promptLines.push('- If you reference MSI credibility, keep it brief and only to support the workshop offer.');
 promptLines.push('');
 promptLines.push('=== APOLLO SEQUENCE STRUCTURE ===');
-promptLines.push('This is a 3-step Apollo email sequence designed for maximum reply rates. Emails are sent automatically via Apollo. If the recipient replies at any point, the sequence stops. You are Nataly Riaño.');
+promptLines.push('This is a 3-step Apollo email sequence designed for maximum reply rates. Emails are sent automatically via Apollo. If the recipient replies at any point, the sequence stops. You are Nataly Riano.');
 promptLines.push('');
 promptLines.push('CRITICAL FORMAT: Email 1 starts a new thread with a unique subject line. Emails 2 and 3 are replies in the same thread, and Apollo automatically adds Re: to the subject.');
 promptLines.push('- Emails 2-3 appear as follow-ups in the recipient\\'s inbox, threaded under Email 1.');
@@ -206,30 +206,32 @@ promptLines.push('Goal: Establish credibility and relevance. Open with something
 promptLines.push('Tone: Warm, professional, peer-to-peer. Like a knowledgeable colleague introducing a practical path forward, not a salesperson pitching multiple services.');
 promptLines.push('Length: 3-4 short paragraphs. The first paragraph must hook them with something specific about them, not about MSI.');
 promptLines.push('Greeting: Hi ' + ctx.name + ',');
-promptLines.push('Signature: Full - Nataly Riaño, Business Development, MSI Technologies Inc.');
+promptLines.push('Signature: Full - Nataly Riano\\nMSI Technologies Inc.');
 promptLines.push('');
 promptLines.push('**Email 2 (Sent +3 days, REPLY in same thread) - PROOF + WORKSHOP PHASES:**');
 promptLines.push('Goal: They saw Email 1 but did not reply. Lead immediately with a concrete proof point tied to measurable outcomes. Explain briefly how the AI Discovery Workshop phases enabled that success: Translate clarified the opportunity, Validate confirmed feasibility, Quantify built the ROI case, Define set the PoC path, and Align connected the work to business priorities. Reference a specific challenge in their industry and end with a direct question about whether they are facing a similar issue.');
 promptLines.push('Tone: Concise, results-driven. Lead with proof immediately - no preamble, no just following up, no circling back.');
 promptLines.push('Length: 2 short paragraphs maximum. Punchy and specific.');
 promptLines.push('Greeting: ' + ctx.name + ',');
-promptLines.push('Signature: Just Nataly');
+promptLines.push('Signature: ALWAYS include - Nataly Riano\\nMSI Technologies Inc.');
 promptLines.push('');
 promptLines.push('**Email 3 (Sent +3 days after Email 2, REPLY in same thread) - BREAKUP + 5-PHASE SUMMARY:**');
 promptLines.push('Goal: Final touch. Acknowledge they are busy and that you will close the loop. Provide a quick-scan summary of the AI Discovery Workshop by summarizing the 5 phases: Translate, Validate, Quantify, Define, Align. Keep the summary focused on what they would gain from each phase. Close warmly with zero pressure and leave the door open to revisit the workshop later.');
 promptLines.push('Tone: Respectful, brief, confident. Not needy or desperate.');
 promptLines.push('Length: 1 short intro sentence + 2-3 bullet points + 1 closing sentence. 5-6 sentences maximum.');
 promptLines.push('Greeting: ' + ctx.name + ',');
-promptLines.push('Signature: Just Nataly Riaño');
+promptLines.push('Signature: ALWAYS include - Nataly Riano\\nMSI Technologies Inc.');
 promptLines.push('');
-promptLines.push('=== EXPERT SALES RULES ===');
-promptLines.push('1. RESEARCH FIRST: Every email must reference specific data about the lead (company name, industry, title, tech stack, location, or company description).');
-promptLines.push('2. NARRATIVE ARC: The 3 emails must tell a progressive story: introduction + hook, then proof + results, then summary + respectful close. Each email adds new information.');
+promptLines.push('=== EXPERT ANTI-ROBOT SALES RULES ===');
+promptLines.push('1. RESEARCH FIRST: Every email must reference specific data about the lead (company name: ' + (ctx.company || 'their company') + ', industry, title, tech stack, location, or their specific description). Use these naturally, not forced.');
+promptLines.push('2. NARRATIVE ARC: Introduction + hook -> proof + results -> summary + respectful close. Each email adds new information.');
 promptLines.push('3. BANNED PHRASES: NEVER use: I noticed, I came across, I hope this finds you well, reaching out, just following up, circling back, touch base, synergy, leverage, game-changer, innovative solutions, cutting-edge, best-in-class.');
-promptLines.push('4. SUBJECT LINE: Only subject1 matters. It must be under 50 chars, personalized, and curiosity-driven without clickbait. Set subject2 and subject3 to empty strings because Apollo auto-generates reply subjects.');
-promptLines.push('5. CTA PROGRESSION: Email 1 = soft ask, Email 2 = direct question, Email 3 = zero-pressure door open.');
-promptLines.push('6. PERSONALIZATION DEPTH: Email 1 must contain at least 3 specific references to the lead\\'s data. Email 2 at least 2. Email 3 at least 1.');
-promptLines.push('7. EMAIL LENGTH: Email 1 = 100-150 words. Email 2 = 60-90 words. Email 3 = 50-70 words.');
+promptLines.push('4. ANTI-ROBOT WRITING STYLE: Write like a highly-paid, expert B2B sales copywriter. Keep it conversational, relaxed, confident, and strictly human. Very natural transitions. NO robotic transitions or generic AI speak. Use varied sentence length.');
+promptLines.push('5. THE MASTERFUL PITCH: Introduce the AI Discovery Workshop fluidly. Frame it as the logical, high-value next step to their specific industry or company pain points. Make the proposition sound irresistible yet low-pressure.');
+promptLines.push('6. SUBJECT LINE: Only subject1 matters. Under 50 chars, deeply personalized, lowercase like a real human wrote it, no clickbait. subject2 and subject3 MUST be empty strings.');
+promptLines.push('7. CTA PROGRESSION: Email 1 = soft, conversational ask, Email 2 = direct question on a pain point, Email 3 = zero-pressure door leave.');
+promptLines.push('8. DEEP PERSONALIZATION: Masterfully weave ' + (ctx.company || 'their company') + ' and ' + (ctx.intentTopic || 'their focus') + ' into the narrative. Email 1: at least 3 exact references. Email 2: at least 2. Email 3: at least 1.');
+promptLines.push('9. EXACT EMAIL LENGTH: Email 1 = 100-150 words. Email 2 = 60-90 words. Email 3 = 50-70 words.');
 promptLines.push('');
 promptLines.push('=== OUTPUT ===');
 promptLines.push('JSON only (no markdown, no code blocks, no explanation):');
