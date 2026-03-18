@@ -300,13 +300,21 @@ publishForm.addEventListener('submit', async (e) => {
         publish_facebook: hasFacebook ? 'Yes' : 'No',
         publish_instagram: hasInstagram ? 'Yes' : 'No',
     };
-    
+
     // Check if we have pending image URLs (from "Use in Create Post")
     const imageFiles = imageInput.files;
+    const explicitUrlsText = document.getElementById('image_links')?.value;
+    const hasExplicitUrls = explicitUrlsText && explicitUrlsText.trim().length > 0;
     const hasPendingUrls = window.pendingImageUrls && window.pendingImageUrls.length > 0;
     const hasNewFiles = imageFiles && imageFiles.length > 0;
-    
-    if (hasPendingUrls && !hasNewFiles) {
+
+    if (hasExplicitUrls) {
+        // User pasted direct URLs - Best for performance!
+        const urls = explicitUrlsText.split('\n').map(u => u.trim()).filter(u => u.startsWith('http'));
+        if (urls.length > 0) {
+            data.image_urls = urls; // N8N check will see this and bypass ImgBB
+        }
+    } else if (hasPendingUrls && !hasNewFiles) {
         // Use existing URLs - download and convert to base64
         showToast('Preparing images from URLs...', 'info');
         try {

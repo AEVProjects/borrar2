@@ -140,10 +140,16 @@
                             </div>
 
                             <div class="form-group">
-                                <label for="image">Images (max 10)</label>
+                                <label for="image">Upload Images (max 10)</label>
                                 <input type="file" id="image" name="image" accept=".jpg, .jpeg, .png" multiple>
-                                <small class="form-hint">You can select up to 10 images. They will be uploaded automatically and URLs saved to database</small>
+                                <small class="form-hint">Upload files directly.</small>
                                 <div id="image-preview" class="image-preview"></div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="image_links">Or Paste Image URLs (One per line)</label>
+                                <textarea id="image_links" name="image_links" rows="4" placeholder="https://ejemplo.com/img1.jpg&#10;https://ejemplo.com/img2.jpg&#10;https://ejemplo.com/img3.jpg"></textarea>
+                                <small class="form-hint">Paste direct public links to your images. Use this to save memory and avoid upload limits. Great for carousels!</small>
                             </div>
 
                             <div class="platforms-grid">
