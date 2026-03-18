@@ -3032,6 +3032,7 @@ if (carouselForm) {
         });
         
         const data = {
+            post_type: 'Carousel',
             topic: formData.get('topic') || '',
             visual_style: formData.get('visual_style'),
             context: formData.get('context') || '',
@@ -6615,10 +6616,13 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
                 .update({ ai_message_status: 'generating' })
                 .in('id', leadIds);
 
+            const serviceType = document.getElementById('leads-service-type')?.value || 'Workshop';
+
             // Send to n8n webhook
             const payload = {
                 lead_ids: leadIds,
                 source_table: currentLeadsTable,
+                service_type: serviceType,
                 leads: selected.map(l => ({
                     id: l.id,
                     first_name: l.first_name,
