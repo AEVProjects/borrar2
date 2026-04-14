@@ -4571,15 +4571,28 @@ document.querySelectorAll('.topic-chip').forEach(chip => {
     chip.addEventListener('click', () => {
         const topic = chip.dataset.topic;
         const format = chip.dataset.format;
+        const pillar = chip.dataset.pillar;
         const topicInput = document.getElementById('educative_topic');
         const formatSelect = document.getElementById('educative_format');
+        const pillarSelect = document.getElementById('educative_pillar');
         if (topicInput) {
             topicInput.value = topic;
             topicInput.focus();
         }
-        if (formatSelect && format) {
-            formatSelect.value = format;
-        }
+        if (formatSelect && format) formatSelect.value = format;
+        if (pillarSelect && pillar) pillarSelect.value = pillar;
+    });
+});
+
+// Context chips — toggle selected state and build hidden context input
+document.querySelectorAll('.edu-ctx-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+        chip.classList.toggle('selected');
+        const selected = [...document.querySelectorAll('.edu-ctx-chip.selected')]
+            .map(c => c.dataset.ctx)
+            .join(' ');
+        const ctxInput = document.getElementById('educative_context');
+        if (ctxInput) ctxInput.value = selected;
     });
 });
 

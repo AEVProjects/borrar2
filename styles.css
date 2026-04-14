@@ -2616,6 +2616,50 @@ input[type="checkbox"].post-checkbox {
     transform: scale(0.98);
 }
 
+/* Educative Context Chips */
+.edu-context-chips-section {
+    margin-bottom: 20px;
+}
+
+.edu-context-chips-section > label {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+
+.edu-context-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.edu-ctx-chip {
+    padding: 7px 14px;
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 20px;
+    font-size: 12.5px;
+    color: #4a5568;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.edu-ctx-chip:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background: rgba(32, 124, 229, 0.05);
+}
+
+.edu-ctx-chip.selected {
+    background: rgba(32, 124, 229, 0.1);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
 #educative-form .btn-large {
     width: 100%;
     padding: 16px 24px;

@@ -1249,105 +1249,104 @@
                 <form id="educative-form">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="educative_pillar">Content Pillar *</label>
+                            <label for="educative_pillar">Service Area *</label>
                             <select id="educative_pillar" name="pillar" required>
                                 <option value="AI & Automation">AI & Automation</option>
-                                <option value="Cloud Computing & Migration">Cloud Computing & Migration</option>
+                                <option value="Cloud Computing & Infrastructure">Cloud Computing & Infrastructure</option>
                                 <option value="Cybersecurity">Cybersecurity</option>
-                                <option value="Digital Transformation">Digital Transformation</option>
-                                <option value="Talent & Staff Augmentation">Talent & Staff Augmentation</option>
+                                <option value="Staff Augmentation & Nearshore">Staff Augmentation & Nearshore</option>
+                                <option value="IT Outsourcing & Managed Services">IT Outsourcing & Managed Services</option>
                                 <option value="Telecommunications & IoT">Telecommunications & IoT</option>
-                                <option value="Business Strategy & Consulting">Business Strategy & Consulting</option>
+                                <option value="Digital Transformation">Digital Transformation</option>
+                                <option value="Executive Consulting & Strategy">Executive Consulting & Strategy</option>
                                 <option value="Software Development">Software Development</option>
-                                <option value="Data & Analytics">Data & Analytics</option>
-                                <option value="Business Productivity">Business Productivity</option>
-                                <option value="Industry Trends">Industry Trends</option>
-                                <option value="Leadership & Culture">Leadership & Culture</option>
-                                <option value="Other">Other / Custom</option>
+                                <option value="Workforce Agility & Talent">Workforce Agility & Talent</option>
+                                <option value="Leadership & Business Culture">Leadership & Business Culture</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="educative_theme">Theme *</label>
-                            <select id="educative_theme" name="theme" required>
-                                <option value="Cost Savings & ROI">Cost Savings & ROI</option>
-                                <option value="Productivity & Efficiency">Productivity & Efficiency</option>
-                                <option value="Scaling & Growth">Scaling & Growth</option>
-                                <option value="Security & Compliance">Security & Compliance</option>
-                                <option value="Innovation & New Tech">Innovation & New Tech</option>
-                                <option value="Team Building & Hiring">Team Building & Hiring</option>
-                                <option value="Remote Work & Collaboration">Remote Work & Collaboration</option>
-                                <option value="Customer Experience">Customer Experience</option>
-                                <option value="Industry Insights">Industry Insights</option>
-                                <option value="Tools & Platforms">Tools & Platforms</option>
-                                <option value="How-To & Tutorials">How-To & Tutorials</option>
-                                <option value="Thought Leadership">Thought Leadership</option>
-                                <option value="Other">Other / Custom</option>
+                            <label for="educative_audience">Target Audience *</label>
+                            <select id="educative_audience" name="theme" required>
+                                <option value="Technology Leaders (CTO, CIO, IT Director)">Tech Leaders — CTO / CIO</option>
+                                <option value="Business Owners & Founders">Business Owners & Founders</option>
+                                <option value="HR & Talent Acquisition Managers">HR & Talent Managers</option>
+                                <option value="Operations & Project Managers">Operations & Project Managers</option>
+                                <option value="CFO & Finance Decision-Makers">CFO & Finance Leaders</option>
+                                <option value="Marketing & Growth Teams">Marketing & Growth Teams</option>
+                                <option value="General Business Audience">General Business Audience</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="educative_format">Content Format *</label>
+                            <label for="educative_format">Format *</label>
                             <select id="educative_format" name="content_format" required>
                                 <option value="tips">Quick Tips</option>
-                                <option value="smart_moves">Smart Moves</option>
-                                <option value="did_you_know">Did You Know?</option>
-                                <option value="mistakes">Common Mistakes</option>
                                 <option value="myths_vs_facts">Myths vs Facts</option>
-                                <option value="how_it_works">How It Works</option>
+                                <option value="mistakes">Common Mistakes</option>
+                                <option value="did_you_know">Did You Know?</option>
                                 <option value="before_after">Before & After</option>
+                                <option value="comparison">Side by Side</option>
+                                <option value="smart_moves">Smart Moves</option>
+                                <option value="step_by_step">Step by Step</option>
+                                <option value="how_it_works">How It Works</option>
                                 <option value="checklist">Quick Checklist</option>
-                                <option value="comparison">Side by Side Comparison</option>
-                                <option value="step_by_step">Step by Step Guide</option>
                             </select>
-                            <small class="form-hint">Choose the style of content for the carousel</small>
                         </div>
                         <div class="form-group">
                             <label for="educative_tone">Tone *</label>
                             <select id="educative_tone" name="tone" required>
                                 <option value="casual" selected>Casual & Friendly</option>
                                 <option value="bold">Bold & Direct</option>
+                                <option value="data_driven">Data-Driven</option>
                                 <option value="curious">Curious & Questioning</option>
                                 <option value="storytelling">Storytelling</option>
-                                <option value="data_driven">Data-Driven</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label for="educative_topic">Topic / Idea *</label>
-                        <textarea id="educative_topic" name="topic" required rows="2"
-                               placeholder="Write freely — a topic, a question, a rough idea, bullet points, anything you want to turn into a carousel..."></textarea>
-                        <small class="form-hint">Be as specific or as broad as you want. The more detail you give, the better the result.</small>
+                        <textarea id="educative_topic" name="topic" required rows="3"
+                               placeholder="What do you want this carousel to be about? Write a topic, a question, a rough idea, or bullet points..."></textarea>
+                    </div>
+
+                    <!-- Context Chips -->
+                    <div class="edu-context-chips-section">
+                        <label>Add context <span style="font-weight:400; color:#a0aec0;">(optional — click to toggle)</span></label>
+                        <div class="edu-context-chips" id="edu-context-chips">
+                            <button type="button" class="edu-ctx-chip" data-ctx="Include specific numbers, percentages, or real industry stats to back up each point.">📊 Use real stats</button>
+                            <button type="button" class="edu-ctx-chip" data-ctx="Frame the content for the Americas market, especially the US. Mention nearshore or US-aligned teams where relevant.">🌎 Americas market</button>
+                            <button type="button" class="edu-ctx-chip" data-ctx="Emphasize cost savings and return on investment. The audience cares about budget efficiency.">💰 Focus on ROI</button>
+                            <button type="button" class="edu-ctx-chip" data-ctx="Target mid-to-large companies with 100+ employees that are evaluating technology investments.">🏢 Enterprise audience</button>
+                            <button type="button" class="edu-ctx-chip" data-ctx="Contrast the old way of doing things with the modern approach. Show what changed and why it matters.">🔄 Old vs. new</button>
+                            <button type="button" class="edu-ctx-chip" data-ctx="Keep the content practical. Each point should be something the reader can act on immediately.">⚡ Make it actionable</button>
+                            <button type="button" class="edu-ctx-chip" data-ctx="Reference real-world examples from companies like Amdocs, Nokia, Huawei, Ericsson, or Claro where relevant.">🏆 Real examples</button>
+                            <button type="button" class="edu-ctx-chip" data-ctx="Avoid any technical jargon. Write for a business decision-maker who is not a developer.">🎯 Non-technical audience</button>
+                        </div>
+                        <input type="hidden" id="educative_context" name="context" value="">
                     </div>
 
                     <div class="form-group">
-                        <label for="educative_context">Additional Notes (optional)</label>
-                        <textarea id="educative_context" name="context" rows="4" 
-                                  placeholder="Anything else: specific points to cover, stats, audience notes, angle you want, examples to include, key message to highlight..."></textarea>
+                        <label for="educative_hook">Custom Hook <span style="font-weight:400; color:#a0aec0;">(optional)</span></label>
+                        <input type="text" id="educative_hook" name="custom_hook"
+                               placeholder="Leave empty for AI-generated hook, or write your own cover title">
                     </div>
 
-                    <div class="form-group">
-                        <label for="educative_hook">Custom Hook / Title (optional)</label>
-                        <input type="text" id="educative_hook" name="custom_hook" 
-                               placeholder="Leave empty for AI-generated, or write your own catchy cover title">
-                        <small class="form-hint">Override the AI hook with your own if you have one in mind</small>
-                    </div>
-
-                    <!-- Example Topics -->
+                    <!-- Quick Topics -->
                     <div class="example-topics">
                         <label>Quick Topics:</label>
                         <div class="topic-chips">
-                            <button type="button" class="topic-chip" data-topic="How AI chatbots are replacing old customer support" data-format="before_after">AI Support</button>
-                            <button type="button" class="topic-chip" data-topic="5 signs your company needs staff augmentation" data-format="checklist">Staff Augmentation</button>
-                            <button type="button" class="topic-chip" data-topic="Cloud migration myths that cost companies money" data-format="myths_vs_facts">Cloud Myths</button>
-                            <button type="button" class="topic-chip" data-topic="Why nearshore teams outperform offshore" data-format="comparison">Nearshore vs Offshore</button>
-                            <button type="button" class="topic-chip" data-topic="How to protect your business from phishing attacks" data-format="step_by_step">Cybersecurity</button>
-                            <button type="button" class="topic-chip" data-topic="3 automation mistakes that waste more time than they save" data-format="mistakes">Automation Mistakes</button>
-                            <button type="button" class="topic-chip" data-topic="What 5G and IoT mean for your industry in 2026" data-format="did_you_know">5G & IoT</button>
-                            <button type="button" class="topic-chip" data-topic="How to build a tech team without breaking the budget" data-format="tips">Build a Tech Team</button>
-                            <button type="button" class="topic-chip" data-topic="The real ROI of digital transformation" data-format="smart_moves">Digital Transformation ROI</button>
+                            <button type="button" class="topic-chip" data-topic="Why nearshore IT teams in Latin America outperform offshore alternatives in Asia for US companies" data-pillar="Staff Augmentation & Nearshore" data-format="comparison">Nearshore vs Offshore</button>
+                            <button type="button" class="topic-chip" data-topic="The real cost of a cybersecurity breach for a mid-size company — and how to prevent it" data-pillar="Cybersecurity" data-format="did_you_know">Breach Cost Reality</button>
+                            <button type="button" class="topic-chip" data-topic="3 cloud migration mistakes that end up costing companies more than staying on-premise" data-pillar="Cloud Computing & Infrastructure" data-format="mistakes">Cloud Mistakes</button>
+                            <button type="button" class="topic-chip" data-topic="How AI is changing staff augmentation — what CTOs need to know in 2026" data-pillar="AI & Automation" data-format="tips">AI & Staffing</button>
+                            <button type="button" class="topic-chip" data-topic="What 5G actually changes for businesses running IoT devices in 2026" data-pillar="Telecommunications & IoT" data-format="before_after">5G for Business</button>
+                            <button type="button" class="topic-chip" data-topic="Signs your IT outsourcing partner is holding you back — and what to look for instead" data-pillar="IT Outsourcing & Managed Services" data-format="checklist">IT Partner Red Flags</button>
+                            <button type="button" class="topic-chip" data-topic="The myths companies believe about digital transformation that slow them down" data-pillar="Digital Transformation" data-format="myths_vs_facts">DX Myths</button>
+                            <button type="button" class="topic-chip" data-topic="How to build a high-performing tech team without hiring full-time in 90 days" data-pillar="Workforce Agility & Talent" data-format="step_by_step">Build a Tech Team</button>
+                            <button type="button" class="topic-chip" data-topic="What separates companies that scale fast from those that stay stuck — leadership and decision-making patterns" data-pillar="Leadership & Business Culture" data-format="smart_moves">Scaling Mindset</button>
                         </div>
                     </div>
 
