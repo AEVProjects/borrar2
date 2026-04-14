@@ -1342,6 +1342,38 @@
                 </form>
             </div>
 
+            <!-- Step 2: Content Review & Approval -->
+            <div id="educative-step2" class="card form-card" style="display:none; margin-top:24px; border-left:4px solid #207CE5;">
+                <h2 style="display:flex; align-items:center; gap:10px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#207CE5" stroke-width="2"><path d="M9 12l2 2 4-4"></path><circle cx="12" cy="12" r="10"></circle></svg>
+                    Step 2: Review Content &amp; Generate Images
+                </h2>
+                <p style="color:#718096; margin-bottom:20px;">Review the AI-generated content for each slide. Edit headlines or text if needed, then approve to generate the images.</p>
+
+                <!-- Slide content cards (filled by JS) -->
+                <div id="educative-content-preview" style="display:flex; flex-direction:column; gap:16px; margin-bottom:24px;">
+                </div>
+
+                <!-- Per-slide image generation progress -->
+                <div id="educative-image-gen-progress" style="display:none; margin-bottom:20px; padding:16px; background:#f0f5ff; border-radius:10px; border-left:4px solid #207CE5;">
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                        <div class="spinner" style="width:20px;height:20px;border:3px solid #e2e8f0;border-top-color:#207CE5;border-radius:50%;animation:spin 1s linear infinite;flex-shrink:0;"></div>
+                        <span id="educative-gen-status" style="font-weight:500; color:#2d3748;">Generating images...</span>
+                    </div>
+                    <div id="educative-slide-progress-list" style="display:grid; grid-template-columns:repeat(5,1fr); gap:8px;">
+                        <!-- Slide progress items (1–5) inserted by JS -->
+                    </div>
+                </div>
+
+                <div class="result-actions" style="display:flex; gap:12px; flex-wrap:wrap;">
+                    <button id="educative-approve-gen-btn" class="btn btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        Approve &amp; Generate Images
+                    </button>
+                    <button id="educative-step2-reset-btn" class="btn btn-secondary">Start Over</button>
+                </div>
+            </div>
+
             <!-- Educative Carousel Results -->
             <div id="educative-results" class="generated-results" style="display: none;">
                 <div class="card">

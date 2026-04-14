@@ -107,6 +107,8 @@ const n8nVideoPreviewWebhook = CONFIG.n8nVideoPreviewWebhook || CONFIG.n8n?.vide
 const n8nVideoApprovedWebhook = CONFIG.n8nVideoApprovedWebhook || CONFIG.n8n?.videoApprovedWebhook;
 const n8nCarouselWebhook = CONFIG.n8nCarouselWebhook || CONFIG.n8n?.carouselWebhook;
 const n8nEducativeWebhook = CONFIG.n8nEducativeWebhook || CONFIG.n8n?.educativeWebhook;
+const n8nEducativeContentWebhook = CONFIG.n8nEducativeContentWebhook || CONFIG.n8n?.educativeContentWebhook;
+const n8nEducativeSlideImageWebhook = CONFIG.n8nEducativeSlideImageWebhook || CONFIG.n8n?.educativeSlideImageWebhook;
 const n8nVoiceVideoWebhook = CONFIG.n8nVoiceVideoWebhook || CONFIG.n8n?.voiceVideoWebhook;
 const n8nVoiceSwapWebhook = CONFIG.n8nVoiceSwapWebhook || CONFIG.n8n?.voiceSwapWebhook;
 
@@ -4581,12 +4583,19 @@ document.querySelectorAll('.topic-chip').forEach(chip => {
     });
 });
 
-// Educative Form Submit
+// Stores the generated slide content pending approval
+let educativeApprovalData = null;
+
+// ---- STEP 1: Generate Content ----
 educativeForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
+    if (!n8nEducativeContentWebhook) {
+        showToast('educativeContentWebhook not configured in config.js', 'error');
+        return;
+    }
+
     const formData = new FormData(e.target);
-    
     const data = {
         topic: formData.get('topic'),
         pillar: formData.get('pillar'),
@@ -4596,129 +4605,68 @@ educativeForm?.addEventListener('submit', async (e) => {
         tone: formData.get('tone') || 'casual',
         custom_hook: formData.get('custom_hook') || ''
     };
-    
+
     if (!data.topic) {
         showToast('Please enter a topic', 'error');
         return;
     }
-    
+
     const btn = e.target.querySelector('button[type="submit"]');
     const originalText = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Generating...';
-    
-    // Show progress
+    btn.innerHTML = '<span class="spinner"></span> Generating content...';
+
+    // Hide previous step2 / results
+    document.getElementById('educative-step2').style.display = 'none';
+    document.getElementById('educative-results').style.display = 'none';
+
     showProgressAlert(
-        'Generating Educative Carousel',
+        'Generating Educative Content',
         `Creating educational content about: ${data.topic.substring(0, 50)}...`,
         'Initializing AI strategy...'
     );
-    
+
     try {
         updateProgress(5, 'Analyzing educational content...');
-        
-        const response = await fetch(n8nEducativeWebhook, {
+
+        const response = await fetch(n8nEducativeContentWebhook, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
-        
-        updateProgress(15, 'Creating content strategy...');
-        
-        // Educative carousel generation takes time
+
+        updateProgress(60, 'Processing AI output...');
+
         let result;
         try {
             result = await response.json();
         } catch (parseError) {
-            // If response takes too long
-            updateProgress(25, 'Generating slides (this may take a minute per slide)...');
-            
-            for (let i = 0; i < 20; i++) {
-                await new Promise(resolve => setTimeout(resolve, 5000));
-                updateProgress(25 + (i * 3), `Processing educational content...`);
-            }
-            
             hideProgressAlert();
-            showToast('Educative carousel submitted. Check back in a few minutes.', 'warning');
+            showToast('Content generation timed out. Try again.', 'error');
             btn.disabled = false;
             btn.innerHTML = originalText;
             return;
         }
-        
+
         if (result.success && result.data?.slides) {
-            updateProgress(100, 'Educative carousel ready!');
-            
+            updateProgress(100, 'Content ready for review!');
             setTimeout(() => {
                 hideProgressAlert();
-                
-                // Show educative results
-                const educativeResults = document.getElementById('educative-results');
-                const educativePreview = document.getElementById('educative-preview');
-                
-                if (educativePreview) {
-                    educativePreview.innerHTML = '';
-                    const totalSlides = result.data.slides.length;
-                    
-                    result.data.slides.forEach((slide, index) => {
-                        const isFirst = index === 0;
-                        const isLast = index === totalSlides - 1;
-                        const slideEl = document.createElement('div');
-                        
-                        let slideClass = 'carousel-slide';
-                        let labelBadge = '';
-                        
-                        if (isFirst) {
-                            slideClass += ' carousel-slide-cover';
-                            labelBadge = '<span class="slide-label-badge">HOOK</span>';
-                        } else if (isLast && totalSlides > 1) {
-                            slideClass += ' carousel-slide-cta';
-                            labelBadge = '<span class="slide-label-badge slide-label-cta">CTA</span>';
-                        } else {
-                            labelBadge = `<span class="slide-label-badge slide-label-edu">POINT ${index}</span>`;
-                        }
-                        
-                        slideEl.className = slideClass;
-                        slideEl.innerHTML = `
-                            <div class="slide-image-container">
-                                <img src="${slide.image_url}" alt="Slide ${index + 1}" class="slide-image">
-                                <span class="slide-badge">${index + 1}</span>
-                                ${labelBadge}
-                            </div>
-                            <div class="slide-info">
-                                <h4>${slide.headline || ''}</h4>
-                                <p>${slide.body || slide.subtext || ''}</p>
-                                <a href="${slide.image_url}" download="educative-slide-${index + 1}.png" class="btn btn-small btn-secondary">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                        <polyline points="7 10 12 15 17 10"></polyline>
-                                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                                    </svg>
-                                    Download
-                                </a>
-                            </div>
-                        `;
-                        educativePreview.appendChild(slideEl);
-                    });
-                }
-                
-                if (educativeResults) {
-                    educativeResults.style.display = 'block';
-                }
-                
-                showToast('Educative carousel generated successfully!', 'success');
-            }, 500);
+                educativeApprovalData = result.data;
+                renderEducativeContentPreview(result.data.slides);
+                document.getElementById('educative-step2').style.display = 'block';
+                document.getElementById('educative-step2').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                showToast('Content generated! Review and approve to generate images.', 'success');
+            }, 400);
         } else if (result.error) {
             throw new Error(result.error);
         } else {
-            // Partial success - show message
             hideProgressAlert();
-            showToast('Generation started. Check database for results.', 'warning');
+            showToast('Unexpected response from content webhook.', 'warning');
         }
-        
+
     } catch (error) {
-        console.error('Educative carousel error:', error);
+        console.error('Educative content gen error:', error);
         hideProgressAlert();
         showToast(`Error: ${error.message}`, 'error');
     } finally {
@@ -4727,9 +4675,219 @@ educativeForm?.addEventListener('submit', async (e) => {
     }
 });
 
+// Renders slide content cards in step 2
+function renderEducativeContentPreview(slides) {
+    const container = document.getElementById('educative-content-preview');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const LABELS = ['HOOK', 'POINT 1', 'POINT 2', 'POINT 3', 'CTA'];
+    const LABEL_COLORS = ['#207CE5', '#10b981', '#10b981', '#10b981', '#f59e0b'];
+
+    slides.forEach((slide, index) => {
+        const num = slide.slide_number || (index + 1);
+        const label = LABELS[index] || `SLIDE ${num}`;
+        const color = LABEL_COLORS[index] || '#718096';
+        const showBody = num !== 1 && num !== 5;
+
+        const card = document.createElement('div');
+        card.style.cssText = 'background:#f7fafc; border-radius:10px; padding:16px; border-left:4px solid ' + color + ';';
+        card.innerHTML = `
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                <span style="background:${color}; color:#fff; font-size:11px; font-weight:700; padding:3px 8px; border-radius:4px; letter-spacing:0.5px;">${label}</span>
+                <span style="font-size:13px; color:#718096;">Slide ${num}</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <div>
+                    <label style="font-size:12px; font-weight:600; color:#4a5568; text-transform:uppercase; letter-spacing:0.5px;">Headline</label>
+                    <input type="text" data-slide-idx="${index}" data-field="headline"
+                        value="${(slide.headline || '').replace(/"/g, '&quot;')}"
+                        style="width:100%; margin-top:4px; padding:8px 10px; border:1px solid #e2e8f0; border-radius:6px; font-size:14px; font-weight:600; color:#2d3748; box-sizing:border-box;">
+                </div>
+                <div>
+                    <label style="font-size:12px; font-weight:600; color:#4a5568; text-transform:uppercase; letter-spacing:0.5px;">Subtext</label>
+                    <input type="text" data-slide-idx="${index}" data-field="subtext"
+                        value="${(slide.subtext || '').replace(/"/g, '&quot;')}"
+                        style="width:100%; margin-top:4px; padding:8px 10px; border:1px solid #e2e8f0; border-radius:6px; font-size:13px; color:#4a5568; box-sizing:border-box;">
+                </div>
+                ${showBody ? `
+                <div>
+                    <label style="font-size:12px; font-weight:600; color:#4a5568; text-transform:uppercase; letter-spacing:0.5px;">Body Text</label>
+                    <textarea data-slide-idx="${index}" data-field="body_text" rows="2"
+                        style="width:100%; margin-top:4px; padding:8px 10px; border:1px solid #e2e8f0; border-radius:6px; font-size:13px; color:#4a5568; resize:vertical; box-sizing:border-box;">${slide.body_text || ''}</textarea>
+                </div>` : ''}
+            </div>
+        `;
+        container.appendChild(card);
+    });
+
+    // Sync edits back to educativeApprovalData
+    container.addEventListener('input', (ev) => {
+        const el = ev.target;
+        const idx = el.dataset.slideIdx;
+        const field = el.dataset.field;
+        if (idx !== undefined && field && educativeApprovalData?.slides) {
+            educativeApprovalData.slides[parseInt(idx)][field] = el.value;
+        }
+    });
+}
+
+// ---- STEP 2: Approve & Generate Images ----
+let _educativeGenerating = false;
+
+document.getElementById('educative-approve-gen-btn')?.addEventListener('click', async () => {
+    if (_educativeGenerating) return;
+    if (!educativeApprovalData?.slides) {
+        showToast('No content to approve.', 'error');
+        return;
+    }
+    if (!n8nEducativeSlideImageWebhook) {
+        showToast('educativeSlideImageWebhook not configured in config.js', 'error');
+        return;
+    }
+
+    _educativeGenerating = true;
+    const btn = document.getElementById('educative-approve-gen-btn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Generating images...';
+
+    const slides = educativeApprovalData.slides;
+    const topic = educativeApprovalData.topic || '';
+
+    // Show per-slide progress
+    const progressBox = document.getElementById('educative-image-gen-progress');
+    const statusEl = document.getElementById('educative-gen-status');
+    const progressList = document.getElementById('educative-slide-progress-list');
+    progressBox.style.display = 'block';
+    progressList.innerHTML = slides.map((s, i) =>
+        `<div id="edu-slide-prog-${i}" style="text-align:center; padding:8px 4px; background:#fff; border-radius:6px; border:1px solid #e2e8f0;">
+            <div style="font-size:11px; font-weight:700; color:#718096; margin-bottom:4px;">SLIDE ${s.slide_number || i+1}</div>
+            <div id="edu-slide-icon-${i}" style="font-size:18px;">⏳</div>
+         </div>`
+    ).join('');
+
+    const generatedSlides = [];
+
+    try {
+        for (let i = 0; i < slides.length; i++) {
+            const slide = slides[i];
+            const slideNum = slide.slide_number || (i + 1);
+            statusEl.textContent = `Generating image for slide ${slideNum} of ${slides.length}...`;
+            document.getElementById(`edu-slide-icon-${i}`).innerHTML =
+                '<div class="spinner" style="width:16px;height:16px;border:2px solid #e2e8f0;border-top-color:#207CE5;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto;"></div>';
+
+            const payload = {
+                slide_id: slide.slide_id || slide.id,
+                carousel_id: slide.carousel_id || educativeApprovalData.carousel_id,
+                slide_number: slideNum,
+                headline: slide.headline || '',
+                subtext: slide.subtext || '',
+                body_text: slide.body_text || '',
+                image_prompt: slide.image_prompt || '',
+                visual_style: slide.visual_style || '',
+                topic: topic
+            };
+
+            try {
+                const res = await fetch(n8nEducativeSlideImageWebhook, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                const imageUrl = result.data?.url || result.url || result.image_url || '';
+                generatedSlides.push({ ...slide, image_url: imageUrl });
+                document.getElementById(`edu-slide-icon-${i}`).textContent = '✅';
+            } catch (slideErr) {
+                console.error(`Slide ${slideNum} image gen error:`, slideErr);
+                generatedSlides.push({ ...slide, image_url: '' });
+                document.getElementById(`edu-slide-icon-${i}`).textContent = '❌';
+            }
+        }
+
+        statusEl.textContent = 'All images generated!';
+        progressBox.style.display = 'none';
+
+        // Show results
+        renderEducativeResults(generatedSlides);
+        document.getElementById('educative-step2').style.display = 'none';
+        document.getElementById('educative-results').style.display = 'block';
+        document.getElementById('educative-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        showToast('Educative carousel generated successfully!', 'success');
+
+    } catch (error) {
+        console.error('Educative image generation error:', error);
+        progressBox.style.display = 'none';
+        showToast(`Error generating images: ${error.message}`, 'error');
+    } finally {
+        _educativeGenerating = false;
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+});
+
+function renderEducativeResults(slides) {
+    const educativePreview = document.getElementById('educative-preview');
+    if (!educativePreview) return;
+    educativePreview.innerHTML = '';
+    const totalSlides = slides.length;
+
+    slides.forEach((slide, index) => {
+        const isFirst = index === 0;
+        const isLast = index === totalSlides - 1;
+        const slideEl = document.createElement('div');
+
+        let slideClass = 'carousel-slide';
+        let labelBadge = '';
+        if (isFirst) {
+            slideClass += ' carousel-slide-cover';
+            labelBadge = '<span class="slide-label-badge">HOOK</span>';
+        } else if (isLast && totalSlides > 1) {
+            slideClass += ' carousel-slide-cta';
+            labelBadge = '<span class="slide-label-badge slide-label-cta">CTA</span>';
+        } else {
+            labelBadge = `<span class="slide-label-badge slide-label-edu">POINT ${index}</span>`;
+        }
+
+        const imgSrc = slide.image_url || '';
+        slideEl.className = slideClass;
+        slideEl.innerHTML = `
+            <div class="slide-image-container">
+                ${imgSrc ? `<img src="${imgSrc}" alt="Slide ${index + 1}" class="slide-image">` : `<div class="slide-image" style="background:#e2e8f0;display:flex;align-items:center;justify-content:center;color:#718096;font-size:13px;">No image</div>`}
+                <span class="slide-badge">${index + 1}</span>
+                ${labelBadge}
+            </div>
+            <div class="slide-info">
+                <h4>${slide.headline || ''}</h4>
+                <p>${slide.body_text || slide.subtext || ''}</p>
+                ${imgSrc ? `<a href="${imgSrc}" download="educative-slide-${index + 1}.png" class="btn btn-small btn-secondary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download
+                </a>` : ''}
+            </div>
+        `;
+        educativePreview.appendChild(slideEl);
+    });
+}
+
+// Start Over from step 2
+document.getElementById('educative-step2-reset-btn')?.addEventListener('click', () => {
+    educativeApprovalData = null;
+    document.getElementById('educative-step2').style.display = 'none';
+    document.getElementById('educative-image-gen-progress').style.display = 'none';
+    document.getElementById('educative_topic').focus();
+});
+
 // Regenerate educative carousel
 document.getElementById('regenerate-educative')?.addEventListener('click', () => {
     document.getElementById('educative-results').style.display = 'none';
+    document.getElementById('educative-step2').style.display = 'none';
+    educativeApprovalData = null;
     document.getElementById('educative_topic').focus();
 });
 
