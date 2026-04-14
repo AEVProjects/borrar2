@@ -250,6 +250,13 @@ body {
     margin: 0 auto;
 }
 
+/* Educative section is wider to fit 5-slide grid comfortably */
+#educative-mode .form-card,
+#educative-mode #educative-step2,
+#educative-mode .edu-steps {
+    max-width: 1100px;
+}
+
 /* Forms */
 .form-group {
     margin-bottom: 20px;
