@@ -4708,38 +4708,41 @@ function renderEducativeContentPreview(slides) {
 
     const LABELS = ['HOOK', 'POINT 1', 'POINT 2', 'POINT 3', 'CTA'];
     const LABEL_COLORS = ['#207CE5', '#10b981', '#10b981', '#10b981', '#f59e0b'];
+    const LABEL_BG = ['#ebf4ff', '#d1fae5', '#d1fae5', '#d1fae5', '#fef3c7'];
+
+    // Grid wrapper — 5 columns on desktop, scroll on small screens
+    container.style.cssText = 'display:grid; grid-template-columns:repeat(5,1fr); gap:12px; overflow-x:auto;';
 
     slides.forEach((slide, index) => {
         const num = slide.slide_number || (index + 1);
         const label = LABELS[index] || `SLIDE ${num}`;
         const color = LABEL_COLORS[index] || '#718096';
+        const bg = LABEL_BG[index] || '#f7fafc';
         const showBody = num !== 1 && num !== 5;
 
         const card = document.createElement('div');
-        card.style.cssText = 'background:#f7fafc; border-radius:10px; padding:16px; border-left:4px solid ' + color + ';';
+        card.style.cssText = `display:flex; flex-direction:column; gap:10px; background:#fff; border-radius:12px; border:2px solid ${color}; overflow:hidden; min-width:160px;`;
         card.innerHTML = `
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-                <span style="background:${color}; color:#fff; font-size:11px; font-weight:700; padding:3px 8px; border-radius:4px; letter-spacing:0.5px;">${label}</span>
-                <span style="font-size:13px; color:#718096;">Slide ${num}</span>
+            <div style="background:${color}; padding:10px 12px; display:flex; align-items:center; justify-content:space-between;">
+                <span style="color:#fff; font-size:11px; font-weight:800; letter-spacing:1px;">${label}</span>
+                <span style="color:rgba(255,255,255,0.75); font-size:11px; font-weight:600;">${num}/5</span>
             </div>
-            <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="padding:10px 12px; display:flex; flex-direction:column; gap:8px; flex:1;">
                 <div>
-                    <label style="font-size:12px; font-weight:600; color:#4a5568; text-transform:uppercase; letter-spacing:0.5px;">Headline</label>
-                    <input type="text" data-slide-idx="${index}" data-field="headline"
-                        value="${(slide.headline || '').replace(/"/g, '&quot;')}"
-                        style="width:100%; margin-top:4px; padding:8px 10px; border:1px solid #e2e8f0; border-radius:6px; font-size:14px; font-weight:600; color:#2d3748; box-sizing:border-box;">
+                    <label style="font-size:10px; font-weight:700; color:${color}; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:3px;">Headline</label>
+                    <textarea data-slide-idx="${index}" data-field="headline" rows="2"
+                        style="width:100%; padding:6px 8px; border:1px solid #e2e8f0; border-radius:6px; font-size:12px; font-weight:600; color:#2d3748; resize:none; box-sizing:border-box; line-height:1.4;">${(slide.headline || '').replace(/</g,'&lt;')}</textarea>
                 </div>
                 <div>
-                    <label style="font-size:12px; font-weight:600; color:#4a5568; text-transform:uppercase; letter-spacing:0.5px;">Subtext</label>
-                    <input type="text" data-slide-idx="${index}" data-field="subtext"
-                        value="${(slide.subtext || '').replace(/"/g, '&quot;')}"
-                        style="width:100%; margin-top:4px; padding:8px 10px; border:1px solid #e2e8f0; border-radius:6px; font-size:13px; color:#4a5568; box-sizing:border-box;">
+                    <label style="font-size:10px; font-weight:700; color:${color}; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:3px;">Subtext</label>
+                    <textarea data-slide-idx="${index}" data-field="subtext" rows="2"
+                        style="width:100%; padding:6px 8px; border:1px solid #e2e8f0; border-radius:6px; font-size:11px; color:#4a5568; resize:none; box-sizing:border-box; line-height:1.4;">${(slide.subtext || '').replace(/</g,'&lt;')}</textarea>
                 </div>
                 ${showBody ? `
                 <div>
-                    <label style="font-size:12px; font-weight:600; color:#4a5568; text-transform:uppercase; letter-spacing:0.5px;">Body Text</label>
-                    <textarea data-slide-idx="${index}" data-field="body_text" rows="2"
-                        style="width:100%; margin-top:4px; padding:8px 10px; border:1px solid #e2e8f0; border-radius:6px; font-size:13px; color:#4a5568; resize:vertical; box-sizing:border-box;">${slide.body_text || ''}</textarea>
+                    <label style="font-size:10px; font-weight:700; color:${color}; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:3px;">Body</label>
+                    <textarea data-slide-idx="${index}" data-field="body_text" rows="3"
+                        style="width:100%; padding:6px 8px; border:1px solid #e2e8f0; border-radius:6px; font-size:11px; color:#4a5568; resize:none; box-sizing:border-box; line-height:1.4;">${(slide.body_text || '').replace(/</g,'&lt;')}</textarea>
                 </div>` : ''}
             </div>
         `;
