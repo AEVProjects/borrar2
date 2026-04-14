@@ -4586,6 +4586,30 @@ document.querySelectorAll('.topic-chip').forEach(chip => {
 // Stores the generated slide content pending approval
 let educativeApprovalData = null;
 
+// Update educative step indicator
+function setEducativeStep(step) {
+    const steps = [1, 2, 3];
+    steps.forEach(n => {
+        const el = document.getElementById(`edu-step-${n}`);
+        if (!el) return;
+        el.classList.remove('active', 'completed');
+        if (n < step) el.classList.add('completed');
+        else if (n === step) el.classList.add('active');
+    });
+    // Fill connectors
+    const connectors = document.querySelectorAll('.edu-step-connector');
+    connectors.forEach((c, i) => {
+        c.classList.toggle('filled', step > i + 1);
+    });
+    // Show checkmark in completed circles
+    [1, 2].forEach(n => {
+        const circle = document.querySelector(`#edu-step-${n} .edu-step-circle`);
+        if (!circle) return;
+        if (n < step) circle.textContent = '✓';
+        else circle.textContent = n;
+    });
+}
+
 // ---- STEP 1: Generate Content ----
 educativeForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -4656,6 +4680,7 @@ educativeForm?.addEventListener('submit', async (e) => {
                 renderEducativeContentPreview(result.data.slides);
                 document.getElementById('educative-step2').style.display = 'block';
                 document.getElementById('educative-step2').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                setEducativeStep(2);
                 showToast('Content generated! Review and approve to generate images.', 'success');
             }, 400);
         } else if (result.error) {
@@ -4814,6 +4839,7 @@ document.getElementById('educative-approve-gen-btn')?.addEventListener('click', 
         document.getElementById('educative-step2').style.display = 'none';
         document.getElementById('educative-results').style.display = 'block';
         document.getElementById('educative-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setEducativeStep(3);
         showToast('Educative carousel generated successfully!', 'success');
 
     } catch (error) {
@@ -4880,6 +4906,7 @@ document.getElementById('educative-step2-reset-btn')?.addEventListener('click', 
     educativeApprovalData = null;
     document.getElementById('educative-step2').style.display = 'none';
     document.getElementById('educative-image-gen-progress').style.display = 'none';
+    setEducativeStep(1);
     document.getElementById('educative_topic').focus();
 });
 
@@ -4888,6 +4915,7 @@ document.getElementById('regenerate-educative')?.addEventListener('click', () =>
     document.getElementById('educative-results').style.display = 'none';
     document.getElementById('educative-step2').style.display = 'none';
     educativeApprovalData = null;
+    setEducativeStep(1);
     document.getElementById('educative_topic').focus();
 });
 

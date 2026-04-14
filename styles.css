@@ -2466,6 +2466,99 @@ input[type="checkbox"].post-checkbox {
 }
 
 /* ========== EDUCATIVE MODE ========== */
+/* Educative Step Indicator */
+.edu-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 24px;
+    padding: 20px 16px 8px;
+}
+
+.edu-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0.4;
+    transition: opacity 0.3s ease;
+}
+
+.edu-step.active {
+    opacity: 1;
+}
+
+.edu-step.completed {
+    opacity: 0.85;
+}
+
+.edu-step-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #718096;
+    font-weight: 700;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+.edu-step.active .edu-step-circle {
+    background: var(--primary-color);
+    color: #fff;
+}
+
+.edu-step.completed .edu-step-circle {
+    background: #10b981;
+    color: #fff;
+    font-size: 18px;
+}
+
+.edu-step-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #718096;
+    white-space: nowrap;
+    text-align: center;
+    transition: color 0.3s ease;
+}
+
+.edu-step.active .edu-step-label {
+    color: var(--primary-color);
+}
+
+.edu-step.completed .edu-step-label {
+    color: #10b981;
+}
+
+.edu-step-connector {
+    flex: 1;
+    height: 2px;
+    background: #e2e8f0;
+    max-width: 80px;
+    min-width: 32px;
+    margin-bottom: 22px;
+    position: relative;
+}
+
+.edu-step-connector::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    width: 0%;
+    background: #10b981;
+    transition: width 0.4s ease;
+}
+
+.edu-step-connector.filled::after {
+    width: 100%;
+}
+
 .educative-header {
     margin-bottom: 24px;
 }
