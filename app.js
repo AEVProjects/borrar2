@@ -4754,13 +4754,13 @@ function renderEducativeContentPreview(slides) {
                 <div>
                     <label style="font-size:10px; font-weight:700; color:${color}; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:4px;">Subtext</label>
                     <textarea data-slide-idx="${index}" data-field="subtext" rows="2"
-                        style="width:100%; padding:7px 9px; border:1px solid #e2e8f0; border-radius:6px; font-size:12px; color:#4a5568; resize:vertical; box-sizing:border-box; line-height:1.4;">${(slide.subtext || '').replace(/</g,'&lt;')}</textarea>
+                        style="width:100%; padding:7px 9px; border:1px solid #e2e8f0; border-radius:6px; font-size:12px; color:#4a5568; resize:vertical; box-sizing:border-box; line-height:1.5;">${(slide.subtext || '').replace(/</g,'&lt;')}</textarea>
                 </div>
                 ${isContent ? `
                 <div>
                     <label style="font-size:10px; font-weight:700; color:${color}; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:4px;">Body</label>
-                    <textarea data-slide-idx="${index}" data-field="body_text" rows="3"
-                        style="width:100%; padding:7px 9px; border:1px solid #e2e8f0; border-radius:6px; font-size:12px; color:#4a5568; resize:vertical; box-sizing:border-box; line-height:1.4;">${(slide.body_text || '').replace(/</g,'&lt;')}</textarea>
+                    <textarea data-slide-idx="${index}" data-field="body_text" rows="5"
+                        style="width:100%; padding:7px 9px; border:1px solid #e2e8f0; border-radius:6px; font-size:12px; color:#4a5568; resize:vertical; box-sizing:border-box; line-height:1.5;">${(slide.body_text || '').replace(/</g,'&lt;')}</textarea>
                 </div>` : ''}
             </div>
         `;
