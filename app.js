@@ -4721,46 +4721,61 @@ function renderEducativeContentPreview(slides) {
 
     const LABELS = ['HOOK', 'POINT 1', 'POINT 2', 'POINT 3', 'CTA'];
     const LABEL_COLORS = ['#207CE5', '#10b981', '#10b981', '#10b981', '#f59e0b'];
-    const LABEL_BG = ['#ebf4ff', '#d1fae5', '#d1fae5', '#d1fae5', '#fef3c7'];
 
-    // Grid wrapper — 5 columns on desktop, scroll on small screens
-    container.style.cssText = 'display:grid; grid-template-columns:repeat(5,1fr); gap:12px; overflow-x:auto;';
+    container.style.cssText = 'display:flex; flex-direction:column; gap:16px;';
 
-    slides.forEach((slide, index) => {
+    // Row 1: Hook + CTA side by side
+    const row1 = document.createElement('div');
+    row1.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; gap:12px;';
+
+    // Row 2: Content slides (2, 3, 4) side by side
+    const row2 = document.createElement('div');
+    row2.style.cssText = 'display:grid; grid-template-columns:repeat(3,1fr); gap:12px;';
+
+    function buildCard(slide, index) {
         const num = slide.slide_number || (index + 1);
         const label = LABELS[index] || `SLIDE ${num}`;
         const color = LABEL_COLORS[index] || '#718096';
-        const bg = LABEL_BG[index] || '#f7fafc';
-        const showBody = num !== 1 && num !== 5;
+        const isContent = num >= 2 && num <= 4;
 
         const card = document.createElement('div');
-        card.style.cssText = `display:flex; flex-direction:column; gap:10px; background:#fff; border-radius:12px; border:2px solid ${color}; overflow:hidden; min-width:160px;`;
+        card.style.cssText = `display:flex; flex-direction:column; background:#fff; border-radius:12px; border:2px solid ${color}; overflow:hidden;`;
         card.innerHTML = `
-            <div style="background:${color}; padding:10px 12px; display:flex; align-items:center; justify-content:space-between;">
+            <div style="background:${color}; padding:9px 14px; display:flex; align-items:center; justify-content:space-between;">
                 <span style="color:#fff; font-size:11px; font-weight:800; letter-spacing:1px;">${label}</span>
-                <span style="color:rgba(255,255,255,0.75); font-size:11px; font-weight:600;">${num}/5</span>
+                <span style="color:rgba(255,255,255,0.7); font-size:11px; font-weight:600;">${num}/5</span>
             </div>
-            <div style="padding:10px 12px; display:flex; flex-direction:column; gap:8px; flex:1;">
+            <div style="padding:12px 14px; display:flex; flex-direction:column; gap:10px; flex:1;">
                 <div>
-                    <label style="font-size:10px; font-weight:700; color:${color}; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:3px;">Headline</label>
+                    <label style="font-size:10px; font-weight:700; color:${color}; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:4px;">Headline</label>
                     <textarea data-slide-idx="${index}" data-field="headline" rows="2"
-                        style="width:100%; padding:6px 8px; border:1px solid #e2e8f0; border-radius:6px; font-size:12px; font-weight:600; color:#2d3748; resize:none; box-sizing:border-box; line-height:1.4;">${(slide.headline || '').replace(/</g,'&lt;')}</textarea>
+                        style="width:100%; padding:7px 9px; border:1px solid #e2e8f0; border-radius:6px; font-size:13px; font-weight:600; color:#2d3748; resize:vertical; box-sizing:border-box; line-height:1.4;">${(slide.headline || '').replace(/</g,'&lt;')}</textarea>
                 </div>
                 <div>
-                    <label style="font-size:10px; font-weight:700; color:${color}; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:3px;">Subtext</label>
+                    <label style="font-size:10px; font-weight:700; color:${color}; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:4px;">Subtext</label>
                     <textarea data-slide-idx="${index}" data-field="subtext" rows="2"
-                        style="width:100%; padding:6px 8px; border:1px solid #e2e8f0; border-radius:6px; font-size:11px; color:#4a5568; resize:none; box-sizing:border-box; line-height:1.4;">${(slide.subtext || '').replace(/</g,'&lt;')}</textarea>
+                        style="width:100%; padding:7px 9px; border:1px solid #e2e8f0; border-radius:6px; font-size:12px; color:#4a5568; resize:vertical; box-sizing:border-box; line-height:1.4;">${(slide.subtext || '').replace(/</g,'&lt;')}</textarea>
                 </div>
-                ${showBody ? `
+                ${isContent ? `
                 <div>
-                    <label style="font-size:10px; font-weight:700; color:${color}; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:3px;">Body</label>
+                    <label style="font-size:10px; font-weight:700; color:${color}; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:4px;">Body</label>
                     <textarea data-slide-idx="${index}" data-field="body_text" rows="3"
-                        style="width:100%; padding:6px 8px; border:1px solid #e2e8f0; border-radius:6px; font-size:11px; color:#4a5568; resize:none; box-sizing:border-box; line-height:1.4;">${(slide.body_text || '').replace(/</g,'&lt;')}</textarea>
+                        style="width:100%; padding:7px 9px; border:1px solid #e2e8f0; border-radius:6px; font-size:12px; color:#4a5568; resize:vertical; box-sizing:border-box; line-height:1.4;">${(slide.body_text || '').replace(/</g,'&lt;')}</textarea>
                 </div>` : ''}
             </div>
         `;
-        container.appendChild(card);
+        return card;
+    }
+
+    slides.forEach((slide, index) => {
+        const num = slide.slide_number || (index + 1);
+        const card = buildCard(slide, index);
+        if (num === 1 || num === 5) row1.appendChild(card);
+        else row2.appendChild(card);
     });
+
+    container.appendChild(row1);
+    container.appendChild(row2);
 
     // Sync edits back to educativeApprovalData
     container.addEventListener('input', (ev) => {
