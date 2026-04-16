@@ -1234,10 +1234,10 @@
             <!-- Step 2: Content Review & Approval -->
             <div id="carousel-news-step2" class="card form-card" style="display:none; margin-top:24px; border-left:4px solid #207CE5;">
                 <h2 style="display:flex; align-items:center; gap:10px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#207CE5" stroke-width="2"><path d="M9 12l2 2 4-4"></path><circle cx="12" cy="12" r="10"></circle></svg>
-                    Step 2: Review Content &amp; Edit Before Generating
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#207CE5" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    Paso 2: Revisar y editar el contenido generado
                 </h2>
-                <p style="color:#718096; margin-bottom:20px;">Review the AI-generated content for each slide. Edit headlines or text if needed, then approve to generate the images.</p>
+                <p style="color:#718096; margin-bottom:20px;">El AI generó el texto para cada slide. Revisa los títulos y el cuerpo, edítalos si quieres, y cuando estés listo aprueba para que se generen las imágenes.</p>
 
                 <!-- Slide content cards (filled by JS) -->
                 <div id="carousel-news-content-preview" style="display:flex; flex-direction:column; gap:16px; margin-bottom:24px;">
@@ -1257,16 +1257,19 @@
                 <div class="result-actions" style="display:flex; gap:12px; flex-wrap:wrap; margin-top:28px;">
                     <button id="carousel-news-approve-btn" class="btn btn-primary">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                        Approve &amp; Generate Images
+                        Aprobar y Generar Imágenes
                     </button>
-                    <button id="carousel-news-reset-btn" class="btn btn-secondary">Start Over</button>
+                    <button id="carousel-news-reset-btn" class="btn btn-secondary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px;"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-3.51"></path></svg>
+                        Volver a Noticias
+                    </button>
                 </div>
             </div>
 
             <!-- Step 3: Generated Carousel Results -->
             <div id="carousel-news-results" class="generated-results" style="display: none;">
                 <div class="card">
-                    <h2>Generated News Carousel</h2>
+                    <h2>Carrusel de Noticias Generado</h2>
                     <div id="carousel-news-preview" class="carousel-preview">
                         <!-- Slides will be inserted here -->
                     </div>
@@ -1279,7 +1282,7 @@
                             </svg>
                             Download All
                         </button>
-                        <button id="regenerate-carousel-news" class="btn btn-secondary">Generate Again</button>
+                        <button id="regenerate-carousel-news" class="btn btn-secondary">Generar de Nuevo</button>
                     </div>
                 </div>
             </div>

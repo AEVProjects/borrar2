@@ -3892,20 +3892,24 @@ function renderTrendNews() {
 
     // Render cards with checkboxes - PAGINATED (10 per page)
     grid.innerHTML = paginatedNews.map((news, idx) => {
-        const cardClass = news.is_used ? 'news-card used' : 'news-card';
+        const isChecked = selectedNewsForCarousel.some(n => n.id === news.id);
+        const selectionOrder = isChecked ? selectedNewsForCarousel.findIndex(n => n.id === news.id) + 1 : 0;
+        const isDisabled = selectedNewsForCarousel.length >= 3 && !isChecked;
+        let cardClass = 'news-card';
+        if (news.is_used) cardClass += ' used';
+        if (isChecked) cardClass += ' selected';
+
         const dateStr = news.news_date || formatRelativeDate(news.scraped_at);
-        // Check if this news was AI-ranked (saved by the flow = AI selected top 3)
-        const isAiRanked = !news.is_used; // Recently saved news that hasn't been used yet
         const hasContent = news.content && news.content.length > 0;
         const encodedContent = btoa(encodeURIComponent(news.content || ''));
         const encodedSnippet = btoa(encodeURIComponent(news.snippet || ''));
         const encodedTitle = btoa(encodeURIComponent(news.title || ''));
         const encodedTrend = btoa(encodeURIComponent(news.trend_query || ''));
-        const isChecked = selectedNewsForCarousel.some(n => n.id === news.id);
         return `
-            <div class="${cardClass}">
+            <div class="${cardClass}" data-news-id="${news.id}" onclick="handleNewsCardClick(event, '${news.id}')">
+                ${selectionOrder > 0 ? `<div class="news-selection-badge">${selectionOrder}</div>` : ''}
                 <div class="news-card-header">
-                    <input type="checkbox" class="news-select-checkbox" data-news-idx="${news.id}" ${isChecked ? 'checked' : ''} ${selectedNewsForCarousel.length >= 3 && !isChecked ? 'disabled' : ''} title="Seleccionar para carrusel (máx 3)">
+                    <input type="checkbox" class="news-select-checkbox" data-news-idx="${news.id}" ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''} title="Seleccionar para carrusel (máx 3)" onclick="event.stopPropagation()">
                     <span class="news-source">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
@@ -3916,14 +3920,14 @@ function renderTrendNews() {
                     <span class="news-date">${escapeHtml(dateStr)}</span>
                 </div>
                 <h3 class="news-title">
-                    <a href="${escapeHtml(news.link || '#')}" target="_blank" rel="noopener">
+                    <a href="${escapeHtml(news.link || '#')}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
                         ${escapeHtml(news.title || 'Sin título')}
                     </a>
                 </h3>
                 ${news.snippet ? `<p class="news-snippet">${escapeHtml(news.snippet)}</p>` : ''}
                 ${hasContent ? `
                 <div class="news-content-section">
-                    <div class="news-content-toggle" onclick="toggleNewsContent(this)">
+                    <div class="news-content-toggle" onclick="event.stopPropagation(); toggleNewsContent(this)">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                             <circle cx="12" cy="12" r="3"></circle>
@@ -3946,14 +3950,8 @@ function renderTrendNews() {
                     </svg>
                     ${escapeHtml(news.trend_query || 'Sin trend')}
                 </div>
-                ${isAiRanked ? `
-                <div style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#f0f9ff,#e0f2fe);color:#0369a1;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;margin-top:6px;border:1px solid #bae6fd;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
-                    AI Top Pick
-                </div>
-                ` : ''}
                 <div class="news-card-actions">
-                    <button class="btn btn-send-to-daily" onclick="sendTrendToDaily('${encodedTitle}', '${encodedSnippet}', '${encodedTrend}', '${encodedContent}'); return false;" title="Enviar a Auto Daily con contenido completo">
+                    <button class="btn btn-send-to-daily" onclick="event.stopPropagation(); sendTrendToDaily('${encodedTitle}', '${encodedSnippet}', '${encodedTrend}', '${encodedContent}'); return false;" title="Enviar a Auto Daily con contenido completo">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                             <line x1="16" y1="2" x2="16" y2="6"></line>
@@ -3963,7 +3961,7 @@ function renderTrendNews() {
                         Usar en Daily
                     </button>
                     ${news.is_used && news.used_for_post_id ? `
-                    <a href="#" class="btn-view-post" onclick="viewPostFromNews('${news.used_for_post_id}'); return false;">
+                    <a href="#" class="btn-view-post" onclick="event.stopPropagation(); viewPostFromNews('${news.used_for_post_id}'); return false;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                             <polyline points="15 3 21 3 21 9"></polyline>
@@ -4005,22 +4003,38 @@ function renderTrendNews() {
         grid.insertAdjacentHTML('afterend', paginationHtml);
     }
 
-    // Add button for sending to Input Generator → Carousel
-    let btnHtml = `<div style="margin:24px 0;text-align:center;">
-        <div style="margin-bottom:12px;">
-            <span style="background:#e0f2fe;color:#0369a1;padding:4px 12px;border-radius:12px;font-size:13px;">
-                ${selectedNewsForCarousel.length}/3 noticias seleccionadas
-            </span>
+    // Add button for sending to Carousel Content Gen
+    const sel = selectedNewsForCarousel;
+    const selectedPreviewHtml = sel.length > 0 ? `
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">
+            ${sel.map((n, i) => `
+            <div style="display:flex;align-items:center;gap:10px;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 12px;">
+                <span style="flex-shrink:0;width:22px;height:22px;background:#207CE5;color:#fff;border-radius:50%;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;">${i+1}</span>
+                <span style="font-size:13px;color:#1e40af;font-weight:500;line-height:1.3;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${escapeHtml(n.title || 'Sin título')}</span>
+            </div>`).join('')}
+        </div>` : '';
+    const allSelected = sel.length === 3;
+    let btnHtml = `<div style="margin:24px 0 8px;">
+        <div style="background:${allSelected ? 'linear-gradient(135deg,#f0f7ff,#e8f4fd)' : '#f8fafc'};border:2px solid ${allSelected ? '#207CE5' : '#e2e8f0'};border-radius:14px;padding:20px 24px;transition:all 0.3s;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${sel.length > 0 ? '14px' : '0'};">
+                <span style="font-size:14px;font-weight:700;color:${allSelected ? '#207CE5' : '#64748b'};">
+                    ${allSelected
+                        ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#207CE5" stroke-width="2.5" style="vertical-align:-3px;margin-right:6px;"><polyline points="20 6 9 17 4 12"></polyline></svg> 3 noticias seleccionadas — listo para generar'
+                        : `Selecciona ${3 - sel.length} noticia${3 - sel.length !== 1 ? 's' : ''} más para continuar`}
+                </span>
+                <span style="font-size:22px;font-weight:800;color:${allSelected ? '#207CE5' : '#cbd5e1'};">${sel.length}<span style="font-size:14px;font-weight:600;color:#94a3b8;">/3</span></span>
+            </div>
+            ${selectedPreviewHtml}
+            <button id="send-to-carousel-btn" class="btn btn-primary" style="width:100%;font-size:1rem;padding:13px 24px;border-radius:10px;justify-content:center;${allSelected ? '' : 'opacity:0.5;cursor:not-allowed;'}" ${allSelected ? '' : 'disabled'}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;">
+                    <rect x="2" y="3" width="6" height="18" rx="1"></rect>
+                    <rect x="9" y="3" width="6" height="18" rx="1"></rect>
+                    <rect x="16" y="3" width="6" height="18" rx="1"></rect>
+                </svg>
+                Generar Carrusel — Revisar contenido primero
+            </button>
+            <div id="carousel-news-warning" style="color:#e53e3e;margin-top:8px;font-size:13px;display:none;">Selecciona exactamente 3 noticias.</div>
         </div>
-        <button id="send-to-carousel-btn" class="btn btn-primary" style="font-size:1.1rem;padding:12px 32px;" disabled>
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;">
-                <rect x="2" y="3" width="6" height="18" rx="1"></rect>
-                <rect x="9" y="3" width="6" height="18" rx="1"></rect>
-                <rect x="16" y="3" width="6" height="18" rx="1"></rect>
-            </svg>
-            Generar Carrusel con 3 noticias
-        </button>
-        <div id="carousel-news-warning" style="color:#e53e3e;margin-top:8px;display:none;">Selecciona exactamente 3 noticias.</div>
     </div>`;
     const paginationEl = document.querySelector('.trends-pagination');
     if (paginationEl) {
@@ -4029,7 +4043,7 @@ function renderTrendNews() {
         grid.insertAdjacentHTML('afterend', btnHtml);
     }
 
-    // Listeners for checkboxes
+    // Listeners for checkboxes (sync state when checkbox toggled directly)
     setTimeout(() => {
         document.querySelectorAll('.news-select-checkbox').forEach(cb => {
             cb.addEventListener('change', (e) => {
@@ -4039,15 +4053,17 @@ function renderTrendNews() {
                 if (e.target.checked) {
                     if (selectedNewsForCarousel.length < 3) {
                         selectedNewsForCarousel.push(newsObj);
+                    } else {
+                        e.target.checked = false;
+                        return;
                     }
                 } else {
                     selectedNewsForCarousel = selectedNewsForCarousel.filter(n => n.id != newsObj.id);
                 }
-                // Rerender to update states
                 renderTrendNews();
             });
         });
-        // Send button - now sends to Input Generator instead of directly to Carousel
+        // Send button
         const btn = document.getElementById('send-to-carousel-btn');
         if (btn) {
             btn.disabled = selectedNewsForCarousel.length !== 3;
@@ -4285,6 +4301,21 @@ function sendTrendToDaily(encodedTitle, encodedSnippet, encodedTrend, encodedCon
 }
 
 // Toggle news content visibility
+function handleNewsCardClick(event, newsId) {
+    // Don't toggle when clicking links or action buttons
+    if (event.target.closest('a') || event.target.closest('.news-card-actions') || event.target.closest('.news-content-section')) return;
+    const newsObj = trendsData.news.find(n => n.id == newsId);
+    if (!newsObj) return;
+    const alreadySelected = selectedNewsForCarousel.some(n => n.id == newsId);
+    if (alreadySelected) {
+        selectedNewsForCarousel = selectedNewsForCarousel.filter(n => n.id != newsId);
+    } else {
+        if (selectedNewsForCarousel.length >= 3) return;
+        selectedNewsForCarousel.push(newsObj);
+    }
+    renderTrendNews();
+}
+
 function toggleNewsContent(element) {
     const contentSection = element.parentElement;
     const fullContent = contentSection.querySelector('.news-content-full');
