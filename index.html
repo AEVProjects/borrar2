@@ -1119,6 +1119,25 @@
 
         <!-- Trends Mode -->
         <div id="trends-mode" class="mode-content">
+
+            <!-- Step Indicator -->
+            <div class="edu-steps" id="cnews-steps">
+                <div class="edu-step active" id="cnews-step-1">
+                    <div class="edu-step-circle">1</div>
+                    <div class="edu-step-label">Select News</div>
+                </div>
+                <div class="edu-step-connector"></div>
+                <div class="edu-step" id="cnews-step-2">
+                    <div class="edu-step-circle">2</div>
+                    <div class="edu-step-label">Review Content</div>
+                </div>
+                <div class="edu-step-connector"></div>
+                <div class="edu-step" id="cnews-step-3">
+                    <div class="edu-step-circle">3</div>
+                    <div class="edu-step-label">Generate Images</div>
+                </div>
+            </div>
+
             <div class="trends-container">
                 <!-- Header -->
                 <div class="trends-header">
@@ -1211,6 +1230,60 @@
                     <p class="loading-news">Cargando noticias...</p>
                 </div>
             </div>
+
+            <!-- Step 2: Content Review & Approval -->
+            <div id="carousel-news-step2" class="card form-card" style="display:none; margin-top:24px; border-left:4px solid #207CE5;">
+                <h2 style="display:flex; align-items:center; gap:10px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#207CE5" stroke-width="2"><path d="M9 12l2 2 4-4"></path><circle cx="12" cy="12" r="10"></circle></svg>
+                    Step 2: Review Content &amp; Edit Before Generating
+                </h2>
+                <p style="color:#718096; margin-bottom:20px;">Review the AI-generated content for each slide. Edit headlines or text if needed, then approve to generate the images.</p>
+
+                <!-- Slide content cards (filled by JS) -->
+                <div id="carousel-news-content-preview" style="display:flex; flex-direction:column; gap:16px; margin-bottom:24px;">
+                </div>
+
+                <!-- Per-slide image generation progress -->
+                <div id="carousel-news-image-gen-progress" style="display:none; margin-bottom:20px; padding:16px; background:#f0f5ff; border-radius:10px; border-left:4px solid #207CE5;">
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                        <div class="spinner" style="width:20px;height:20px;border:3px solid #e2e8f0;border-top-color:#207CE5;border-radius:50%;animation:spin 1s linear infinite;flex-shrink:0;"></div>
+                        <span id="carousel-news-gen-status" style="font-weight:500; color:#2d3748;">Generating images...</span>
+                    </div>
+                    <div id="carousel-news-slide-progress-list" style="display:grid; grid-template-columns:repeat(5,1fr); gap:8px;">
+                        <!-- Slide progress items (1–5) inserted by JS -->
+                    </div>
+                </div>
+
+                <div class="result-actions" style="display:flex; gap:12px; flex-wrap:wrap; margin-top:28px;">
+                    <button id="carousel-news-approve-btn" class="btn btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        Approve &amp; Generate Images
+                    </button>
+                    <button id="carousel-news-reset-btn" class="btn btn-secondary">Start Over</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Generated Carousel Results -->
+            <div id="carousel-news-results" class="generated-results" style="display: none;">
+                <div class="card">
+                    <h2>Generated News Carousel</h2>
+                    <div id="carousel-news-preview" class="carousel-preview">
+                        <!-- Slides will be inserted here -->
+                    </div>
+                    <div class="result-actions">
+                        <button id="download-all-carousel-news" class="btn btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download All
+                        </button>
+                        <button id="regenerate-carousel-news" class="btn btn-secondary">Generate Again</button>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <!-- Educative Mode -->

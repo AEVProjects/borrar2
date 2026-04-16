@@ -109,6 +109,8 @@ const n8nCarouselWebhook = CONFIG.n8nCarouselWebhook || CONFIG.n8n?.carouselWebh
 const n8nEducativeWebhook = CONFIG.n8nEducativeWebhook || CONFIG.n8n?.educativeWebhook;
 const n8nEducativeContentWebhook = CONFIG.n8nEducativeContentWebhook || CONFIG.n8n?.educativeContentWebhook;
 const n8nEducativeSlideImageWebhook = CONFIG.n8nEducativeSlideImageWebhook || CONFIG.n8n?.educativeSlideImageWebhook;
+const n8nCarouselContentWebhook = CONFIG.n8n?.carouselContentWebhook;
+const n8nCarouselSlideImageWebhook = CONFIG.n8n?.carouselSlideImageWebhook;
 const n8nVoiceVideoWebhook = CONFIG.n8nVoiceVideoWebhook || CONFIG.n8n?.voiceVideoWebhook;
 const n8nVoiceSwapWebhook = CONFIG.n8nVoiceSwapWebhook || CONFIG.n8n?.voiceSwapWebhook;
 
@@ -4055,17 +4057,17 @@ function renderTrendNews() {
                     return;
                 }
                 document.getElementById('carousel-news-warning').style.display = 'none';
-                
-                // Send to INPUT GENERATOR first (which will then call Carousel Generator)
+
+                if (!n8nCarouselContentWebhook) {
+                    showToast('carouselContentWebhook not configured in config.js', 'error');
+                    return;
+                }
+
+                // Step 1 → Step 2: Generate content only (no images yet)
                 try {
                     btn.disabled = true;
-                    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin" style="margin-right:8px;animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> Generando inputs coherentes...`;
-                    
-                    // Debug: Log the webhook URL being used
-                    console.log('🔗 Using webhook URL:', n8nInputGeneratorWebhook);
-                    console.log('🔗 CONFIG object:', CONFIG.n8n);
-                    
-                    // Prepare news items for Input Generator
+                    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin" style="margin-right:8px;animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> Generando contenido...`;
+
                     const newsItems = selectedNewsForCarousel.map(n => ({
                         id: n.id,
                         title: n.title,
@@ -4074,79 +4076,61 @@ function renderTrendNews() {
                         content: n.content || n.snippet || '',
                         trend_query: n.trend_query || ''
                     }));
-                    
-                    const payload = {
-                        news_items: newsItems,
-                        visual_style: 'Glassmorphism' // Default style, can be customized
-                    };
-                    
-                    console.log('📦 Sending payload:', payload);
-                    showToast('Enviando al generador de inputs...', 'info');
-                    
-                    // Test connectivity first
-                    const isConnected = await testWebhookConnectivity(n8nInputGeneratorWebhook);
-                    if (!isConnected) {
-                        throw new Error('No se pudo conectar al webhook. Verifica que n8n esté ejecutándose y el webhook esté activo.');
-                    }
-                    
-                    const resp = await fetch(n8nInputGeneratorWebhook, {
+
+                    const payload = { news_items: newsItems };
+
+                    showProgressAlert(
+                        'Generating Carousel Content',
+                        `Analyzing ${newsItems.length} news stories...`,
+                        'Running AI strategy analysis...'
+                    );
+
+                    const resp = await fetch(n8nCarouselContentWebhook, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
-                    
-                    if (resp.ok) {
-                        const result = await resp.json();
-                        console.log('🎯 Response from Input Generator:', result); // DEBUG
-                        
-                        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><polyline points="20 6 9 17 4 12"></polyline></svg> ¡Carrusel generado!`;
-                        showToast('Carrusel generado exitosamente. Revisa Content Generation.', 'success');
-                        
-                        // Show carousel preview if available - check both possible formats
-                        if (result.slides && result.slides.length > 0) {
-                            console.log('📊 Showing preview with result.slides:', result.slides);
-                            showCarouselPreview(result);
-                        } else if (result.data && result.data.slides && result.data.slides.length > 0) {
-                            console.log('📊 Showing preview with result.data.slides:', result.data.slides);
-                            showCarouselPreview(result.data);
-                        } else {
-                            console.log('⚠️ No slides found in response. Available keys:', Object.keys(result));
-                            // Show a simple success message without preview
-                            showToast(`Carrusel generado: ${result.slide_count || 'unknown'} slides. Ve a Generate Content para ver el resultado.`, 'info');
-                        }
-                        
-                        // Keep selection - don't clear so user can generate again if needed
-                        // selectedNewsForCarousel = []; // Commented out to keep selection
+
+                    updateProgress(60, 'Processing AI output...');
+
+                    let result;
+                    try {
+                        result = await resp.json();
+                    } catch (parseErr) {
+                        hideProgressAlert();
+                        showToast('Content generation timed out. Try again.', 'error');
+                        btn.disabled = false;
+                        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><rect x="2" y="3" width="6" height="18" rx="1"></rect><rect x="9" y="3" width="6" height="18" rx="1"></rect><rect x="16" y="3" width="6" height="18" rx="1"></rect></svg> Generar Carrusel con 3 noticias`;
+                        return;
+                    }
+
+                    if (result.success && result.data?.slides) {
+                        updateProgress(100, 'Content ready for review!');
                         setTimeout(() => {
+                            hideProgressAlert();
+                            carouselNewsApprovalData = result.data;
+                            renderCarouselNewsPreview(result.data.slides);
+                            document.getElementById('carousel-news-step2').style.display = 'block';
+                            document.getElementById('carousel-news-step2').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            setCarouselNewsStep(2);
+                            showToast('Content generated! Review and approve to generate images.', 'success');
                             btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><rect x="2" y="3" width="6" height="18" rx="1"></rect><rect x="9" y="3" width="6" height="18" rx="1"></rect><rect x="16" y="3" width="6" height="18" rx="1"></rect></svg> Generar Carrusel con 3 noticias`;
-                            btn.disabled = selectedNewsForCarousel.length !== 3; // Keep enabled if 3 selected
-                            renderTrendNews();
-                        }, 2000);
+                            btn.disabled = selectedNewsForCarousel.length !== 3;
+                        }, 400);
+                    } else if (result.error) {
+                        throw new Error(result.error);
                     } else {
-                        throw new Error('Error en respuesta del servidor');
+                        hideProgressAlert();
+                        showToast('Unexpected response from content webhook.', 'warning');
+                        btn.disabled = false;
+                        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><rect x="2" y="3" width="6" height="18" rx="1"></rect><rect x="9" y="3" width="6" height="18" rx="1"></rect><rect x="16" y="3" width="6" height="18" rx="1"></rect></svg> Generar Carrusel con 3 noticias`;
                     }
                 } catch (err) {
-                    console.error('Error sending to input generator:', err);
-                    console.error('Error details:', {
-                        message: err.message,
-                        name: err.name,
-                        stack: err.stack,
-                        webhookUrl: n8nInputGeneratorWebhook
-                    });
-                    
-                    // More detailed error message based on error type
-                    let errorMessage = 'Error al generar carrusel: ';
-                    if (err.message === 'Failed to fetch') {
-                        errorMessage += `No se pudo conectar al servidor n8n. URL: ${n8nInputGeneratorWebhook}`;
-                    } else if (err.message.includes('CORS')) {
-                        errorMessage += 'Error de CORS. El servidor n8n puede estar bloqueando las solicitudes desde el navegador.';
-                    } else {
-                        errorMessage += err.message;
-                    }
-                    
+                    console.error('Error generating carousel content:', err);
+                    hideProgressAlert();
+                    showToast('Error al generar contenido: ' + err.message, 'error');
                     btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><rect x="2" y="3" width="6" height="18" rx="1"></rect><rect x="9" y="3" width="6" height="18" rx="1"></rect><rect x="16" y="3" width="6" height="18" rx="1"></rect></svg> Generar Carrusel con 3 noticias`;
                     btn.disabled = false;
-                    showToast(errorMessage, 'error');
                 }
             });
         }
@@ -4965,6 +4949,279 @@ document.getElementById('download-all-educative')?.addEventListener('click', asy
 });
 
 // ========== END EDUCATIVE MODE ==========
+
+// ========== NEWS CAROUSEL 3-STEP MODE ==========
+
+let carouselNewsApprovalData = null;
+
+function setCarouselNewsStep(step) {
+    const steps = [1, 2, 3];
+    steps.forEach(n => {
+        const el = document.getElementById(`cnews-step-${n}`);
+        if (!el) return;
+        el.classList.remove('active', 'completed');
+        if (n < step) el.classList.add('completed');
+        else if (n === step) el.classList.add('active');
+    });
+    const connectors = document.querySelectorAll('#cnews-steps .edu-step-connector');
+    connectors.forEach((c, i) => {
+        c.classList.toggle('filled', step > i + 1);
+    });
+    [1, 2].forEach(n => {
+        const circle = document.querySelector(`#cnews-step-${n} .edu-step-circle`);
+        if (!circle) return;
+        if (n < step) circle.textContent = '✓';
+        else circle.textContent = n;
+    });
+}
+
+function renderCarouselNewsPreview(slides) {
+    const container = document.getElementById('carousel-news-content-preview');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const LABELS = ['HOOK', 'NEWS 1', 'NEWS 2', 'NEWS 3', 'CTA'];
+    const LABEL_COLORS = ['#207CE5', '#10b981', '#10b981', '#10b981', '#f59e0b'];
+
+    container.style.cssText = 'display:flex; flex-direction:column; gap:16px;';
+
+    const row1 = document.createElement('div');
+    row1.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; gap:12px;';
+
+    const row2 = document.createElement('div');
+    row2.style.cssText = 'display:grid; grid-template-columns:repeat(3,1fr); gap:12px;';
+
+    function buildCard(slide, index) {
+        const num = slide.slide_number || (index + 1);
+        const label = LABELS[index] || `SLIDE ${num}`;
+        const color = LABEL_COLORS[index] || '#718096';
+        const isContent = num >= 2 && num <= 4;
+
+        const card = document.createElement('div');
+        card.style.cssText = `display:flex; flex-direction:column; background:#fff; border-radius:12px; border:2px solid ${color}; overflow:hidden;`;
+        card.innerHTML = `
+            <div style="background:${color}; padding:9px 14px; display:flex; align-items:center; justify-content:space-between;">
+                <span style="color:#fff; font-size:11px; font-weight:800; letter-spacing:1px;">${label}</span>
+                <span style="color:rgba(255,255,255,0.7); font-size:11px; font-weight:600;">${num}/5</span>
+            </div>
+            <div style="padding:12px 14px; display:flex; flex-direction:column; gap:10px; flex:1;">
+                <div>
+                    <label style="font-size:10px; font-weight:700; color:${color}; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:4px;">Headline</label>
+                    <textarea data-slide-idx="${index}" data-field="headline" rows="2"
+                        style="width:100%; padding:7px 9px; border:1px solid #e2e8f0; border-radius:6px; font-size:13px; font-weight:600; color:#2d3748; resize:vertical; box-sizing:border-box; line-height:1.4;">${(slide.headline || '').replace(/</g, '&lt;')}</textarea>
+                </div>
+                ${!isContent ? `
+                <div>
+                    <label style="font-size:10px; font-weight:700; color:${color}; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:4px;">Subtext</label>
+                    <textarea data-slide-idx="${index}" data-field="subtext" rows="2"
+                        style="width:100%; padding:7px 9px; border:1px solid #e2e8f0; border-radius:6px; font-size:12px; color:#4a5568; resize:vertical; box-sizing:border-box; line-height:1.5;">${(slide.subtext || '').replace(/</g, '&lt;')}</textarea>
+                </div>` : ''}
+                ${isContent ? `
+                <div>
+                    <label style="font-size:10px; font-weight:700; color:${color}; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:4px;">Body</label>
+                    <textarea data-slide-idx="${index}" data-field="body_text" rows="7"
+                        style="width:100%; padding:7px 9px; border:1px solid #e2e8f0; border-radius:6px; font-size:12px; color:#4a5568; resize:vertical; box-sizing:border-box; line-height:1.6;">${(slide.body_text || '').replace(/</g, '&lt;')}</textarea>
+                </div>` : ''}
+            </div>
+        `;
+        return card;
+    }
+
+    slides.forEach((slide, index) => {
+        const num = slide.slide_number || (index + 1);
+        const card = buildCard(slide, index);
+        if (num === 1 || num === 5) row1.appendChild(card);
+        else row2.appendChild(card);
+    });
+
+    container.appendChild(row1);
+    container.appendChild(row2);
+
+    container.addEventListener('input', (ev) => {
+        const el = ev.target;
+        const idx = el.dataset.slideIdx;
+        const field = el.dataset.field;
+        if (idx !== undefined && field && carouselNewsApprovalData?.slides) {
+            carouselNewsApprovalData.slides[parseInt(idx)][field] = el.value;
+        }
+    });
+}
+
+// ---- STEP 2: Approve & Generate Images ----
+let _carouselNewsGenerating = false;
+
+document.getElementById('carousel-news-approve-btn')?.addEventListener('click', async () => {
+    if (_carouselNewsGenerating) return;
+    if (!carouselNewsApprovalData?.slides) {
+        showToast('No content to approve.', 'error');
+        return;
+    }
+    if (!n8nCarouselSlideImageWebhook) {
+        showToast('carouselSlideImageWebhook not configured in config.js', 'error');
+        return;
+    }
+
+    _carouselNewsGenerating = true;
+    const btn = document.getElementById('carousel-news-approve-btn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Generating images...';
+
+    const slides = carouselNewsApprovalData.slides;
+    const topic = carouselNewsApprovalData.topic || '';
+
+    const progressBox = document.getElementById('carousel-news-image-gen-progress');
+    const statusEl = document.getElementById('carousel-news-gen-status');
+    const progressList = document.getElementById('carousel-news-slide-progress-list');
+    progressBox.style.display = 'block';
+    progressList.innerHTML = slides.map((s, i) =>
+        `<div id="cnews-slide-prog-${i}" style="text-align:center; padding:8px 4px; background:#fff; border-radius:6px; border:1px solid #e2e8f0;">
+            <div style="font-size:11px; font-weight:700; color:#718096; margin-bottom:4px;">SLIDE ${s.slide_number || i + 1}</div>
+            <div id="cnews-slide-icon-${i}" style="font-size:18px;">⏳</div>
+         </div>`
+    ).join('');
+
+    const generatedSlides = [];
+
+    try {
+        for (let i = 0; i < slides.length; i++) {
+            const slide = slides[i];
+            const slideNum = slide.slide_number || (i + 1);
+            statusEl.textContent = `Generating image for slide ${slideNum} of ${slides.length}...`;
+            document.getElementById(`cnews-slide-icon-${i}`).innerHTML =
+                '<div class="spinner" style="width:16px;height:16px;border:2px solid #e2e8f0;border-top-color:#207CE5;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto;"></div>';
+
+            const payload = {
+                slide_id: slide.slide_id || slide.id,
+                carousel_id: slide.carousel_id || carouselNewsApprovalData.carousel_id,
+                slide_number: slideNum,
+                headline: slide.headline || '',
+                subtext: slide.subtext || '',
+                body_text: slide.body_text || '',
+                image_prompt: slide.image_prompt || '',
+                visual_style: slide.visual_style || '',
+                topic: topic
+            };
+
+            try {
+                const res = await fetch(n8nCarouselSlideImageWebhook, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                const imageUrl = result.data?.url || result.url || result.image_url || '';
+                generatedSlides.push({ ...slide, image_url: imageUrl });
+                document.getElementById(`cnews-slide-icon-${i}`).textContent = '✅';
+            } catch (slideErr) {
+                console.error(`Slide ${slideNum} image gen error:`, slideErr);
+                generatedSlides.push({ ...slide, image_url: '' });
+                document.getElementById(`cnews-slide-icon-${i}`).textContent = '❌';
+            }
+        }
+
+        statusEl.textContent = 'All images generated!';
+        progressBox.style.display = 'none';
+
+        renderCarouselNewsResults(generatedSlides);
+        document.getElementById('carousel-news-step2').style.display = 'none';
+        document.getElementById('carousel-news-results').style.display = 'block';
+        document.getElementById('carousel-news-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setCarouselNewsStep(3);
+        showToast('News carousel generated successfully!', 'success');
+
+    } catch (error) {
+        console.error('Carousel news image generation error:', error);
+        progressBox.style.display = 'none';
+        showToast(`Error generating images: ${error.message}`, 'error');
+    } finally {
+        _carouselNewsGenerating = false;
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+});
+
+function renderCarouselNewsResults(slides) {
+    const previewEl = document.getElementById('carousel-news-preview');
+    if (!previewEl) return;
+    previewEl.innerHTML = '';
+    const totalSlides = slides.length;
+
+    slides.forEach((slide, index) => {
+        const isFirst = index === 0;
+        const isLast = index === totalSlides - 1;
+        const slideEl = document.createElement('div');
+
+        let slideClass = 'carousel-slide';
+        let labelBadge = '';
+        if (isFirst) {
+            slideClass += ' carousel-slide-cover';
+            labelBadge = '<span class="slide-label-badge">HOOK</span>';
+        } else if (isLast && totalSlides > 1) {
+            slideClass += ' carousel-slide-cta';
+            labelBadge = '<span class="slide-label-badge slide-label-cta">CTA</span>';
+        } else {
+            labelBadge = `<span class="slide-label-badge slide-label-edu">NEWS ${index}</span>`;
+        }
+
+        const imgSrc = slide.image_url || '';
+        slideEl.className = slideClass;
+        slideEl.innerHTML = `
+            <div class="slide-image-container">
+                ${imgSrc ? `<img src="${imgSrc}" alt="Slide ${index + 1}" class="slide-image">` : `<div class="slide-image" style="background:#e2e8f0;display:flex;align-items:center;justify-content:center;color:#718096;font-size:13px;">No image</div>`}
+                <span class="slide-badge">${index + 1}</span>
+                ${labelBadge}
+            </div>
+            <div class="slide-info">
+                <h4>${slide.headline || ''}</h4>
+                <p>${slide.body_text || slide.subtext || ''}</p>
+                ${imgSrc ? `<a href="${imgSrc}" download="news-carousel-slide-${index + 1}.png" class="btn btn-small btn-secondary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download
+                </a>` : ''}
+            </div>
+        `;
+        previewEl.appendChild(slideEl);
+    });
+}
+
+// Start Over from step 2
+document.getElementById('carousel-news-reset-btn')?.addEventListener('click', () => {
+    carouselNewsApprovalData = null;
+    document.getElementById('carousel-news-step2').style.display = 'none';
+    document.getElementById('carousel-news-image-gen-progress').style.display = 'none';
+    setCarouselNewsStep(1);
+    document.getElementById('trends-news-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+// Generate Again from step 3
+document.getElementById('regenerate-carousel-news')?.addEventListener('click', () => {
+    carouselNewsApprovalData = null;
+    document.getElementById('carousel-news-results').style.display = 'none';
+    document.getElementById('carousel-news-step2').style.display = 'none';
+    setCarouselNewsStep(1);
+    document.getElementById('trends-news-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+// Download all news carousel images
+document.getElementById('download-all-carousel-news')?.addEventListener('click', async () => {
+    const slides = document.querySelectorAll('#carousel-news-preview .carousel-slide');
+    if (!slides.length) return;
+    for (let i = 0; i < slides.length; i++) {
+        const link = slides[i].querySelector('a[download]');
+        if (link) {
+            link.click();
+            await new Promise(r => setTimeout(r, 500));
+        }
+    }
+    showToast(`Downloaded ${slides.length} slides`, 'success');
+});
+
+// ========== END NEWS CAROUSEL 3-STEP MODE ==========
 
 // ========== VOICE SWAP MODE ==========
 

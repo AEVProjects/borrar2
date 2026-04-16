@@ -29,6 +29,8 @@ window.APP_CONFIG = {
         videoApprovedWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-video-approved-gen', // Del workflow "Video Generate Approved"
         carouselWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-carousel-v12', // Del workflow "MSI Carousel v12" - ACTUALIZADO
         inputGeneratorWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-carousel-v12', // Flujo unificado v12 - ACTUALIZADO
+        carouselContentWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-carousel-content-gen', // Del workflow "MSI Carousel Content Gen" (solo contenido, sin imágenes)
+        carouselSlideImageWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen', // Del workflow "MSI Slide Image Gen v2" (genera imagen por slide del carrusel de noticias)
         dailyWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-auto-daily', // Del workflow "MSI Auto Daily"
         trendsWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-trends-content', // Del workflow "MSI Trends Content Flow"
         voiceVideoWebhook: 'https://n8nmsi.app.n8n.cloud/webhook/msi-video-extend', // Del workflow "Voice Video Extend" - Image-to-Video + Video Extension
