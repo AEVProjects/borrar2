@@ -109,8 +109,8 @@ const n8nCarouselWebhook = CONFIG.n8nCarouselWebhook || CONFIG.n8n?.carouselWebh
 const n8nEducativeWebhook = CONFIG.n8nEducativeWebhook || CONFIG.n8n?.educativeWebhook;
 const n8nEducativeContentWebhook = CONFIG.n8nEducativeContentWebhook || CONFIG.n8n?.educativeContentWebhook;
 const n8nEducativeSlideImageWebhook = CONFIG.n8nEducativeSlideImageWebhook || CONFIG.n8n?.educativeSlideImageWebhook;
-const n8nCarouselContentWebhook = CONFIG.n8n?.carouselContentWebhook;
-const n8nCarouselSlideImageWebhook = CONFIG.n8n?.carouselSlideImageWebhook;
+const n8nCarouselContentWebhook = CONFIG.n8n?.carouselContentWebhook || 'https://n8nmsi.app.n8n.cloud/webhook/msi-carousel-content-gen';
+const n8nCarouselSlideImageWebhook = CONFIG.n8n?.carouselSlideImageWebhook || 'https://n8nmsi.app.n8n.cloud/webhook/msi-slide-gen';
 const n8nVoiceVideoWebhook = CONFIG.n8nVoiceVideoWebhook || CONFIG.n8n?.voiceVideoWebhook;
 const n8nVoiceSwapWebhook = CONFIG.n8nVoiceSwapWebhook || CONFIG.n8n?.voiceSwapWebhook;
 
