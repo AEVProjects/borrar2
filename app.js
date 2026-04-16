@@ -6586,17 +6586,504 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
 
 // ========== LEADS MODE ==========
 (function() {
-    let leadsData = [];
-    let filteredLeads = [];
-    let selectedLeadIds = new Set();
-    let currentPage = 1;
-    const PAGE_SIZE = 25;
-    let leadsInitialized = false;
-    let industries = [];
-    let seniorities = [];
-    let currentLeadsTable = 'apollo_leads'; // 'apollo_leads', 'apollo_leads_test', or 'apollo_leads_leds'
-    let currentBatchId = null; // null = all, number = specific batch
-    let batches = [];
+
+    // ===== BUSINESS LINES STATE =====
+    let businessLines = [];
+    let msiGeneralContext = '';
+    let selectedBL = null;
+    let leadBatches = [];
+    let selectedBatch = null;
+    let batchLeads = [];
+    let detailPage = 1;
+    const DETAIL_PAGE_SIZE = 25;
+    let detailFiltered = [];
+    let contextEditorTarget = null;
+    let pendingCSVRows = [];
+    let pendingCSVFile = null;
+
+    // ===== INIT =====
+    async function initLeadsMode() {
+        setupTopTabSwitching();
+        setupUploadModal();
+        setupContextEditorModal();
+        setupAIEmailModal();
+        setupBatchDetailListeners();
+        if (!supabaseClient) { showToast('Supabase no conectado', 'warning'); return; }
+        await Promise.all([loadBusinessLines(), loadMsiContext()]);
+        renderBusinessLinesSidebar();
+    }
+
+    function setupTopTabSwitching() {
+        document.querySelectorAll('.leads-top-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.leads-top-tab').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const panel = btn.dataset.panel;
+                document.querySelectorAll('.leads-top-panel').forEach(p => p.style.display = 'none');
+                const el = document.getElementById('leads-top-panel-' + panel);
+                if (el) el.style.display = '';
+                if (panel === 'linkedin' && !liLeadsInitialized) initLinkedInLeads();
+            });
+        });
+    }
+
+    // ===== BUSINESS LINES =====
+    async function loadBusinessLines() {
+        const { data, error } = await supabaseClient.from('business_lines').select('*').order('id');
+        if (!error) businessLines = data || [];
+    }
+
+    async function loadMsiContext() {
+        const { data, error } = await supabaseClient.from('msi_contexts').select('*').limit(1).single();
+        if (!error && data) msiGeneralContext = data.context_text || '';
+    }
+
+    function renderBusinessLinesSidebar() {
+        const list = document.getElementById('bl-list');
+        if (!list) return;
+        list.innerHTML = businessLines.map(bl => `
+            <div class="bl-card${selectedBL?.id === bl.id ? ' active' : ''}"
+                 data-bl-id="${bl.id}"
+                 style="--bl-color:${bl.color || '#6366f1'};">
+                <div class="bl-card-icon">${bl.icon || '💼'}</div>
+                <div class="bl-card-body" onclick="selectBusinessLine(${bl.id})" style="cursor:pointer;flex:1;">
+                    <div class="bl-card-name">${bl.name}</div>
+                    <div class="bl-card-desc">${bl.description || ''}</div>
+                </div>
+                <button class="bl-edit-btn" onclick="openContextEditor(${bl.id})" title="Editar contexto">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    window.selectBusinessLine = async function(id) {
+        selectedBL = businessLines.find(bl => bl.id === id);
+        if (!selectedBL) return;
+        renderBusinessLinesSidebar();
+        document.getElementById('leads-main-empty').style.display = 'none';
+        document.getElementById('leads-main-content').style.display = '';
+        document.getElementById('leads-main-icon').textContent = selectedBL.icon || '💼';
+        document.getElementById('leads-main-title').textContent = selectedBL.name;
+        document.getElementById('leads-main-desc').textContent = selectedBL.description || '';
+        const header = document.getElementById('leads-main-header');
+        if (header) header.style.setProperty('--bl-color', selectedBL.color || '#6366f1');
+        document.getElementById('leads-batch-detail').style.display = 'none';
+        document.getElementById('leads-batches-grid').style.display = '';
+        document.getElementById('leads-batches-label').style.display = '';
+        document.getElementById('leads-batches-empty').style.display = 'none';
+        selectedBatch = null;
+        await loadBatchesForLine(id);
+    };
+
+    async function loadBatchesForLine(blId) {
+        const { data, error } = await supabaseClient
+            .from('lead_batches').select('*')
+            .eq('business_line_id', blId)
+            .order('created_at', { ascending: false });
+        if (!error) { leadBatches = data || []; renderBatches(); }
+    }
+
+    function renderBatches() {
+        const grid = document.getElementById('leads-batches-grid');
+        const empty = document.getElementById('leads-batches-empty');
+        const total = document.getElementById('leads-batches-total');
+        if (!grid) return;
+        if (leadBatches.length === 0) {
+            empty.style.display = 'flex'; grid.innerHTML = ''; total.textContent = ''; return;
+        }
+        empty.style.display = 'none';
+        total.textContent = `${leadBatches.length} conjunto${leadBatches.length !== 1 ? 's' : ''}`;
+        grid.innerHTML = leadBatches.map(batch => {
+            const date = new Date(batch.created_at).toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' });
+            const genPct = batch.lead_count > 0 ? Math.round((batch.messages_generated / batch.lead_count) * 100) : 0;
+            const statusLabel = { uploaded: 'Subido', generating: 'Generando', ready: 'Listo', exported: 'Exportado', archived: 'Archivado' }[batch.status] || batch.status;
+            const statusClass = { uploaded: 'status-uploaded', generating: 'status-generating', ready: 'status-ready', exported: 'status-exported', archived: 'status-archived' }[batch.status] || '';
+            return `<div class="batch-card">
+                <div class="batch-card-header">
+                    <div class="batch-card-name">${batch.name}</div>
+                    <span class="batch-status-badge ${statusClass}">${statusLabel}</span>
+                </div>
+                <div class="batch-card-meta">
+                    <span>📅 ${date}</span>
+                    ${batch.filename ? `<span title="${batch.filename}">📄 ${batch.filename.length > 22 ? batch.filename.substring(0, 22) + '...' : batch.filename}</span>` : ''}
+                </div>
+                <div class="batch-card-stats">
+                    <div class="batch-stat"><div class="batch-stat-value">${batch.lead_count}</div><div class="batch-stat-label">Leads</div></div>
+                    <div class="batch-stat"><div class="batch-stat-value">${batch.messages_generated}</div><div class="batch-stat-label">Mensajes</div></div>
+                    <div class="batch-stat"><div class="batch-stat-value">${genPct}%</div><div class="batch-stat-label">Generado</div></div>
+                </div>
+                ${batch.lead_count > 0 ? `<div class="batch-progress-bar"><div class="batch-progress-fill" style="width:${genPct}%; background:${selectedBL?.color || '#6366f1'};"></div></div>` : ''}
+                <div class="batch-card-actions">
+                    <button class="btn btn-secondary btn-small" onclick="selectBatch(${batch.id})" title="Ver leads">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Ver leads
+                    </button>
+                    <button class="btn btn-primary btn-small" onclick="generateMessagesForBatch(${batch.id})" title="Generar mensajes AI">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Generar
+                    </button>
+                    <button class="btn btn-secondary btn-small" onclick="downloadBatchCSV(${batch.id})" title="Descargar CSV">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    </button>
+                    <button class="btn btn-secondary btn-small danger-btn" onclick="deleteBatch(${batch.id})" title="Eliminar">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // ===== BATCH DETAIL =====
+    function setupBatchDetailListeners() {
+        document.getElementById('leads-back-to-batches')?.addEventListener('click', () => {
+            document.getElementById('leads-batch-detail').style.display = 'none';
+            document.getElementById('leads-batches-grid').style.display = '';
+            document.getElementById('leads-batches-label').style.display = '';
+            document.getElementById('leads-batches-empty').style.display = leadBatches.length === 0 ? 'flex' : 'none';
+            selectedBatch = null;
+        });
+        document.getElementById('leads-generate-all-btn')?.addEventListener('click', () => { if (selectedBatch) generateMessagesForBatch(selectedBatch.id); });
+        document.getElementById('leads-download-csv-btn')?.addEventListener('click', () => { if (selectedBatch) downloadBatchCSV(selectedBatch.id); });
+        document.getElementById('leads-detail-prev')?.addEventListener('click', () => { if (detailPage > 1) { detailPage--; renderLeadsTable(); } });
+        document.getElementById('leads-detail-next')?.addEventListener('click', () => { const tp = Math.ceil(detailFiltered.length / DETAIL_PAGE_SIZE); if (detailPage < tp) { detailPage++; renderLeadsTable(); } });
+    }
+
+    window.selectBatch = async function(batchId) {
+        selectedBatch = leadBatches.find(b => b.id === batchId);
+        if (!selectedBatch) return;
+        document.getElementById('leads-batches-grid').style.display = 'none';
+        document.getElementById('leads-batches-label').style.display = 'none';
+        document.getElementById('leads-batches-empty').style.display = 'none';
+        document.getElementById('leads-batch-detail').style.display = '';
+        document.getElementById('leads-detail-batch-name').textContent = selectedBatch.name;
+        document.getElementById('leads-gen-progress').style.display = 'none';
+        await loadLeadsForBatch(batchId);
+    };
+
+    async function loadLeadsForBatch(batchId) {
+        document.getElementById('leads-detail-tbody').innerHTML = '<tr><td colspan="7" class="leads-loading">Cargando leads...</td></tr>';
+        const { data, error } = await supabaseClient.from('leads').select('*').eq('batch_id', batchId).order('id');
+        if (error) { document.getElementById('leads-detail-tbody').innerHTML = `<tr><td colspan="7" class="leads-loading">Error: ${error.message}</td></tr>`; return; }
+        batchLeads = data || [];
+        detailFiltered = [...batchLeads];
+        detailPage = 1;
+        renderLeadsTable();
+        updateDetailStats();
+    }
+
+    function updateDetailStats() {
+        const total = batchLeads.length;
+        const generated = batchLeads.filter(l => l.ai_message_status === 'generated').length;
+        const pending = batchLeads.filter(l => l.ai_message_status === 'pending').length;
+        const generating = batchLeads.filter(l => l.ai_message_status === 'generating').length;
+        document.getElementById('leads-detail-stats').textContent =
+            `${total} leads · ${generated} generados · ${generating > 0 ? generating + ' generando · ' : ''}${pending} pendientes`;
+    }
+
+    function renderLeadsTable() {
+        const tbody = document.getElementById('leads-detail-tbody');
+        const start = (detailPage - 1) * DETAIL_PAGE_SIZE;
+        const page = detailFiltered.slice(start, start + DETAIL_PAGE_SIZE);
+        const totalPages = Math.max(1, Math.ceil(detailFiltered.length / DETAIL_PAGE_SIZE));
+        if (page.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="leads-loading">No hay leads en este conjunto.</td></tr>';
+        } else {
+            const statusBadgeMap = {
+                pending: '<span class="ai-status-badge pending">Pendiente</span>',
+                generating: '<span class="ai-status-badge generating"><span class="spinner-xs"></span> Generando</span>',
+                generated: '<span class="ai-status-badge generated">✓ Generado</span>',
+                error: '<span class="ai-status-badge error">✗ Error</span>'
+            };
+            tbody.innerHTML = page.map(l => {
+                const name = [l.first_name, l.last_name].filter(Boolean).join(' ') || '—';
+                const statusBadge = statusBadgeMap[l.ai_message_status || 'pending'] || '';
+                const previewBtn = l.ai_message_status === 'generated'
+                    ? `<button class="btn btn-secondary btn-small" onclick="previewLeadEmails(${l.id})">Ver emails</button>` : '';
+                return `<tr>
+                    <td><strong>${name}</strong>${l.person_linkedin_url ? ` <a href="${l.person_linkedin_url}" target="_blank" class="leads-linkedin-icon" title="LinkedIn">🔗</a>` : ''}</td>
+                    <td class="leads-title-cell" title="${l.title || ''}">${truncate(l.title || '', 35)}</td>
+                    <td><strong>${l.company_name || '—'}</strong></td>
+                    <td>${l.email ? `<a href="mailto:${l.email}">${l.email}</a>` : '—'}</td>
+                    <td>${l.seniority || '—'}</td>
+                    <td>${statusBadge}</td>
+                    <td>${previewBtn}</td>
+                </tr>`;
+            }).join('');
+        }
+        document.getElementById('leads-detail-page-info').textContent = `Página ${detailPage} de ${totalPages} (${detailFiltered.length} leads)`;
+        document.getElementById('leads-detail-prev').disabled = detailPage <= 1;
+        document.getElementById('leads-detail-next').disabled = detailPage >= totalPages;
+    }
+
+    // ===== GENERATE MESSAGES =====
+    window.generateMessagesForBatch = async function(batchId) {
+        if (!selectedBL) { showToast('Selecciona una línea de negocio primero', 'warning'); return; }
+        const webhookUrl = CONFIG?.n8n?.aiMessagesWebhook;
+        if (!webhookUrl) { showToast('Webhook de mensajes AI no configurado', 'error'); return; }
+
+        const { data: leads, error } = await supabaseClient
+            .from('leads').select('*').eq('batch_id', batchId).neq('ai_message_status', 'generated');
+        if (error || !leads?.length) { showToast(error ? error.message : 'No hay leads pendientes', 'warning'); return; }
+
+        await supabaseClient.from('leads').update({ ai_message_status: 'generating' }).eq('batch_id', batchId).neq('ai_message_status', 'generated');
+        await supabaseClient.from('lead_batches').update({ status: 'generating' }).eq('id', batchId);
+
+        const prog = document.getElementById('leads-gen-progress');
+        const fill = document.getElementById('leads-gen-progress-fill');
+        const label = document.getElementById('leads-gen-progress-label');
+        if (prog) { prog.style.display = ''; fill.style.width = '5%'; label.textContent = `Enviando ${leads.length} leads al generador...`; }
+
+        if (selectedBatch?.id === batchId) {
+            batchLeads = batchLeads.map(l => leads.find(ld => ld.id === l.id) ? { ...l, ai_message_status: 'generating' } : l);
+            renderLeadsTable(); updateDetailStats();
+        }
+
+        try {
+            if (fill) { fill.style.width = '30%'; label.textContent = 'Procesando con Gemini AI...'; }
+            const resp = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lead_ids: leads.map(l => l.id),
+                    source_table: 'leads',
+                    batch_id: batchId,
+                    business_line: { id: selectedBL.id, name: selectedBL.name, slug: selectedBL.slug, context: selectedBL.context_text || '' },
+                    msi_general_context: msiGeneralContext,
+                    leads: leads.map(l => ({ id: l.id, first_name: l.first_name, last_name: l.last_name, email: l.email, title: l.title, company_name: l.company_name, industry: l.industry, keywords: l.keywords, technologies: l.technologies, city: l.city, state: l.state, country: l.country, seniority: l.seniority, num_employees: l.num_employees, annual_revenue: l.annual_revenue, website: l.website }))
+                })
+            });
+            if (!resp.ok) throw new Error(`Webhook devolvió ${resp.status}`);
+            const result = await resp.json().catch(() => ({}));
+            if (fill) { fill.style.width = '100%'; label.textContent = `✓ ${result.generated || leads.length} mensajes generados`; }
+            setTimeout(() => { if (prog) prog.style.display = 'none'; }, 3000);
+            showToast(`Generación completada para ${result.generated || leads.length} leads`, 'success');
+            if (selectedBatch?.id === batchId) await loadLeadsForBatch(batchId);
+            if (selectedBL) await loadBatchesForLine(selectedBL.id);
+        } catch (err) {
+            console.error('Error generando mensajes:', err);
+            showToast('Error: ' + err.message, 'error');
+            if (prog) prog.style.display = 'none';
+            await supabaseClient.from('leads').update({ ai_message_status: 'pending' }).eq('batch_id', batchId).eq('ai_message_status', 'generating');
+        }
+    };
+
+    // ===== DOWNLOAD CSV =====
+    window.downloadBatchCSV = async function(batchId) {
+        const batch = leadBatches.find(b => b.id === batchId);
+        const { data: leads, error } = await supabaseClient.from('leads').select('*').eq('batch_id', batchId).eq('ai_message_status', 'generated');
+        if (error || !leads?.length) { showToast('No hay mensajes generados para descargar', 'warning'); return; }
+        const headers = ['First Name','Last Name','Email','Title','Company','Industry','City','State','{{contact.Personalized Subject1}}','{{contact.Personalized Message}}','{{contact.Personalized Followup}}','{{contact.Personalized Email3}}'];
+        const rows = leads.map(l => [l.first_name||'',l.last_name||'',l.email||'',l.title||'',l.company_name||'',l.industry||'',l.city||'',l.state||'',l.personalized_subject1||'',l.personalized_message||'',l.personalized_followup||'',l.personalized_email3||''].map(v => `"${String(v).replace(/"/g,'""')}"`));
+        const csv = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `${(batch?.name||'batch').replace(/[^a-z0-9]/gi,'-').toLowerCase()}-${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        showToast(`Descargados ${leads.length} leads con mensajes personalizados`, 'success');
+    };
+
+    // ===== AI EMAIL PREVIEW =====
+    window.previewLeadEmails = function(leadId) {
+        const lead = batchLeads.find(l => l.id === leadId);
+        if (!lead) return;
+        const name = [lead.first_name, lead.last_name].filter(Boolean).join(' ');
+        const body = document.getElementById('leads-ai-email-body');
+        body.innerHTML = `<div class="ai-email-lead-info"><strong>${name}</strong> · ${lead.title || ''} · ${lead.company_name || ''}</div>` +
+            [{ label: 'Email 1 — Introducción', subject: lead.personalized_subject1, body: lead.personalized_message },
+             { label: 'Email 2 — Follow-up (+3 días)', subject: lead.personalized_subject2, body: lead.personalized_followup },
+             { label: 'Email 3 — Breakup (+6 días)', subject: lead.personalized_subject3, body: lead.personalized_email3 }]
+            .filter(e => e.body)
+            .map(e => `<div class="ai-email-block"><div class="ai-email-label">${e.label}</div>${e.subject ? `<div class="ai-email-subject"><strong>Asunto:</strong> ${e.subject}</div>` : ''}<div class="ai-email-body">${e.body.replace(/\n/g,'<br>')}</div></div>`)
+            .join('');
+        document.getElementById('leads-ai-email-modal').style.display = 'flex';
+    };
+
+    // ===== DELETE BATCH =====
+    window.deleteBatch = async function(batchId) {
+        const batch = leadBatches.find(b => b.id === batchId);
+        if (!confirm(`¿Eliminar el conjunto "${batch?.name}"?\nSe eliminarán todos sus leads. Esta acción no se puede deshacer.`)) return;
+        const { error } = await supabaseClient.from('lead_batches').delete().eq('id', batchId);
+        if (error) { showToast('Error al eliminar: ' + error.message, 'error'); return; }
+        showToast('Conjunto eliminado', 'success');
+        if (selectedBatch?.id === batchId) {
+            selectedBatch = null;
+            document.getElementById('leads-batch-detail').style.display = 'none';
+            document.getElementById('leads-batches-grid').style.display = '';
+            document.getElementById('leads-batches-label').style.display = '';
+        }
+        if (selectedBL) await loadBatchesForLine(selectedBL.id);
+    };
+
+    // ===== UPLOAD CSV MODAL =====
+    function setupUploadModal() {
+        const overlay = document.getElementById('upload-csv-modal');
+        document.getElementById('leads-upload-btn')?.addEventListener('click', openUploadModal);
+        document.getElementById('upload-csv-close')?.addEventListener('click', closeUploadModal);
+        document.getElementById('upload-csv-cancel')?.addEventListener('click', closeUploadModal);
+        overlay?.addEventListener('click', (e) => { if (e.target === overlay) closeUploadModal(); });
+        document.getElementById('csv-file-input')?.addEventListener('change', (e) => handleFileSelect(e.target.files[0]));
+        const dz = document.getElementById('csv-dropzone');
+        dz?.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('dragover'); });
+        dz?.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+        dz?.addEventListener('drop', (e) => { e.preventDefault(); dz.classList.remove('dragover'); if (e.dataTransfer.files[0]) handleFileSelect(e.dataTransfer.files[0]); });
+        document.getElementById('upload-csv-submit')?.addEventListener('click', handleCSVUpload);
+    }
+
+    function openUploadModal() {
+        if (!selectedBL) { showToast('Selecciona una línea de negocio primero', 'warning'); return; }
+        const sel = document.getElementById('upload-bl-select');
+        sel.innerHTML = businessLines.map(bl => `<option value="${bl.id}"${bl.id === selectedBL.id ? ' selected' : ''}>${bl.icon || ''} ${bl.name}</option>`).join('');
+        document.getElementById('upload-batch-name').value = '';
+        document.getElementById('csv-file-name').textContent = '';
+        document.getElementById('upload-csv-preview').style.display = 'none';
+        document.getElementById('upload-csv-progress').style.display = 'none';
+        document.getElementById('upload-csv-submit').disabled = true;
+        pendingCSVRows = []; pendingCSVFile = null;
+        const fi = document.getElementById('csv-file-input'); if (fi) fi.value = '';
+        document.getElementById('upload-csv-modal').style.display = 'flex';
+    }
+    function closeUploadModal() { document.getElementById('upload-csv-modal').style.display = 'none'; }
+
+    function handleFileSelect(file) {
+        if (!file) return;
+        pendingCSVFile = file;
+        document.getElementById('csv-file-name').textContent = file.name;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            pendingCSVRows = parseCSV(e.target.result);
+            const preview = document.getElementById('upload-csv-preview');
+            const rowCount = document.getElementById('upload-csv-row-count');
+            preview.style.display = '';
+            if (pendingCSVRows.length > 0) {
+                rowCount.textContent = `✓ ${pendingCSVRows.length} leads encontrados`;
+                document.getElementById('upload-csv-submit').disabled = false;
+            } else {
+                rowCount.textContent = '⚠️ No se encontraron filas válidas en el CSV';
+                document.getElementById('upload-csv-submit').disabled = true;
+            }
+        };
+        reader.readAsText(file, 'UTF-8');
+    }
+
+    function parseCSV(text) {
+        if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+        const lines = []; let line = []; let field = ''; let inQ = false; let i = 0;
+        while (i < text.length) {
+            const ch = text[i];
+            if (inQ) { if (ch === '"') { if (text[i+1] === '"') { field += '"'; i += 2; continue; } inQ = false; } else field += ch; }
+            else {
+                if (ch === '"') inQ = true;
+                else if (ch === ',') { line.push(field); field = ''; }
+                else if (ch === '\n' || (ch === '\r' && text[i+1] === '\n')) { line.push(field); field = ''; lines.push(line); line = []; if (ch === '\r') i++; }
+                else if (ch === '\r') { line.push(field); field = ''; lines.push(line); line = []; }
+                else field += ch;
+            } i++;
+        }
+        if (field || line.length > 0) { line.push(field); lines.push(line); }
+        if (lines.length < 2) return [];
+        const headers = lines[0].map(h => h.trim().toLowerCase());
+        const colMap = { 'first name':'first_name','last name':'last_name','title':'title','company':'company_name','email':'email','seniority':'seniority','departments':'departments','# employees':'num_employees','# of employees':'num_employees','industry':'industry','keywords':'keywords','person linkedin url':'person_linkedin_url','website':'website','company linkedin url':'company_linkedin_url','city':'city','state':'state','country':'country','company city':'company_city','company state':'company_state','company country':'company_country','technologies':'technologies','annual revenue':'annual_revenue','total funding':'total_funding','work direct phone':'phone' };
+        return lines.slice(1).map(row => {
+            if (row.every(c => !c?.trim())) return null;
+            const obj = {};
+            headers.forEach((h, idx) => { const col = colMap[h]; if (col && row[idx] !== undefined) obj[col] = row[idx].trim(); });
+            return (obj.email || obj.first_name) ? obj : null;
+        }).filter(Boolean);
+    }
+
+    async function handleCSVUpload() {
+        const batchName = document.getElementById('upload-batch-name').value.trim();
+        const blId = parseInt(document.getElementById('upload-bl-select').value);
+        if (!batchName) { showToast('Escribe un nombre para el conjunto', 'warning'); return; }
+        if (!pendingCSVRows?.length) { showToast('No hay datos en el CSV', 'warning'); return; }
+        const submitBtn = document.getElementById('upload-csv-submit');
+        const prog = document.getElementById('upload-csv-progress');
+        const fill = document.getElementById('upload-progress-fill');
+        const label = document.getElementById('upload-progress-label');
+        submitBtn.disabled = true; prog.style.display = ''; fill.style.width = '5%'; label.textContent = 'Creando conjunto...';
+        try {
+            const { data: batch, error: bErr } = await supabaseClient.from('lead_batches').insert({ name: batchName, business_line_id: blId, filename: pendingCSVFile?.name || null, lead_count: pendingCSVRows.length }).select().single();
+            if (bErr) throw bErr;
+            fill.style.width = '15%'; label.textContent = `Subiendo ${pendingCSVRows.length} leads...`;
+            const CHUNK = 100; let uploaded = 0;
+            for (let i = 0; i < pendingCSVRows.length; i += CHUNK) {
+                const chunk = pendingCSVRows.slice(i, i + CHUNK).map(row => ({ ...row, batch_id: batch.id, business_line_id: blId }));
+                const { error: lErr } = await supabaseClient.from('leads').insert(chunk);
+                if (lErr) throw lErr;
+                uploaded += chunk.length;
+                fill.style.width = (15 + Math.round((uploaded / pendingCSVRows.length) * 80)) + '%';
+                label.textContent = `Subiendo... ${uploaded}/${pendingCSVRows.length} leads`;
+            }
+            fill.style.width = '100%'; label.textContent = `✓ ${pendingCSVRows.length} leads subidos`;
+            setTimeout(() => { closeUploadModal(); showToast(`Conjunto "${batchName}" creado con ${pendingCSVRows.length} leads`, 'success'); }, 800);
+            if (selectedBL?.id === blId) await loadBatchesForLine(blId);
+            else { selectedBL = businessLines.find(bl => bl.id === blId); renderBusinessLinesSidebar(); await loadBatchesForLine(blId); }
+        } catch (err) {
+            console.error('Error subiendo CSV:', err);
+            showToast('Error: ' + err.message, 'error');
+            prog.style.display = 'none'; submitBtn.disabled = false;
+        }
+    }
+
+    // ===== CONTEXT EDITOR =====
+    function setupContextEditorModal() {
+        const overlay = document.getElementById('context-editor-modal');
+        document.getElementById('leads-edit-context-btn')?.addEventListener('click', () => { if (selectedBL) openContextEditor(selectedBL.id); });
+        document.getElementById('context-editor-close')?.addEventListener('click', closeContextEditor);
+        document.getElementById('context-editor-cancel')?.addEventListener('click', closeContextEditor);
+        document.getElementById('context-editor-save')?.addEventListener('click', saveContext);
+        overlay?.addEventListener('click', (e) => { if (e.target === overlay) closeContextEditor(); });
+    }
+
+    window.openContextEditor = function(target) {
+        contextEditorTarget = target;
+        const titleEl = document.getElementById('context-editor-title');
+        const nodes = titleEl.childNodes;
+        const lastNode = nodes[nodes.length - 1];
+        if (target === 'msi') {
+            if (lastNode.nodeType === 3) lastNode.textContent = ' MSI Technologies — General Context';
+            document.getElementById('context-editor-textarea').value = msiGeneralContext;
+        } else {
+            const bl = businessLines.find(b => b.id === target);
+            if (!bl) return;
+            if (lastNode.nodeType === 3) lastNode.textContent = ` ${bl.name}`;
+            document.getElementById('context-editor-textarea').value = bl.context_text || '';
+        }
+        document.getElementById('context-editor-modal').style.display = 'flex';
+    };
+    function closeContextEditor() { document.getElementById('context-editor-modal').style.display = 'none'; contextEditorTarget = null; }
+
+    async function saveContext() {
+        const text = document.getElementById('context-editor-textarea').value;
+        const btn = document.getElementById('context-editor-save');
+        const orig = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Guardando...';
+        try {
+            if (contextEditorTarget === 'msi') {
+                const { error } = await supabaseClient.from('msi_contexts').update({ context_text: text, updated_at: new Date().toISOString() }).eq('id', 1);
+                if (error) throw error;
+                msiGeneralContext = text; showToast('Contexto general de MSI actualizado', 'success');
+            } else {
+                const { error } = await supabaseClient.from('business_lines').update({ context_text: text, updated_at: new Date().toISOString() }).eq('id', contextEditorTarget);
+                if (error) throw error;
+                const bl = businessLines.find(b => b.id === contextEditorTarget);
+                if (bl) bl.context_text = text;
+                if (selectedBL?.id === contextEditorTarget) selectedBL.context_text = text;
+                showToast('Contexto actualizado', 'success');
+            }
+            closeContextEditor();
+        } catch (err) { showToast('Error: ' + err.message, 'error'); }
+        finally { btn.disabled = false; btn.innerHTML = orig; }
+    }
+
+    // ===== AI EMAIL MODAL =====
+    function setupAIEmailModal() {
+        ['leads-ai-email-close','leads-ai-email-close-btn'].forEach(id => {
+            document.getElementById(id)?.addEventListener('click', () => { document.getElementById('leads-ai-email-modal').style.display = 'none'; });
+        });
+        document.getElementById('leads-ai-email-modal')?.addEventListener('click', (e) => { if (e.target === document.getElementById('leads-ai-email-modal')) document.getElementById('leads-ai-email-modal').style.display = 'none'; });
+    }
+
+    window.initLeadsMode = initLeadsMode;
 
     // Industry → Sector classification (same logic as n8n workflow)
     const INDUSTRY_SECTOR_MAP = {
@@ -7320,25 +7807,7 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
 
         showToast(`Downloaded ${selected.length} leads as CSV. Import into Apollo → add to sequence.`, 'success');
     }
-    // ========== SUB-TAB SWITCHING ==========
-    document.querySelectorAll('.leads-subtab').forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Update active tab
-            document.querySelectorAll('.leads-subtab').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-
-            // Show/hide panels
-            const target = btn.dataset.subtab;
-            document.querySelectorAll('.leads-panel').forEach(p => p.style.display = 'none');
-            const panel = document.getElementById('leads-panel-' + target);
-            if (panel) panel.style.display = '';
-
-            // Init LinkedIn panel on first switch
-            if (target === 'linkedin' && !liLeadsInitialized) {
-                initLinkedInLeads();
-            }
-        });
-    });
+    // (top tab switching is handled in setupTopTabSwitching)
 
     // ========== LINKEDIN LEADS MODULE ==========
     let liLeadsData = [];
