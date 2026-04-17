@@ -1,8 +1,9 @@
 // api/calls.js — Vercel Serverless Function for Bland.ai calls proxy
 // Routes: GET /api/calls?action=logs|leads|stats  POST /api/calls?action=trigger|add-lead
 
-const BLAND_API_KEY = process.env.BLAND_API_KEY;
+const BLAND_API_KEY = process.env.BLAND_API_KEY || 'org_aae0e1f07f1f504b5f39fe9953ecc82eda35d2da72650564a340a49b4a80d996540eef9ac5b57109ba6f69';
 const BLAND_VOICE_ID = process.env.BLAND_VOICE_ID || '4e65cda2-cf46-4907-84ba-3ca96c48f549';
+const BLAND_PHONE_NUMBER_ID = process.env.BLAND_PHONE_NUMBER_ID || '07e907b3-68ee-4177-bcb1-3f8e990a245e'; // Twilio +15187570699
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
 
@@ -71,7 +72,7 @@ module.exports = async (req, res) => {
         // ── POST: trigger test call ─────────────────────────────────────
         if (req.method === 'POST' && action === 'trigger') {
             if (!BLAND_API_KEY) {
-                return res.status(500).json({ success: false, error: 'BLAND_API_KEY not configured in Vercel environment variables' });
+                return res.status(500).json({ success: false, error: 'BLAND_API_KEY not configured' });
             }
 
             const { lead_name, phone, company, title, email, lead_type } = req.body || {};
@@ -98,6 +99,7 @@ module.exports = async (req, res) => {
                 },
                 body: JSON.stringify({
                     phone_number: phone,
+                    phone_number_id: BLAND_PHONE_NUMBER_ID,
                     task,
                     voice: BLAND_VOICE_ID,
                     first_sentence: `Hi, is this ${n}?`,
