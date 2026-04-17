@@ -141,33 +141,24 @@ CREATE POLICY "Allow all access to leads"
 INSERT INTO public.business_lines (name, slug, description, context_text, color, icon) VALUES
 
 (
-  'Artificial Intelligence',
+  'AI & Smart Business',
   'ai',
-  'AI Discovery Workshops & strategic AI consulting for measurable ROI',
-  'MSI Technologies AI Practice — AI Discovery Workshop
+  'AI automation, data-driven insights & custom AI solutions for measurable business performance',
+  'MSI Technologies AI & Smart Business Practice
 
 SERVICE OVERVIEW
-The AI Discovery Workshop is a structured 4-week engagement designed to give business leaders clarity on where AI can create measurable ROI without a long-term commitment.
+This service focuses on innovating, automating, and elevating business performance. MSI uses AI and automation to optimize processes, drive innovation, and create smarter, more efficient businesses.
 
-WORKSHOP PHASES
-Phase 1 – Translate: Turn business pain points into AI opportunity candidates.
-Phase 2 – Validate: Assess whether existing data and systems are AI-ready.
-Phase 3 – Quantify: Build ROI estimates with real dollar projections.
-Phase 4 – Define: Set scope, timeline, and success metrics for the first PoC.
-Phase 5 – Align: Connect the AI roadmap to core business objectives.
-
-DELIVERABLES
-- AI Opportunity Map
-- Data Feasibility Report
-- ROI Projections (probability-weighted financial outcomes)
-- Technical Readiness Assessment
-- PoC Action Plan
+KEY OFFERINGS
+- Intelligent Automation: Streamlining repetitive processes to free up operational capacity and reduce human error.
+- Data-Driven Insights: Leveraging data for better and faster decision-making across all business functions.
+- Custom AI Solutions: Tailored artificial intelligence applications designed for specific business needs and challenges.
 
 IDEAL CLIENTS
-Companies of 50–5000+ employees in any industry that are under pressure to adopt AI but lack a clear, risk-managed path to ROI. Decision makers are CTOs, CDOs, VPs of Technology, and C-suite leaders evaluating AI budget allocation.
+Companies of any size under pressure to improve operational efficiency, leverage their data more effectively, or build AI-powered capabilities. Decision makers are CTOs, CDOs, VPs of Operations, and C-suite leaders evaluating AI and automation ROI.
 
 VALUE PROPOSITION
-Most companies waste 12–18 months on AI experiments that never reach production. The AI Discovery Workshop replaces that ambiguity with a structured 4-week sprint that surfaces the 2–3 highest-value AI opportunities, validates their feasibility against real data, and produces a board-ready business case — so leaders can make a confident next investment decision instead of guessing.',
+MSI combines AI expertise and automation tools to optimize operations, drive innovation, and build smarter businesses — delivering measurable performance improvements without the complexity of large-scale transformation programs.',
   '#8b5cf6',
   '🤖'
 ),
@@ -175,87 +166,79 @@ Most companies waste 12–18 months on AI experiments that never reach productio
 (
   'Workforce Agility',
   'wfa',
-  'Talent optimization, staff augmentation, IT outsourcing & employee upskilling',
+  'Talent optimization, flexible workforce models & employee upskilling for a future-ready organization',
   'MSI Technologies Workforce Agility Practice
 
 SERVICE OVERVIEW
-Workforce Agility helps organizations adapt, evolve, and excel in a rapidly changing market. MSI provides flexible human capital solutions that scale with business needs without the overhead of traditional hiring.
+Aimed at helping companies adapt, evolve, and excel in a changing market. This service focuses on building a future-ready workforce by fostering adaptability, innovation, and efficiency.
 
 KEY OFFERINGS
+- Talent Optimization: Ensuring the right talent is utilized effectively through strategic workforce planning and competency mapping.
+- Flexible Workforce: Creating adaptable staffing models (project-based, contract, hybrid) to meet changing business demands and growth cycles.
+- Employee Upskilling: Training and developing current staff to meet future challenges in AI, cloud, cybersecurity, and digital transformation.
 - Expert Staff Augmentation: Rapid access to niche technical talent with a hiring satisfaction guarantee. Accelerates project delivery and fills critical skill gaps.
 - IT Outsourcing Solutions: Managed IT services and dedicated teams aligned with US time zones. Cost-effective scaling without sacrificing quality or control.
-- Talent Optimization: Strategic workforce planning, competency mapping, and performance frameworks to maximize existing team potential.
-- Flexible Workforce Models: Project-based, contract, and hybrid models that flex with business cycles and growth phases.
-- Employee Upskilling: Training programs to build future-ready capabilities in AI, cloud, cybersecurity, and digital transformation.
 
 IDEAL CLIENTS
 Mid-size to enterprise organizations experiencing rapid growth, talent shortages, high turnover, or digital transformation pressure. HR Directors, CPOs, VPs of Engineering, and COOs responsible for team scaling and workforce strategy.
 
 VALUE PROPOSITION
-Traditional hiring takes 3–6 months and locks companies into fixed costs. MSI Workforce Agility provides the right talent, on the right timeline, at the right cost — with the flexibility to scale up or down as business priorities shift. Clients gain a competitive edge by building future-ready teams faster than competitors.',
+Traditional hiring takes 3-6 months and locks companies into fixed costs. MSI Workforce Agility provides the right talent, on the right timeline, at the right cost — with the flexibility to scale up or down as business priorities shift.',
   '#10b981',
   '👥'
 ),
 
 (
-  'Network Planning & Optimization',
+  'Network Performance Optimization',
   'npo',
-  'Telecom RF engineering, IoT solutions & network performance optimization',
-  'MSI Technologies Network Planning & Optimization Practice
+  'Elite network efficiency using cost-effective nearshore LATAM engineering talent aligned to U.S. hours',
+  'MSI Technologies Network Performance Optimization Practice
 
 SERVICE OVERVIEW
-MSI provides high-quality, cost-effective network planning, optimization, and specialized engineering services for telecommunications operators and technology infrastructure providers.
+Provides elite network efficiency enhancement using cost-effective nearshore engineering talent from Latin America (LATAM). Companies save on delivery costs while working in real-time with teams aligned to U.S. business hours.
 
 KEY OFFERINGS
-- Network Optimization & Planning: Indoor and outdoor radiofrequency (RF) signal measurement, drive testing, coverage analysis, and capacity planning to improve network performance and QoE.
-- IoT Solutions: Bespoke technology solutions for services involving connected devices, sensor networks, and smart infrastructure deployments.
-- Specialized Engineering: Expert design, analysis, and network operation services across 2G/3G/4G/5G, Packet Core, IMS, and carrier-grade IP/MPLS networks.
-- Regional Packet Core Services: End-to-end support for core network operations, configuration, and optimization.
-- E-Cloud & Data Center: Network infrastructure implementation for cloud-based data center environments.
-
-NOTABLE CLIENTS & PROJECTS
-- Amdocs: 3G and 4G telecommunications network optimization
-- Nokia: Regional Packet Core Service
-- Juniper Networks: Data Center E-Cloud implementation
-- Huawei, Ericsson, ZTE: Specialized network engineering
-- Claro, Orange: Regional carrier network support
+- Root Cause Analysis: Identifying the drivers of network performance issues with precision.
+- Optimization Recommendations: Coverage assessments including indoor and outdoor radio frequency (RF) measurements, from single floors to high-rise structures.
+- Implementation & Validation Support: Hands-on support to deploy network changes and validate results.
+- Multi-vendor Log Processing: Unified processing across multiple vendor technologies and platforms.
+- Customized Reporting: Tailored reporting to vendor or operator requirements and formats.
+- Thematic Analysis & KPI Correlation: Visual insights linking KPIs to real network performance data.
 
 IDEAL CLIENTS
 Telecommunications operators, MVNOs, neutral host providers, tower companies, and enterprises deploying private networks. Decision makers are CTOs, VPs of Network Engineering, and Directors of Network Operations.
 
 VALUE PROPOSITION
-Telecom operators face relentless pressure to improve network quality while reducing OPEX. MSI's field-proven engineering teams deliver measurable improvements in network KPIs — coverage, capacity, and reliability — faster and more cost-effectively than building internal specialized teams from scratch.',
+Telecom operators face relentless pressure to improve network quality while reducing OPEX. MSI provides elite NPO services at 30-50% lower cost than on-site alternatives, with LATAM engineers delivering in real-time alignment with U.S. business hours.',
   '#3b82f6',
   '📡'
 ),
 
 (
-  'Architecture, Engineering & Construction',
+  'Architecture & Engineering Solutions',
   'ae',
-  'IT architecture, cloud infrastructure design & construction technology solutions',
-  'MSI Technologies Architecture, Engineering & Construction Practice
+  'Rapid A&E team scaling with nearshore MEP, BIM, civil & structural talent aligned to U.S. standards',
+  'MSI Technologies Architecture & Engineering Solutions Practice
 
 SERVICE OVERVIEW
-MSI provides strategic IT architecture, cloud infrastructure design, and technology consulting for companies in the Architecture, Engineering, and Construction (AEC) sector, as well as technology firms modernizing their own IT infrastructure.
+Enables businesses to rapidly scale their teams with specialized, nearshore A&E talent. This service ensures compliant, high-quality projects are delivered on time, within budget, and aligned to U.S. standards while reducing overhead costs.
 
-KEY OFFERINGS
-- Infrastructure Modernization: Assessment and transformation of legacy IT infrastructure using current best-in-class technologies and frameworks.
-- Cloud Architecture & Migration: Design and execution of scalable, secure cloud migrations to AWS, Azure, and GCP with minimal business disruption.
-- Data Management & Security: Solutions for enterprise data storage, governance, security, backup, and disaster recovery.
-- IT Strategy for AEC Firms: Technology roadmaps for architecture and engineering firms adopting BIM, digital twins, IoT sensors, and AI-driven design tools.
-- Executive Consulting: M&A technology due diligence, IT governance frameworks, and CTO advisory services for construction and engineering organizations.
-- OpenStack & Hybrid Cloud: Private cloud design and implementation (Red Hat OpenStack, VMware).
+KEY CAPABILITIES & PROCESS
 
-NOTABLE CLIENTS & PROJECTS
-- Red Hat: OpenStack technology services and cybersecurity
-- Juniper Networks: E-Cloud Data Center implementation
-- Whale Cloud: Human talent and specialized recruitment
+Team Deployment
+Scaling MEP (Mechanical, Electrical, Plumbing), BIM (Building Information Modeling), civil, and structural support teams with specialized nearshore engineers integrated into existing project workflows.
+
+Phase 1 - Problem Mapping
+Business deep dives, needs assessments, opportunity mapping, solution planning, and partnership kickoff to align on project scope, standards, and team expectations.
+
+Phase 2 - Strategy & Action
+Developing customized A&E strategies, deploying nearshore engineers integrated with existing teams, managing project delivery, and conducting ongoing review and expansion as needed.
 
 IDEAL CLIENTS
-Architecture and engineering firms, construction companies, infrastructure developers, and real estate technology platforms. Decision makers are CTOs, IT Directors, and VPs of Digital Transformation.
+Architecture and engineering firms, construction companies, infrastructure developers, and real estate technology platforms. Decision makers are CTOs, IT Directors, VPs of Engineering, and Project Managers.
 
 VALUE PROPOSITION
-AEC firms face a unique convergence of physical and digital complexity. MSI bridges that gap by designing resilient, scalable IT architectures that support the demanding data, collaboration, and compliance requirements of engineering-led organizations — from project inception through operational lifecycle.',
+AEC firms face persistent challenges in sourcing specialized talent on demand while controlling costs. MSI bridges that gap with nearshore A&E specialists who meet U.S. standards, reduce project overhead by 30-40%, and integrate seamlessly with existing project teams.',
   '#f59e0b',
   '🏗️'
 ),
@@ -263,37 +246,25 @@ AEC firms face a unique convergence of physical and digital complexity. MSI brid
 (
   'IT Solutions',
   'it',
-  'IT services, digital transformation, cloud computing & cybersecurity',
+  'IT outsourcing, cloud computing, cybersecurity & digital strategy — full-stack IT partner',
   'MSI Technologies IT Solutions Practice
 
 SERVICE OVERVIEW
-MSI''s IT Solutions practice delivers end-to-end technology services across IT infrastructure, digital transformation, cloud computing, and cybersecurity for organizations seeking to modernize operations, reduce risk, and accelerate growth.
+A comprehensive suite of technology services designed to provide scalable infrastructure, robust security, and access to top IT talent. MSI serves as a single accountable partner for the full IT stack.
 
 KEY OFFERINGS
 
-DIGITAL TRANSFORMATION
-- Custom software development and application modernization
-- Enterprise system integration (ERP, CRM, legacy platforms)
-- API-first architecture and microservices migration
-- Process automation and intelligent workflow design
+IT OUTSOURCING
+Access to top IT talent aligned with U.S. time zones to optimize operations. Includes Managed IT Services, Dedicated IT Teams, and Cost-Effective Scaling with teams that match your business hours and culture.
 
 CLOUD COMPUTING
-- Cloud Migration: Scalable and secure migration to AWS, Azure, or GCP
-- Infrastructure Modernization: Retirement of on-premises legacy systems
-- Data Management: Enterprise storage, security, recovery, and backup
-- FinOps: Cloud cost optimization and governance frameworks
+Scalable, secure, and cost-effective IT infrastructure. Key pillars include Infrastructure Modernization (retiring on-premises legacy systems), Cloud Migration (to AWS, Azure, or GCP), Data Storage & Security, and Recovery & Backup solutions.
 
-CYBERSECURITY
-- Advanced Threat Protection: Zero-trust architecture, endpoint security, SIEM
-- Threat Management: 24/7 monitoring, incident response, compliance audits
-- Risk Assessment: Vulnerability management and penetration testing
-- Security Training: Awareness programs to build a security-first culture
-- Regulatory Compliance: HIPAA, SOX, PCI-DSS, ISO 27001, NIST support
+CYBERSECURITY SOLUTIONS
+Preventing, protecting, and detecting evolving cyber threats. Services include Advanced Threat Detection (zero-trust architecture, endpoint security, SIEM), Compliance and Risk Management (HIPAA, SOX, PCI-DSS, ISO 27001, NIST), and Security Awareness Training to foster a security-first culture.
 
-MANAGED IT SERVICES
-- Help desk and NOC/SOC support
-- IT outsourcing with dedicated teams aligned to US time zones
-- Vendor management and technology procurement
+DIGITAL & STRATEGY
+Navigating technological complexity through IT strategy consulting, M&A technology due diligence and guidance, and custom software development and application modernization.
 
 NOTABLE CLIENTS
 Red Hat (OpenStack + cybersecurity), Juniper Networks (E-Cloud), Globant, Tech Mahindra, Huawei
@@ -306,6 +277,7 @@ MSI serves as a single accountable partner for the full IT stack — from cloud 
   '#ef4444',
   '💻'
 );
+
 
 -- ──────────────────────────────────────────────────────────────────
 -- 7. SEED: MSI GENERAL CONTEXT
