@@ -2543,7 +2543,7 @@
             const BlandSDK = window.Bland;
             if (!BlandSDK || !BlandSDK.Webchat) throw new Error('SDK de Bland.ai no cargó. Recarga la página.');
 
-            _blandClient = BlandSDK.Webchat();
+            _blandClient = new BlandSDK.Webchat({});
 
             // 3. Event handlers (v2 API: 'open', 'closed', 'error')
             _blandClient.on('open', () => {
