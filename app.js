@@ -6631,6 +6631,10 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
     function renderBusinessLinesSidebar() {
         const list = document.getElementById('bl-list');
         if (!list) return;
+        if (businessLines.length === 0) {
+            list.innerHTML = `<div class="bl-sidebar-no-data"><strong>Sin datos en Supabase</strong>Ejecuta <em>migration-fix-seed-upsert.sql</em> en el SQL Editor de Supabase para cargar las líneas de negocio.</div>`;
+            return;
+        }
         list.innerHTML = businessLines.map(bl => `
             <div class="bl-card${selectedBL?.id === bl.id ? ' active' : ''}"
                  data-bl-id="${bl.id}"
