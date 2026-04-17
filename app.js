@@ -6603,7 +6603,6 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
 
     // ===== INIT =====
     async function initLeadsMode() {
-        setupTopTabSwitching();
         setupUploadModal();
         setupContextEditorModal();
         setupAIEmailModal();
@@ -6613,24 +6612,15 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         renderBusinessLinesSidebar();
     }
 
-    function setupTopTabSwitching() {
-        document.querySelectorAll('.leads-top-tab').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.leads-top-tab').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                const panel = btn.dataset.panel;
-                document.querySelectorAll('.leads-top-panel').forEach(p => p.style.display = 'none');
-                const el = document.getElementById('leads-top-panel-' + panel);
-                if (el) el.style.display = '';
-                if (panel === 'linkedin' && !liLeadsInitialized) initLinkedInLeads();
-            });
-        });
-    }
-
     // ===== BUSINESS LINES =====
     async function loadBusinessLines() {
         const { data, error } = await supabaseClient.from('business_lines').select('*').order('id');
-        if (!error) businessLines = data || [];
+        if (error) {
+            console.error('[Leads] loadBusinessLines error:', error.message, error.code);
+            showToast('Error cargando líneas de negocio: ' + error.message, 'error');
+        } else {
+            businessLines = data || [];
+        }
     }
 
     async function loadMsiContext() {
