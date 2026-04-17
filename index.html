@@ -8,8 +8,17 @@
     <!-- ffmpeg.wasm for client-side video merging -->
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
     <script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/util.js"></script>
-    <!-- Bland.ai Web SDK -->
-    <script src="https://unpkg.com/bland-client-js-sdk@latest/dist/index.umd.js"></script>
+    <!-- React stub: Bland SDK browser bundle requires a global 'react' even for vanilla JS usage -->
+    <script>
+        window.react = {
+            useState: function(v) { return [v, function(){}]; },
+            useRef: function(v) { return { current: v }; },
+            useMemo: function(fn) { return fn(); },
+            useEffect: function() {}
+        };
+    </script>
+    <!-- Bland.ai Web SDK v2 -->
+    <script src="https://unpkg.com/bland-client-js-sdk@2.1.2/dist/browser/index.global.js"></script>
 </head>
 <body>
     <div class="container">
@@ -2530,19 +2539,19 @@
             const data = await r.json();
             if (!data.success) throw new Error(data.error || 'Error al obtener sesión');
 
-            // 2. Init Bland SDK
-            const BlandWebClient = window.BlandWebClient || (window.bland && window.bland.BlandWebClient);
-            if (!BlandWebClient) throw new Error('SDK de Bland.ai no cargó. Recarga la página.');
+            // 2. Init Bland SDK v2 (exposes window.Bland.Webchat)
+            const BlandSDK = window.Bland;
+            if (!BlandSDK || !BlandSDK.Webchat) throw new Error('SDK de Bland.ai no cargó. Recarga la página.');
 
-            _blandClient = new BlandWebClient(data.agent_id, data.token);
+            _blandClient = BlandSDK.Webchat();
 
-            // 3. Event handlers
-            _blandClient.on('conversationStarted', () => {
+            // 3. Event handlers (v2 API: 'open', 'closed', 'error')
+            _blandClient.on('open', () => {
                 setWebCallStatus('En llamada...');
                 startTimer();
                 startVisualizer();
             });
-            _blandClient.on('conversationEnded', () => {
+            _blandClient.on('closed', () => {
                 setWebCallStatus('Llamada terminada');
                 stopTimer();
                 stopVisualizer();
@@ -2559,10 +2568,10 @@
                 _blandClient = null;
             });
 
-            // 4. Start
+            // 4. Start (v2 API: .start({ agentId, sessionId, sampleRate }))
             showActive();
             setWebCallStatus('Conectando...');
-            await _blandClient.initConversation({ sampleRate: 44100 });
+            await _blandClient.start({ agentId: data.agent_id, sessionId: data.token, sampleRate: 44100 });
         } catch (err) {
             console.error('[WebCall]', err);
             setWebCallMsg(err.message || 'Error al conectar', 'error');
@@ -2575,7 +2584,7 @@
 
     // ── Stop Web Call ─────────────────────────────────────────────────────
     window.stopWebCall = function() {
-        try { _blandClient?.stopConversation(); } catch {}
+        try { _blandClient?.stop(); } catch {}
         stopTimer();
         stopVisualizer();
         showIdle();
