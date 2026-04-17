@@ -31,6 +31,18 @@ module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     if (req.method === 'OPTIONS') return res.status(200).end();
 
+    // Explicit JSON body parsing (Vercel sometimes skips auto-parse)
+    if (req.method === 'POST' && typeof req.body === 'string') {
+        try { req.body = JSON.parse(req.body); } catch {}
+    }
+    if (req.method === 'POST' && !req.body) {
+        try {
+            const chunks = [];
+            for await (const chunk of req) chunks.push(chunk);
+            req.body = JSON.parse(Buffer.concat(chunks).toString() || '{}');
+        } catch { req.body = {}; }
+    }
+
     const action = req.query.action;
 
     try {
@@ -116,7 +128,11 @@ module.exports = async (req, res) => {
             const blandData = await blandRes.json();
 
             if (!blandRes.ok) {
-                return res.status(blandRes.status).json({ success: false, error: blandData.message || 'Bland.ai error' });
+                console.error('[api/calls] Bland.ai error:', JSON.stringify(blandData));
+                return res.status(blandRes.status).json({
+                    success: false,
+                    error: blandData.message || blandData.error || blandData.errors || JSON.stringify(blandData)
+                });
             }
 
             return res.status(200).json({ success: true, call_id: blandData.call_id, status: blandData.status, message: 'Test call initiated' });
