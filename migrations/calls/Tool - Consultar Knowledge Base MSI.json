@@ -1,0 +1,122 @@
+{
+  "name": "Tool - Consultar Knowledge Base MSI",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "query"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        288,
+        128
+      ],
+      "id": "90e4017a-399f-474e-bfb3-bbaf9aab0d16",
+      "name": "Trigger desde Agente"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1eNMnPHdhtOf2eJ3w_DCt9xGuqpCr0wPg0GQO7qESPM8",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Knowledge_Base",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        512,
+        128
+      ],
+      "id": "cb381357-4447-4b81-94a3-1ab261969d46",
+      "name": "Leer Knowledge Base",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CWoUK0PdQJqOEBKZ",
+          "name": "Google Sheets MSI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const query = $('Trigger desde Agente').first().json.query.toLowerCase();\nconst kbItems = $('Leer Knowledge Base').all();\n\n// Buscar coincidencias en keywords y questions\nconst results = [];\n\nfor (const item of kbItems) {\n  const keywords = (item.json.KEYWORDS || '').toLowerCase();\n  const question = (item.json.QUESTION || '').toLowerCase();\n  const category = (item.json.CATEGORY || '').toLowerCase();\n  const answer = item.json.ANSWER || '';\n  \n  // Calcular relevancia\n  let score = 0;\n  const queryWords = query.split(/\\s+/);\n  \n  for (const word of queryWords) {\n    if (word.length < 3) continue; // Ignorar palabras muy cortas\n    \n    if (keywords.includes(word)) score += 3;\n    if (question.includes(word)) score += 2;\n    if (category.includes(word)) score += 1;\n  }\n  \n  if (score > 0) {\n    results.push({\n      category: item.json.CATEGORY,\n      question: item.json.QUESTION,\n      answer: answer,\n      score: score\n    });\n  }\n}\n\n// Ordenar por relevancia y tomar top 3\nresults.sort((a, b) => b.score - a.score);\nconst topResults = results.slice(0, 3);\n\nif (topResults.length === 0) {\n  return [{\n    json: {\n      response: \"I don't have specific information about that in my knowledge base. I can offer to have Nataly Riaño follow up with more details. Would that be helpful?\"\n    }\n  }];\n}\n\n// Formatear respuesta\nlet response = '';\nfor (const result of topResults) {\n  response += `${result.answer}\\n\\n`;\n}\n\nreturn [{\n  json: {\n    response: response.trim(),\n    sources: topResults.map(r => r.question)\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        128
+      ],
+      "id": "1af6de5d-13aa-4758-92b3-c65cc5665780",
+      "name": "Buscar en Knowledge Base"
+    },
+    {
+      "parameters": {
+        "content": "# 📚 Tool - Consultar Knowledge Base MSI\n\n## Función:\nBusca información relevante en la base de conocimiento de MSI Technologies.\n\n## Input:\n- query: Pregunta o tema a buscar\n\n## Output:\n- response: Respuesta encontrada\n- sources: Preguntas fuente\n\n## Google Sheet:\nID: 1eNMnPHdhtOf2eJ3w_DCt9xGuqpCr0wPg0GQO7qESPM8\nHoja: Knowledge_Base",
+        "height": 560,
+        "width": 494,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        -128
+      ],
+      "id": "a5ba5aa2-348d-417b-ba7e-5eb5cb366d9f",
+      "name": "Nota KB"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Trigger desde Agente": {
+      "main": [
+        [
+          {
+            "node": "Leer Knowledge Base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Knowledge Base": {
+      "main": [
+        [
+          {
+            "node": "Buscar en Knowledge Base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "America/Bogota",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "940be3e0-2a14-4dc0-9e76-453a406c1c32",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3c2794d9d044c6bd8df588319a07cd200ddb18a3500c78ed9e3f3be6469af062"
+  },
+  "id": "DwVC3YLSMWs8eYUVaDByD",
+  "tags": []
+}

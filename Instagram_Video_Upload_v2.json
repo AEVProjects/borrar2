@@ -1,0 +1,236 @@
+{
+  "name": "Instagram Video Upload (Con Credenciales)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "interval": 15
+            }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Trigger (Manual)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v23.0",
+        "node": "17841471028584724",
+        "edge": "media",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "media_type",
+                "value": "REELS"
+              },
+              {
+                "name": "video_url",
+                "value": "={{ $json.video_url }}"
+              },
+              {
+                "name": "caption",
+                "value": "={{ $json.caption }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "2",
+      "name": "1. IG Crear Video Endpoint",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        300,
+        300
+      ],
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "mbuwwxCuX4JRWLJB",
+          "name": "Instagram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 30,
+        "unit": "seconds"
+      },
+      "id": "3",
+      "name": "Wait (Procesamiento)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "GET",
+        "graphApiVersion": "v23.0",
+        "node": "={{ $node['1. IG Crear Video Endpoint'].json.id }}",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "fields",
+                "value": "status_code"
+              }
+            ]
+          }
+        }
+      },
+      "id": "4",
+      "name": "2. Revisar Estado",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        700,
+        300
+      ],
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "mbuwwxCuX4JRWLJB",
+          "name": "Instagram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status_code }}",
+              "value2": "FINISHED"
+            }
+          ]
+        }
+      },
+      "id": "5",
+      "name": "Is Finished?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v23.0",
+        "node": "17841471028584724",
+        "edge": "media_publish",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "creation_id",
+                "value": "={{ $node['1. IG Crear Video Endpoint'].json.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "6",
+      "name": "3. Publicar IG Video",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        250
+      ],
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "mbuwwxCuX4JRWLJB",
+          "name": "Instagram"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Trigger (Manual)": {
+      "main": [
+        [
+          {
+            "node": "1. IG Crear Video Endpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. IG Crear Video Endpoint": {
+      "main": [
+        [
+          {
+            "node": "Wait (Procesamiento)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (Procesamiento)": {
+      "main": [
+        [
+          {
+            "node": "2. Revisar Estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Revisar Estado": {
+      "main": [
+        [
+          {
+            "node": "Is Finished?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Finished?": {
+      "main": [
+        [
+          {
+            "node": "3. Publicar IG Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait (Procesamiento)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Trigger (Manual)": [
+      {
+        "json": {
+          "video_url": "https://i.imgur.com/mO8Bvth.mp4",
+          "caption": "A slow connection is silently draining your daily profits. Every second of lag kills the momentum of your team. You do not have to accept constant crashes or overpay for local fixes to get a stable infrastructure 🐢⚠️.\n\nMSI Technologies connects you with elite, timezone-aligned engineering talent to permanently eliminate your bottlenecks 🌍⚡. You get enterprise-grade stability for a fraction of the traditional cost.\n\nStop the downtime. Book your free consultation today! 👇\n\n📧 contact@msitechnologiesinc.com\n🌐 msitechnologiesinc.com\n\n#MSITechnologies #NetworkOptimization #TechLeadership #BusinessEfficiency #SmartScaling"
+        }
+      }
+    ]
+  }
+}

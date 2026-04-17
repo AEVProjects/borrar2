@@ -1,0 +1,87 @@
+{
+  "name": "Tool - Agendar Reunion Calendly MSI",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "lead_name"
+            },
+            {
+              "name": "lead_email"
+            },
+            {
+              "name": "company"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        304,
+        144
+      ],
+      "id": "239833bf-9781-4f66-ba71-a7cc53b1409c",
+      "name": "Trigger desde Agente"
+    },
+    {
+      "parameters": {
+        "jsCode": "const leadName = $json.lead_name || '';\nconst leadEmail = $json.lead_email || '';\nconst company = $json.company || '';\n\n// Generar link de Calendly con parámetros pre-llenados\nconst baseUrl = 'https://calendly.com/nataly-riano-msitechnologiesinc/30min';\n\nconst params = new URLSearchParams();\nif (leadName) params.append('name', leadName);\nif (leadEmail) params.append('email', leadEmail);\nif (company) params.append('a1', company); // Custom field for company\n\nconst calendlyLink = `${baseUrl}?${params.toString()}`;\n\n// Generar mensaje para el lead\nlet responseMessage = '';\n\nif (leadEmail) {\n  responseMessage = `Perfect! I'm generating a calendar link for you. You can schedule directly at: ${calendlyLink}. You'll be meeting with Nataly Riaño, our Key Account Manager. She'll follow up with a confirmation email to ${leadEmail}. Is there anything specific you'd like her to prepare for the meeting?`;\n} else {\n  responseMessage = `Great! To send you the calendar invite, could you please confirm your email address? Once I have that, I'll send over the meeting link with Nataly Riaño, our Key Account Manager.`;\n}\n\nreturn [{\n  json: {\n    response: responseMessage,\n    calendly_link: calendlyLink,\n    lead_name: leadName,\n    lead_email: leadEmail,\n    company: company,\n    meeting_scheduled: leadEmail ? true : false\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        144
+      ],
+      "id": "65a622ff-65de-4190-872f-854e1076f6c7",
+      "name": "Generar Link Calendly"
+    },
+    {
+      "parameters": {
+        "content": "# 📅 Tool - Agendar Reunión Calendly MSI\n\n## Función:\nGenera un link de Calendly personalizado para agendar una reunión con Nataly Riaño.\n\n## Input:\n- lead_name: Nombre del lead\n- lead_email: Email del lead\n- company: Nombre de la empresa\n\n## Output:\n- response: Mensaje para el lead\n- calendly_link: Link generado\n- meeting_scheduled: true/false\n\n## Calendly:\nhttps://calendly.com/nataly-riano-msitechnologiesinc/30min",
+        "height": 676,
+        "width": 380,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        -112
+      ],
+      "id": "8607e273-905a-43e2-8cf0-c1450b0f7c1b",
+      "name": "Nota Calendly"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Trigger desde Agente": {
+      "main": [
+        [
+          {
+            "node": "Generar Link Calendly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "America/Bogota",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "9682dd4f-3b19-4e28-a720-6832a0feb534",
+  "meta": {
+    "instanceId": "3c2794d9d044c6bd8df588319a07cd200ddb18a3500c78ed9e3f3be6469af062"
+  },
+  "id": "0OmWg3lrbmoSyeqCFcD2q",
+  "tags": []
+}

@@ -1,0 +1,212 @@
+{
+  "name": "Instagram Video Upload",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "interval": 15
+            }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Trigger (Manual o Webhook)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v20.0/{{$json.ig_user_id}}/media",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$json.access_token}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"media_type\": \"VIDEO\",\n  \"video_url\": \"{{$json.video_url}}\",\n  \"caption\": \"{{$json.caption}}\",\n  \"share_to_feed\": true\n}",
+        "options": {}
+      },
+      "id": "2",
+      "name": "1. Upload Video to IG (Create Container)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 30,
+        "unit": "seconds"
+      },
+      "id": "3",
+      "name": "Wait (Video Processing)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://graph.facebook.com/v20.0/{{$json.id}}?fields=status_code",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$node['Trigger (Manual o Webhook)'].json.access_token}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4",
+      "name": "2. Check Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        850,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.status_code}}",
+              "value2": "FINISHED"
+            }
+          ]
+        }
+      },
+      "id": "5",
+      "name": "Is Finished?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v20.0/{{$node['Trigger (Manual o Webhook)'].json.ig_user_id}}/media_publish",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$node['Trigger (Manual o Webhook)'].json.access_token}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"creation_id\": \"{{$node['1. Upload Video to IG (Create Container)'].json.id}}\"\n}",
+        "options": {}
+      },
+      "id": "6",
+      "name": "3. Publish Media",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1300,
+        250
+      ]
+    }
+  ],
+  "connections": {
+    "Trigger (Manual o Webhook)": {
+      "main": [
+        [
+          {
+            "node": "1. Upload Video to IG (Create Container)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Upload Video to IG (Create Container)": {
+      "main": [
+        [
+          {
+            "node": "Wait (Video Processing)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (Video Processing)": {
+      "main": [
+        [
+          {
+            "node": "2. Check Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Check Status": {
+      "main": [
+        [
+          {
+            "node": "Is Finished?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Finished?": {
+      "main": [
+        [
+          {
+            "node": "3. Publish Media",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait (Video Processing)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Trigger (Manual o Webhook)": [
+      {
+        "json": {
+          "ig_user_id": "TU_IG_USER_ID",
+          "access_token": "TU_TOKEN_DE_FB",
+          "video_url": "https://tu-dominio.com/video.mp4",
+          "caption": "¡Hola! Este es mi nuevo video #prueba"
+        }
+      }
+    ]
+  }
+}

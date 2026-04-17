@@ -1,0 +1,94 @@
+{
+  "name": "Tool - Finalizar Llamada MSI",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "call_result"
+            },
+            {
+              "name": "interest_level"
+            },
+            {
+              "name": "pain_points"
+            },
+            {
+              "name": "next_step"
+            },
+            {
+              "name": "notes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        320,
+        160
+      ],
+      "id": "d37e295f-61b0-4956-bf94-eae8f2bdbea6",
+      "name": "Trigger desde Agente",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const callResult = $json.call_result || 'unknown';\nconst interestLevel = $json.interest_level || 'none';\nconst painPoints = $json.pain_points || '';\nconst nextStep = $json.next_step || 'callback';\nconst notes = $json.notes || '';\n\n// Generar mensaje de cierre apropiado según el resultado\nlet closingMessage = '';\nlet internalNote = '';\n\nswitch (nextStep) {\n  case 'meeting_scheduled':\n    closingMessage = \"Thank you so much for your time today! You'll receive the calendar invite shortly. Nataly is looking forward to speaking with you. Have a wonderful day!\";\n    internalNote = `HIGH INTEREST - Meeting scheduled. Pain points: ${painPoints}. ${notes}`;\n    break;\n    \n  case 'send_email':\n    closingMessage = \"I'll send that information over to your email right away. Feel free to reach out if you have any questions after reviewing. Thank you for your time, have a great day!\";\n    internalNote = `MEDIUM INTEREST - Requested email follow-up. Pain points: ${painPoints}. ${notes}`;\n    break;\n    \n  case 'callback':\n    closingMessage = \"I appreciate your time today. I'll follow up with you soon. Have a great day!\";\n    internalNote = `LOW INTEREST - Schedule callback. ${notes}`;\n    break;\n    \n  case 'not_interested':\n    closingMessage = \"I completely understand. Thank you for your time today. If anything changes in the future, don't hesitate to reach out. Have a wonderful day!\";\n    internalNote = `NOT INTERESTED - Do not call again. ${notes}`;\n    break;\n    \n  default:\n    closingMessage = \"Thank you for your time today. Have a great day!\";\n    internalNote = notes;\n}\n\nreturn [{\n  json: {\n    response: closingMessage,\n    call_result: callResult,\n    interest_level: interestLevel,\n    pain_points: painPoints,\n    next_step: nextStep,\n    notes: internalNote,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        160
+      ],
+      "id": "dc44cab3-535a-440b-9d30-eb9c6f432823",
+      "name": "Procesar Cierre"
+    },
+    {
+      "parameters": {
+        "content": "# 📞 Tool - Finalizar Llamada MSI\n\n## Función:\nRegistra el resultado de la llamada y genera el mensaje de cierre apropiado.\n\n## Input:\n- call_result: answered, voicemail, no_answer, busy\n- interest_level: high, medium, low, none\n- pain_points: Necesidades detectadas\n- next_step: meeting_scheduled, send_email, callback, not_interested\n- notes: Notas de la conversación\n\n## Output:\n- response: Mensaje de cierre para el lead\n- Todos los campos de input procesados\n- timestamp: Marca de tiempo",
+        "height": 584,
+        "width": 400,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        -96
+      ],
+      "id": "de39831e-d003-4ce6-9345-72d15edcc9a6",
+      "name": "Nota Finalizar"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Trigger desde Agente": {
+      "main": [
+        [
+          {
+            "node": "Procesar Cierre",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "America/Bogota",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "41230fd0-74bd-48e6-948c-89276c219e47",
+  "meta": {
+    "instanceId": "3c2794d9d044c6bd8df588319a07cd200ddb18a3500c78ed9e3f3be6469af062"
+  },
+  "id": "5HQVnYtI1tBT52K3IJEOf",
+  "tags": []
+}

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx n8n-as-code:*)",
+      "Bash(npx n8nac:*)",
+      "WebSearch",
+      "WebFetch(domain:docs.bland.ai)"
+    ]
+  }
+}

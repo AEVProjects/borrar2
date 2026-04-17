@@ -162,6 +162,7 @@ const educativeMode = document.getElementById('educative-mode');
 const voiceSwapMode = document.getElementById('voiceswap-mode');
 const schedulerMode = document.getElementById('scheduler-mode');
 const leadsMode = document.getElementById('leads-mode');
+const callsMode = document.getElementById('calls-mode');
 const publishForm = document.getElementById('publish-form');
 const generateForm = document.getElementById('generate-form');
 const editImageForm = document.getElementById('edit-image-form');
@@ -200,6 +201,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         educativeMode?.classList.remove('active');
         schedulerMode?.classList.remove('active');
         leadsMode?.classList.remove('active');
+        callsMode?.classList.remove('active');
         
         if (mode === 'publish') {
             publishMode?.classList.add('active');
@@ -232,6 +234,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         } else if (mode === 'leads') {
             leadsMode?.classList.add('active');
             initLeadsMode();
+        } else if (mode === 'calls') {
+            callsMode?.classList.add('active');
+            initCallsMode();
         }
     });
 });
@@ -7083,3 +7088,357 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
     window.initLeadsMode = initLeadsMode;
 })();
 // ========== END LEADS MODE ==========
+
+// ========== CALLS MODE (Bland.ai Cold Calling) ==========
+(function() {
+    'use strict';
+
+    let callsInitialized = false;
+    let logsPage = 1;
+    let leadsPage = 1;
+    const LOGS_PER_PAGE  = 15;
+    const LEADS_PER_PAGE = 20;
+
+    // ── Helpers ──────────────────────────────────────────────────────────
+    async function callsApi(action, params = {}, body = null) {
+        const url = new URL('/api/calls', window.location.origin);
+        url.searchParams.set('action', action);
+        Object.entries(params).forEach(([k,v]) => v !== undefined && url.searchParams.set(k, v));
+        const opts = { method: body ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json' } };
+        if (body) opts.body = JSON.stringify(body);
+        try {
+            const res = await fetch(url, opts);
+            return await res.json();
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    }
+
+    function fmtDuration(sec) {
+        if (!sec || sec <= 0) return '—';
+        const m = Math.floor(sec / 60), s = sec % 60;
+        return `${m}:${String(s).padStart(2,'0')}`;
+    }
+
+    function resultBadge(result) {
+        const label = { answered:'Contestada', voicemail:'Buzón', no_answer:'Sin resp.', busy:'Ocupado' }[result] || result || '—';
+        return `<span class="call-result-badge call-result-${result || 'no_answer'}">${label}</span>`;
+    }
+
+    function interestBadge(level) {
+        const label = { high:'Alto', medium:'Medio', low:'Bajo', none:'Ninguno' }[level] || level || '—';
+        return `<span class="interest-badge interest-${level || 'none'}">${label}</span>`;
+    }
+
+    function leadStatusBadge(status) {
+        const label = {
+            PENDING:'Pendiente', IN_PROGRESS:'En proceso', CONTACTED:'Contactado',
+            SCHEDULED:'Reunión', NOT_INTERESTED:'No interesado', FOLLOW_UP:'Follow-up', NO_ANSWER:'Sin respuesta'
+        }[status] || status || '—';
+        return `<span class="call-lead-status call-status-${(status||'').toLowerCase()}">${label}</span>`;
+    }
+
+    // ── Stats ─────────────────────────────────────────────────────────────
+    async function loadStats() {
+        const btn = document.getElementById('calls-refresh-stats');
+        if (btn) btn.classList.add('spinning');
+        const r = await callsApi('stats');
+        if (btn) btn.classList.remove('spinning');
+        if (r.success) {
+            const s = r.stats;
+            document.getElementById('stat-total')?.       firstChild; // clear
+            el('stat-total',      s.total_calls    || '0');
+            el('stat-answered',   s.answered       || '0');
+            el('stat-voicemail',  s.voicemail      || '0');
+            el('stat-noanswer',   s.no_answer      || '0');
+            el('stat-meetings',   s.meetings_scheduled || '0');
+            el('stat-interested', s.interested     || '0');
+        } else {
+            console.warn('[Calls] stats error:', r.error);
+        }
+
+        function el(id, val) {
+            const e = document.getElementById(id);
+            if (e) e.textContent = val;
+        }
+    }
+
+    // ── Call Logs ─────────────────────────────────────────────────────────
+    async function loadLogs(page) {
+        logsPage = page || 1;
+        const container = document.getElementById('calls-logs-container');
+        if (!container) return;
+        container.innerHTML = '<div class="calls-loading">Cargando...</div>';
+
+        const r = await callsApi('logs', { page: logsPage, limit: LOGS_PER_PAGE });
+        if (!r.success) {
+            container.innerHTML = `<div class="calls-loading">Error: ${r.error}</div>`;
+            return;
+        }
+
+        const logs = r.logs || [];
+        if (logs.length === 0) {
+            container.innerHTML = `
+                <div class="call-log-empty">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6.29 6.29l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                    <p>Aún no hay llamadas registradas.<br>Inicia una llamada de prueba para comenzar.</p>
+                </div>`;
+        } else {
+            container.innerHTML = logs.map(log => {
+                const dt = log.call_date ? `${log.call_date} ${log.call_time || ''}`.trim() : '—';
+                return `
+                <div class="call-log-card result-${log.call_result || 'no_answer'}" data-log-id="${log.id}" onclick="window.showCallDetail(${JSON.stringify(log).split('"').join("'")})">
+                    <div class="call-log-card-header">
+                        <div class="call-log-name">${log.lead_name || '—'}</div>
+                        <div class="call-log-time">${dt}</div>
+                    </div>
+                    <div class="call-log-company">${log.phone || ''} ${log.company ? '· '+log.company : ''}</div>
+                    <div class="call-log-footer">
+                        ${resultBadge(log.call_result)}
+                        ${interestBadge(log.interest_level)}
+                        <span class="call-log-duration">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            ${fmtDuration(log.duration_seconds)}
+                        </span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // Pagination
+        document.getElementById('calls-logs-prev').disabled = logsPage <= 1;
+        document.getElementById('calls-logs-next').disabled = logs.length < LOGS_PER_PAGE;
+        document.getElementById('calls-logs-page-info').textContent = `Página ${logsPage}`;
+    }
+
+    // ── Leads ─────────────────────────────────────────────────────────────
+    async function loadLeads(page, status) {
+        leadsPage = page || 1;
+        const tbody = document.getElementById('calls-leads-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="7" class="calls-loading">Cargando...</td></tr>';
+
+        const r = await callsApi('leads', { page: leadsPage, limit: LEADS_PER_PAGE, status: status || '' });
+        if (!r.success) {
+            tbody.innerHTML = `<tr><td colspan="7" class="calls-loading">Error: ${r.error}</td></tr>`;
+            return;
+        }
+        const leads = r.leads || [];
+        if (leads.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="calls-loading">Sin leads encontrados.</td></tr>';
+        } else {
+            tbody.innerHTML = leads.map(l => `
+                <tr>
+                    <td><strong>${l.lead_name || '—'}</strong><br><span style="font-size:10px;color:#9ca3af;">${l.title||''}</span></td>
+                    <td>${l.company || '—'}</td>
+                    <td style="font-family:monospace;font-size:11px;">${l.phone || '—'}</td>
+                    <td>${leadStatusBadge(l.status)}</td>
+                    <td style="text-align:center;">${l.attempts || 0}</td>
+                    <td style="font-size:11px;">${l.last_call_date || '—'}</td>
+                    <td>
+                        <button class="calls-action-btn" onclick="prefillCallForm(${JSON.stringify(l).split('"').join("'")})">
+                            Llamar
+                        </button>
+                    </td>
+                </tr>`).join('');
+        }
+
+        document.getElementById('calls-leads-prev').disabled = leadsPage <= 1;
+        document.getElementById('calls-leads-next').disabled = leads.length < LEADS_PER_PAGE;
+        document.getElementById('calls-leads-page-info').textContent = `Página ${leadsPage}`;
+    }
+
+    // ── Test Call ─────────────────────────────────────────────────────────
+    async function triggerTestCall(formData) {
+        const btn   = document.getElementById('calls-test-submit');
+        const result = document.getElementById('calls-test-result');
+        btn.disabled = true;
+        btn.textContent = 'Iniciando llamada…';
+        result.style.display = 'none';
+
+        const r = await callsApi('trigger', {}, formData);
+        btn.disabled = false;
+        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6.29 6.29l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg> Iniciar Llamada de Prueba`;
+
+        result.style.display = '';
+        if (r.success) {
+            result.className = 'calls-result-success';
+            result.innerHTML = `<strong>✅ Llamada iniciada</strong><br>Call ID: <code>${r.call_id}</code><br><small>Estado: ${r.status || 'queued'} — El historial se actualizará al terminar la llamada.</small>`;
+            showToast('✅ Llamada de prueba iniciada', 'success');
+        } else {
+            result.className = 'calls-result-error';
+            result.innerHTML = `<strong>❌ Error</strong><br>${r.error}`;
+            showToast('Error al iniciar la llamada: ' + r.error, 'error');
+        }
+    }
+
+    // ── Add Lead ──────────────────────────────────────────────────────────
+    async function addLead(formData) {
+        const btn = document.getElementById('calls-save-lead-btn');
+        btn.disabled = true;
+        btn.textContent = 'Guardando…';
+        const r = await callsApi('add-lead', {}, formData);
+        btn.disabled = false;
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Guardar Lead';
+        if (r.success) {
+            showToast('✅ Lead guardado', 'success');
+            loadLeads(1, document.getElementById('calls-leads-filter')?.value);
+        } else {
+            showToast('Error: ' + r.error, 'error');
+        }
+    }
+
+    // ── Detail Modal ──────────────────────────────────────────────────────
+    window.showCallDetail = function(log) {
+        if (typeof log === 'string') {
+            try { log = JSON.parse(log.replace(/'/g, '"')); } catch { return; }
+        }
+        const modal = document.getElementById('calls-detail-modal');
+        const body  = document.getElementById('calls-modal-body');
+        const title = document.getElementById('calls-modal-title');
+        if (!modal || !body) return;
+        title.textContent = `Llamada — ${log.lead_name || '—'}`;
+
+        const calLink = log.calendly_link
+            ? `<a href="${log.calendly_link}" target="_blank" class="calls-calendly-link">📅 Ver/Compartir Calendly</a>`
+            : '';
+
+        const recording = log.recording_url
+            ? `<div class="calls-recording-player">
+                <audio controls src="${log.recording_url}"></audio>
+                <a href="${log.recording_url}" target="_blank" class="calls-recording-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                    Descargar
+                </a>
+              </div>`
+            : '<p style="font-size:12px;color:#9ca3af;">Sin grabación disponible.</p>';
+
+        body.innerHTML = `
+            <div class="calls-detail-meta">
+                <div class="calls-detail-meta-item">
+                    <div class="calls-detail-meta-label">Resultado</div>
+                    <div class="calls-detail-meta-value">${resultBadge(log.call_result)}</div>
+                </div>
+                <div class="calls-detail-meta-item">
+                    <div class="calls-detail-meta-label">Interés</div>
+                    <div class="calls-detail-meta-value">${interestBadge(log.interest_level)}</div>
+                </div>
+                <div class="calls-detail-meta-item">
+                    <div class="calls-detail-meta-label">Duración</div>
+                    <div class="calls-detail-meta-value">${fmtDuration(log.duration_seconds)}</div>
+                </div>
+                <div class="calls-detail-meta-item">
+                    <div class="calls-detail-meta-label">Teléfono</div>
+                    <div class="calls-detail-meta-value" style="font-family:monospace;font-size:12px;">${log.phone || '—'}</div>
+                </div>
+                <div class="calls-detail-meta-item">
+                    <div class="calls-detail-meta-label">Siguiente paso</div>
+                    <div class="calls-detail-meta-value">${log.next_step || '—'}</div>
+                </div>
+                <div class="calls-detail-meta-item">
+                    <div class="calls-detail-meta-label">Fecha</div>
+                    <div class="calls-detail-meta-value">${log.call_date || '—'} ${log.call_time || ''}</div>
+                </div>
+            </div>
+            ${calLink ? `<div class="calls-detail-section">${calLink}</div>` : ''}
+            ${log.summary ? `
+            <div class="calls-detail-section">
+                <div class="calls-detail-section-title">Resumen</div>
+                <div class="calls-transcript-box" style="font-family:inherit;">${log.summary}</div>
+            </div>` : ''}
+            <div class="calls-detail-section">
+                <div class="calls-detail-section-title">Grabación</div>
+                ${recording}
+            </div>
+            ${log.transcript ? `
+            <div class="calls-detail-section">
+                <div class="calls-detail-section-title">Transcripción</div>
+                <div class="calls-transcript-box">${log.transcript}</div>
+            </div>` : ''}`;
+
+        modal.style.display = 'flex';
+    };
+
+    // ── Prefill form from lead ────────────────────────────────────────────
+    window.prefillCallForm = function(lead) {
+        if (typeof lead === 'string') {
+            try { lead = JSON.parse(lead.replace(/'/g, '"')); } catch { return; }
+        }
+        const set = (id, val) => { const e = document.getElementById(id); if (e) e.value = val || ''; };
+        set('call-lead-name', lead.lead_name);
+        set('call-phone',     lead.phone);
+        set('call-company',   lead.company);
+        set('call-title',     lead.title);
+        set('call-email',     lead.email);
+        const lt = document.getElementById('call-lead-type');
+        if (lt && lead.lead_type) lt.value = lead.lead_type;
+        // Scroll to form
+        document.getElementById('calls-test-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    // ── Init ─────────────────────────────────────────────────────────────
+    function initCallsMode() {
+        if (callsInitialized) { loadStats(); loadLogs(1); return; }
+        callsInitialized = true;
+
+        // Stats bar refresh
+        document.getElementById('calls-refresh-stats')?.addEventListener('click', loadStats);
+
+        // Logs refresh & pagination
+        document.getElementById('calls-logs-refresh')?.addEventListener('click', () => loadLogs(logsPage));
+        document.getElementById('calls-logs-prev')?.addEventListener('click', () => loadLogs(logsPage - 1));
+        document.getElementById('calls-logs-next')?.addEventListener('click', () => loadLogs(logsPage + 1));
+
+        // Leads refresh, filter & pagination
+        document.getElementById('calls-leads-refresh')?.addEventListener('click', () => {
+            loadLeads(1, document.getElementById('calls-leads-filter')?.value);
+        });
+        document.getElementById('calls-leads-filter')?.addEventListener('change', (e) => {
+            loadLeads(1, e.target.value);
+        });
+        document.getElementById('calls-leads-prev')?.addEventListener('click', () => {
+            loadLeads(leadsPage - 1, document.getElementById('calls-leads-filter')?.value);
+        });
+        document.getElementById('calls-leads-next')?.addEventListener('click', () => {
+            loadLeads(leadsPage + 1, document.getElementById('calls-leads-filter')?.value);
+        });
+
+        // Test call form
+        document.getElementById('calls-test-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await triggerTestCall({
+                lead_name:  document.getElementById('call-lead-name')?.value,
+                phone:      document.getElementById('call-phone')?.value,
+                company:    document.getElementById('call-company')?.value,
+                title:      document.getElementById('call-title')?.value,
+                email:      document.getElementById('call-email')?.value,
+                lead_type:  document.getElementById('call-lead-type')?.value
+            });
+        });
+
+        // Save lead button
+        document.getElementById('calls-save-lead-btn')?.addEventListener('click', async () => {
+            const name  = document.getElementById('call-lead-name')?.value?.trim();
+            const phone = document.getElementById('call-phone')?.value?.trim();
+            if (!name || !phone) { showToast('Nombre y teléfono son requeridos', 'warning'); return; }
+            await addLead({
+                lead_name:  name,
+                phone:      phone,
+                company:    document.getElementById('call-company')?.value || '',
+                title:      document.getElementById('call-title')?.value   || '',
+                email:      document.getElementById('call-email')?.value   || '',
+                lead_type:  document.getElementById('call-lead-type')?.value || 'STAFFING'
+            });
+        });
+
+        // Load initial data
+        loadStats();
+        loadLogs(1);
+        loadLeads(1);
+    }
+
+    window.initCallsMode = initCallsMode;
+})();
+// ========== END CALLS MODE ==========
