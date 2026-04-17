@@ -8,6 +8,8 @@
     <!-- ffmpeg.wasm for client-side video merging -->
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
     <script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/util.js"></script>
+    <!-- Bland.ai Web SDK -->
+    <script src="https://unpkg.com/bland-client-js-sdk@latest/dist/index.umd.js"></script>
 </head>
 <body>
     <div class="container">
@@ -2025,30 +2027,37 @@
 
                 <!-- LEFT: Test Call Form -->
                 <div class="calls-left">
-                    <div class="card">
-                        <h2 style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#207CE5" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6.29 6.29l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                            Llamada de Prueba
-                        </h2>
-                        <form id="calls-test-form">
-                            <div class="form-group">
-                                <label for="call-lead-name">Nombre *</label>
-                                <input type="text" id="call-lead-name" placeholder="John Smith" required>
+                    <div class="card" id="calls-test-card">
+                        <!-- Mode tabs -->
+                        <div class="calls-mode-tabs">
+                            <button class="calls-mode-tab active" id="tab-webcall" onclick="switchCallMode('web')">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                                Hablar con Laura
+                            </button>
+                            <button class="calls-mode-tab" id="tab-phonecall" onclick="switchCallMode('phone')">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6.29 6.29l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                Llamar a Número
+                            </button>
+                        </div>
+
+                        <!-- Shared lead fields -->
+                        <div style="margin-bottom:16px;">
+                            <div class="form-row" style="margin-bottom:10px;">
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <label for="call-lead-name">Nombre</label>
+                                    <input type="text" id="call-lead-name" placeholder="John Smith">
+                                </div>
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <label for="call-company">Empresa</label>
+                                    <input type="text" id="call-company" placeholder="Acme Corp">
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="call-phone">Teléfono * <small style="color:#94a3b8;font-weight:400;">(+1XXXXXXXXXX)</small></label>
-                                <input type="tel" id="call-phone" placeholder="+15551234567" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="call-company">Empresa</label>
-                                <input type="text" id="call-company" placeholder="Acme Corp">
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
+                            <div class="form-row" style="margin-bottom:10px;">
+                                <div class="form-group" style="margin-bottom:0;">
                                     <label for="call-title">Cargo</label>
                                     <input type="text" id="call-title" placeholder="CTO">
                                 </div>
-                                <div class="form-group">
+                                <div class="form-group" style="margin-bottom:0;">
                                     <label for="call-lead-type">Tipo de Lead</label>
                                     <select id="call-lead-type">
                                         <option value="STAFFING">Staffing</option>
@@ -2058,22 +2067,71 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" style="margin-bottom:0;">
                                 <label for="call-email">Email</label>
                                 <input type="email" id="call-email" placeholder="john@acme.com">
                             </div>
-                            <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                                <button type="submit" class="btn btn-primary calls-call-btn" id="calls-test-submit">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6.29 6.29l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                                    Iniciar Llamada de Prueba
-                                </button>
-                                <button type="button" class="btn btn-secondary" id="calls-save-lead-btn">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                    Guardar Lead
-                                </button>
+                        </div>
+
+                        <!-- WEB CALL PANEL -->
+                        <div id="panel-webcall">
+                            <div class="webcall-widget" id="webcall-widget">
+                                <div class="webcall-idle" id="webcall-idle">
+                                    <div class="webcall-avatar">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                                    </div>
+                                    <div class="webcall-idle-text">
+                                        <div class="webcall-agent-name">Laura &middot; MSI Technologies</div>
+                                        <div class="webcall-agent-sub">IA de Ventas &middot; Habla directo desde tu navegador</div>
+                                    </div>
+                                    <button class="webcall-start-btn" id="webcall-start-btn" onclick="startWebCall()">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                        Iniciar
+                                    </button>
+                                </div>
+                                <div class="webcall-active" id="webcall-active" style="display:none;">
+                                    <div class="webcall-active-header">
+                                        <div class="webcall-live-badge">
+                                            <span class="webcall-live-dot"></span>
+                                            <span id="webcall-status-text">Conectando&hellip;</span>
+                                        </div>
+                                        <div class="webcall-timer" id="webcall-timer">0:00</div>
+                                    </div>
+                                    <div class="webcall-visualizer" id="webcall-visualizer">
+                                        <div class="wv-bar"></div><div class="wv-bar"></div><div class="wv-bar"></div>
+                                        <div class="wv-bar"></div><div class="wv-bar"></div><div class="wv-bar"></div>
+                                        <div class="wv-bar"></div><div class="wv-bar"></div><div class="wv-bar"></div>
+                                    </div>
+                                    <button class="webcall-stop-btn" id="webcall-stop-btn" onclick="stopWebCall()">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
+                                        Terminar llamada
+                                    </button>
+                                </div>
+                                <div id="webcall-msg" class="webcall-msg" style="display:none;"></div>
                             </div>
-                        </form>
-                        <div id="calls-test-result" style="display:none;margin-top:16px;"></div>
+                            <button type="button" class="btn btn-secondary" id="calls-save-lead-btn" style="width:100%;margin-top:10px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                Guardar Lead
+                            </button>
+                        </div>
+
+                        <!-- PHONE CALL PANEL -->
+                        <div id="panel-phonecall" style="display:none;">
+                            <form id="calls-test-form">
+                                <div class="form-group">
+                                    <label for="call-phone">Teléfono * <small style="color:#94a3b8;font-weight:400;">(+1XXXXXXXXXX)</small></label>
+                                    <input type="tel" id="call-phone" placeholder="+15551234567" required>
+                                </div>
+                                <div style="display:flex;gap:10px;">
+                                    <button type="submit" class="btn btn-primary calls-call-btn" id="calls-test-submit" style="flex:1;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6.29 6.29l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                        Llamar
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" onclick="switchCallMode('web')">Cancelar</button>
+                                </div>
+                            </form>
+                            <div id="calls-test-result" style="display:none;margin-top:16px;"></div>
+                        </div>
                     </div>
 
                     <!-- Leads filter & table -->
@@ -2200,6 +2258,332 @@
 
     <!-- Configuration -->
     <script src="config.example.js"></script>
+
+    <!-- Web Call Widget Styles -->
+    <style>
+    .calls-mode-tabs {
+        display: flex;
+        gap: 0;
+        background: #f3f4f6;
+        border-radius: 10px;
+        padding: 3px;
+        margin-bottom: 18px;
+    }
+    .calls-mode-tab {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px 12px;
+        border: none;
+        border-radius: 8px;
+        background: transparent;
+        color: #6b7280;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .calls-mode-tab.active {
+        background: #ffffff;
+        color: #1f2937;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    .calls-mode-tab:hover:not(.active) { color: #374151; }
+
+    .webcall-widget {
+        background: linear-gradient(135deg, #1e3a5f 0%, #0f2340 100%);
+        border-radius: 14px;
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+        min-height: 110px;
+    }
+    .webcall-widget::before {
+        content: '';
+        position: absolute;
+        top: -40px; right: -40px;
+        width: 120px; height: 120px;
+        background: radial-gradient(circle, rgba(32,124,229,0.2) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .webcall-idle {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .webcall-avatar {
+        width: 52px; height: 52px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #207CE5, #0e5fc7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(32,124,229,0.4);
+    }
+    .webcall-idle-text { flex: 1; }
+    .webcall-agent-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 2px;
+    }
+    .webcall-agent-sub {
+        font-size: 11px;
+        color: rgba(255,255,255,0.55);
+        line-height: 1.3;
+    }
+    .webcall-start-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 18px;
+        background: linear-gradient(135deg, #207CE5, #0e5fc7);
+        color: white;
+        border: none;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.2s;
+        box-shadow: 0 3px 10px rgba(32,124,229,0.4);
+    }
+    .webcall-start-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(32,124,229,0.5); }
+    .webcall-start-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .webcall-active { display: flex; flex-direction: column; gap: 14px; }
+    .webcall-active-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .webcall-live-badge {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 12px;
+        font-weight: 600;
+        color: rgba(255,255,255,0.9);
+    }
+    .webcall-live-dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: #22c55e;
+        animation: livePulse 1.2s ease-in-out infinite;
+    }
+    @keyframes livePulse {
+        0%,100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(0.8); }
+    }
+    .webcall-timer {
+        font-size: 16px;
+        font-weight: 700;
+        color: #ffffff;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Visualizer */
+    .webcall-visualizer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        height: 40px;
+    }
+    .wv-bar {
+        width: 4px;
+        border-radius: 2px;
+        background: rgba(32,124,229,0.6);
+        height: 8px;
+        transition: height 0.08s ease;
+    }
+    .wv-bar.active {
+        animation: wvAnim 0.6s ease-in-out infinite alternate;
+    }
+    .wv-bar:nth-child(1) { animation-delay: 0.00s; }
+    .wv-bar:nth-child(2) { animation-delay: 0.07s; }
+    .wv-bar:nth-child(3) { animation-delay: 0.14s; }
+    .wv-bar:nth-child(4) { animation-delay: 0.21s; }
+    .wv-bar:nth-child(5) { animation-delay: 0.28s; }
+    .wv-bar:nth-child(6) { animation-delay: 0.21s; }
+    .wv-bar:nth-child(7) { animation-delay: 0.14s; }
+    .wv-bar:nth-child(8) { animation-delay: 0.07s; }
+    .wv-bar:nth-child(9) { animation-delay: 0.00s; }
+    @keyframes wvAnim {
+        from { height: 4px; background: rgba(32,124,229,0.4); }
+        to   { height: 32px; background: #60a5fa; }
+    }
+
+    .webcall-stop-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 9px;
+        background: rgba(239,68,68,0.2);
+        color: #fca5a5;
+        border: 1px solid rgba(239,68,68,0.3);
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .webcall-stop-btn:hover { background: rgba(239,68,68,0.4); color: #fff; }
+
+    .webcall-msg {
+        margin-top: 8px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+    .webcall-msg.success { background: rgba(34,197,94,0.15); color: #86efac; }
+    .webcall-msg.error   { background: rgba(239,68,68,0.15);  color: #fca5a5; }
+    .webcall-msg.info    { background: rgba(96,165,250,0.15);  color: #bfdbfe; }
+    </style>
+
+    <!-- Web Call JS -->
+    <script>
+    // ── Tab switching ─────────────────────────────────────────────────────
+    window.switchCallMode = function(mode) {
+        document.getElementById('panel-webcall').style.display   = mode === 'web'   ? '' : 'none';
+        document.getElementById('panel-phonecall').style.display = mode === 'phone' ? '' : 'none';
+        document.getElementById('tab-webcall').classList.toggle('active',   mode === 'web');
+        document.getElementById('tab-phonecall').classList.toggle('active', mode === 'phone');
+    };
+
+    // ── State ─────────────────────────────────────────────────────────────
+    let _blandClient = null;
+    let _callTimer   = null;
+    let _callSeconds = 0;
+    let _vizInterval = null;
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+    function setWebCallMsg(text, type) {
+        const el = document.getElementById('webcall-msg');
+        if (!el) return;
+        el.textContent = text;
+        el.className = 'webcall-msg ' + (type || 'info');
+        el.style.display = text ? '' : 'none';
+    }
+    function setWebCallStatus(text) {
+        const el = document.getElementById('webcall-status-text');
+        if (el) el.textContent = text;
+    }
+    function startTimer() {
+        _callSeconds = 0;
+        _callTimer = setInterval(() => {
+            _callSeconds++;
+            const m = Math.floor(_callSeconds / 60);
+            const s = String(_callSeconds % 60).padStart(2,'0');
+            const el = document.getElementById('webcall-timer');
+            if (el) el.textContent = m + ':' + s;
+        }, 1000);
+    }
+    function stopTimer() {
+        clearInterval(_callTimer);
+        _callTimer = null;
+    }
+    function startVisualizer() {
+        document.querySelectorAll('.wv-bar').forEach(b => b.classList.add('active'));
+    }
+    function stopVisualizer() {
+        document.querySelectorAll('.wv-bar').forEach(b => {
+            b.classList.remove('active');
+            b.style.height = '8px';
+        });
+    }
+    function showActive() {
+        document.getElementById('webcall-idle').style.display   = 'none';
+        document.getElementById('webcall-active').style.display = '';
+    }
+    function showIdle() {
+        document.getElementById('webcall-idle').style.display   = '';
+        document.getElementById('webcall-active').style.display = 'none';
+    }
+
+    // ── Start Web Call ────────────────────────────────────────────────────
+    window.startWebCall = async function() {
+        const btn = document.getElementById('webcall-start-btn');
+        btn.disabled = true;
+        btn.textContent = 'Conectando...';
+        setWebCallMsg('', '');
+
+        try {
+            // 1. Get session token from our backend
+            const r = await fetch('/api/calls?action=web-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lead_name: document.getElementById('call-lead-name')?.value || '',
+                    company:   document.getElementById('call-company')?.value   || '',
+                    title:     document.getElementById('call-title')?.value     || '',
+                    lead_type: document.getElementById('call-lead-type')?.value || 'STAFFING',
+                    email:     document.getElementById('call-email')?.value     || ''
+                })
+            });
+            const data = await r.json();
+            if (!data.success) throw new Error(data.error || 'Error al obtener sesión');
+
+            // 2. Init Bland SDK
+            const BlandWebClient = window.BlandWebClient || (window.bland && window.bland.BlandWebClient);
+            if (!BlandWebClient) throw new Error('SDK de Bland.ai no cargó. Recarga la página.');
+
+            _blandClient = new BlandWebClient(data.agent_id, data.token);
+
+            // 3. Event handlers
+            _blandClient.on('conversationStarted', () => {
+                setWebCallStatus('En llamada...');
+                startTimer();
+                startVisualizer();
+            });
+            _blandClient.on('conversationEnded', () => {
+                setWebCallStatus('Llamada terminada');
+                stopTimer();
+                stopVisualizer();
+                setTimeout(showIdle, 1500);
+                setWebCallMsg('Llamada completada ✓', 'success');
+                _blandClient = null;
+            });
+            _blandClient.on('error', (err) => {
+                console.error('[WebCall]', err);
+                setWebCallMsg('Error: ' + (err.message || err), 'error');
+                stopTimer();
+                stopVisualizer();
+                showIdle();
+                _blandClient = null;
+            });
+
+            // 4. Start
+            showActive();
+            setWebCallStatus('Conectando...');
+            await _blandClient.initConversation({ sampleRate: 44100 });
+        } catch (err) {
+            console.error('[WebCall]', err);
+            setWebCallMsg(err.message || 'Error al conectar', 'error');
+            showIdle();
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Iniciar';
+        }
+    };
+
+    // ── Stop Web Call ─────────────────────────────────────────────────────
+    window.stopWebCall = function() {
+        try { _blandClient?.stopConversation(); } catch {}
+        stopTimer();
+        stopVisualizer();
+        showIdle();
+        setWebCallMsg('Llamada terminada', 'success');
+        _blandClient = null;
+    };
+    </script>
+
     <!-- Main Application -->
     <script src="app.js"></script>
 </body>

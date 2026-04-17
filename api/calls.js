@@ -165,6 +165,72 @@ module.exports = async (req, res) => {
             return res.status(r.status).json({ success: r.ok, data });
         }
 
+        // ── POST: create web call agent + get session token ─────────────────
+        if (req.method === 'POST' && action === 'web-session') {
+            const { lead_name, company, title, lead_type, email } = req.body || {};
+            const n  = lead_name || 'there';
+            const co = company   || 'your company';
+            const e  = email     || '';
+            const intentMap = {
+                'STAFFING':      'nearshore staff augmentation and specialized talent acquisition',
+                'AI_SOLUTIONS':  'AI solutions and intelligent process automation',
+                'CLOUD':         'cloud infrastructure and DevOps modernization',
+                'CYBERSECURITY': 'cybersecurity and compliance solutions'
+            };
+            const topic = intentMap[(lead_type || 'STAFFING').toUpperCase()] || 'technology staffing';
+
+            const prompt = `You are Laura, a commercial assistant at M-S-I Technologies, a nearshore technology staffing company.
+You are speaking with ${n}${co !== 'your company' ? ` from ${co}` : ''}${title ? `, ${title}` : ''}. Topic: ${topic}.
+
+ABOUT MSI: Senior LATAM engineers, US time zone, ready in under four weeks, 20-35% below domestic hire. Services: Staff Augmentation, Cloud, Cybersecurity (AWS, GCP, Azure), Telecom.
+
+Keep this conversation brief and natural (3-5 minutes max). Your goals:
+1. Greet warmly and introduce yourself as Laura from MSI Technologies
+2. Ask about their current technology staffing challenges
+3. Briefly explain MSI's value proposition relevant to ${topic}
+4. Offer to schedule a 30-minute call with a senior consultant
+5. If they agree, let them know Nataly Riano (nriano@msiamericas.com) will send a calendar invite
+
+Tone: Warm, confident, professional. Short sentences. Wait for responses. Never say "I just wanted to".`;
+
+            // Create Bland agent
+            const agentRes = await fetch('https://api.bland.ai/v1/agents', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'authorization': BLAND_API_KEY },
+                body: JSON.stringify({
+                    voice: BLAND_VOICE_ID,
+                    prompt,
+                    first_sentence: `Hi${n !== 'there' ? ' '+n : ''}! This is Laura from MSI Technologies. How are you today?`,
+                    wait_for_greeting: false,
+                    interruptions: true,
+                    noise_cancellation: true,
+                    model: 'enhanced',
+                    language: 'en-US',
+                    max_duration: 10
+                })
+            });
+            const agentData = await agentRes.json();
+            if (!agentRes.ok) {
+                console.error('[web-session] agent create error:', agentData);
+                return res.status(agentRes.status).json({ success: false, error: agentData.message || agentData.error || JSON.stringify(agentData) });
+            }
+            const agentId = agentData.agent?.agent_id || agentData.agent_id;
+            if (!agentId) return res.status(500).json({ success: false, error: 'No agent_id in Bland response: ' + JSON.stringify(agentData) });
+
+            // Authorize for web use
+            const authRes = await fetch(`https://api.bland.ai/v1/agents/${agentId}/authorize`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'authorization': BLAND_API_KEY }
+            });
+            const authData = await authRes.json();
+            if (!authRes.ok) {
+                console.error('[web-session] authorize error:', authData);
+                return res.status(authRes.status).json({ success: false, error: authData.message || authData.error || JSON.stringify(authData) });
+            }
+
+            return res.status(200).json({ success: true, agent_id: agentId, token: authData.token });
+        }
+
         return res.status(404).json({ success: false, error: `Unknown action: ${action}` });
 
     } catch (err) {
