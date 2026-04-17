@@ -171,12 +171,30 @@ module.exports = async (req, res) => {
                 return res.status(500).json({ success: false, error: 'BLAND_API_KEY not configured' });
             }
 
-            const { lead_name, phone, company, title, email, lead_type } = req.body || {};
+            const { lead_name, phone, company, title, email, lead_type, webhook_url } = req.body || {};
             if (!phone) return res.status(400).json({ success: false, error: 'phone is required' });
 
             const n = lead_name || 'there';
+            const co = company || 'your company';
+            const e = email || '';
 
             const task = generateBlandPrompt({ lead_name, company, title, email, lead_type });
+
+            const payloadBody = {
+                phone_number: phone,
+                phone_number_id: BLAND_PHONE_NUMBER_ID,
+                task,
+                voice: BLAND_VOICE_ID,
+                first_sentence: `Hi, is this ${n}?`,
+                wait_for_greeting: true,
+                noise_cancellation: true,
+                record: true,
+                max_duration: 2,
+                language: 'en-US',
+                model: 'enhanced',
+                metadata: { test_call: true, lead_name: n, company: co, email: e, phone: phone, lead_type: lead_type || 'STAFFING' }
+            };
+            if (webhook_url) payloadBody.webhook = webhook_url;
 
             const blandRes = await fetch('https://api.bland.ai/v1/calls', {
                 method: 'POST',
@@ -184,20 +202,7 @@ module.exports = async (req, res) => {
                     'Content-Type': 'application/json',
                     'authorization': BLAND_API_KEY
                 },
-                body: JSON.stringify({
-                    phone_number: phone,
-                    phone_number_id: BLAND_PHONE_NUMBER_ID,
-                    task,
-                    voice: BLAND_VOICE_ID,
-                    first_sentence: `Hi, is this ${n}?`,
-                    wait_for_greeting: true,
-                    noise_cancellation: true,
-                    record: true,
-                    max_duration: 2,
-                    language: 'en-US',
-                    model: 'enhanced',
-                    metadata: { test_call: true, lead_name: n, company: co }
-                })
+                body: JSON.stringify(payloadBody)
             });
             const blandData = await blandRes.json();
 
@@ -241,26 +246,37 @@ module.exports = async (req, res) => {
 
         // ── POST: create web call agent + get session token ─────────────────
         if (req.method === 'POST' && action === 'web-session') {
-            const { lead_name, company, title, lead_type, email } = req.body || {};
+            const { lead_name, company, title, lead_type, email, phone, webhook_url } = req.body || {};
             const n  = lead_name || 'there';
+            const co = company || 'your company';
+            const e = email || '';
 
             const prompt = generateBlandPrompt({ lead_name, company, title, email, lead_type });
+
+            const payloadBody = {
+                voice: BLAND_VOICE_ID,
+                prompt,
+                first_sentence: `Hi${n !== 'there' ? ' '+n : ''}! This is Laura from MSI Technologies. How are you today?`,
+                wait_for_greeting: false,
+                interruptions: true,
+                noise_cancellation: true,
+                model: 'enhanced',
+                language: 'en-US',
+                max_duration: 10,
+                // Web calls also get metadata to reconstruct the row in n8n updates
+                metadata: { web_call: true, lead_name: n, company: co, email: e, phone: phone || 'WEB-USER', lead_type: lead_type || 'STAFFING' }
+            };
+            if (webhook_url) payloadBody.dynamic_data = [{ url: webhook_url, method: "POST", data: { action: "webhook" } }];
+
+            // Note: For web agents, Bland sometimes prefers webhook directly on the calls API later, or using a Pathway.
+            // If they support webhook on /v1/agents directly, we can add it here too:
+            if (webhook_url) payloadBody.webhook = webhook_url;
 
             // Create Bland agent
             const agentRes = await fetch('https://api.bland.ai/v1/agents', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'authorization': BLAND_API_KEY },
-                body: JSON.stringify({
-                    voice: BLAND_VOICE_ID,
-                    prompt,
-                    first_sentence: `Hi${n !== 'there' ? ' '+n : ''}! This is Laura from MSI Technologies. How are you today?`,
-                    wait_for_greeting: false,
-                    interruptions: true,
-                    noise_cancellation: true,
-                    model: 'enhanced',
-                    language: 'en-US',
-                    max_duration: 10
-                })
+                body: JSON.stringify(payloadBody)
             });
             const agentData = await agentRes.json();
             if (!agentRes.ok) {
