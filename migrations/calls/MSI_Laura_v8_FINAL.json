@@ -1,0 +1,470 @@
+{
+  "name": "MSI Cold Calling - Laura v8 FINAL",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 320],
+      "id": "6e24869b-1dd5-417a-8241-0d1a544720db",
+      "name": "Test Manual",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 15 }] }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 128],
+      "id": "8c490de4-b41a-47ac-aab8-0e54580d6d54",
+      "name": "Horario Óptimo Llamadas",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = new Date();\nconst estTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));\nconst hour = estTime.getHours();\nconst day = estTime.getDay();\n\nif (day === 0 || day === 6) {\n  return [{ json: { proceed: false, reason: 'Weekend - no calls' } }];\n}\n\nif (hour < 8 || hour >= 17) {\n  return [{ json: { proceed: false, reason: 'Outside business hours' } }];\n}\n\nreturn [{ json: { proceed: true, currentHour: hour, dayOfWeek: day } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [512, 224],
+      "id": "76b63deb-0155-4830-a46c-05829dacff7a",
+      "name": "Verificar Horario Laboral"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+          "conditions": [{ "leftValue": "={{ $json.proceed }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" }, "id": "cond-horario-001" }],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [736, 224],
+      "id": "ec8cff71-3b18-4856-bd3d-35208ee6b7d4",
+      "name": "¿Horario Válido?"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM bland_daily_stats WHERE date = CURRENT_DATE",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1008, 208],
+      "id": "7ae2e1d8-2338-4230-bb87-a36d7200fa9a",
+      "name": "Leer Stats del Día",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM bland_leads WHERE status IN ('PENDING', 'CALLBACK') AND attempts < 3 AND (last_call_date IS NULL OR last_call_date < CURRENT_DATE) ORDER BY CASE WHEN status = 'CALLBACK' AND callback_date <= CURRENT_DATE THEN 0 ELSE 1 END, id ASC LIMIT 50",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1232, 208],
+      "id": "4b1a2c59-e4c5-4cf9-9707-a695398ca7ce",
+      "name": "Leer Leads Pendientes",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const leads = $('Leer Leads Pendientes').all();\n\nlet callsToday = 0;\ntry {\n  const stats = $('Leer Stats del Día').all();\n  if (stats.length > 0 && stats[0].json.total_calls) {\n    callsToday = parseInt(stats[0].json.total_calls) || 0;\n  }\n} catch (e) {\n  callsToday = 0;\n}\n\nif (callsToday >= 25) {\n  return [{ json: { proceed: false, reason: 'Already made 25 calls today', callsToday } }];\n}\n\nconst seenPhones = new Set();\nconst validLeads = leads.filter(lead => {\n  const status = String(lead.json.status || '').toUpperCase();\n  const attempts = parseInt(lead.json.attempts) || 0;\n  const phone = String(lead.json.phone || '').trim();\n  if (seenPhones.has(phone)) return false;\n  const isValid = (status === 'PENDING' || status === 'CALLBACK') && attempts < 3 && phone.length > 0;\n  if (isValid) seenPhones.add(phone);\n  return isValid;\n});\n\nconst leadsToCall = validLeads.slice(0, 1);\n\nif (leadsToCall.length === 0) {\n  return [{ json: { proceed: false, reason: 'No valid leads to call', callsToday } }];\n}\n\nreturn leadsToCall.map(lead => ({ json: { ...lead.json, callsToday, proceed: true } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1456, 208],
+      "id": "7ad3a7ca-8c1f-4352-87b4-485e0a806c02",
+      "name": "Filtrar Leads Válidos"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 2 },
+          "conditions": [{ "leftValue": "={{ $json.proceed }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1648, 208],
+      "id": "5c2a1243-3af5-4548-bf08-567788ce205d",
+      "name": "¿Hay Leads?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 2 },
+          "conditions": [{ "leftValue": "={{ $json.phone }}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty" } }],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1904, 192],
+      "id": "d71be443-1666-473f-a90d-ab67f4d14107",
+      "name": "¿Lead Válido?"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE bland_leads SET status = 'IN_PROGRESS', last_call_date = CURRENT_DATE, updated_at = NOW() WHERE phone = '{{ $json.phone }}' RETURNING *",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [2160, 192],
+      "id": "31fcee0d-a299-4c53-b970-545a237ac2e1",
+      "name": "Marcar Lead En Proceso",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const BLAND_API_KEY = 'org_aae0e1f07f1f504b5f39fe9953ecc82eda35d2da72650564a340a49b4a80d996540eef9ac5b57109ba6f69';\nconst BLAND_PHONE_NUMBER_ID = '07e907b3-68ee-4177-bcb1-3f8e990a245e';\nconst lead = $('¿Lead Válido?').first().json;\nconst today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });\n\n// === RESOLVE INTENT TOPIC ===\nconst intentMap = {\n  'STAFFING': 'nearshore staff augmentation and specialized talent acquisition',\n  'AI_SOLUTIONS': 'AI solutions and intelligent process automation',\n  'CLOUD': 'cloud infrastructure and DevOps modernization',\n  'CYBERSECURITY': 'cybersecurity and compliance solutions'\n};\nconst topic = intentMap[String(lead.lead_type || '').toUpperCase()] || lead.intent_topic || 'technology staffing and digital transformation';\n\nconst n = lead.lead_name || 'there';\nconst co = lead.company || 'your company';\nconst t = lead.title || 'Technology Leader';\nconst e = lead.email || '';\n\n// === OPTIMIZED PROMPT (<2000 chars, Bland best practices) ===\nconst task = `You are Laura, a commercial assistant at M-S-I Technologies calling ${n} at ${co}.\nM-S-I provides senior LATAM engineers: US timezone, fluent English, ready in four weeks, twenty to thirty-five percent below domestic hire.\nTopic of interest: ${topic}.\n\n=== STAGE 1: CONFIRM IDENTITY ===\nYour first sentence is already set. When they confirm identity, go to Stage 2.\n\"Who is calling?\": \"This is Laura from M-S-I Technologies, trying to reach ${n}.\"\nGatekeeper says unavailable: ask for callback time or email, then say goodbye warmly.\nWrong number or left company: apologize, say goodbye warmly.\n\n=== STAGE 2: EARN PERMISSION ===\nSay once: \"${n}, I noticed ${co} has been exploring ${topic}, and we work with technology teams solving exactly that. Can I have ninety seconds?\"\nYES: go to Stage 3.\nNO: \"Would later this week or next week work better?\" Get time or email, say goodbye warmly.\n\n=== STAGE 3: VALUE PROPOSITION ===\n\"We connect firms like yours with senior LATAM engineers in Five-G, I-O-T, Cloud, and Cybersecurity — same timezone, ready in four weeks, twenty to thirty-five percent savings. Are you having difficulty filling specialized roles, or is there a project where you need to expand capacity?\"\nPositive signal: go to Stage 4.\nRejection: \"I appreciate your time, ${n}. Have a great day.\"\n\n=== STAGE 4: QUALIFY ===\nAsk one question at a time. Wait for each answer.\nQ1: \"What timeline are you working with?\"\nQ2: \"What technologies are most critical?\"\nQ3: \"Are you leading this decision, or is someone else involved?\"\n\nHandle objections:\n- Already have a vendor: \"Is there a role that has been hard to fill?\"\n- Hiring freeze: \"Our contractor model avoids permanent headcount. Does that change things?\"\n- Send email: Ask their main challenge first. Get email, spell back every character, confirm.\n- Not interested: \"Is nearshore not an option, or just not on the radar right now?\" One attempt only.\n\n=== STAGE 5: BOOK MEETING ===\nEnter only after explicit interest.\n\"A thirty-minute call with our senior consultant. No slides, straight to your situation. This week or next?\"\nGet day. Get time. Confirm: \"So that is [day] at [time].\"\nGet email for calendar invite. Spell every character back. Confirm.\nAfter all three confirmed: \"Excellent, ${n}. Nataly Riano will send the invite shortly. Reach her at n-r-i-a-n-o at msiamericas dot com. Enjoy your day.\"\n\n=== RULES ===\nAny farewell: \"Thank you, ${n}. Have a great day.\" -> YOU MUST IMMEDIATELY HANG UP THE CALL.\nAlways answer direct questions before continuing your agenda.\nShort sentences. One question per turn. Wait after every question.\nUse their name two or three times max.\nCalm, warm tone. Downward inflection on statements.`;\n\n// === BLAND API PAYLOAD (Best Practices) ===\nconst body = {\n  phone_number: lead.phone,\n  phone_number_id: BLAND_PHONE_NUMBER_ID,\n  task: task,\n  voice: '4e65cda2-cf46-4907-84ba-3ca96c48f549',\n  first_sentence: 'Hi, is this ' + n + '?',\n  wait_for_greeting: true,\n  noise_cancellation: true,\n  background_track: 'office',\n  record: true,\n  max_duration: 5,\n  language: 'en-US',\n  model: 'turbo',\n  interruption_threshold: 150,\n  temperature: 0.4,\n  voice_settings: { speed: 1.2 },\n  voicemail: {\n    action: 'leave_message',\n    message: 'Hi ' + n + ', this is Laura from M-S-I Technologies. We help companies scale their tech teams with senior engineers. I would love to connect briefly. You can reach us at n-r-i-a-n-o at msiamericas dot com. Have a great day.'\n  },\n  summary_prompt: 'Classify this call. Extract: 1) disposition (meeting_scheduled, send_email, callback, not_interested, wrong_number, gatekeeper, voicemail, no_answer), 2) meeting_date and meeting_time if scheduled, 3) callback_date and callback_time if requested, 4) email_collected if confirmed during call, 5) pain_points mentioned, 6) brief summary of conversation outcome.',\n  dispositions: ['meeting_scheduled', 'send_email', 'callback', 'not_interested', 'wrong_number', 'gatekeeper', 'voicemail', 'no_answer'],\n  pronunciation_guide: [\n    { word: 'MSI', pronunciation: 'M-S-I', case_sensitive: 'true', spaced: 'true' },\n    { word: '5G', pronunciation: 'Five-G', case_sensitive: 'true', spaced: 'true' },\n    { word: 'IoT', pronunciation: 'I-O-T', case_sensitive: 'true', spaced: 'true' },\n    { word: 'AWS', pronunciation: 'A-W-S', case_sensitive: 'true', spaced: 'true' },\n    { word: 'GCP', pronunciation: 'G-C-P', case_sensitive: 'true', spaced: 'true' },\n    { word: 'Nataly', pronunciation: 'NAH-tah-lee' },\n    { word: 'Riano', pronunciation: 'Ree-AH-no' }\n  ],\n  webhook: 'https://borrar2.vercel.app/api/calls?action=bland-webhook',\n  metadata: {\n    lead_id: String(lead.id || ''),\n    lead_name: n,\n    company: co,\n    email: e,\n    phone: lead.phone,\n    lead_type: lead.lead_type || 'STAFFING',\n    call_date: today\n  }\n};\n\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://api.bland.ai/v1/calls',\n  headers: {\n    'Content-Type': 'application/json',\n    'authorization': BLAND_API_KEY\n  },\n  body: body\n});\n\nreturn [{ json: {\n  ...response,\n  phone: lead.phone,\n  lead_id: lead.id,\n  lead_name: n,\n  company: co,\n  email: e,\n  title: t,\n  attempts: lead.attempts,\n  call_date_today: today\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2432, 192],
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Llamar con Bland.ai"
+    },
+    {
+      "parameters": {
+        "jsCode": "await new Promise(resolve => setTimeout(resolve, 150000));\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2688, 192],
+      "id": "6ab0a93a-d1c3-4a9a-815c-084897b51d55",
+      "name": "Esperar 150 seg"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.bland.ai/v1/calls/{{ $json.call_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2944, 192],
+      "id": "8bed9680-bb69-47aa-bbf3-923b238d4f18",
+      "name": "Obtener Resultado Llamada",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "p6CU668YNOsmz1GH",
+          "name": "Bland.ai API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 3 },
+          "conditions": [{ "id": "644d1968-51e7-4929-a2a3-756759dced35", "leftValue": "={{ $json.status }}", "rightValue": "completed", "operator": { "type": "string", "operation": "equals", "name": "filter.operator.equals" } }],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [3168, 192],
+      "id": "e56b8920-8261-4890-b03d-06ebd7d32d6e",
+      "name": "¿Llamada Terminó?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const callResult = $json;\n\n// === RETRIEVE LEAD DATA ===\nlet lead = { phone: 'Unknown', lead_name: 'Unknown', company: '', email: '', attempts: 0 };\ntry {\n  lead = $('Llamar con Bland.ai').first().json;\n} catch(e) {\n  // Fallback: extract from metadata (webhook path)\n  const meta = callResult.metadata || {};\n  lead = {\n    id: meta.lead_id || null,\n    lead_id: meta.lead_id || null,\n    lead_name: meta.lead_name || 'Unknown',\n    company: meta.company || '',\n    phone: meta.phone || callResult.to || callResult.from || 'Unknown',\n    email: meta.email || '',\n    attempts: 1,\n    title: ''\n  };\n}\n\n// === RAW CALL DATA ===\nconst fullTranscript = (callResult.concatenated_transcript || '').toLowerCase();\nconst correctedDuration = parseInt(callResult.corrected_duration || '0');\nconst callLength = callResult.call_length || 0;\nconst durationSeconds = correctedDuration > 0 ? correctedDuration : Math.round(callLength * 60);\nconst status = callResult.status || '';\nconst summary = (callResult.summary || '').toLowerCase();\nconst blandDisposition = (callResult.disposition || '').toLowerCase().trim();\n\nconst transcripts = callResult.transcripts || [];\nconst userLines = transcripts.filter(t => t.user === 'user').map(t => t.text.toLowerCase()).join(' ');\nconst assistantLines = transcripts.filter(t => t.user === 'assistant').map(t => t.text.toLowerCase()).join(' ');\n\n// === VOICEMAIL DETECTION ===\nconst isVoicemail = callResult.voicemail_detected === true ||\n  callResult.answered_by === 'voicemail' ||\n  blandDisposition === 'voicemail' ||\n  fullTranscript.includes('leave a message') ||\n  fullTranscript.includes('voicemail') ||\n  assistantLines.includes('call ended due to voicemail');\n\n// === CALL STATUS ===\nlet callStatus = 'no_answer';\nlet interestLevel = 'none';\nlet nextStep = 'callback';\nlet disposition = blandDisposition || 'unknown';\nlet notes = '';\nlet painPoints = '';\nlet meetingDate = '';\nlet meetingTime = '';\nlet callbackDate = '';\nlet callbackTime = '';\nlet emailCollected = '';\n\nif (status === 'completed' && isVoicemail) {\n  callStatus = 'voicemail';\n  disposition = 'voicemail';\n  notes = 'Voicemail - message left';\n  nextStep = 'callback';\n\n} else if (status === 'completed' && userLines.length > 5 && !isVoicemail && durationSeconds > 15) {\n  callStatus = 'answered';\n\n  // === PAIN POINTS DETECTION ===\n  if (userLines.includes('scale') || userLines.includes('scaling') || userLines.includes('grow')) painPoints += 'Scaling team; ';\n  if (userLines.includes('cost') || userLines.includes('budget') || userLines.includes('expensive')) painPoints += 'Cost concerns; ';\n  if (userLines.includes('security') || userLines.includes('cyber')) painPoints += 'Cybersecurity needs; ';\n  if (userLines.includes('cloud') || userLines.includes('aws') || userLines.includes('azure')) painPoints += 'Cloud needs; ';\n  if (userLines.includes('ai ') || userLines.includes('artificial') || userLines.includes('machine learning')) painPoints += 'AI/ML needs; ';\n  if (userLines.includes('kubernetes') || userLines.includes('devops') || userLines.includes('docker')) painPoints += 'DevOps/K8s; ';\n  if (userLines.includes('5g') || userLines.includes('five-g') || userLines.includes('telecom')) painPoints += 'Telecom/5G; ';\n\n  // === DISPOSITION - BLAND AS PRIMARY SOURCE ===\n  // Trust Bland's disposition first, then fallback to heuristics\n  if (blandDisposition === 'meeting_scheduled') {\n    interestLevel = 'high';\n    nextStep = 'meeting_scheduled';\n    disposition = 'meeting_scheduled';\n  } else if (blandDisposition === 'send_email') {\n    interestLevel = 'medium';\n    nextStep = 'send_email';\n    disposition = 'send_email';\n  } else if (blandDisposition === 'not_interested') {\n    interestLevel = 'none';\n    nextStep = 'not_interested';\n    disposition = 'not_interested';\n  } else if (blandDisposition === 'callback') {\n    interestLevel = 'low';\n    nextStep = 'callback';\n    disposition = 'callback';\n  } else if (blandDisposition === 'wrong_number') {\n    interestLevel = 'none';\n    nextStep = 'not_interested';\n    disposition = 'wrong_number';\n  } else if (blandDisposition === 'gatekeeper') {\n    interestLevel = 'none';\n    nextStep = 'callback';\n    disposition = 'gatekeeper';\n  } else {\n    // === HEURISTIC FALLBACK (if Bland didn't set disposition) ===\n    const summaryHasMeeting = summary.includes('scheduled') || summary.includes('calendar invite') || summary.includes('meeting is set') || summary.includes('booked');\n    const summaryHasEmail = summary.includes('send info') || summary.includes('send email') || summary.includes('email follow') || summary.includes('information sent');\n    const summaryHasNoInterest = summary.includes('not interested') || summary.includes('declined') || summary.includes('no interest');\n    const summaryHasCallback = summary.includes('call back') || summary.includes('callback') || summary.includes('try again') || summary.includes('reach out later');\n\n    const userAccepted = userLines.includes('of course') || userLines.includes('sounds good') || userLines.includes('lets do it') || userLines.includes('sure');\n    const userMentionedDay = /monday|tuesday|wednesday|thursday|friday|next week|tomorrow|morning|afternoon/.test(userLines);\n    const strongRejection = userLines.includes('not interested') || userLines.includes('no thank') || userLines.includes('dont call') || userLines.includes('remove me') || userLines.includes('we dont need');\n\n    if (summaryHasMeeting || (userAccepted && userMentionedDay)) {\n      interestLevel = 'high'; nextStep = 'meeting_scheduled'; disposition = 'meeting_scheduled';\n    } else if (summaryHasEmail) {\n      interestLevel = 'medium'; nextStep = 'send_email'; disposition = 'send_email';\n    } else if (strongRejection || summaryHasNoInterest) {\n      interestLevel = 'none'; nextStep = 'not_interested'; disposition = 'not_interested';\n    } else if (summaryHasCallback) {\n      interestLevel = 'low'; nextStep = 'callback'; disposition = 'callback';\n    } else {\n      interestLevel = 'low'; nextStep = 'callback'; disposition = 'callback';\n    }\n  }\n\n  // === EXTRACT MEETING/CALLBACK/EMAIL FROM SUMMARY ===\n  const dayPattern = /(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i;\n  const timePattern = /(\\d{1,2}(?::\\d{2})?\\s*(?:am|pm|a\\.m\\.|p\\.m\\.))/i;\n  const emailPattern = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,})/;\n\n  const summaryFull = callResult.summary || '';\n\n  const dayMatch = summaryFull.match(dayPattern);\n  const timeMatch = summaryFull.match(timePattern);\n  const emailMatch = summaryFull.match(emailPattern);\n\n  if (nextStep === 'meeting_scheduled') {\n    if (dayMatch) meetingDate = dayMatch[1];\n    if (timeMatch) meetingTime = timeMatch[1];\n  }\n  if (nextStep === 'callback') {\n    if (dayMatch) callbackDate = dayMatch[1];\n    if (timeMatch) callbackTime = timeMatch[1];\n  }\n  if (emailMatch) emailCollected = emailMatch[1];\n\n  notes = callResult.summary || 'Call completed';\n\n} else if (status === 'completed') {\n  callStatus = 'no_answer';\n  disposition = 'no_answer';\n  notes = 'Call too short - no meaningful interaction';\n} else {\n  callStatus = (status === 'busy') ? 'busy' : 'no_answer';\n  disposition = (status === 'busy') ? 'no_answer' : 'no_answer';\n  notes = (status === 'busy') ? 'Line busy' : 'No answer - ' + status;\n}\n\n// === NEW LEAD STATUS ===\nlet newStatus = 'PENDING';\nconst currentAttempts = (parseInt(lead.attempts) || 0) + 1;\n\nif (disposition === 'meeting_scheduled') newStatus = 'SCHEDULED';\nelse if (disposition === 'not_interested' || disposition === 'wrong_number') newStatus = 'NOT_INTERESTED';\nelse if (disposition === 'send_email') newStatus = 'FOLLOW_UP';\nelse if (disposition === 'callback' || disposition === 'gatekeeper') newStatus = 'CALLBACK';\nelse if (callStatus === 'answered' && interestLevel === 'low') newStatus = 'CONTACTED';\nelse if (currentAttempts >= 3 && callStatus !== 'answered') newStatus = 'NO_ANSWER';\nelse if (callStatus === 'voicemail' || callStatus === 'no_answer') newStatus = 'PENDING';\n\n// === TIMESTAMPS ===\nconst now = new Date();\nconst estOpts = { timeZone: 'America/New_York' };\nconst dateStr = now.toLocaleDateString('en-CA', estOpts);\nconst timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, ...estOpts });\n\n// === CALENDLY LINK ===\nlet calendlyLink = '';\nif (nextStep === 'meeting_scheduled' && (emailCollected || lead.email)) {\n  const meetingEmail = emailCollected || lead.email;\n  calendlyLink = 'https://calendly.com/nataly-riano-msitechnologiesinc/30min?name=' + encodeURIComponent(lead.lead_name || '') + '&email=' + encodeURIComponent(meetingEmail) + '&a1=' + encodeURIComponent(lead.company || '');\n}\n\nreturn [{ json: {\n  lead_id: lead.lead_id || lead.id,\n  lead_name: lead.lead_name,\n  company: lead.company,\n  phone: lead.phone,\n  email: lead.email,\n  call_id: callResult.call_id || '',\n  call_status: callStatus,\n  interest_level: interestLevel,\n  disposition: disposition,\n  pain_points: painPoints.trim(),\n  next_step: nextStep,\n  notes: notes,\n  transcript: callResult.concatenated_transcript || '',\n  recording_url: callResult.recording_url || '',\n  duration: durationSeconds,\n  new_status: newStatus,\n  new_attempts: currentAttempts,\n  call_date: dateStr,\n  call_time: timeStr,\n  calendly_link: calendlyLink,\n  summary: callResult.summary || notes,\n  meeting_date: meetingDate,\n  meeting_time: meetingTime,\n  callback_date: callbackDate,\n  callback_time: callbackTime,\n  email_collected: emailCollected\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3424, 32],
+      "id": "d896b5e4-8f9f-45a7-bb61-0082fb87144f",
+      "name": "Analizar Resultado"
+    },
+    {
+      "parameters": {
+        "jsCode": "await new Promise(resolve => setTimeout(resolve, 60000));\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3424, 320],
+      "id": "e34b300a-1de4-471e-8955-b531142a6789",
+      "name": "Esperar 60 seg más"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.bland.ai/v1/calls/{{ $('Obtener Resultado Llamada').item.json.call_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [3664, 320],
+      "id": "596051af-1aa9-43ba-adad-ca6d85ec36ba",
+      "name": "Reintentar Resultado",
+      "retryOnFail": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "p6CU668YNOsmz1GH",
+          "name": "Bland.ai API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE bland_leads SET\n  status = '{{ $json.new_status }}',\n  attempts = {{ $json.new_attempts }},\n  last_call_date = '{{ $json.call_date }}',\n  last_call_time = '{{ $json.call_time }}',\n  call_result = '{{ $json.call_status }}',\n  interest_level = '{{ $json.interest_level }}',\n  disposition = '{{ $json.disposition }}',\n  pain_points = '{{ ($json.pain_points || '').replace(/'/g, \"''\") }}',\n  next_step = '{{ $json.next_step }}',\n  notes = '{{ ($json.notes || '').replace(/'/g, \"''\").substring(0, 1000) }}',\n  calendly_link = '{{ $json.calendly_link || '' }}',\n  meeting_date = {{ $json.meeting_date ? \"'\" + $json.meeting_date + \"'\" : 'NULL' }},\n  meeting_time = {{ $json.meeting_time ? \"'\" + $json.meeting_time + \"'\" : 'NULL' }},\n  callback_date = {{ $json.callback_date ? \"'\" + $json.callback_date + \"'\" : 'NULL' }},\n  callback_time = {{ $json.callback_time ? \"'\" + $json.callback_time + \"'\" : 'NULL' }},\n  email_collected = {{ $json.email_collected ? \"'\" + $json.email_collected + \"'\" : 'NULL' }},\n  updated_at = NOW()\nWHERE phone = '{{ $json.phone }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [3680, 32],
+      "id": "7491b302-65fb-4fdb-b1a0-6def157a954b",
+      "name": "Actualizar Lead",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO bland_call_logs (\n  call_id, lead_id, lead_name, phone, call_date, call_time,\n  duration_seconds, call_result, interest_level, next_step,\n  disposition, pain_points, email_collected,\n  meeting_date, meeting_time, callback_date, callback_time,\n  transcript, recording_url, summary\n) VALUES (\n  '{{ $('Analizar Resultado').item.json.call_id }}',\n  {{ $('Analizar Resultado').item.json.lead_id || 'NULL' }},\n  '{{ ($('Analizar Resultado').item.json.lead_name || '').replace(/'/g, \"''\") }}',\n  '{{ $('Analizar Resultado').item.json.phone }}',\n  '{{ $('Analizar Resultado').item.json.call_date }}',\n  '{{ $('Analizar Resultado').item.json.call_time }}',\n  {{ $('Analizar Resultado').item.json.duration || 0 }},\n  '{{ $('Analizar Resultado').item.json.call_status }}',\n  '{{ $('Analizar Resultado').item.json.interest_level }}',\n  '{{ $('Analizar Resultado').item.json.next_step }}',\n  '{{ $('Analizar Resultado').item.json.disposition || '' }}',\n  '{{ ($('Analizar Resultado').item.json.pain_points || '').replace(/'/g, \"''\") }}',\n  {{ $('Analizar Resultado').item.json.email_collected ? \"'\" + $('Analizar Resultado').item.json.email_collected + \"'\" : 'NULL' }},\n  {{ $('Analizar Resultado').item.json.meeting_date ? \"'\" + $('Analizar Resultado').item.json.meeting_date + \"'\" : 'NULL' }},\n  {{ $('Analizar Resultado').item.json.meeting_time ? \"'\" + $('Analizar Resultado').item.json.meeting_time + \"'\" : 'NULL' }},\n  {{ $('Analizar Resultado').item.json.callback_date ? \"'\" + $('Analizar Resultado').item.json.callback_date + \"'\" : 'NULL' }},\n  {{ $('Analizar Resultado').item.json.callback_time ? \"'\" + $('Analizar Resultado').item.json.callback_time + \"'\" : 'NULL' }},\n  '{{ ($('Analizar Resultado').item.json.transcript || '').replace(/'/g, \"''\").substring(0, 10000) }}',\n  '{{ $('Analizar Resultado').item.json.recording_url || '' }}',\n  '{{ ($('Analizar Resultado').item.json.summary || '').replace(/'/g, \"''\").substring(0, 2000) }}'\n)",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [3936, 32],
+      "id": "3791ed28-6af6-4051-a3d1-e17f54877c81",
+      "name": "Registrar en Call_Log",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO bland_daily_stats (date, total_calls, answered, voicemail, no_answer, busy, meetings_scheduled, interested, not_interested)\nVALUES (\n  '{{ $('Analizar Resultado').item.json.call_date }}',\n  1,\n  {{ $('Analizar Resultado').item.json.call_status === 'answered' ? 1 : 0 }},\n  {{ $('Analizar Resultado').item.json.call_status === 'voicemail' ? 1 : 0 }},\n  {{ $('Analizar Resultado').item.json.call_status === 'no_answer' ? 1 : 0 }},\n  {{ $('Analizar Resultado').item.json.call_status === 'busy' ? 1 : 0 }},\n  {{ $('Analizar Resultado').item.json.disposition === 'meeting_scheduled' ? 1 : 0 }},\n  {{ ($('Analizar Resultado').item.json.interest_level === 'high' || $('Analizar Resultado').item.json.interest_level === 'medium') ? 1 : 0 }},\n  {{ $('Analizar Resultado').item.json.disposition === 'not_interested' ? 1 : 0 }}\n)\nON CONFLICT (date) DO UPDATE SET\n  total_calls        = bland_daily_stats.total_calls + 1,\n  answered           = bland_daily_stats.answered + EXCLUDED.answered,\n  voicemail          = bland_daily_stats.voicemail + EXCLUDED.voicemail,\n  no_answer          = bland_daily_stats.no_answer + EXCLUDED.no_answer,\n  busy               = bland_daily_stats.busy + EXCLUDED.busy,\n  meetings_scheduled = bland_daily_stats.meetings_scheduled + EXCLUDED.meetings_scheduled,\n  interested         = bland_daily_stats.interested + EXCLUDED.interested,\n  not_interested     = bland_daily_stats.not_interested + EXCLUDED.not_interested,\n  updated_at         = NOW()",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [4192, 32],
+      "id": "1744bcd1-4c4a-4356-b8ed-b466b34d0307",
+      "name": "Upsert Daily Stats",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# 📞 MSI Cold Calling — Laura v8 FINAL\n\n## Mejoras vs v7:\n- ✅ Prompt optimizado <2000 chars (Bland best practices)\n- ✅ modelo 'base' (sigue scripts mejor)\n- ✅ voicemail: { action: 'leave_message' } (formato correcto)\n- ✅ summary_prompt para análisis estructurado\n- ✅ dispositions para clasificación automática\n- ✅ Logging completo: disposition, meeting_date/time, callback, email\n- ✅ Webhook handler con recuperación de lead data\n- ✅ CALLBACK status para re-llamadas programadas\n- ✅ temperature 0.4 (más fiel al script)\n- ✅ interruption_threshold 200 (menos interrupciones)\n\n## ANTES DE ACTIVAR:\n1. Asigna credencial PostgreSQL (Supabase) en los nodos postgres\n2. Ejecuta migration-bland-calls-v2.sql en Supabase\n3. Asigna httpHeaderAuth 'Bland.ai API' en nodos HTTP\n4. El webhook apunta a borrar2.vercel.app/api/calls?action=bland-webhook",
+        "height": 560,
+        "width": 620,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1712, -520],
+      "id": "a92801a9-8d59-4bc5-a000-9828a5eaa56e",
+      "name": "Nota Principal"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bland-webhook",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-trigger-node-1234",
+      "name": "Bland Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [2920, 480]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract the Bland.ai webhook body\nconst body = $input.first().json.body || $input.first().json;\nreturn [{ json: body }];"
+      },
+      "id": "format-webhook-node-1234",
+      "name": "Extraer Webhook Body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3120, 480]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 3 },
+          "conditions": [{ "id": "wh-status-check", "leftValue": "={{ $json.status }}", "rightValue": "completed", "operator": { "type": "string", "operation": "equals", "name": "filter.operator.equals" } }],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [3320, 480],
+      "id": "wh-status-check-node",
+      "name": "¿Webhook Completó?"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM bland_leads WHERE phone = '{{ ($json.metadata && $json.metadata.phone) || $json.to || '' }}' LIMIT 1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [3520, 480],
+      "id": "wh-buscar-lead-node",
+      "name": "Buscar Lead (Webhook)",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge the webhook call result with lead data from Supabase\nconst callResult = $('¿Webhook Completó?').first().json;\nconst leadRows = $input.all();\nconst lead = (leadRows.length > 0 && leadRows[0].json.id) ? leadRows[0].json : {\n  id: (callResult.metadata || {}).lead_id || null,\n  lead_name: (callResult.metadata || {}).lead_name || 'Unknown',\n  company: (callResult.metadata || {}).company || '',\n  phone: (callResult.metadata || {}).phone || callResult.to || 'Unknown',\n  email: (callResult.metadata || {}).email || '',\n  attempts: 0\n};\n\n// Store the merged data so Analizar Resultado can find it\nreturn [{ json: {\n  ...callResult,\n  _lead: lead\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3720, 480],
+      "id": "wh-merge-node",
+      "name": "Merge Lead + Call (Webhook)"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Test Manual": {
+      "main": [[{ "node": "Verificar Horario Laboral", "type": "main", "index": 0 }]]
+    },
+    "Horario Óptimo Llamadas": {
+      "main": [[{ "node": "Verificar Horario Laboral", "type": "main", "index": 0 }]]
+    },
+    "Verificar Horario Laboral": {
+      "main": [[{ "node": "¿Horario Válido?", "type": "main", "index": 0 }]]
+    },
+    "¿Horario Válido?": {
+      "main": [[{ "node": "Leer Stats del Día", "type": "main", "index": 0 }]]
+    },
+    "Leer Stats del Día": {
+      "main": [[{ "node": "Leer Leads Pendientes", "type": "main", "index": 0 }]]
+    },
+    "Leer Leads Pendientes": {
+      "main": [[{ "node": "Filtrar Leads Válidos", "type": "main", "index": 0 }]]
+    },
+    "Filtrar Leads Válidos": {
+      "main": [[{ "node": "¿Hay Leads?", "type": "main", "index": 0 }]]
+    },
+    "¿Hay Leads?": {
+      "main": [[{ "node": "¿Lead Válido?", "type": "main", "index": 0 }]]
+    },
+    "¿Lead Válido?": {
+      "main": [[{ "node": "Marcar Lead En Proceso", "type": "main", "index": 0 }]]
+    },
+    "Marcar Lead En Proceso": {
+      "main": [[{ "node": "Llamar con Bland.ai", "type": "main", "index": 0 }]]
+    },
+    "Llamar con Bland.ai": {
+      "main": [[{ "node": "Esperar 150 seg", "type": "main", "index": 0 }]]
+    },
+    "Esperar 150 seg": {
+      "main": [[{ "node": "Obtener Resultado Llamada", "type": "main", "index": 0 }]]
+    },
+    "Obtener Resultado Llamada": {
+      "main": [[{ "node": "¿Llamada Terminó?", "type": "main", "index": 0 }]]
+    },
+    "¿Llamada Terminó?": {
+      "main": [
+        [{ "node": "Analizar Resultado", "type": "main", "index": 0 }],
+        [{ "node": "Esperar 60 seg más", "type": "main", "index": 0 }]
+      ]
+    },
+    "Esperar 60 seg más": {
+      "main": [[{ "node": "Reintentar Resultado", "type": "main", "index": 0 }]]
+    },
+    "Reintentar Resultado": {
+      "main": [[{ "node": "Analizar Resultado", "type": "main", "index": 0 }]]
+    },
+    "Analizar Resultado": {
+      "main": [[{ "node": "Actualizar Lead", "type": "main", "index": 0 }]]
+    },
+    "Actualizar Lead": {
+      "main": [[{ "node": "Registrar en Call_Log", "type": "main", "index": 0 }]]
+    },
+    "Registrar en Call_Log": {
+      "main": [[{ "node": "Upsert Daily Stats", "type": "main", "index": 0 }]]
+    },
+    "Bland Webhook": {
+      "main": [[{ "node": "Extraer Webhook Body", "type": "main", "index": 0 }]]
+    },
+    "Extraer Webhook Body": {
+      "main": [[{ "node": "¿Webhook Completó?", "type": "main", "index": 0 }]]
+    },
+    "¿Webhook Completó?": {
+      "main": [
+        [{ "node": "Buscar Lead (Webhook)", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Buscar Lead (Webhook)": {
+      "main": [[{ "node": "Merge Lead + Call (Webhook)", "type": "main", "index": 0 }]]
+    },
+    "Merge Lead + Call (Webhook)": {
+      "main": [[{ "node": "Analizar Resultado", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "America/New_York",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "3c2794d9d044c6bd8df588319a07cd200ddb18a3500c78ed9e3f3be6469af062"
+  }
+}

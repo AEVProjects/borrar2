@@ -9,7 +9,7 @@
     { "src": "config.example.js", "use": "@vercel/static" }
   ],
   "routes": [
-    { "src": "/api/calls",  "dest": "/api/calls.js"  },
+    { "src": "/api/calls(.*)",  "dest": "/api/calls.js"  },
     { "src": "/api/health", "dest": "/api/health.js" },
     { "src": "/styles.css",         "dest": "/styles.css"         },
     { "src": "/app.js",             "dest": "/app.js"             },
