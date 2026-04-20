@@ -6618,6 +6618,9 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         if (!supabaseClient) { showToast('Supabase no conectado', 'warning'); return; }
         await Promise.all([loadBusinessLines(), loadMsiContext()]);
         renderBusinessLinesSidebar();
+        document.getElementById('leads-main-empty').style.display = 'none';
+        document.getElementById('leads-main-content').style.display = '';
+        await loadAllBatches();
     }
 
     // ===== BUSINESS LINES =====
@@ -6636,6 +6639,17 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         if (!error && data) msiGeneralContext = data.context_text || '';
     }
 
+    function getBLIcon(slug) {
+        const icons = {
+            ai: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="21" x2="15" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg>',
+            wfa: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+            npo: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>',
+            ae: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+            it: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'
+        };
+        return icons[slug] || '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2M8 7V5a2 2 0 0 1 4 0"/></svg>';
+    }
+
     function renderBusinessLinesSidebar() {
         const list = document.getElementById('bl-list');
         if (!list) return;
@@ -6647,7 +6661,7 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
             <div class="bl-card${selectedBL?.id === bl.id ? ' active' : ''}"
                  data-bl-id="${bl.id}"
                  style="--bl-color:${bl.color || '#6366f1'};">
-                <div class="bl-card-icon">${bl.icon || '💼'}</div>
+                <div class="bl-card-icon">${getBLIcon(bl.slug)}</div>
                 <div class="bl-card-body" onclick="selectBusinessLine(${bl.id})" style="cursor:pointer;flex:1;">
                     <div class="bl-card-name">${bl.name}</div>
                     <div class="bl-card-desc">${bl.description || ''}</div>
@@ -6663,25 +6677,12 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         selectedBL = businessLines.find(bl => bl.id === id);
         if (!selectedBL) return;
         renderBusinessLinesSidebar();
-        document.getElementById('leads-main-empty').style.display = 'none';
-        document.getElementById('leads-main-content').style.display = '';
-        document.getElementById('leads-main-icon').textContent = selectedBL.icon || '💼';
-        document.getElementById('leads-main-title').textContent = selectedBL.name;
-        document.getElementById('leads-main-desc').textContent = selectedBL.description || '';
-        const header = document.getElementById('leads-main-header');
-        if (header) header.style.setProperty('--bl-color', selectedBL.color || '#6366f1');
-        document.getElementById('leads-batch-detail').style.display = 'none';
-        document.getElementById('leads-batches-grid').style.display = '';
-        document.getElementById('leads-batches-label').style.display = '';
-        document.getElementById('leads-batches-empty').style.display = 'none';
-        selectedBatch = null;
-        await loadBatchesForLine(id);
+        openContextEditor(id);
     };
 
-    async function loadBatchesForLine(blId) {
+    async function loadAllBatches() {
         const { data, error } = await supabaseClient
             .from('lead_batches').select('*')
-            .eq('business_line_id', blId)
             .order('created_at', { ascending: false });
         if (!error) { leadBatches = data || []; renderBatches(); }
     }
@@ -6707,15 +6708,15 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
                     <span class="batch-status-badge ${statusClass}">${statusLabel}</span>
                 </div>
                 <div class="batch-card-meta">
-                    <span>📅 ${date}</span>
-                    ${batch.filename ? `<span title="${batch.filename}">📄 ${batch.filename.length > 22 ? batch.filename.substring(0, 22) + '...' : batch.filename}</span>` : ''}
+                    <span>${date}</span>
+                    ${batch.filename ? `<span title="${batch.filename}">${batch.filename.length > 22 ? batch.filename.substring(0, 22) + '...' : batch.filename}</span>` : ''}
                 </div>
                 <div class="batch-card-stats">
                     <div class="batch-stat"><div class="batch-stat-value">${batch.lead_count}</div><div class="batch-stat-label">Leads</div></div>
                     <div class="batch-stat"><div class="batch-stat-value">${batch.messages_generated}</div><div class="batch-stat-label">Mensajes</div></div>
                     <div class="batch-stat"><div class="batch-stat-value">${genPct}%</div><div class="batch-stat-label">Generado</div></div>
                 </div>
-                ${batch.lead_count > 0 ? `<div class="batch-progress-bar"><div class="batch-progress-fill" style="width:${genPct}%; background:${selectedBL?.color || '#6366f1'};"></div></div>` : ''}
+                ${batch.lead_count > 0 ? `<div class="batch-progress-bar"><div class="batch-progress-fill" style="width:${genPct}%; background:#6366f1;"></div></div>` : ''}
                 <div class="batch-card-actions">
                     <button class="btn btn-secondary btn-small" onclick="selectBatch(${batch.id})" title="Ver leads">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Ver leads
@@ -6818,7 +6819,6 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
 
     // ===== GENERATE MESSAGES =====
     window.generateMessagesForBatch = async function(batchId) {
-        if (!selectedBL) { showToast('Selecciona una línea de negocio primero', 'warning'); return; }
         const webhookUrl = CONFIG?.n8n?.aiMessagesWebhook;
         if (!webhookUrl) { showToast('Webhook de mensajes AI no configurado', 'error'); return; }
 
@@ -6848,7 +6848,6 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
                     lead_ids: leads.map(l => l.id),
                     source_table: 'leads',
                     batch_id: batchId,
-                    business_line: { id: selectedBL.id, name: selectedBL.name, slug: selectedBL.slug, context: selectedBL.context_text || '' },
                     msi_general_context: msiGeneralContext,
                     leads: leads.map(l => ({ id: l.id, first_name: l.first_name, last_name: l.last_name, email: l.email, title: l.title, company_name: l.company_name, industry: l.industry, keywords: l.keywords, technologies: l.technologies, city: l.city, state: l.state, country: l.country, seniority: l.seniority, num_employees: l.num_employees, annual_revenue: l.annual_revenue, website: l.website }))
                 })
@@ -6859,7 +6858,7 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
             setTimeout(() => { if (prog) prog.style.display = 'none'; }, 3000);
             showToast(`Generación completada para ${result.generated || leads.length} leads`, 'success');
             if (selectedBatch?.id === batchId) await loadLeadsForBatch(batchId);
-            if (selectedBL) await loadBatchesForLine(selectedBL.id);
+            await loadAllBatches();
         } catch (err) {
             console.error('Error generando mensajes:', err);
             showToast('Error: ' + err.message, 'error');
@@ -6913,7 +6912,7 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
             document.getElementById('leads-batches-grid').style.display = '';
             document.getElementById('leads-batches-label').style.display = '';
         }
-        if (selectedBL) await loadBatchesForLine(selectedBL.id);
+        await loadAllBatches();
     };
 
     // ===== UPLOAD CSV MODAL =====
@@ -6932,9 +6931,6 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
     }
 
     function openUploadModal() {
-        if (!selectedBL) { showToast('Selecciona una línea de negocio primero', 'warning'); return; }
-        const sel = document.getElementById('upload-bl-select');
-        sel.innerHTML = businessLines.map(bl => `<option value="${bl.id}"${bl.id === selectedBL.id ? ' selected' : ''}>${bl.icon || ''} ${bl.name}</option>`).join('');
         document.getElementById('upload-batch-name').value = '';
         document.getElementById('csv-file-name').textContent = '';
         document.getElementById('upload-csv-preview').style.display = 'none';
@@ -6957,10 +6953,13 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
             const rowCount = document.getElementById('upload-csv-row-count');
             preview.style.display = '';
             if (pendingCSVRows.length > 0) {
-                rowCount.textContent = `✓ ${pendingCSVRows.length} leads encontrados`;
+                const breakdown = {};
+                pendingCSVRows.forEach(r => { const k = r.bl_slug || 'sin-servicio'; breakdown[k] = (breakdown[k] || 0) + 1; });
+                const bdText = Object.entries(breakdown).map(([k,v]) => `${v} ${k.toUpperCase()}`).join(' · ');
+                rowCount.textContent = `${pendingCSVRows.length} leads — ${bdText}`;
                 document.getElementById('upload-csv-submit').disabled = false;
             } else {
-                rowCount.textContent = '⚠️ No se encontraron filas válidas en el CSV';
+                rowCount.textContent = 'No se encontraron filas validas en el CSV';
                 document.getElementById('upload-csv-submit').disabled = true;
             }
         };
@@ -6984,18 +6983,25 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         if (field || line.length > 0) { line.push(field); lines.push(line); }
         if (lines.length < 2) return [];
         const headers = lines[0].map(h => h.trim().toLowerCase());
-        const colMap = { 'first name':'first_name','last name':'last_name','title':'title','company':'company_name','email':'email','seniority':'seniority','departments':'departments','# employees':'num_employees','# of employees':'num_employees','industry':'industry','keywords':'keywords','person linkedin url':'person_linkedin_url','website':'website','company linkedin url':'company_linkedin_url','city':'city','state':'state','country':'country','company city':'company_city','company state':'company_state','company country':'company_country','technologies':'technologies','annual revenue':'annual_revenue','total funding':'total_funding','work direct phone':'phone' };
+        const colMap = { 'first name':'first_name','last name':'last_name','title':'title','company':'company_name','company name':'company_name','email':'email','seniority':'seniority','departments':'departments','# employees':'num_employees','# of employees':'num_employees','industry':'industry','keywords':'keywords','person linkedin url':'person_linkedin_url','website':'website','company linkedin url':'company_linkedin_url','city':'city','state':'state','country':'country','company city':'company_city','company state':'company_state','company country':'company_country','technologies':'technologies','annual revenue':'annual_revenue','total funding':'total_funding','work direct phone':'phone','lists':'lists_raw' };
         return lines.slice(1).map(row => {
             if (row.every(c => !c?.trim())) return null;
             const obj = {};
             headers.forEach((h, idx) => { const col = colMap[h]; if (col && row[idx] !== undefined) obj[col] = row[idx].trim(); });
-            return (obj.email || obj.first_name) ? obj : null;
+            if (!obj.email && !obj.first_name) return null;
+            // Map Lists column to bl_slug
+            const LISTS_MAP = { 'npo': 'npo', 'aec': 'ae', 'ae': 'ae', 'wfa': 'wfa', 'it': 'it', 'ai': 'ai' };
+            if (obj.lists_raw) {
+                const rawList = obj.lists_raw.trim().toLowerCase().replace(/[.\s]+$/, '').split(/[\s,]+/)[0];
+                obj.bl_slug = LISTS_MAP[rawList] || null;
+            }
+            delete obj.lists_raw;
+            return obj;
         }).filter(Boolean);
     }
 
     async function handleCSVUpload() {
         const batchName = document.getElementById('upload-batch-name').value.trim();
-        const blId = parseInt(document.getElementById('upload-bl-select').value);
         if (!batchName) { showToast('Escribe un nombre para el conjunto', 'warning'); return; }
         if (!pendingCSVRows?.length) { showToast('No hay datos en el CSV', 'warning'); return; }
         const submitBtn = document.getElementById('upload-csv-submit');
@@ -7004,22 +7010,32 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
         const label = document.getElementById('upload-progress-label');
         submitBtn.disabled = true; prog.style.display = ''; fill.style.width = '5%'; label.textContent = 'Creando conjunto...';
         try {
-            const { data: batch, error: bErr } = await supabaseClient.from('lead_batches').insert({ name: batchName, business_line_id: blId, filename: pendingCSVFile?.name || null, lead_count: pendingCSVRows.length }).select().single();
+            // Map bl_slug → business_line_id
+            const blSlugMap = {};
+            businessLines.forEach(bl => { blSlugMap[bl.slug] = bl.id; });
+            const rowsWithBL = pendingCSVRows.map(row => ({
+                ...row,
+                business_line_id: row.bl_slug ? (blSlugMap[row.bl_slug] || null) : null
+            }));
+            // Remove bl_slug from row (it's not a DB column; business_line_id carries the value)
+            rowsWithBL.forEach(r => delete r.bl_slug);
+
+            const { data: batch, error: bErr } = await supabaseClient.from('lead_batches').insert({
+                name: batchName, business_line_id: null, filename: pendingCSVFile?.name || null, lead_count: pendingCSVRows.length
+            }).select().single();
             if (bErr) throw bErr;
             fill.style.width = '15%'; label.textContent = `Subiendo ${pendingCSVRows.length} leads...`;
             const CHUNK = 100; let uploaded = 0;
-            for (let i = 0; i < pendingCSVRows.length; i += CHUNK) {
-                const chunk = pendingCSVRows.slice(i, i + CHUNK).map(row => ({ ...row, batch_id: batch.id, business_line_id: blId }));
+            for (let i = 0; i < rowsWithBL.length; i += CHUNK) {
+                const chunk = rowsWithBL.slice(i, i + CHUNK).map(row => ({ ...row, batch_id: batch.id }));
                 const { error: lErr } = await supabaseClient.from('leads').insert(chunk);
                 if (lErr) throw lErr;
                 uploaded += chunk.length;
-                fill.style.width = (15 + Math.round((uploaded / pendingCSVRows.length) * 80)) + '%';
-                label.textContent = `Subiendo... ${uploaded}/${pendingCSVRows.length} leads`;
+                fill.style.width = (15 + Math.round((uploaded / rowsWithBL.length) * 80)) + '%';
+                label.textContent = `Subiendo... ${uploaded}/${rowsWithBL.length} leads`;
             }
-            fill.style.width = '100%'; label.textContent = `✓ ${pendingCSVRows.length} leads subidos`;
-            setTimeout(() => { closeUploadModal(); showToast(`Conjunto "${batchName}" creado con ${pendingCSVRows.length} leads`, 'success'); }, 800);
-            if (selectedBL?.id === blId) await loadBatchesForLine(blId);
-            else { selectedBL = businessLines.find(bl => bl.id === blId); renderBusinessLinesSidebar(); await loadBatchesForLine(blId); }
+            fill.style.width = '100%'; label.textContent = `Subidos ${rowsWithBL.length} leads`;
+            setTimeout(async () => { closeUploadModal(); showToast(`"${batchName}" creado con ${rowsWithBL.length} leads`, 'success'); await loadAllBatches(); }, 800);
         } catch (err) {
             console.error('Error subiendo CSV:', err);
             showToast('Error: ' + err.message, 'error');
