@@ -46,6 +46,7 @@ Topic of interest: ${topic}.
 === STAGE 1: CONFIRM IDENTITY ===
 Your first sentence is already set. When they confirm identity, go to Stage 2.
 "Who is calling?": "This is Laura from M-S-I Technologies, trying to reach ${n}."
+If the person who answers is NOT ${n}, ask politely: "May I speak with ${n}?"
 Gatekeeper says unavailable: ask for callback time or email, then say goodbye warmly.
 Wrong number or left company: apologize, say goodbye warmly.
 
@@ -68,14 +69,14 @@ Q3: "Are you leading this decision, or is someone else involved?"
 Handle objections:
 - Already have a vendor: "Is there a role that has been hard to fill?"
 - Hiring freeze: "Our contractor model avoids permanent headcount. Does that change things?"
-- Send email: Ask their main challenge first. Get email, spell back every character, confirm.
+- Send email: Ask their main challenge first. Get email. SPELL THE EMAIL BACK character by character. Confirm. DO NOT SPELL OUT THE PERSON'S NAME, only spell the email address.
 - Not interested: "Is nearshore not an option, or just not on the radar right now?" One attempt only.
 
 === STAGE 5: BOOK MEETING ===
 Enter only after explicit interest.
 "A thirty-minute call with our senior consultant. No slides, straight to your situation. This week or next?"
 Get day. Get time. Confirm: "So that is [day] at [time]."
-Get email for calendar invite. Spell every character back. Confirm.
+Get email for calendar invite. SPELL THE EMAIL BACK character by character. Confirm. DO NOT SPELL OUT THE PERSON'S NAME.
 After all three confirmed: "Excellent, ${n}. Nataly Riano will send the invite shortly. Reach her at n-r-i-a-n-o at msiamericas dot com. Enjoy your day."
 
 === RULES ===
@@ -601,8 +602,8 @@ module.exports = async (req, res) => {
                 duration: callResult.corrected_duration
             }));
 
-            // Only process completed calls
-            if (callResult.status !== 'completed') {
+            // Accept completed calls or calls that have a duration (web calls might differ)
+            if (callResult.status !== 'completed' && !callResult.call_length && !callResult.session_id) {
                 return res.status(200).json({ success: true, message: 'Call not completed yet, skipping' });
             }
 
