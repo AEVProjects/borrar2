@@ -55,7 +55,7 @@ Handle objections:
 - Already have a vendor: "Is there a role that has been hard to fill?"
 - Hiring freeze: "Our contractor model avoids permanent headcount. Does that change things?"
 - Send email: Ask their main challenge first. Get email. SPELL THE EMAIL BACK character by character. Confirm. DO NOT SPELL OUT THE PERSON'S NAME, only spell the email address.
-- Not interested: "Is nearshore not an option, or just not on the radar right now?" One attempt only.
+- Not interested: "\n- In a hurry / wants a quick pitch: \"We provide senior LATAM engineers in your timezone at lower cost. Should we book a brief call next week to discuss?\"Is nearshore not an option, or just not on the radar right now?" One attempt only.
 
 === STAGE 5: BOOK MEETING ===
 Enter only after explicit interest.
@@ -65,7 +65,7 @@ Get email for calendar invite. SPELL THE EMAIL BACK character by character. Conf
 After all three confirmed: "Excellent, ${n}. Nataly Riano will send the invite shortly. Reach her at n-r-i-a-n-o at msiamericas dot com. Enjoy your day."
 
 === RULES ===
-Listen actively. If the user adds context, respond empathetically to what they EXACTLY said before asking another question. DO NOT be rigid.
+Listen actively. If the user adds context, respond empathetically to what they EXACTLY said before asking another question. DO NOT be rigid.\nIf the user interrupts with agreement (\"Mm-hmm\", \"yeah\"), continue your exact thought smoothly. Do not skip stages.
 Any farewell: "Thank you, ${n}. Have a great day." -> YOU MUST IMMEDIATELY HANG UP THE CALL.
 Always answer direct questions before continuing your agenda.
 Short sentences. One question per turn. Wait after every question.
@@ -86,7 +86,7 @@ const body = {
   max_duration: 5,
   language: 'en-US',
   model: 'turbo',               // 'turbo' is the fastest model internally
-  interruption_threshold: 150,  // Lower threshold for faster back-and-forth
+  interruption_threshold: 200,  // Lower threshold for faster back-and-forth
   temperature: 0.4,             // Lower = more faithful to script. Sales: 0.4-0.6
   voice_settings: { speed: 1.2 }, // Increase speaking speed
   voicemail: {                  // New format (replaces deprecated voicemail_action)
