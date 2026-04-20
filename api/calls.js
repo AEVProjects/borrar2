@@ -484,7 +484,7 @@ module.exports = async (req, res) => {
                 { lead_name, phone, company, title, email, lead_type },
                 {
                     isWebCall: false,
-                    webhookUrl: webhook_url || `https://borrar2.vercel.app/api/calls?action=bland-webhook`
+                    webhookUrl: webhook_url || `https://n8nmsi.app.n8n.cloud/webhook/bland-webhook`
                 }
             );
             // Test calls: shorter duration
@@ -561,7 +561,7 @@ module.exports = async (req, res) => {
             };
             
             // Always set webhook so we get the results
-            payloadBody.webhook = webhook_url || 'https://borrar2.vercel.app/api/calls?action=bland-webhook';
+            payloadBody.webhook = webhook_url || 'https://n8nmsi.app.n8n.cloud/webhook/bland-webhook';
 
             // Create Bland agent
             const agentRes = await fetch('https://api.bland.ai/v1/agents', {
