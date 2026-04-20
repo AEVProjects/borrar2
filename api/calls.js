@@ -559,9 +559,9 @@ module.exports = async (req, res) => {
                 max_duration: 10,
                 metadata: { web_call: true, lead_name: n, company: co, email: e, phone: phone || 'WEB-USER', lead_type: lead_type || 'STAFFING' }
             };
-            if (webhook_url) {
-                payloadBody.webhook = webhook_url;
-            }
+            
+            // Always set webhook so we get the results
+            payloadBody.webhook = webhook_url || 'https://borrar2.vercel.app/api/calls?action=bland-webhook';
 
             // Create Bland agent
             const agentRes = await fetch('https://api.bland.ai/v1/agents', {
