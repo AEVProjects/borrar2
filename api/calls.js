@@ -573,7 +573,10 @@ module.exports = async (req, res) => {
             const lead = { lead_name, company, title, email, phone, lead_type, intent_topic };
             const webhookUrl = webhook_url || 'https://n8nmsi.app.n8n.cloud/webhook/bland-webhook';
 
-            const payloadBody = generateBlandPayload(lead, { isWebCall: true, webhookUrl });
+            // Same brain and configs as phone calls — only adapt for /v1/agents API differences:
+            // agents use "prompt" instead of "task" and don't accept phone/voicemail fields
+            const { task, voicemail, phone_number, phone_number_id, summary_prompt, dispositions, background_track, record, ...rest } = generateBlandPayload(lead, { isWebCall: true, webhookUrl });
+            const payloadBody = { ...rest, prompt: task };
 
             // Create Bland agent
             const agentRes = await fetch('https://api.bland.ai/v1/agents', {
