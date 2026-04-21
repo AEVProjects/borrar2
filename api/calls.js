@@ -574,29 +574,18 @@ module.exports = async (req, res) => {
             const n = lead_name || 'there';
             const webhookUrl = webhook_url || 'https://n8nmsi.app.n8n.cloud/webhook/bland-webhook';
 
-            // /v1/agents uses "prompt" (not "task") and rejects call-only fields.
-            // Same brain: generateBlandPrompt with isWebCall=true. Same configs: identical values.
+            // /v1/agents accepts a limited set of fields — use minimal payload.
+            // Same brain: generateBlandPrompt(lead, true) ensures identical behavior.
             const payloadBody = {
                 prompt: generateBlandPrompt(lead, true),
                 voice: BLAND_VOICE_ID,
                 first_sentence: `Hi${n !== 'there' ? ' ' + n : ''}! This is Laura from MSI Technologies. How are you today?`,
                 wait_for_greeting: false,
-                model: 'turbo',
+                interruptions: true,
+                noise_cancellation: true,
+                model: 'base',
                 language: 'en-US',
                 max_duration: 10,
-                temperature: 0.7,
-                voice_settings: { speed: 1.0 },
-                interruption_threshold: 150,
-                noise_cancellation: true,
-                pronunciation_guide: [
-                    { word: 'MSI', pronunciation: 'M-S-I', case_sensitive: true, spaced: true },
-                    { word: '5G', pronunciation: 'Five-G', case_sensitive: true, spaced: true },
-                    { word: 'IoT', pronunciation: 'I-O-T', case_sensitive: true, spaced: true },
-                    { word: 'AWS', pronunciation: 'A-W-S', case_sensitive: true, spaced: true },
-                    { word: 'GCP', pronunciation: 'G-C-P', case_sensitive: true, spaced: true },
-                    { word: 'Nataly', pronunciation: 'NAH-tah-lee' },
-                    { word: 'Riano', pronunciation: 'Ree-AH-no' }
-                ],
                 webhook: webhookUrl,
                 metadata: { web_call: true, lead_name: n, company: company || '', email: email || '', phone: phone || 'WEB-USER', lead_type: lead_type || 'STAFFING' }
             };
