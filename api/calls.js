@@ -571,12 +571,35 @@ module.exports = async (req, res) => {
             const { lead_name, company, title, lead_type, email, phone, webhook_url, intent_topic } = req.body || {};
 
             const lead = { lead_name, company, title, email, phone, lead_type, intent_topic };
+            const n = lead_name || 'there';
             const webhookUrl = webhook_url || 'https://n8nmsi.app.n8n.cloud/webhook/bland-webhook';
 
-            // Same brain and configs as phone calls — only adapt for /v1/agents API differences:
-            // agents use "prompt" instead of "task" and don't accept phone/voicemail fields
-            const { task, voicemail, phone_number, phone_number_id, summary_prompt, dispositions, background_track, record, ...rest } = generateBlandPayload(lead, { isWebCall: true, webhookUrl });
-            const payloadBody = { ...rest, prompt: task };
+            // /v1/agents uses "prompt" (not "task") and rejects call-only fields.
+            // Same brain: generateBlandPrompt with isWebCall=true. Same configs: identical values.
+            const payloadBody = {
+                prompt: generateBlandPrompt(lead, true),
+                voice: BLAND_VOICE_ID,
+                first_sentence: `Hi${n !== 'there' ? ' ' + n : ''}! This is Laura from MSI Technologies. How are you today?`,
+                wait_for_greeting: false,
+                model: 'turbo',
+                language: 'en-US',
+                max_duration: 10,
+                temperature: 0.7,
+                voice_settings: { speed: 1.0 },
+                interruption_threshold: 150,
+                noise_cancellation: true,
+                pronunciation_guide: [
+                    { word: 'MSI', pronunciation: 'M-S-I', case_sensitive: true, spaced: true },
+                    { word: '5G', pronunciation: 'Five-G', case_sensitive: true, spaced: true },
+                    { word: 'IoT', pronunciation: 'I-O-T', case_sensitive: true, spaced: true },
+                    { word: 'AWS', pronunciation: 'A-W-S', case_sensitive: true, spaced: true },
+                    { word: 'GCP', pronunciation: 'G-C-P', case_sensitive: true, spaced: true },
+                    { word: 'Nataly', pronunciation: 'NAH-tah-lee' },
+                    { word: 'Riano', pronunciation: 'Ree-AH-no' }
+                ],
+                webhook: webhookUrl,
+                metadata: { web_call: true, lead_name: n, company: company || '', email: email || '', phone: phone || 'WEB-USER', lead_type: lead_type || 'STAFFING' }
+            };
 
             // Create Bland agent
             const agentRes = await fetch('https://api.bland.ai/v1/agents', {
