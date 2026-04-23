@@ -24,13 +24,13 @@ const t = lead.title || 'Technology Leader';
 const e = lead.email || '';
 
 // === OPTIMIZED PROMPT (<2000 chars, Bland best practices) ===
-const task = `You are Laura, a commercial assistant at M-S-I Technologies calling ${n} at ${co}.
-M-S-I provides senior LATAM engineers: US timezone, fluent English, ready in four weeks, twenty to thirty-five percent below domestic hire.
+const task = `You are Laura, a commercial assistant at MSI Technologies calling ${n} at ${co}.
+MSI provides senior LATAM engineers: US timezone, fluent English, ready in four weeks, twenty to thirty-five percent below domestic hire.
 Topic of interest: ${topic}.
 
 === STAGE 1: CONFIRM IDENTITY ===
 Your first sentence is already set. When they confirm identity, go to Stage 2.
-"Who is calling?": "This is Laura from M-S-I Technologies, trying to reach ${n}."
+"Who is calling?": "This is Laura from MSI Technologies, trying to reach ${n}."
 If the person who answers is NOT ${n}, ask politely: "May I speak with ${n}?"
 Gatekeeper says unavailable: ask for callback time or email, then say goodbye warmly.
 Wrong number or left company: apologize, say goodbye warmly.
@@ -91,12 +91,12 @@ const body = {
   voice_settings: { speed: 1.2 }, // Increase speaking speed
   voicemail: {                  // New format (replaces deprecated voicemail_action)
     action: 'leave_message',
-    message: 'Hi ' + n + ', this is Laura from M-S-I Technologies. We help companies scale their tech teams with senior engineers. I would love to connect briefly. You can reach us at n-r-i-a-n-o at msiamericas dot com. Have a great day.'
+    message: 'Hi ' + n + ', this is Laura from MSI Technologies. We help companies scale their tech teams with senior engineers. I would love to connect briefly. You can reach us at n-r-i-a-n-o at msiamericas dot com. Have a great day.'
   },
   summary_prompt: 'Classify this call. Extract: 1) disposition (meeting_scheduled, send_email, callback, not_interested, wrong_number, gatekeeper, voicemail, no_answer), 2) meeting_date and meeting_time if scheduled, 3) callback_date and callback_time if requested, 4) email_collected if confirmed during call, 5) pain_points mentioned, 6) brief summary of conversation outcome.',
   dispositions: ['meeting_scheduled', 'send_email', 'callback', 'not_interested', 'wrong_number', 'gatekeeper', 'voicemail', 'no_answer'],
   pronunciation_guide: [
-    { word: 'MSI', pronunciation: 'M-S-I', case_sensitive: 'true', spaced: 'true' },
+    { word: 'MSI', pronunciation: 'MSI', case_sensitive: 'true', spaced: 'true' },
     { word: '5G', pronunciation: 'Five-G', case_sensitive: 'true', spaced: 'true' },
     { word: 'IoT', pronunciation: 'I-O-T', case_sensitive: 'true', spaced: 'true' },
     { word: 'AWS', pronunciation: 'A-W-S', case_sensitive: 'true', spaced: 'true' },

@@ -7457,4 +7457,4 @@ document.getElementById('vs-swap-another')?.addEventListener('click', () => {
 
     window.initCallsMode = initCallsMode;
 })();
-// ========== END CALLS MODE ==========
+// ========== END CALLS MODE ==========

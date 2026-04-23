@@ -1,4 +1,4 @@
-﻿# MSI Automation - Hitos del Proyecto
+# MSI Automation - Hitos del Proyecto
 
 **Analisis basado en historial Git real | 15 enero 2026**
 
