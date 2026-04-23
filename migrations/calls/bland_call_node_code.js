@@ -2,8 +2,8 @@
 // Reemplaza el nodo de v7. Usa modelo 'base', voicemail con leave_message,
 // summary_prompt, dispositions, y webhook para recibir resultados.
 
-const BLAND_API_KEY = 'org_aae0e1f07f1f504b5f39fe9953ecc82eda35d2da72650564a340a49b4a80d996540eef9ac5b57109ba6f69';
-const BLAND_PHONE_NUMBER_ID = '07e907b3-68ee-4177-bcb1-3f8e990a245e'; // Twilio +15187570699
+const BLAND_API_KEY = 'org_9e948565692e5786dd47964efb1a16ca93f427a08aa5234d723493b6880acff2f75e03d59fb171228f5e69';
+const BLAND_PHONE_NUMBER_ID = ''; // Twilio +15187570699 - Default account number instead
 const lead = $('¿Lead Válido?').first().json;
 const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
@@ -75,7 +75,7 @@ Calm, warm tone. Downward inflection on statements.`;
 // === BLAND API PAYLOAD (Best Practices 2026) ===
 const body = {
   phone_number: lead.phone,
-  phone_number_id: BLAND_PHONE_NUMBER_ID,
+  ...(BLAND_PHONE_NUMBER_ID ? { phone_number_id: BLAND_PHONE_NUMBER_ID } : {}),
   task: task,
   voice: '4e65cda2-cf46-4907-84ba-3ca96c48f549',
   first_sentence: 'Hi, is this ' + n + '?',

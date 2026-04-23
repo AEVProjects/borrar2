@@ -1,9 +1,9 @@
 // api/calls.js — Vercel Serverless Function for Bland.ai calls proxy
 // Routes: GET /api/calls?action=logs|leads|stats  POST /api/calls?action=trigger|add-lead|web-session|bland-webhook
 
-const BLAND_API_KEY = process.env.BLAND_API_KEY || 'org_aae0e1f07f1f504b5f39fe9953ecc82eda35d2da72650564a340a49b4a80d996540eef9ac5b57109ba6f69';
+const BLAND_API_KEY = process.env.BLAND_API_KEY || 'org_9e948565692e5786dd47964efb1a16ca93f427a08aa5234d723493b6880acff2f75e03d59fb171228f5e69';
 const BLAND_VOICE_ID = process.env.BLAND_VOICE_ID || '4e65cda2-cf46-4907-84ba-3ca96c48f549';
-const BLAND_PHONE_NUMBER_ID = process.env.BLAND_PHONE_NUMBER_ID || '07e907b3-68ee-4177-bcb1-3f8e990a245e'; // Twilio +15187570699
+const BLAND_PHONE_NUMBER_ID = process.env.BLAND_PHONE_NUMBER_ID || ''; // Usar número por defecto de la cuenta
 // Same Supabase values as config.example.js (already public in repo)
 const SUPABASE_URL = 'https://vahqhxfdropstvklvzej.supabase.co';
 const SUPABASE_SERVICE_KEY = 'sb_publishable_xt7qY64rVMowaSris2Zs0Q_2DEbzjpy';
@@ -184,7 +184,9 @@ function generateBlandPayload(lead, options = {}) {
     // Phone-specific fields
     if (!isWebCall) {
         payload.phone_number = phone;
-        payload.phone_number_id = BLAND_PHONE_NUMBER_ID;
+        if (BLAND_PHONE_NUMBER_ID) {
+            payload.phone_number_id = BLAND_PHONE_NUMBER_ID;
+        }
     }
 
     // Webhook

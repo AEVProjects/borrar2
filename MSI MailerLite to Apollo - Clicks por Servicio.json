@@ -1,0 +1,246 @@
+{
+  "name": "MSI MailerLite → Apollo - Clicks por Servicio",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mailerlite-eventos",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-700, 0],
+      "id": "mta-webhook-001",
+      "name": "Webhook MailerLite",
+      "webhookId": "mailerlite-eventos"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"received\": true}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [-480, -160],
+      "id": "mta-respond-001",
+      "name": "Responder OK"
+    },
+    {
+      "parameters": {
+        "jsCode": "// MailerLite envía eventos en batch cuando batchable: true\n// Estructura: { account_id, type, total, events: [...] }\nconst body = $input.first().json.body || $input.first().json;\n\n// Soporta batch (events[]) y evento único\nconst eventos = body.events || [{ type: body.type, data: body.data }];\n\nreturn eventos\n  .filter(e => e && e.data && e.data.subscriber)\n  .map(evento => ({\n    json: {\n      tipo_evento:   evento.type || '',\n      email:         evento.data.subscriber.email || '',\n      nombre:        evento.data.subscriber.fields?.name || '',\n      apellido:      evento.data.subscriber.fields?.last_name || '',\n      subscriber_id: evento.data.subscriber.id || '',\n      campaign_id:   evento.data.campaign?.id || '',\n      campaign_name: evento.data.campaign?.name || '',\n      link_url:      evento.data.link?.url || '',\n    }\n  }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-480, 80],
+      "id": "mta-parse-001",
+      "name": "Parsear Eventos del Batch"
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [-260, 80],
+      "id": "mta-split-001",
+      "name": "Split Eventos"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ════════════════════════════════════════════════════════════════\n// MAPA DE SERVICIOS: Nombre Campaña MailerLite → Apollo Sequence ID\n// ════════════════════════════════════════════════════════════════\n// El nombre de la campaña puede ser exacto o una palabra clave.\n// El Sequence ID está en la URL de Apollo: /sequences/XXXX\n// ════════════════════════════════════════════════════════════════\nconst SEQUENCE_MAP = {\n  // \"Nombre campaña MailerLite\": \"Apollo_Sequence_ID\",\n  \"Servicio A\": \"APOLLO_SEQUENCE_ID_SERVICIO_A\",\n  \"Servicio B\": \"APOLLO_SEQUENCE_ID_SERVICIO_B\",\n  \"Servicio C\": \"APOLLO_SEQUENCE_ID_SERVICIO_C\",\n  // Agrega más servicios aquí...\n};\n\n// ID de la cuenta de email desde la que Apollo envía las secuencias\n// Apollo → Settings → Email Accounts → copiar el ID\nconst APOLLO_EMAIL_ACCOUNT_ID = \"TU_APOLLO_EMAIL_ACCOUNT_ID\";\n\nconst evento = $input.first().json;\nconst campaignName = evento.campaign_name || '';\n\n// Buscar match exacto primero\nlet sequenceId = SEQUENCE_MAP[campaignName] || null;\n\n// Si no hay match exacto, buscar por palabra clave\nif (!sequenceId) {\n  for (const [keyword, seqId] of Object.entries(SEQUENCE_MAP)) {\n    if (campaignName.toLowerCase().includes(keyword.toLowerCase())) {\n      sequenceId = seqId;\n      break;\n    }\n  }\n}\n\nreturn [{\n  json: {\n    ...evento,\n    sequence_id:         sequenceId,\n    email_account_id:    APOLLO_EMAIL_ACCOUNT_ID,\n    tiene_secuencia:     sequenceId !== null,\n    campaign_name_clean: campaignName,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-40, 80],
+      "id": "mta-mapear-001",
+      "name": "Mapear Campaña → Secuencia Apollo"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "tiene-secuencia-check",
+              "leftValue": "={{ $json.tiene_secuencia }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [180, 80],
+      "id": "mta-if-seq-001",
+      "name": "¿Tiene Secuencia Mapeada?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/people/match",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"api_key\": \"TU_APOLLO_API_KEY\",\n  \"email\": \"{{ $json.email }}\",\n  \"first_name\": \"{{ $json.nombre }}\",\n  \"last_name\": \"{{ $json.apellido }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [400, -60],
+      "id": "mta-apollo-match-001",
+      "name": "Buscar Contacto en Apollo"
+    },
+    {
+      "parameters": {
+        "jsCode": "// people/match devuelve { person: {...} } o { person: null }\nconst matchResult = $input.first().json;\nconst eventoData  = $('Mapear Campaña → Secuencia Apollo').item.json;\n\nlet apolloContactId = null;\nlet contactExists   = false;\n\nif (matchResult.person?.id) {\n  apolloContactId = matchResult.person.id;\n  contactExists   = true;\n} else if (matchResult.contacts?.[0]?.id) {\n  apolloContactId = matchResult.contacts[0].id;\n  contactExists   = true;\n}\n\nreturn [{\n  json: {\n    ...eventoData,\n    apollo_contact_id: apolloContactId,\n    contact_exists:    contactExists,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [620, -60],
+      "id": "mta-check-contact-001",
+      "name": "Verificar si Existe Contacto"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "contact-exists-check",
+              "leftValue": "={{ $json.contact_exists }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [840, -60],
+      "id": "mta-if-contact-001",
+      "name": "¿Contacto Existe en Apollo?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/contacts",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"api_key\": \"TU_APOLLO_API_KEY\",\n  \"first_name\": \"{{ $json.nombre }}\",\n  \"last_name\": \"{{ $json.apellido }}\",\n  \"email\": \"{{ $json.email }}\",\n  \"label_names\": [\"{{ $json.campaign_name_clean }}\"],\n  \"run_dedupe\": true\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1060, -200],
+      "id": "mta-create-contact-001",
+      "name": "Crear Contacto en Apollo"
+    },
+    {
+      "parameters": {
+        "jsCode": "const created  = $input.first().json;\nconst prevData = $('Verificar si Existe Contacto').item.json;\n\nconst newId = created.contact?.id || created.id || null;\n\nreturn [{\n  json: {\n    ...prevData,\n    apollo_contact_id: newId,\n    contact_exists:    true,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1280, -200],
+      "id": "mta-extract-id-001",
+      "name": "Extraer ID Nuevo Contacto"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.apollo.io/api/v1/emailer_campaigns/' + $json.sequence_id + '/add_contact_ids' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"api_key\": \"TU_APOLLO_API_KEY\",\n  \"contact_ids\": [\"{{ $json.apollo_contact_id }}\"],\n  \"emailer_campaign_id\": \"{{ $json.sequence_id }}\",\n  \"send_email_from_email_account_id\": \"{{ $json.email_account_id }}\",\n  \"sequence_no_email\": false,\n  \"sequence_active_in_other_campaigns\": false,\n  \"status\": \"active\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1500, -60],
+      "id": "mta-add-sequence-001",
+      "name": "Añadir a Secuencia Apollo"
+    },
+    {
+      "parameters": {
+        "content": "# 📧 MailerLite → Apollo (Clicks/Opens por Servicio)\n\n## Qué hace\nCuando alguien hace **click u open** en una campaña de MailerLite,\nlo añade a la **secuencia correcta de Apollo** según el servicio.\n\n## Paso 1: Registrar webhook en MailerLite\n```\nPOST https://connect.mailerlite.com/api/webhooks\nAuthorization: Bearer TU_MAILERLITE_API_KEY\n\n{\n  \"name\": \"clicks-a-apollo\",\n  \"events\": [\"campaign.click\", \"campaign.open\"],\n  \"url\": \"https://TU-N8N.com/webhook/mailerlite-eventos\",\n  \"enabled\": true,\n  \"batchable\": true\n}\n```\n\n## Paso 2: Configurar SEQUENCE_MAP\nEn el nodo \"Mapear Campaña → Secuencia Apollo\"\n- Clave = nombre de campaña en MailerLite\n- Valor = ID secuencia en Apollo (/sequences/XXXX)\n\n## Variables a reemplazar\n- TU_APOLLO_API_KEY → Master API Key de Apollo\n- TU_APOLLO_EMAIL_ACCOUNT_ID → Apollo → Settings → Email Accounts\n- TU_MAILERLITE_API_KEY → MailerLite → Integrations → API",
+        "height": 420,
+        "width": 500
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-700, -460],
+      "id": "mta-guide-001",
+      "name": "Guide"
+    }
+  ],
+  "connections": {
+    "Webhook MailerLite": {
+      "main": [
+        [
+          { "node": "Responder OK", "type": "main", "index": 0 },
+          { "node": "Parsear Eventos del Batch", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Parsear Eventos del Batch": {
+      "main": [[{ "node": "Split Eventos", "type": "main", "index": 0 }]]
+    },
+    "Split Eventos": {
+      "main": [[{ "node": "Mapear Campaña → Secuencia Apollo", "type": "main", "index": 0 }]]
+    },
+    "Mapear Campaña → Secuencia Apollo": {
+      "main": [[{ "node": "¿Tiene Secuencia Mapeada?", "type": "main", "index": 0 }]]
+    },
+    "¿Tiene Secuencia Mapeada?": {
+      "main": [
+        [],
+        [{ "node": "Buscar Contacto en Apollo", "type": "main", "index": 0 }]
+      ]
+    },
+    "Buscar Contacto en Apollo": {
+      "main": [[{ "node": "Verificar si Existe Contacto", "type": "main", "index": 0 }]]
+    },
+    "Verificar si Existe Contacto": {
+      "main": [[{ "node": "¿Contacto Existe en Apollo?", "type": "main", "index": 0 }]]
+    },
+    "¿Contacto Existe en Apollo?": {
+      "main": [
+        [{ "node": "Crear Contacto en Apollo", "type": "main", "index": 0 }],
+        [{ "node": "Añadir a Secuencia Apollo", "type": "main", "index": 0 }]
+      ]
+    },
+    "Crear Contacto en Apollo": {
+      "main": [[{ "node": "Extraer ID Nuevo Contacto", "type": "main", "index": 0 }]]
+    },
+    "Extraer ID Nuevo Contacto": {
+      "main": [[{ "node": "Añadir a Secuencia Apollo", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
