@@ -145,7 +145,7 @@ function generateBlandPayload(lead, options = {}) {
         first_sentence: isWebCall
             ? `Hi${n !== 'there' ? ' ' + n : ''}! This is Laura from MSI Technologies. How are you today?`
             : `Hi, is this ${n}?`,
-        wait_for_greeting: !isWebCall,
+        wait_for_greeting: false,
         noise_cancellation: true,
         background_track: 'office',
         record: true,
@@ -167,8 +167,8 @@ function generateBlandPayload(lead, options = {}) {
             { word: 'IoT', pronunciation: 'I-O-T', case_sensitive: 'true', spaced: 'true' },
             { word: 'AWS', pronunciation: 'A-W-S', case_sensitive: 'true', spaced: 'true' },
             { word: 'GCP', pronunciation: 'G-C-P', case_sensitive: 'true', spaced: 'true' },
-            { word: 'Nataly', pronunciation: 'NAH-tah-lee' },
-            { word: 'Riano', pronunciation: 'Ree-AH-no' }
+            
+            
         ],
         metadata: {
             lead_name: n,

@@ -79,7 +79,7 @@ const body = {
   task: task,
   voice: '4e65cda2-cf46-4907-84ba-3ca96c48f549',
   first_sentence: 'Hi, is this ' + n + '?',
-  wait_for_greeting: true,
+  wait_for_greeting: false,
   noise_cancellation: true,
   background_track: 'office',
   record: true,
@@ -101,8 +101,8 @@ const body = {
     { word: 'IoT', pronunciation: 'I-O-T', case_sensitive: 'true', spaced: 'true' },
     { word: 'AWS', pronunciation: 'A-W-S', case_sensitive: 'true', spaced: 'true' },
     { word: 'GCP', pronunciation: 'G-C-P', case_sensitive: 'true', spaced: 'true' },
-    { word: 'Nataly', pronunciation: 'NAH-tah-lee' },
-    { word: 'Riano', pronunciation: 'Ree-AH-no' }
+    
+    
   ],
   webhook: 'https://borrar2.vercel.app/api/calls?action=bland-webhook',
   metadata: {
