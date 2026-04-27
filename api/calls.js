@@ -1,12 +1,30 @@
-// api/calls.js — Vercel Serverless Function for Bland.ai calls proxy
-// Routes: GET /api/calls?action=logs|leads|stats  POST /api/calls?action=trigger|add-lead|web-session|bland-webhook
+// api/calls.js — Vercel Serverless Function (dashboard + manual triggers)
+// Architecture v9: n8n handles scheduled calls (AI Agent → Bland → Webhook Handler → Supabase).
+// This file handles: dashboard reads, adding leads, test/manual calls, and browser (web) sessions.
+//
+// Routes:
+//   GET  ?action=stats          → today's call stats from Supabase
+//   GET  ?action=logs           → call log history from Supabase
+//   GET  ?action=leads          → leads list from Supabase
+//   GET  ?action=call-detail    → fetch a specific call from Bland.ai
+//   POST ?action=add-lead       → add a new lead to Supabase
+//   POST ?action=n8n-fire       → trigger n8n Orchestrator (AI Agent + Bland, full flow)
+//   POST ?action=trigger        → manual test call (direct Bland, shorter duration, webhook → n8n)
+//   POST ?action=web-session    → create browser Bland session (returns agent_id + token)
+//   POST ?action=bland-webhook  → fallback webhook handler (kept for compatibility)
 
 const BLAND_API_KEY = process.env.BLAND_API_KEY || 'org_9e948565692e5786dd47964efb1a16ca93f427a08aa5234d723493b6880acff2f75e03d59fb171228f5e69';
 const BLAND_VOICE_ID = process.env.BLAND_VOICE_ID || '4e65cda2-cf46-4907-84ba-3ca96c48f549';
-const BLAND_PHONE_NUMBER_ID = process.env.BLAND_PHONE_NUMBER_ID || ''; // Usar número por defecto de la cuenta
+const BLAND_PHONE_NUMBER_ID = process.env.BLAND_PHONE_NUMBER_ID || '';
 // Same Supabase values as config.example.js (already public in repo)
 const SUPABASE_URL = 'https://vahqhxfdropstvklvzej.supabase.co';
 const SUPABASE_SERVICE_KEY = 'sb_publishable_xt7qY64rVMowaSris2Zs0Q_2DEbzjpy';
+
+// n8n v9 webhook URLs — update these after importing the workflows in n8n
+// N8N_ORCHESTRATOR_URL: triggers the Orchestrator (AI Agent generates script, then calls Bland)
+// N8N_WEBHOOK_HANDLER_URL: Bland sends call results here when a phone call ends
+const N8N_ORCHESTRATOR_URL = process.env.N8N_ORCHESTRATOR_URL || 'https://YOUR_N8N_INSTANCE/webhook/laura-trigger';
+const N8N_WEBHOOK_HANDLER_URL = process.env.N8N_WEBHOOK_HANDLER_URL || 'https://YOUR_N8N_INSTANCE/webhook/bland-callback';
 
 async function supabaseFetch(path, options = {}) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
@@ -71,7 +89,7 @@ CALL FLOW:
    - "Are you the one leading this decision, or is someone else involved?"
 5. Book: "How about a thirty-minute call with one of our senior consultants — no slides, straight to your situation. This week or next?"
    Collect day + time + email. Spell email back character by character. Confirm all three.
-   Closing (say this exactly, then end_call): "Excellent${nameMid ? ', ' + nameMid : ''}. Nataly Riano from MSI Technologies will send the calendar invite shortly — you can reach her at n-r-i-a-n-o at msiamericas dot com. Enjoy your day."
+   Closing (say this exactly, then call end_call): "Excellent${nameMid ? ', ' + nameMid : ''}. Nataly Riano from MSI Technologies will send the calendar invite shortly — you can reach her at n-r-i-a-n-o at msiamericas dot com. Enjoy your day."
 
 OBJECTIONS:
 - Already have a vendor → "Is there a role that's been hard to fill lately?"
@@ -527,7 +545,8 @@ module.exports = async (req, res) => {
                 { lead_name, phone, company, title, email, lead_type },
                 {
                     isWebCall: false,
-                    webhookUrl: webhook_url || `https://n8nmsi.app.n8n.cloud/webhook/bland-webhook`
+                    // Results go to n8n Webhook Handler — same processing as scheduled calls
+                    webhookUrl: webhook_url || N8N_WEBHOOK_HANDLER_URL
                 }
             );
             // Test calls: shorter duration
@@ -552,6 +571,31 @@ module.exports = async (req, res) => {
             }
 
             return res.status(200).json({ success: true, call_id: blandData.call_id, status: blandData.status, message: 'Test call initiated' });
+        }
+
+        // ── POST: fire call via n8n Orchestrator (AI Agent + Bland) ───────
+        // Delegates the full flow: AI Agent generates script → Bland makes call → n8n saves results.
+        // Accepts: { lead_id } to call a specific lead, or { force: true } to fire next in queue.
+        // Outside business hours requires force: true.
+        if (req.method === 'POST' && action === 'n8n-fire') {
+            const { lead_id, force } = req.body || {};
+            const payload = {};
+            if (lead_id) payload.lead_id = lead_id;
+            if (force) payload.force = true;
+
+            const n8nRes = await fetch(N8N_ORCHESTRATOR_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const n8nText = await n8nRes.text();
+            let n8nData;
+            try { n8nData = JSON.parse(n8nText); } catch { n8nData = { raw: n8nText }; }
+
+            if (!n8nRes.ok) {
+                return res.status(n8nRes.status).json({ success: false, error: 'n8n error', detail: n8nData });
+            }
+            return res.status(200).json({ success: true, message: 'Queued in n8n Orchestrator', n8n: n8nData });
         }
 
         // ── POST: add lead ──────────────────────────────────────────────
@@ -587,7 +631,8 @@ module.exports = async (req, res) => {
 
             const lead = { lead_name, company, title, email, phone, lead_type, intent_topic };
             const n = lead_name || 'there';
-            const webhookUrl = webhook_url || 'https://n8nmsi.app.n8n.cloud/webhook/bland-webhook';
+            // Browser sessions: results go to n8n Webhook Handler (same as phone calls)
+            const webhookUrl = webhook_url || N8N_WEBHOOK_HANDLER_URL;
 
             // /v1/agents accepts a limited set of fields — use minimal payload.
             // Same brain: generateBlandPrompt(lead, true) ensures identical behavior.

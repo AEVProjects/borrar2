@@ -1,0 +1,438 @@
+{
+  "name": "MSI Laura v9 - Orchestrator",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "minutes", "minutesInterval": 15 }]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 80],
+      "id": "v9-orch-001",
+      "name": "Horario Óptimo Llamadas",
+      "disabled": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 280],
+      "id": "v9-orch-002",
+      "name": "Test Manual",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "laura-trigger",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [240, 480],
+      "id": "v9-orch-003",
+      "name": "Web Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst raw = item.json;\nconst isWebhook = 'body' in raw || 'headers' in raw;\nconst body = isWebhook ? (raw.body || {}) : {};\nreturn [{\n  json: {\n    source: isWebhook ? 'webhook' : 'auto',\n    force: body.force === true,\n    lead_id: body.lead_id || null,\n    proceed: true\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 280],
+      "id": "v9-orch-004",
+      "name": "Preparar Contexto"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $json;\nif (ctx.force === true) {\n  return [{ json: { ...ctx, proceed: true, bypassed: true } }];\n}\nconst now = new Date();\nconst estTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));\nconst hour = estTime.getHours();\nconst day = estTime.getDay();\nif (day === 0 || day === 6) {\n  return [{ json: { ...ctx, proceed: false, reason: 'Weekend - no calls' } }];\n}\nif (hour < 8 || hour >= 17) {\n  return [{ json: { ...ctx, proceed: false, reason: 'Outside business hours (8am-5pm EST)' } }];\n}\nreturn [{ json: { ...ctx, proceed: true, currentHour: hour, dayOfWeek: day } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 280],
+      "id": "v9-orch-005",
+      "name": "Verificar Horario Laboral"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.proceed }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" },
+              "id": "v9-cond-horario"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [960, 280],
+      "id": "v9-orch-006",
+      "name": "¿Horario Válido?"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE bland_leads SET status = 'PENDING', active_call_id = NULL, updated_at = NOW() WHERE status = 'IN_PROGRESS' AND updated_at < NOW() - INTERVAL '20 minutes'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1200, 280],
+      "id": "v9-orch-007",
+      "name": "Resetear Atascados",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM bland_daily_stats WHERE date = CURRENT_DATE",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1440, 280],
+      "id": "v9-orch-008",
+      "name": "Leer Stats del Día",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM bland_leads WHERE status IN ('PENDING', 'CALLBACK') AND attempts < 3 AND (last_call_date IS NULL OR last_call_date < CURRENT_DATE) AND (status != 'CALLBACK' OR callback_date IS NULL OR callback_date <= CURRENT_DATE) ORDER BY CASE WHEN status = 'CALLBACK' THEN 0 ELSE 1 END, created_at ASC LIMIT 20",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1680, 280],
+      "id": "v9-orch-009",
+      "name": "Leer Leads Pendientes",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $json;\nconst leads = $('Leer Leads Pendientes').all();\nlet callsToday = 0;\ntry {\n  const stats = $('Leer Stats del Día').all();\n  if (stats.length > 0 && stats[0].json.total_calls) {\n    callsToday = parseInt(stats[0].json.total_calls) || 0;\n  }\n} catch(e) { callsToday = 0; }\n\nif (callsToday >= 25) {\n  return [{ json: { proceed: false, reason: 'Daily limit reached (' + callsToday + '/25)', callsToday } }];\n}\n\nif (ctx.lead_id) {\n  const specific = leads.find(l => String(l.json.id) === String(ctx.lead_id));\n  if (specific) return [{ json: { ...specific.json, callsToday, proceed: true } }];\n  return [{ json: { proceed: false, reason: 'Lead ID ' + ctx.lead_id + ' not found or ineligible', callsToday } }];\n}\n\nconst seenPhones = new Set();\nconst valid = leads.filter(l => {\n  const phone = String(l.json.phone || '').trim();\n  if (!phone || seenPhones.has(phone)) return false;\n  seenPhones.add(phone);\n  return true;\n}).slice(0, 1);\n\nif (valid.length === 0) {\n  return [{ json: { proceed: false, reason: 'No valid leads available', callsToday } }];\n}\nreturn valid.map(l => ({ json: { ...l.json, callsToday, proceed: true } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1920, 280],
+      "id": "v9-orch-010",
+      "name": "Filtrar Leads Válidos"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 2 },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.proceed }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [2160, 280],
+      "id": "v9-orch-011",
+      "name": "¿Hay Leads?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 2 },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.phone }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [2400, 280],
+      "id": "v9-orch-012",
+      "name": "¿Lead Válido?"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Lead to call:\nName: {{ $json.lead_name }}\nCompany: {{ $json.company }}\nTitle: {{ $json.title || 'Technology Leader' }}\nIndustry: {{ $json.industry || 'Technology' }}\nLead Type: {{ $json.lead_type || 'STAFFING' }}\nEmail: {{ $json.email || '' }}\nPrevious Attempts: {{ $json.attempts || 0 }}\nIntent Topic: {{ $json.intent_topic || '' }}\n\nCreate the complete personalized Bland.ai task prompt for this call. Use tools to personalize with relevant MSI knowledge and prepare the Calendly link and closing scripts.",
+        "options": {
+          "systemMessage": "# ROLE\nYou are a personalized script writer for Laura, MSI Technologies' AI voice sales agent.\nYour OUTPUT is a complete Bland.ai task prompt that Laura will use to conduct the actual voice call.\n\n# ABOUT MSI TECHNOLOGIES\n20+ years, 700+ consultants, 14 Americas offices.\nServices: IT Staff Augmentation (nearshore LATAM engineers), Cybersecurity, Cloud (AWS/Azure/GCP), AI Solutions, BPO.\nCore Value: Senior LATAM engineers — US timezone, fluent English, 2-4 weeks to start, 20-35% below US domestic rates.\n\n# YOUR PROCESS\n1. Call consultar_knowledge_base once with the lead's industry/role/lead_type to get specific talking points.\n2. Call agendar_reunion with the lead name, email, and company to get the personalized Calendly URL.\n3. Call finalizar_llamada with next_step 'meeting_scheduled' to get the meeting-scheduled closing script.\n4. Combine everything into ONE complete Bland.ai task string.\n\n# OUTPUT FORMAT\nOutput ONLY the final Bland.ai task string. No preamble, no markdown formatting, no explanation.\nThe task must be self-contained and include:\n- Laura persona and MSI context\n- Personalized talking points from the knowledge base\n- 5-stage call flow: Identity Confirm → Earn Permission → Value Prop → Qualify → Book Meeting\n- Objection handling for at least 3 common objections\n- The Calendly URL embedded in Stage 5\n- Closing scripts for all outcomes: meeting, email, callback, not interested\n- RULES section at the end\nTarget length: 1800-2400 characters. Conversational tone, not bullet points."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [2640, 280],
+      "id": "v9-orch-013",
+      "name": "AI Agent Laura"
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0.5
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [2400, 600],
+      "id": "v9-orch-014",
+      "name": "OpenAI GPT-4o-mini",
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=={{ $json.phone }}",
+        "contextWindowLength": 3
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.2,
+      "position": [2640, 600],
+      "id": "v9-orch-015",
+      "name": "Memoria Conversación"
+    },
+    {
+      "parameters": {
+        "name": "consultar_knowledge_base",
+        "description": "Search MSI Technologies knowledge base for industry-specific talking points, pricing info, service details, and objection-handling scripts. Use this to personalize the call script for the lead's specific industry and role.",
+        "workflowId": "DwVC3YLSMWs8eYUVaDByD",
+        "fields": {
+          "values": [
+            { "name": "query" }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.1,
+      "position": [2800, 600],
+      "id": "v9-orch-016",
+      "name": "Tool - Knowledge Base"
+    },
+    {
+      "parameters": {
+        "name": "agendar_reunion",
+        "description": "Generate a pre-filled Calendly link and confirmation script for scheduling a 30-minute meeting with Nataly Riano. Call this with the lead's name, email, and company to embed the link in Stage 5 of the call script.",
+        "workflowId": "0OmWg3lrbmoSyeqCFcD2q",
+        "fields": {
+          "values": [
+            { "name": "lead_name" },
+            { "name": "lead_email" },
+            { "name": "company" }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.1,
+      "position": [2960, 600],
+      "id": "v9-orch-017",
+      "name": "Tool - Agendar Reunión"
+    },
+    {
+      "parameters": {
+        "name": "finalizar_llamada",
+        "description": "Get the appropriate closing script for a specific call outcome. Use this to get ready-made closing lines for: meeting_scheduled, send_email, callback, or not_interested. Embed these in the script so Laura knows exactly what to say when closing.",
+        "workflowId": "5HQVnYtI1tBT52K3IJEOf",
+        "fields": {
+          "values": [
+            { "name": "call_result" },
+            { "name": "interest_level" },
+            { "name": "pain_points" },
+            { "name": "next_step" },
+            { "name": "notes" }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.1,
+      "position": [3120, 600],
+      "id": "v9-orch-018",
+      "name": "Tool - Finalizar Llamada"
+    },
+    {
+      "parameters": {
+        "jsCode": "const agentOutput = $input.all()[0];\nconst lead = $('¿Lead Válido?').first().json;\nconst today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });\nconst script = agentOutput.json.output || agentOutput.json.text || '';\n\nif (!script || script.length < 100) {\n  throw new Error('AI Agent did not return a valid script. Output: ' + JSON.stringify(agentOutput.json));\n}\n\nreturn [{ json: {\n  phone: lead.phone,\n  lead_id: lead.id,\n  lead_name: lead.lead_name || 'there',\n  company: lead.company || '',\n  email: lead.email || '',\n  title: lead.title || '',\n  lead_type: lead.lead_type || 'STAFFING',\n  attempts: lead.attempts || 0,\n  script: script,\n  call_date_today: today\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2880, 280],
+      "id": "v9-orch-019",
+      "name": "Preparar Payload Bland"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE bland_leads SET status = 'IN_PROGRESS', last_call_date = CURRENT_DATE, updated_at = NOW() WHERE phone = '{{ $json.phone }}' RETURNING *",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [3120, 280],
+      "id": "v9-orch-020",
+      "name": "Marcar Lead En Proceso",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const BLAND_API_KEY = 'YOUR_BLAND_API_KEY_HERE';\nconst BLAND_WEBHOOK_URL = 'https://YOUR_N8N_INSTANCE/webhook/bland-callback';\n\nconst payload = $('Preparar Payload Bland').first().json;\nconst n = payload.lead_name;\nconst task = payload.script;\n\nconst body = {\n  phone_number: payload.phone,\n  task: task,\n  voice: '4e65cda2-cf46-4907-84ba-3ca96c48f549',\n  first_sentence: 'Hi, is this ' + n + '?',\n  wait_for_greeting: false,\n  noise_cancellation: true,\n  background_track: 'office',\n  record: true,\n  max_duration: 5,\n  language: 'en-US',\n  model: 'enhanced',\n  interruption_threshold: 200,\n  temperature: 0.4,\n  voice_settings: { speed: 1.0 },\n  voicemail: {\n    action: 'leave_message',\n    message: 'Hi ' + n + ', this is Laura from MSI Technologies. We help companies scale their tech teams with senior nearshore engineers. I would love to connect briefly. Reach us at n-r-i-a-n-o at msiamericas dot com. Have a great day.'\n  },\n  summary_prompt: 'Analyze this sales call. Output: 1) disposition (exactly one of: meeting_scheduled, send_email, callback, not_interested, wrong_number, gatekeeper, voicemail, no_answer), 2) meeting_date and meeting_time if scheduled, 3) callback_date and callback_time if requested, 4) email_collected if confirmed character by character during call, 5) pain_points as comma-separated list of challenges mentioned, 6) summary as 2-3 sentence outcome.',\n  dispositions: ['meeting_scheduled', 'send_email', 'callback', 'not_interested', 'wrong_number', 'gatekeeper', 'voicemail', 'no_answer'],\n  pronunciation_guide: [\n    { word: 'MSI', pronunciation: 'M-S-I', case_sensitive: true, spaced: true },\n    { word: '5G', pronunciation: 'Five-G', case_sensitive: true, spaced: true },\n    { word: 'IoT', pronunciation: 'I-O-T', case_sensitive: true, spaced: true },\n    { word: 'AWS', pronunciation: 'A-W-S', case_sensitive: true, spaced: true },\n    { word: 'GCP', pronunciation: 'G-C-P', case_sensitive: true, spaced: true }\n  ],\n  webhook: BLAND_WEBHOOK_URL,\n  metadata: {\n    lead_id: String(payload.lead_id || ''),\n    lead_name: n,\n    company: payload.company,\n    email: payload.email,\n    phone: payload.phone,\n    lead_type: payload.lead_type || 'STAFFING',\n    call_date: payload.call_date_today\n  }\n};\n\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://api.bland.ai/v1/calls',\n  headers: {\n    'Content-Type': 'application/json',\n    'authorization': BLAND_API_KEY\n  },\n  body: body\n});\n\nif (!response.call_id) {\n  throw new Error('Bland API error: ' + JSON.stringify(response));\n}\n\nreturn [{ json: {\n  call_id: response.call_id,\n  bland_status: response.status,\n  phone: payload.phone,\n  lead_id: payload.lead_id,\n  lead_name: n,\n  company: payload.company,\n  email: payload.email,\n  call_date_today: payload.call_date_today\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3360, 280],
+      "id": "v9-orch-021",
+      "name": "Llamar con Bland.ai"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE bland_leads SET active_call_id = '{{ $json.call_id }}', updated_at = NOW() WHERE id = {{ $json.lead_id || 0 }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [3600, 280],
+      "id": "v9-orch-022",
+      "name": "Guardar Call ID en Lead",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_SUPABASE_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# 📞 MSI Laura v9 — Orchestrator\n\n## Arquitectura v9 (Best Practice):\n- **Este workflow**: Genera script personalizado + dispara llamada + termina.\n- **Webhook Handler** (workflow separado): Recibe resultado de Bland vía webhook.\n\n## Flujo:\n1. Triggers → Preparar Contexto → Verificar Horario (EST 8am-5pm, L-V)\n2. Resetear Atascados → leads IN_PROGRESS > 20 min se liberan automáticamente\n3. Leer Stats + Leads desde Supabase\n4. Filtrar → respeta límite 25 llamadas/día\n5. ¿Lead Válido? → **AI Agent Laura** genera script personalizado usando:\n   - 📚 consultar_knowledge_base → talking points por industria/rol\n   - 📅 agendar_reunion → Calendly URL pre-llenado\n   - ✅ finalizar_llamada → scripts de cierre por outcome\n6. Preparar Payload → Marcar IN_PROGRESS → Llamar Bland → Guardar call_id\n7. FIN. Bland maneja la conversación. Resultado llega al Webhook Handler.\n\n## Triggers disponibles:\n- ⏰ Schedule (cada 15 min — activar en producción)\n- 🧪 Manual (testing)\n- 🌐 Web (POST /webhook/laura-trigger)\n  Body: { force: true, lead_id: 123 }\n  force=true bypasea horario laboral\n\n## ANTES DE ACTIVAR:\n1. Asigna credencial PostgreSQL Supabase en todos los nodos postgres\n2. Reemplaza YOUR_BLAND_API_KEY_HERE y YOUR_N8N_INSTANCE en 'Llamar con Bland.ai'\n3. Asigna credencial OpenAI en el nodo 'OpenAI GPT-4o-mini'\n4. Importa los tool sub-workflows y actualiza sus IDs en los Tool nodes:\n   - Tool - Knowledge Base → ID del workflow 'Tool - Consultar Knowledge Base v9'\n   - Tool - Agendar Reunión → ID del workflow 'Tool - Agendar Reunion Calendly MSI'\n   - Tool - Finalizar Llamada → ID del workflow 'Tool - Finalizar Llamada MSI'\n5. Ejecuta migration-bland-calls-v3.sql en Supabase\n6. Activa Webhook Handler PRIMERO, luego este workflow",
+        "height": 700,
+        "width": 800,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [240, -520],
+      "id": "v9-orch-note",
+      "name": "Nota Principal"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Horario Óptimo Llamadas": {
+      "main": [[{ "node": "Preparar Contexto", "type": "main", "index": 0 }]]
+    },
+    "Test Manual": {
+      "main": [[{ "node": "Preparar Contexto", "type": "main", "index": 0 }]]
+    },
+    "Web Trigger": {
+      "main": [[{ "node": "Preparar Contexto", "type": "main", "index": 0 }]]
+    },
+    "Preparar Contexto": {
+      "main": [[{ "node": "Verificar Horario Laboral", "type": "main", "index": 0 }]]
+    },
+    "Verificar Horario Laboral": {
+      "main": [[{ "node": "¿Horario Válido?", "type": "main", "index": 0 }]]
+    },
+    "¿Horario Válido?": {
+      "main": [[{ "node": "Resetear Atascados", "type": "main", "index": 0 }]]
+    },
+    "Resetear Atascados": {
+      "main": [[{ "node": "Leer Stats del Día", "type": "main", "index": 0 }]]
+    },
+    "Leer Stats del Día": {
+      "main": [[{ "node": "Leer Leads Pendientes", "type": "main", "index": 0 }]]
+    },
+    "Leer Leads Pendientes": {
+      "main": [[{ "node": "Filtrar Leads Válidos", "type": "main", "index": 0 }]]
+    },
+    "Filtrar Leads Válidos": {
+      "main": [[{ "node": "¿Hay Leads?", "type": "main", "index": 0 }]]
+    },
+    "¿Hay Leads?": {
+      "main": [[{ "node": "¿Lead Válido?", "type": "main", "index": 0 }]]
+    },
+    "¿Lead Válido?": {
+      "main": [[{ "node": "AI Agent Laura", "type": "main", "index": 0 }]]
+    },
+    "AI Agent Laura": {
+      "main": [[{ "node": "Preparar Payload Bland", "type": "main", "index": 0 }]]
+    },
+    "OpenAI GPT-4o-mini": {
+      "ai_languageModel": [[{ "node": "AI Agent Laura", "type": "ai_languageModel", "index": 0 }]]
+    },
+    "Memoria Conversación": {
+      "ai_memory": [[{ "node": "AI Agent Laura", "type": "ai_memory", "index": 0 }]]
+    },
+    "Tool - Knowledge Base": {
+      "ai_tool": [[{ "node": "AI Agent Laura", "type": "ai_tool", "index": 0 }]]
+    },
+    "Tool - Agendar Reunión": {
+      "ai_tool": [[{ "node": "AI Agent Laura", "type": "ai_tool", "index": 0 }]]
+    },
+    "Tool - Finalizar Llamada": {
+      "ai_tool": [[{ "node": "AI Agent Laura", "type": "ai_tool", "index": 0 }]]
+    },
+    "Preparar Payload Bland": {
+      "main": [[{ "node": "Marcar Lead En Proceso", "type": "main", "index": 0 }]]
+    },
+    "Marcar Lead En Proceso": {
+      "main": [[{ "node": "Llamar con Bland.ai", "type": "main", "index": 0 }]]
+    },
+    "Llamar con Bland.ai": {
+      "main": [[{ "node": "Guardar Call ID en Lead", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "America/New_York",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "meta": {
+    "instanceId": "YOUR_N8N_INSTANCE_ID"
+  },
+  "tags": []
+}

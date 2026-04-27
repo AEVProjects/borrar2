@@ -5,76 +5,36 @@
       "parameters": {
         "workflowInputs": {
           "values": [
-            {
-              "name": "query"
-            }
+            { "name": "query" }
           ]
         }
       },
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [
-        288,
-        128
-      ],
+      "position": [288, 128],
       "id": "90e4017a-399f-474e-bfb3-bbaf9aab0d16",
       "name": "Trigger desde Agente"
     },
     {
       "parameters": {
-        "documentId": {
-          "__rl": true,
-          "value": "1eNMnPHdhtOf2eJ3w_DCt9xGuqpCr0wPg0GQO7qESPM8",
-          "mode": "id"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "Knowledge_Base",
-          "mode": "name"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.5,
-      "position": [
-        512,
-        128
-      ],
-      "id": "cb381357-4447-4b81-94a3-1ab261969d46",
-      "name": "Leer Knowledge Base",
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "CWoUK0PdQJqOEBKZ",
-          "name": "Google Sheets MSI"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "const query = $('Trigger desde Agente').first().json.query.toLowerCase();\nconst kbItems = $('Leer Knowledge Base').all();\n\n// Buscar coincidencias en keywords y questions\nconst results = [];\n\nfor (const item of kbItems) {\n  const keywords = (item.json.KEYWORDS || '').toLowerCase();\n  const question = (item.json.QUESTION || '').toLowerCase();\n  const category = (item.json.CATEGORY || '').toLowerCase();\n  const answer = item.json.ANSWER || '';\n  \n  // Calcular relevancia\n  let score = 0;\n  const queryWords = query.split(/\\s+/);\n  \n  for (const word of queryWords) {\n    if (word.length < 3) continue; // Ignorar palabras muy cortas\n    \n    if (keywords.includes(word)) score += 3;\n    if (question.includes(word)) score += 2;\n    if (category.includes(word)) score += 1;\n  }\n  \n  if (score > 0) {\n    results.push({\n      category: item.json.CATEGORY,\n      question: item.json.QUESTION,\n      answer: answer,\n      score: score\n    });\n  }\n}\n\n// Ordenar por relevancia y tomar top 3\nresults.sort((a, b) => b.score - a.score);\nconst topResults = results.slice(0, 3);\n\nif (topResults.length === 0) {\n  return [{\n    json: {\n      response: \"I don't have specific information about that in my knowledge base. I can offer to have Nataly Riaño follow up with more details. Would that be helpful?\"\n    }\n  }];\n}\n\n// Formatear respuesta\nlet response = '';\nfor (const result of topResults) {\n  response += `${result.answer}\\n\\n`;\n}\n\nreturn [{\n  json: {\n    response: response.trim(),\n    sources: topResults.map(r => r.question)\n  }\n}];"
+        "jsCode": "const query = ($('Trigger desde Agente').first().json.query || '').toLowerCase();\n\nconst knowledge = [\n  {\n    category: 'SERVICES',\n    keywords: 'services solutions offerings what provide staffing augmentation',\n    answer: 'MSI Technologies provides: IT Staff Augmentation (nearshore LATAM engineers), Cybersecurity, Cloud Computing (AWS/Azure/GCP), AI Solutions and Automation, BPO, and Nearshore Staffing. Our engineers are senior-level (5+ years), US timezone aligned, fluent in English, and ready to start in 2-4 weeks.'\n  },\n  {\n    category: 'PRICING',\n    keywords: 'price cost pricing rate salary budget expensive cheap savings',\n    answer: 'MSI provides senior LATAM engineers at 20-35% below US domestic hiring rates. Typical savings: $40,000-$80,000 per year per engineer. Our model is flexible: staff augmentation (no long-term commitment), project-based, or retained dedicated teams. No relocation costs, no benefits burden on the client side.'\n  },\n  {\n    category: 'STAFFING_ROLES',\n    keywords: 'tech stack technology roles developer engineer java python react full stack cloud devops data qa mobile',\n    answer: 'MSI staffs: Full-Stack (React, Node.js, Java, Python, .NET), Cloud and DevOps (AWS, Azure, GCP, Kubernetes, Terraform), Data Engineering and AI/ML, Cybersecurity, QA and Automation Testing, Mobile (iOS/Android), and 5G/IoT specialists. Typical experience: 5-10 years. All candidates pass a technical screening and English proficiency assessment.'\n  },\n  {\n    category: 'PROCESS',\n    keywords: 'process timeline onboard start how long weeks ramp hire interview',\n    answer: 'MSI process: 1) 30-minute requirements call with Nataly Riano. 2) MSI presents 2-3 pre-screened candidates within one week. 3) Client conducts brief interviews. 4) Selected engineer onboards in 2-4 weeks. No recruitment fee — MSI manages payroll, benefits, and HR in Latin America. Client pays a monthly service fee only for active engineers.'\n  },\n  {\n    category: 'OBJECTION_VENDOR',\n    keywords: 'vendor partner outsource already have competitor other provider',\n    answer: 'Many MSI clients supplement existing vendors with MSI for specialized roles or to fill gaps that are hard to source. MSI engineers are consistently rated higher quality than typical outsourcing because we focus on senior talent with true US timezone alignment. A short pilot project is the easiest way to compare the difference.'\n  },\n  {\n    category: 'OBJECTION_FREEZE',\n    keywords: 'freeze budget no hiring not right now not looking recession cut',\n    answer: \"MSI's contractor model is designed for exactly this scenario — engineers are contractors, not FTEs, so they don't affect headcount or trigger HR approval processes. Many companies use MSI for project-based work during hiring freezes without any long-term commitment. It gives full flexibility to scale up or down with no permanent obligation.\"\n  },\n  {\n    category: 'OBJECTION_INTERNAL',\n    keywords: 'internal team in house build our own handle ourselves',\n    answer: 'MSI works alongside internal teams — we complement them for specialized skills or capacity that is hard to recruit quickly. Most clients use MSI to accelerate projects that would otherwise take 3-6 months to staff internally. Our engineers integrate directly into existing workflows, Slack, Jira, and sprint cycles.'\n  },\n  {\n    category: 'SOCIAL_PROOF',\n    keywords: 'client customer reference case study who worked portfolio trust experience',\n    answer: 'MSI has served 300+ companies across North America, including Fortune 500 enterprises, fast-growing tech startups, and financial services firms. Clients span Telecom, Fintech, Healthcare IT, E-commerce, and SaaS. MSI maintains strict confidentiality around client names, but Nataly can share relevant anonymized case studies in a discovery call.'\n  },\n  {\n    category: 'AI_SOLUTIONS',\n    keywords: 'ai artificial intelligence automation ml machine learning chatbot llm openai generative workflow',\n    answer: \"MSI's AI practice covers: Process Automation (RPA + AI), Custom LLM integration and fine-tuning, AI-powered chatbots and virtual assistants, Computer vision and document processing, Predictive analytics and data pipelines, and AI strategy consulting. All solutions are built by senior engineers with hands-on ML and AI production experience.\"\n  },\n  {\n    category: 'CYBERSECURITY',\n    keywords: 'security cyber cybersecurity compliance soc pentest vulnerability breach attack iso hipaa',\n    answer: 'MSI Cybersecurity services: Security Operations Center (SOC) staffing, Penetration testing and vulnerability assessments, Compliance consulting (SOC2, ISO 27001, HIPAA, PCI-DSS), Cloud security architecture (AWS, Azure), Identity and Access Management, and Security code review. MSI security engineers hold certifications including CISSP, CISM, CEH, and CompTIA Security+.'\n  },\n  {\n    category: 'CLOUD',\n    keywords: 'cloud aws azure gcp google devops kubernetes docker terraform infrastructure migration',\n    answer: 'MSI Cloud and DevOps services: Cloud migration and modernization (AWS, Azure, GCP), Infrastructure as Code (Terraform, Pulumi), Container orchestration (Kubernetes, Docker), CI/CD pipeline design, Site Reliability Engineering (SRE), and FinOps cost optimization. MSI cloud engineers hold active AWS, Azure, and GCP certifications.'\n  },\n  {\n    category: 'COMPANY',\n    keywords: 'company msi about who are you background history founded offices location headquarters',\n    answer: 'MSI Technologies is a multinational IT solutions company with 20+ years of experience, 700+ active consultants, and 14 offices across the Americas including US, Colombia, Mexico, Argentina, Brazil, and Chile. Founded in 2003, MSI specializes in connecting North American companies with top-tier LATAM engineering talent. US headquarters: Miami, FL.'\n  },\n  {\n    category: 'FINTECH',\n    keywords: 'fintech finance financial banking payment transaction fraud risk compliance',\n    answer: 'MSI has deep fintech experience: Payment processing systems, Core banking integration, Fraud detection with ML, Regulatory compliance (PCI-DSS, SOX), Open banking APIs, and Digital wallet infrastructure. Many MSI engineers come from fintech backgrounds and understand both the technical and regulatory requirements of financial services.'\n  },\n  {\n    category: 'HEALTHCARE',\n    keywords: 'healthcare health medical hospital ehr emr hipaa patient data health tech',\n    answer: 'MSI supports healthcare IT including: EHR/EMR integration and development, HIPAA-compliant infrastructure, HL7 and FHIR API implementation, Telehealth platform development, Healthcare analytics, and Medical device software. MSI engineers with healthcare backgrounds understand clinical workflows and compliance requirements.'\n  },\n  {\n    category: 'TELECOM',\n    keywords: 'telecom telecommunications 5g lte network nfv sdn carrier mobile wireless',\n    answer: 'MSI has specialized 5G and telecom engineers covering: 5G network implementation, Network Function Virtualization (NFV), Software Defined Networking (SDN), BSS/OSS systems, IoT connectivity platforms, and telecom API development. MSI is one of the few staffing firms with a dedicated telecom/5G practice in Latin America.'\n  }\n];\n\nconst queryWords = query.split(/\\s+/).filter(w => w.length >= 3);\nconst results = [];\n\nfor (const item of knowledge) {\n  const searchText = (item.keywords + ' ' + item.category).toLowerCase();\n  let score = 0;\n  for (const word of queryWords) {\n    if (searchText.includes(word)) score += 2;\n    if (item.answer.toLowerCase().includes(word)) score += 1;\n  }\n  if (score > 0) results.push({ ...item, score });\n}\n\nresults.sort((a, b) => b.score - a.score);\nconst topResults = results.slice(0, 2);\n\nif (topResults.length === 0) {\n  return [{ json: {\n    response: \"For specific questions beyond standard MSI services, I recommend offering to connect the lead with Nataly Riano who can provide tailored information in a discovery call.\",\n    categories: []\n  }}];\n}\n\nreturn [{ json: {\n  response: topResults.map(r => r.answer).join('\\n\\n'),\n  categories: topResults.map(r => r.category)\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        720,
-        128
-      ],
+      "position": [528, 128],
       "id": "1af6de5d-13aa-4758-92b3-c65cc5665780",
       "name": "Buscar en Knowledge Base"
     },
     {
       "parameters": {
-        "content": "# 📚 Tool - Consultar Knowledge Base MSI\n\n## Función:\nBusca información relevante en la base de conocimiento de MSI Technologies.\n\n## Input:\n- query: Pregunta o tema a buscar\n\n## Output:\n- response: Respuesta encontrada\n- sources: Preguntas fuente\n\n## Google Sheet:\nID: 1eNMnPHdhtOf2eJ3w_DCt9xGuqpCr0wPg0GQO7qESPM8\nHoja: Knowledge_Base",
-        "height": 560,
-        "width": 494,
+        "content": "# 📚 Tool - Consultar Knowledge Base MSI (v9)\n\n## Función:\nBusca información relevante sobre MSI Technologies en una base de conocimiento estática embebida.\nNo requiere Google Sheets ni dependencias externas.\n\n## Input:\n- query: Pregunta o tema a buscar (industria, servicio, objeción)\n\n## Output:\n- response: Respuesta relevante (hasta 2 resultados)\n- categories: Categorías encontradas\n\n## Categorías disponibles:\n- SERVICES, PRICING, STAFFING_ROLES, PROCESS\n- OBJECTION_VENDOR, OBJECTION_FREEZE, OBJECTION_INTERNAL\n- SOCIAL_PROOF, AI_SOLUTIONS, CYBERSECURITY\n- CLOUD, COMPANY, FINTECH, HEALTHCARE, TELECOM\n\n## Para agregar conocimiento:\nEdita el array 'knowledge' en el nodo 'Buscar en Knowledge Base'.",
+        "height": 540,
+        "width": 480,
         "color": 4
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [
-        -256,
-        -128
-      ],
+      "position": [-256, -128],
       "id": "a5ba5aa2-348d-417b-ba7e-5eb5cb366d9f",
       "name": "Nota KB"
     }
@@ -82,26 +42,7 @@
   "pinData": {},
   "connections": {
     "Trigger desde Agente": {
-      "main": [
-        [
-          {
-            "node": "Leer Knowledge Base",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Leer Knowledge Base": {
-      "main": [
-        [
-          {
-            "node": "Buscar en Knowledge Base",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Buscar en Knowledge Base", "type": "main", "index": 0 }]]
     }
   },
   "active": false,
@@ -114,7 +55,6 @@
   },
   "versionId": "940be3e0-2a14-4dc0-9e76-453a406c1c32",
   "meta": {
-    "templateCredsSetupCompleted": true,
     "instanceId": "3c2794d9d044c6bd8df588319a07cd200ddb18a3500c78ed9e3f3be6469af062"
   },
   "id": "DwVC3YLSMWs8eYUVaDByD",
