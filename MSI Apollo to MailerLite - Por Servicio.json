@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Calcula la ventana de tiempo para buscar contactos nuevos\nconst VENTANA_MINUTOS = 15;\n\nconst ahora = new Date();\nconst desde = new Date(ahora.getTime() - VENTANA_MINUTOS * 60 * 1000);\n\nreturn [{\n  json: {\n    desde_iso: desde.toISOString(),\n    hasta_iso: ahora.toISOString(),\n    desde_timestamp: Math.floor(desde.getTime() / 1000),\n    ventana_minutos: VENTANA_MINUTOS\n  }\n}];"
+        "jsCode": "const VENTANA_MINUTOS = 15;\nconst ahora = new Date();\nconst desde = new Date(ahora.getTime() - VENTANA_MINUTOS * 60 * 1000);\nreturn [{\n  json: {\n    desde_iso: desde.toISOString(),\n    hasta_iso: ahora.toISOString(),\n    desde_timestamp: Math.floor(desde.getTime() / 1000),\n    ventana_minutos: VENTANA_MINUTOS\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -34,22 +34,47 @@
         "url": "https://api.apollo.io/api/v1/contacts/search",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"api_key\": \"TU_APOLLO_API_KEY\",\n  \"sort_by_field\": \"contact_created_at\",\n  \"sort_ascending\": false,\n  \"per_page\": 100,\n  \"page\": 1\n}",
+        "jsonBody": "={\n  \"api_key\": \"{{ $env.APOLLO_API_KEY }}\",\n  \"sort_by_field\": \"contact_created_at\",\n  \"sort_ascending\": false,\n  \"per_page\": 100,\n  \"page\": 1\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [-160, 0],
       "id": "atm-apollo-search-001",
-      "name": "Buscar Contactos Apollo"
+      "name": "Buscar Contactos Apollo (p.1)"
     },
     {
       "parameters": {
-        "jsCode": "// ════════════════════════════════════════════════════════════════\n// MAPA DE SERVICIOS: Apollo Label → MailerLite Group ID\n// ════════════════════════════════════════════════════════════════\n// Agrega aquí cada servicio. El label en Apollo debe ser EXACTAMENTE\n// igual (mayúsculas/minúsculas).\n// El Group ID lo obtienes en MailerLite → Subscribers → Groups\n// o con: GET https://connect.mailerlite.com/api/groups\n// ════════════════════════════════════════════════════════════════\nconst SERVICE_MAP = {\n  // \"Apollo Label Exacto\": \"MailerLite_Group_ID\",\n  \"Servicio A\":    \"MAILERLITE_GROUP_ID_SERVICIO_A\",\n  \"Servicio B\":    \"MAILERLITE_GROUP_ID_SERVICIO_B\",\n  \"Servicio C\":    \"MAILERLITE_GROUP_ID_SERVICIO_C\",\n  // Agrega más servicios aquí...\n};\n\nconst ventana = $('Calcular Ventana').item.json;\nconst desdeTimestamp = ventana.desde_timestamp;\nconst response = $input.first().json;\nconst contacts = response.contacts || [];\n\nconst resultados = [];\n\nfor (const contact of contacts) {\n  // Filtrar solo contactos creados dentro de la ventana de tiempo\n  const createdAt = contact.created_at\n    ? Math.floor(new Date(contact.created_at).getTime() / 1000)\n    : 0;\n\n  if (createdAt < desdeTimestamp) {\n    continue;\n  }\n\n  const labels = contact.label_names || [];\n  let targetGroupId = null;\n  let matchedLabel = null;\n\n  for (const label of labels) {\n    if (SERVICE_MAP[label]) {\n      targetGroupId = SERVICE_MAP[label];\n      matchedLabel = label;\n      break;\n    }\n  }\n\n  resultados.push({\n    json: {\n      email:           contact.email || '',\n      first_name:      contact.first_name || '',\n      last_name:       contact.last_name || '',\n      company:         contact.organization_name || '',\n      phone:           contact.sanitized_phone || '',\n      apollo_id:       contact.id || '',\n      label_names:     labels,\n      target_group_id: targetGroupId,\n      matched_label:   matchedLabel,\n      tiene_ruteo:     targetGroupId !== null,\n      created_at:      contact.created_at || '',\n    }\n  });\n}\n\nreturn resultados.length > 0 ? resultados : [{ json: { tiene_ruteo: false, razon: 'sin_contactos_nuevos' } }];"
+        "jsCode": "// Calcula cuántas páginas extra necesitamos\nconst resp = $input.first().json;\nconst total = resp.pagination?.total_entries || 0;\nconst pages = Math.ceil(total / 100);\nconst pageItems = [];\nfor (let p = 2; p <= Math.min(pages, 20); p++) {\n  pageItems.push({ json: { page: p } });\n}\nreturn pageItems.length > 0 ? pageItems : [{ json: { skip: true } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [60, 0],
+      "position": [60, 160],
+      "id": "atm-extra-pages-001",
+      "name": "Calcular Páginas Extra"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/contacts/search",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"api_key\": \"{{ $env.APOLLO_API_KEY }}\",\n  \"sort_by_field\": \"contact_created_at\",\n  \"sort_ascending\": false,\n  \"per_page\": 100,\n  \"page\": {{ $json.page }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [280, 160],
+      "id": "atm-apollo-page-n-001",
+      "name": "Buscar Contactos Apollo (p.N)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ════════════════════════════════════════════════════════════════\n// MAPA DE SERVICIOS: Apollo Label → MailerLite Group ID\n// ════════════════════════════════════════════════════════════════\n// Clave = label EXACTO en Apollo (respeta mayúsculas).\n// Valor  = Group ID de MailerLite (GET /api/groups para obtenerlos).\n// ════════════════════════════════════════════════════════════════\nconst SERVICE_MAP = {\n  \"Servicio A\": \"MAILERLITE_GROUP_ID_SERVICIO_A\",\n  \"Servicio B\": \"MAILERLITE_GROUP_ID_SERVICIO_B\",\n  \"Servicio C\": \"MAILERLITE_GROUP_ID_SERVICIO_C\"\n};\n\nconst ventana = $('Calcular Ventana').item.json;\nconst desdeTimestamp = ventana.desde_timestamp;\n\nconst page1 = $('Buscar Contactos Apollo (p.1)').all();\nconst pageN = $('Buscar Contactos Apollo (p.N)').all();\nconst allItems = [...page1, ...pageN];\n\nconst allContacts = [];\nfor (const item of allItems) {\n  const c = item.json.contacts || [];\n  allContacts.push(...c);\n}\n\nconst resultados = [];\nfor (const contact of allContacts) {\n  const createdAt = contact.created_at\n    ? Math.floor(new Date(contact.created_at).getTime() / 1000)\n    : 0;\n  if (createdAt < desdeTimestamp) continue;\n\n  const labels = contact.label_names || [];\n  let targetGroupId = null;\n  let matchedLabel = null;\n  for (const label of labels) {\n    if (SERVICE_MAP[label]) {\n      targetGroupId = SERVICE_MAP[label];\n      matchedLabel = label;\n      break;\n    }\n  }\n\n  resultados.push({\n    json: {\n      email:           contact.email || '',\n      first_name:      contact.first_name || '',\n      last_name:       contact.last_name || '',\n      company:         contact.organization_name || '',\n      phone:           contact.sanitized_phone || '',\n      apollo_id:       contact.id || '',\n      label_names:     labels,\n      target_group_id: targetGroupId,\n      matched_label:   matchedLabel,\n      tiene_ruteo:     targetGroupId !== null,\n      created_at:      contact.created_at || ''\n    }\n  });\n}\n\nreturn resultados.length > 0\n  ? resultados\n  : [{ json: { tiene_ruteo: false, razon: 'sin_contactos_nuevos' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 0],
       "id": "atm-procesar-001",
       "name": "Procesar y Rutear por Servicio"
     },
@@ -67,10 +92,7 @@
               "id": "tiene-ruteo-check",
               "leftValue": "={{ $json.tiene_ruteo }}",
               "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
+              "operator": { "type": "boolean", "operation": "equals" }
             }
           ],
           "combinator": "and"
@@ -79,7 +101,7 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [280, 0],
+      "position": [720, 0],
       "id": "atm-if-ruteo-001",
       "name": "¿Tiene Grupo Mapeado?"
     },
@@ -90,43 +112,43 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "Bearer TU_MAILERLITE_API_KEY" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.MAILERLITE_API_KEY }}" },
             { "name": "Content-Type",  "value": "application/json" }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"email\": \"{{ $json.email }}\",\n  \"fields\": {\n    \"name\": \"{{ $json.first_name }}\",\n    \"last_name\": \"{{ $json.last_name }}\",\n    \"company\": \"{{ $json.company }}\",\n    \"phone\": \"{{ $json.phone }}\"\n  },\n  \"groups\": [\"{{ $json.target_group_id }}\"],\n  \"status\": \"active\"\n}",
+        "jsonBody": "={\n  \"email\": \"{{ $json.email }}\",\n  \"fields\": {\n    \"name\":      \"{{ $json.first_name }}\",\n    \"last_name\": \"{{ $json.last_name }}\",\n    \"company\":   \"{{ $json.company }}\",\n    \"phone\":     \"{{ $json.phone }}\"\n  },\n  \"groups\": [\"{{ $json.target_group_id }}\"],\n  \"status\": \"active\"\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [500, -120],
+      "position": [940, -120],
       "id": "atm-mailerlite-001",
       "name": "Crear/Actualizar en MailerLite"
     },
     {
       "parameters": {
-        "content": "# 🔄 Apollo → MailerLite (Por Servicio)\n\n## Qué hace\nCada 15 minutos busca contactos **nuevos en Apollo** y los añade\nal grupo correcto de MailerLite según su **label/etiqueta**.\n\n## Configuración obligatoria\n1. **SERVICE_MAP** en \"Procesar y Rutear\" → tus servicios\n2. **TU_APOLLO_API_KEY** en \"Buscar Contactos Apollo\"\n3. **TU_MAILERLITE_API_KEY** en \"Crear/Actualizar en MailerLite\"\n\n## Obtener IDs de grupos MailerLite\n```\nGET https://connect.mailerlite.com/api/groups\nAuthorization: Bearer TU_API_KEY\n```\n\n## Nota\nLos contactos en Apollo deben tener etiquetas (labels)\nque coincidan EXACTAMENTE con las claves del SERVICE_MAP.",
-        "height": 360,
-        "width": 460
+        "content": "# 🔄 Apollo → MailerLite (Por Servicio)\n\n## Flujo\nCada 15 min busca contactos nuevos en Apollo y los\nañade al grupo correcto de MailerLite según su label.\nLa automatización de MailerLite dispara SOLO para\nlos suscriptores recién añadidos al grupo.\n\n## Variables de entorno en n8n\nSettings → Variables → New Variable:\n- `APOLLO_API_KEY`   → Apollo Master API Key\n- `MAILERLITE_API_KEY` → MailerLite API Token\n\n## SERVICE_MAP (nodo 'Procesar y Rutear')\n- Clave = label EXACTO en Apollo\n- Valor = Group ID de MailerLite\n  (GET /api/groups para listarlos)\n\n## Paginación\nAhora obtiene hasta 2 000 contactos por ejecución\n(20 páginas × 100).\n\n## MailerLite: usa Automatizaciones, NO campañas one-time\nCrea una automatización con trigger:\n'Subscriber added to group' → Send email.\nAsí solo los NUEVOS en el grupo reciben el email.",
+        "height": 420,
+        "width": 500
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [-600, -420],
+      "position": [-600, -460],
       "id": "atm-guide-001",
       "name": "Guide"
     },
     {
       "parameters": {
-        "content": "## ⚠️ Sin Ruteo\nContactos sin label mapeado\nllegarán aquí y se ignoran.\n\nVerifica que el label en Apollo\ncoinicida exactamente con la\nclave en SERVICE_MAP.",
+        "content": "## ⚠️ Sin Ruteo\nContactos sin label mapeado\nllegarán aquí y se ignoran.\n\nVerifica que el label en Apollo\ncoinicida EXACTAMENTE con la\nclave en SERVICE_MAP.",
         "height": 160,
         "width": 240,
         "color": 5
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [500, 80],
+      "position": [940, 80],
       "id": "atm-note-sinruteo",
       "name": "Sin Ruteo"
     }
@@ -136,9 +158,17 @@
       "main": [[{ "node": "Calcular Ventana", "type": "main", "index": 0 }]]
     },
     "Calcular Ventana": {
-      "main": [[{ "node": "Buscar Contactos Apollo", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Buscar Contactos Apollo (p.1)", "type": "main", "index": 0 }]]
     },
-    "Buscar Contactos Apollo": {
+    "Buscar Contactos Apollo (p.1)": {
+      "main": [
+        [{ "node": "Calcular Páginas Extra", "type": "main", "index": 0 }]
+      ]
+    },
+    "Calcular Páginas Extra": {
+      "main": [[{ "node": "Buscar Contactos Apollo (p.N)", "type": "main", "index": 0 }]]
+    },
+    "Buscar Contactos Apollo (p.N)": {
       "main": [[{ "node": "Procesar y Rutear por Servicio", "type": "main", "index": 0 }]]
     },
     "Procesar y Rutear por Servicio": {

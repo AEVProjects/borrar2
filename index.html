@@ -138,6 +138,13 @@
                     </svg>
                     Calls
                 </button>
+                <button class="tab-btn" data-mode="email">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                    Email
+                </button>
                 </div>
                 <button class="nav-scroll-btn" id="nav-scroll-right" title="Scroll right">&#8250;</button>
             </div>
@@ -2589,5 +2596,580 @@
 
     <!-- Main Application -->
     <script src="app.js"></script>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- EMAIL CAMPAIGNS: Apollo → MailerLite                        -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div id="email-mode" class="mode-content">
+        <div class="em-layout">
+
+            <!-- ── VERIFICATION ALERT (shown after 2 days) ──────── -->
+            <div id="em-verify-alert" class="em-verify-banner" style="display:none;">
+                <div class="em-verify-banner-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                </div>
+                <div class="em-verify-banner-text">
+                    <strong>Ya pasaron 2 días.</strong> Es momento de verificar quién abrió el correo y etiquetarlos en Apollo.
+                </div>
+                <button class="em-verify-banner-btn" onclick="emScrollToVerify()">Ver verificación ↓</button>
+            </div>
+
+            <!-- ── CARD 1: API KEYS ───────────────────────────────── -->
+            <div class="em-card">
+                <div class="em-card-header">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                    <h3>Credenciales API</h3>
+                    <span id="em-keys-status" class="em-badge em-badge-idle">Sin verificar</span>
+                </div>
+                <div class="em-keys-grid">
+                    <div class="em-field-group">
+                        <label>Apollo API Key</label>
+                        <div class="em-input-row">
+                            <input type="password" id="em-apollo-key" placeholder="Tu Apollo Master API Key" autocomplete="off">
+                            <button class="em-icon-btn" onclick="emToggleVisibility('em-apollo-key')" title="Mostrar/ocultar">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </button>
+                        </div>
+                        <p class="em-hint">Apollo → Settings → Integrations → API Keys</p>
+                    </div>
+                    <div class="em-field-group">
+                        <label>MailerLite API Key</label>
+                        <div class="em-input-row">
+                            <input type="password" id="em-mailer-key" placeholder="Tu MailerLite API Token" autocomplete="off">
+                            <button class="em-icon-btn" onclick="emToggleVisibility('em-mailer-key')" title="Mostrar/ocultar">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </button>
+                        </div>
+                        <p class="em-hint">MailerLite → Integrations → API → Generate new token</p>
+                    </div>
+                </div>
+                <div class="em-keys-actions">
+                    <button class="em-btn em-btn-outline" onclick="emSaveKeys()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Guardar
+                    </button>
+                    <button class="em-btn em-btn-primary" onclick="emTestKeys()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                        Verificar Conexión
+                    </button>
+                    <button class="em-btn em-btn-outline" onclick="emLoadGroups()" title="Carga los grupos de MailerLite para autocompletar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+                        Cargar Grupos MailerLite
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── CARD 2: SERVICE MAP ─────────────────────────────── -->
+            <div class="em-card">
+                <div class="em-card-header">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                    <h3>Servicios mapeados</h3>
+                    <button class="em-btn em-btn-sm em-btn-outline" onclick="emAddRow()">+ Agregar</button>
+                </div>
+                <p class="em-section-hint">Cada fila conecta un <strong>label de Apollo</strong> con un <strong>grupo de MailerLite</strong>. Al lanzar, los contactos con ese label se sincronizan al grupo y la automatización de MailerLite se activa para los nuevos.</p>
+
+                <div class="em-table-wrap">
+                    <table class="em-table" id="em-map-table">
+                        <thead>
+                            <tr>
+                                <th>Label en Apollo</th>
+                                <th>Group ID en MailerLite</th>
+                                <th>Nombre del grupo</th>
+                                <th>Campaña ID (para verificar)</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="em-map-body">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="em-table-footer">
+                    <button class="em-btn em-btn-outline em-btn-sm" onclick="emSaveMap()">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/></svg>
+                        Guardar mapa
+                    </button>
+                    <span id="em-map-saved" class="em-saved-badge" style="display:none;">Guardado ✓</span>
+                </div>
+            </div>
+
+            <!-- ── CARD 3: LAUNCH ──────────────────────────────────── -->
+            <div class="em-card">
+                <div class="em-card-header">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    <h3>Lanzar campaña</h3>
+                </div>
+                <p class="em-section-hint">Selecciona el servicio y ejecuta la sincronización. Solo los contactos <strong>nuevos en ese grupo</strong> activarán la automatización de MailerLite (los que ya estaban no se vuelven a enviar).</p>
+
+                <div class="em-launch-row">
+                    <div class="em-field-group" style="flex:1">
+                        <label>Servicio a lanzar</label>
+                        <select id="em-launch-select">
+                            <option value="">— Selecciona un servicio —</option>
+                        </select>
+                    </div>
+                    <button class="em-btn em-btn-launch" id="em-launch-btn" onclick="emLaunch()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        Lanzar
+                    </button>
+                </div>
+
+                <!-- Log en tiempo real -->
+                <div id="em-log" class="em-log" style="display:none;">
+                    <div class="em-log-header">
+                        <span>Log de ejecución</span>
+                        <button class="em-log-clear" onclick="emClearLog()">Limpiar</button>
+                    </div>
+                    <div id="em-log-body"></div>
+                </div>
+
+                <!-- Historial de lanzamientos -->
+                <div id="em-history-wrap" style="display:none;">
+                    <h4 class="em-history-title">Historial de lanzamientos</h4>
+                    <div id="em-history-list"></div>
+                </div>
+            </div>
+
+            <!-- ── CARD 4: VERIFY (2-day check) ───────────────────── -->
+            <div class="em-card" id="em-verify-card">
+                <div class="em-card-header">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    <h3>Verificación (2 días después)</h3>
+                    <span id="em-verify-countdown" class="em-badge em-badge-idle"></span>
+                </div>
+                <p class="em-section-hint">Obtiene los contactos que <strong>abrieron el correo</strong> de la campaña de MailerLite y les agrega un <strong>nuevo label en Apollo</strong> para que puedan entrar en una secuencia de seguimiento.</p>
+
+                <div class="em-verify-grid">
+                    <div class="em-field-group">
+                        <label>Seleccionar servicio</label>
+                        <select id="em-verify-select">
+                            <option value="">— Selecciona un servicio —</option>
+                        </select>
+                    </div>
+                    <div class="em-field-group">
+                        <label>Campaign ID de MailerLite</label>
+                        <input type="text" id="em-campaign-id" placeholder="Ej: 12345678">
+                        <p class="em-hint">MailerLite → Campaigns → click en la campaña → ID en la URL</p>
+                    </div>
+                    <div class="em-field-group">
+                        <label>Label a agregar en Apollo (aperturas)</label>
+                        <input type="text" id="em-new-label" placeholder="Ej: Abrió Email - Servicio A">
+                        <p class="em-hint">Este label se agrega en Apollo a quienes abrieron el correo</p>
+                    </div>
+                </div>
+
+                <button class="em-btn em-btn-primary" id="em-verify-btn" onclick="emVerify()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Verificar y etiquetar en Apollo
+                </button>
+
+                <div id="em-verify-result" class="em-result-box" style="display:none;"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+    // ═══════════════════════════════════════════════════════════════
+    // EMAIL CAMPAIGNS MODULE
+    // ═══════════════════════════════════════════════════════════════
+    (function() {
+        const LS_KEYS   = 'em_api_keys';
+        const LS_MAP    = 'em_service_map';
+        const LS_HIST   = 'em_launch_history';
+        const LS_GROUPS = 'em_ml_groups';
+
+        // ── State ──────────────────────────────────────────────────
+        let _groups = [];
+
+        // ── Boot ───────────────────────────────────────────────────
+        function boot() {
+            loadKeysFromStorage();
+            loadMapFromStorage();
+            renderHistory();
+            refreshSelects();
+            checkVerifyAlert();
+        }
+
+        // ── Keys ───────────────────────────────────────────────────
+        function loadKeysFromStorage() {
+            const saved = JSON.parse(localStorage.getItem(LS_KEYS) || '{}');
+            if (saved.apollo) document.getElementById('em-apollo-key').value = saved.apollo;
+            if (saved.mailer) document.getElementById('em-mailer-key').value = saved.mailer;
+        }
+
+        window.emSaveKeys = function() {
+            const keys = {
+                apollo: document.getElementById('em-apollo-key').value.trim(),
+                mailer: document.getElementById('em-mailer-key').value.trim()
+            };
+            localStorage.setItem(LS_KEYS, JSON.stringify(keys));
+            setBadge('em-keys-status', 'saved', 'Guardado');
+            setTimeout(() => setBadge('em-keys-status', 'idle', 'Sin verificar'), 2000);
+        };
+
+        window.emTestKeys = async function() {
+            const keys = getKeys();
+            if (!keys.apollo || !keys.mailer) {
+                return alert('Ingresa ambas API keys primero.');
+            }
+            setBadge('em-keys-status', 'loading', 'Verificando...');
+            try {
+                const r = await apiFetch({ action: 'test-keys', apolloKey: keys.apollo, mailerKey: keys.mailer });
+                if (r.apollo?.ok && r.mailerlite?.ok) {
+                    setBadge('em-keys-status', 'ok', '✓ Conectado');
+                } else {
+                    const msg = (!r.apollo?.ok ? 'Apollo KO ' : '') + (!r.mailerlite?.ok ? 'MailerLite KO' : '');
+                    setBadge('em-keys-status', 'error', '✗ ' + msg.trim());
+                }
+            } catch (e) {
+                setBadge('em-keys-status', 'error', '✗ Error');
+            }
+        };
+
+        window.emToggleVisibility = function(id) {
+            const el = document.getElementById(id);
+            el.type = el.type === 'password' ? 'text' : 'password';
+        };
+
+        // ── Groups ─────────────────────────────────────────────────
+        window.emLoadGroups = async function() {
+            const keys = getKeys();
+            if (!keys.mailer) return alert('Ingresa la MailerLite API Key primero.');
+            logLine('Cargando grupos de MailerLite...', 'info');
+            try {
+                const r = await apiFetch({ action: 'get-groups', mailerKey: keys.mailer });
+                _groups = r.data || [];
+                localStorage.setItem(LS_GROUPS, JSON.stringify(_groups));
+                logLine(`${_groups.length} grupos cargados.`, 'success');
+                renderGroupNamesInTable();
+            } catch (e) {
+                logLine('Error al cargar grupos: ' + e.message, 'error');
+            }
+        };
+
+        function renderGroupNamesInTable() {
+            document.querySelectorAll('.em-group-name-cell').forEach(cell => {
+                const row = cell.closest('tr');
+                const groupIdInput = row.querySelector('.em-group-id-input');
+                if (groupIdInput) {
+                    const gid = groupIdInput.value.trim();
+                    const found = _groups.find(g => g.id == gid);
+                    cell.textContent = found ? found.name : (gid ? '—' : '');
+                }
+            });
+        }
+
+        // ── Service Map ────────────────────────────────────────────
+        function loadMapFromStorage() {
+            _groups = JSON.parse(localStorage.getItem(LS_GROUPS) || '[]');
+            const map = JSON.parse(localStorage.getItem(LS_MAP) || '[]');
+            const tbody = document.getElementById('em-map-body');
+            tbody.innerHTML = '';
+            if (map.length === 0) {
+                addRow('', '', '', '');
+            } else {
+                map.forEach(row => addRow(row.label, row.groupId, row.groupName, row.campaignId));
+            }
+        }
+
+        function addRow(label, groupId, groupName, campaignId) {
+            const tbody = document.getElementById('em-map-body');
+            const tr = document.createElement('tr');
+            const gName = groupName || (_groups.find(g => g.id == groupId)?.name || '');
+            tr.innerHTML = `
+                <td><input class="em-table-input em-label-input" type="text" value="${escHtml(label)}" placeholder="Ej: Servicio A"></td>
+                <td>
+                    <input class="em-table-input em-group-id-input" type="text" value="${escHtml(groupId)}" placeholder="ID del grupo"
+                        oninput="emResolveGroupName(this)">
+                </td>
+                <td class="em-group-name-cell">${escHtml(gName)}</td>
+                <td><input class="em-table-input em-campaign-id-input" type="text" value="${escHtml(campaignId || '')}" placeholder="ID campaña ML"></td>
+                <td><button class="em-icon-btn em-del-btn" onclick="this.closest('tr').remove(); emSaveMap();" title="Eliminar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                </button></td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        window.emAddRow    = function() { addRow('', '', '', ''); };
+        window.emSaveMap   = function() {
+            const rows = [...document.querySelectorAll('#em-map-body tr')];
+            const map = rows.map(tr => ({
+                label:      tr.querySelector('.em-label-input')?.value.trim() || '',
+                groupId:    tr.querySelector('.em-group-id-input')?.value.trim() || '',
+                groupName:  tr.querySelector('.em-group-name-cell')?.textContent.trim() || '',
+                campaignId: tr.querySelector('.em-campaign-id-input')?.value.trim() || ''
+            })).filter(r => r.label || r.groupId);
+            localStorage.setItem(LS_MAP, JSON.stringify(map));
+            refreshSelects();
+            const badge = document.getElementById('em-map-saved');
+            badge.style.display = 'inline';
+            setTimeout(() => badge.style.display = 'none', 2000);
+        };
+
+        window.emResolveGroupName = function(input) {
+            const gid = input.value.trim();
+            const cell = input.closest('tr').querySelector('.em-group-name-cell');
+            const found = _groups.find(g => g.id == gid);
+            cell.textContent = found ? found.name : (gid ? '—' : '');
+        };
+
+        function getMap() {
+            return JSON.parse(localStorage.getItem(LS_MAP) || '[]');
+        }
+
+        function refreshSelects() {
+            const map = getMap();
+            [document.getElementById('em-launch-select'), document.getElementById('em-verify-select')].forEach(sel => {
+                if (!sel) return;
+                const cur = sel.value;
+                sel.innerHTML = '<option value="">— Selecciona un servicio —</option>';
+                map.forEach((row, i) => {
+                    const opt = document.createElement('option');
+                    opt.value = i;
+                    opt.textContent = row.label || `Servicio ${i + 1}`;
+                    sel.appendChild(opt);
+                });
+                sel.value = cur;
+            });
+        }
+
+        // ── Launch ─────────────────────────────────────────────────
+        window.emLaunch = async function() {
+            const idx = document.getElementById('em-launch-select').value;
+            if (idx === '') return alert('Selecciona un servicio.');
+            const map = getMap();
+            const row = map[parseInt(idx)];
+            if (!row?.label || !row?.groupId) return alert('El servicio seleccionado no tiene label o groupId configurados.');
+
+            const keys = getKeys();
+            if (!keys.apollo || !keys.mailer) return alert('Guarda tus API keys primero.');
+
+            const btn = document.getElementById('em-launch-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="em-spinner"></span> Enviando...';
+            showLog();
+            logLine(`Iniciando sincronización: "${row.label}" → grupo ${row.groupId}`, 'info');
+
+            try {
+                const result = await apiFetch({
+                    action: 'sync',
+                    apolloKey: keys.apollo,
+                    mailerKey: keys.mailer,
+                    label: row.label,
+                    groupId: row.groupId
+                });
+
+                if (result.error) throw new Error(result.error);
+
+                logLine(`Apollo: ${result.total_apollo} contactos con ese label.`, 'info');
+                logLine(`Con email válido: ${result.with_email}`, 'info');
+                logLine(`Nuevos en MailerLite: ${result.new_subscribers}`, 'success');
+                logLine(`Ya existían (actualizados): ${result.updated_subscribers}`, 'info');
+                if (result.errors > 0) logLine(`Errores: ${result.errors}`, 'error');
+                logLine('Lanzamiento completado. La automatización de MailerLite se activó para los nuevos.', 'success');
+
+                saveHistory({
+                    label: row.label,
+                    groupId: row.groupId,
+                    campaignId: row.campaignId || '',
+                    launchedAt: Date.now(),
+                    stats: result
+                });
+                renderHistory();
+                checkVerifyAlert();
+
+            } catch (e) {
+                logLine('Error: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Lanzar';
+            }
+        };
+
+        // ── History ────────────────────────────────────────────────
+        function saveHistory(entry) {
+            const hist = JSON.parse(localStorage.getItem(LS_HIST) || '[]');
+            hist.unshift(entry);
+            localStorage.setItem(LS_HIST, JSON.stringify(hist.slice(0, 20)));
+        }
+
+        function renderHistory() {
+            const hist = JSON.parse(localStorage.getItem(LS_HIST) || '[]');
+            const wrap = document.getElementById('em-history-wrap');
+            const list = document.getElementById('em-history-list');
+            if (hist.length === 0) { wrap.style.display = 'none'; return; }
+            wrap.style.display = 'block';
+            list.innerHTML = hist.map(h => {
+                const d = new Date(h.launchedAt);
+                const ago = timeSince(h.launchedAt);
+                const ready = Date.now() - h.launchedAt >= 48 * 60 * 60 * 1000;
+                return `<div class="em-history-item ${ready ? 'em-history-ready' : ''}">
+                    <div class="em-history-main">
+                        <strong>${escHtml(h.label)}</strong>
+                        <span class="em-history-meta">Grupo ${escHtml(h.groupId)} · ${d.toLocaleDateString()} ${d.toLocaleTimeString()}</span>
+                    </div>
+                    <div class="em-history-stats">
+                        ${h.stats?.new_subscribers ?? '?'} nuevos · ${h.stats?.updated_subscribers ?? '?'} actualizados
+                    </div>
+                    <div class="em-history-ago ${ready ? 'em-history-ago-ready' : ''}">${ago}</div>
+                </div>`;
+            }).join('');
+        }
+
+        // ── Verify Alert ───────────────────────────────────────────
+        function checkVerifyAlert() {
+            const hist = JSON.parse(localStorage.getItem(LS_HIST) || '[]');
+            const twoDays = 48 * 60 * 60 * 1000;
+            const hasReady = hist.some(h => Date.now() - h.launchedAt >= twoDays);
+            document.getElementById('em-verify-alert').style.display = hasReady ? 'flex' : 'none';
+
+            // Update countdown badge for the most recent launch
+            if (hist.length > 0) {
+                const latest = hist[0];
+                const elapsed = Date.now() - latest.launchedAt;
+                const remaining = twoDays - elapsed;
+                const badge = document.getElementById('em-verify-countdown');
+                if (remaining > 0) {
+                    const hrs = Math.ceil(remaining / (1000 * 60 * 60));
+                    setBadge('em-verify-countdown', 'idle', `Faltan ~${hrs}h`);
+                } else {
+                    setBadge('em-verify-countdown', 'ok', 'Listo para verificar');
+                }
+            }
+
+            // Pre-fill verify fields from most recent history item with campaignId
+            const withCamp = hist.find(h => h.campaignId);
+            if (withCamp) {
+                const campInput = document.getElementById('em-campaign-id');
+                if (campInput && !campInput.value) campInput.value = withCamp.campaignId;
+                const newLabelInput = document.getElementById('em-new-label');
+                if (newLabelInput && !newLabelInput.value) newLabelInput.value = `Abrió Email - ${withCamp.label}`;
+            }
+        }
+
+        window.emScrollToVerify = function() {
+            document.getElementById('em-verify-card').scrollIntoView({ behavior: 'smooth' });
+        };
+
+        // ── Verify ─────────────────────────────────────────────────
+        window.emVerify = async function() {
+            const campaignId = document.getElementById('em-campaign-id').value.trim();
+            const newLabel   = document.getElementById('em-new-label').value.trim();
+            if (!campaignId) return alert('Ingresa el Campaign ID de MailerLite.');
+            if (!newLabel)   return alert('Ingresa el label que se agregará en Apollo.');
+
+            const keys = getKeys();
+            if (!keys.apollo || !keys.mailer) return alert('Guarda tus API keys primero.');
+
+            const btn = document.getElementById('em-verify-btn');
+            btn.disabled = true;
+            btn.textContent = 'Verificando...';
+
+            const resultBox = document.getElementById('em-verify-result');
+            resultBox.style.display = 'none';
+
+            try {
+                const r = await apiFetch({
+                    action: 'verify',
+                    apolloKey: keys.apollo,
+                    mailerKey: keys.mailer,
+                    campaignId,
+                    newLabel
+                });
+
+                if (r.error) throw new Error(r.error);
+
+                resultBox.className = 'em-result-box em-result-success';
+                resultBox.innerHTML = `
+                    <strong>Verificación completada</strong><br>
+                    Abrieron el correo: <strong>${r.total_openers}</strong><br>
+                    Etiquetados en Apollo: <strong>${r.labeled_in_apollo}</strong><br>
+                    No encontrados en Apollo: <strong>${r.not_found_in_apollo}</strong><br>
+                    Label agregado: <code>${escHtml(r.label_added)}</code>
+                `;
+                resultBox.style.display = 'block';
+            } catch (e) {
+                resultBox.className = 'em-result-box em-result-error';
+                resultBox.innerHTML = `<strong>Error:</strong> ${escHtml(e.message)}`;
+                resultBox.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Verificar y etiquetar en Apollo';
+            }
+        };
+
+        // ── Log ────────────────────────────────────────────────────
+        function showLog() {
+            document.getElementById('em-log').style.display = 'block';
+        }
+        function logLine(msg, type) {
+            showLog();
+            const body = document.getElementById('em-log-body');
+            const line = document.createElement('div');
+            line.className = `em-log-line em-log-${type}`;
+            const ts = new Date().toLocaleTimeString();
+            line.innerHTML = `<span class="em-log-ts">${ts}</span> ${escHtml(msg)}`;
+            body.appendChild(line);
+            body.scrollTop = body.scrollHeight;
+        }
+        window.emClearLog = function() {
+            document.getElementById('em-log-body').innerHTML = '';
+            document.getElementById('em-log').style.display = 'none';
+        };
+
+        // ── Helpers ────────────────────────────────────────────────
+        function getKeys() {
+            return JSON.parse(localStorage.getItem(LS_KEYS) || '{}');
+        }
+        function setBadge(id, type, text) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.className = `em-badge em-badge-${type}`;
+            el.textContent = text;
+        }
+        function escHtml(s) {
+            return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+        function timeSince(ts) {
+            const s = Math.floor((Date.now() - ts) / 1000);
+            if (s < 60)    return `hace ${s}s`;
+            if (s < 3600)  return `hace ${Math.floor(s/60)}min`;
+            if (s < 86400) return `hace ${Math.floor(s/3600)}h`;
+            return `hace ${Math.floor(s/86400)}d`;
+        }
+        async function apiFetch(body) {
+            const r = await fetch('/api/apollo-mailer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            return r.json();
+        }
+
+        // ── Init when tab is first activated ───────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            const observer = new MutationObserver(() => {
+                const el = document.getElementById('email-mode');
+                if (el && el.classList.contains('active')) boot();
+            });
+            const emailMode = document.getElementById('email-mode');
+            if (emailMode) observer.observe(emailMode, { attributes: true, attributeFilter: ['class'] });
+        });
+
+        // Also run if tab is already active
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                if (document.getElementById('email-mode')?.classList.contains('active')) boot();
+            });
+        } else {
+            if (document.getElementById('email-mode')?.classList.contains('active')) boot();
+        }
+
+        // Expose boot so the tab-switch handler can call it
+        window.emBoot = boot;
+    })();
+    </script>
 </body>
 </html>
